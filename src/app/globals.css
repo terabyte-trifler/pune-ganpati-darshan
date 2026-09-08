@@ -220,8 +220,24 @@ body {
   background: rgb(20 16 12 / 0.85) !important;
   color: var(--muted);
 }
+/*
+ * Attribution links.
+ *
+ * These are required by the OpenStreetMap licence and cannot be removed or
+ * hidden. They also cannot reach a 44px target without breaking the
+ * control's layout: they are inline links inside a sentence, which is the
+ * documented WCAG 2.5.8 exception for inline targets.
+ *
+ * What is achievable is making them comfortably tappable rather than
+ * hairline-thin, so the padding below roughly doubles their height and the
+ * font size clears the 12px floor the rest of the app holds to.
+ */
 .maplibregl-ctrl-attrib a {
   color: var(--muted);
+  display: inline-block;
+  padding-block: 5px;
+  font-size: 12px;
+  line-height: 1.2;
 }
 /* The compact toggle is also a touch target. */
 .maplibregl-ctrl-attrib-button {

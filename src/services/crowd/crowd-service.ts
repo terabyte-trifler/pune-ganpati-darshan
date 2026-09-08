@@ -1,9 +1,8 @@
 import 'server-only';
 
-import { createHash } from 'node:crypto';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { features } from '@/lib/env';
-import { serverEnv } from '@/lib/env.server';
+import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
 import { aggregateSnapshot } from './crowd-aggregation';
 import {
@@ -80,32 +79,6 @@ async function getKnownMandalIds(): Promise<string[]> {
 export async function filterKnownMandalIds(ids: string[]): Promise<string[]> {
   const known = new Set(await getKnownMandalIds());
   return ids.filter((id) => known.has(id));
-}
-
-/**
- * Hash of the caller's IP, for the shared throttle table.
- *
- * The raw address is never stored. A salt should be configured: IPv4 has
- * only ~4 billion values, so an unsalted digest is reversible by anyone
- * who obtains the table. The fallback constant keeps the throttle working
- * (and consistent across instances, which a per-process random salt would
- * silently break) but is documented as the weaker option.
- */
-const IP_SALT_FALLBACK = 'pune-ganpati-darshan/crowd-ip/v1';
-
-export function hashIp(ip: string): string {
-  const { CROWD_IP_SALT } = serverEnv();
-  return createHash('sha256')
-    .update(`${CROWD_IP_SALT ?? IP_SALT_FALLBACK}:${ip}`)
-    .digest('hex')
-    .slice(0, 32);
-}
-
-/** Platform-set forwarding headers only; never a client-supplied value. */
-export function clientIpFrom(request: Request): string | null {
-  const forwarded = request.headers.get('x-forwarded-for');
-  const ip = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip');
-  return ip || null;
 }
 
 /**
@@ -216,6 +189,9 @@ export async function getCrowdStatus(mandalId: string): Promise<CrowdStatus | nu
   const [status] = await getCrowdStatuses([mandalId]);
   return status ?? null;
 }
+
+// Re-exported so route handlers keep importing these from one place.
+export { clientIpFrom, hashIp };
 
 /**
  * Submit a report.

@@ -181,9 +181,23 @@ where the original landed between the two), and once more in the
 | Layer | Scope | Where |
 |---|---|---|
 | Per-IP, in-process | one instance | `rate-limit.ts`, 20/min |
-| Per-IP, shared | all instances | `crowd_ip_throttle`, 60 / 10 min |
+| Per-IP, shared | all instances | `consume_rate_limit()`, 60 / 10 min |
 | Per-device global | all instances | 20 reports/hour, any mandal |
 | Per-device per-mandal | all instances | 1/hour, atomic |
+
+The shared layer is a counter in Postgres (`rate_limit_buckets`), not Redis.
+The in-process limiter alone is quietly wrong on more than one instance: N
+instances multiply every limit by N. Redis would be a whole piece of
+infrastructure to run and pay for to protect a few hundred writes an evening,
+so the store every instance already shares does the job until measurement says
+otherwise. `/api/plans` uses the same mechanism. `/api/analytics` deliberately
+does not — it is high-volume and fire-and-forget, so a database round trip per
+event would cost more than it protects.
+
+The shared limiter **fails open**: if the database is unreachable, requests are
+allowed. A rate limiter that takes the site down when its store blinks has
+turned a minor dependency into a total outage, and the layers behind it still
+hold.
 
 Blocked devices are told `rate_limited`, identical to any other throttle, so a
 blocked abuser cannot detect that they were singled out and start cycling
@@ -329,6 +343,44 @@ revalidating, so a miss is not user-visible.
 4. Only if measurement demands it, implement `CrowdCache` against a shared
    store. The interface exists precisely so this is a new class and one line
    in `getCrowdCache()`. Do not add Redis before that measurement exists.
+
+---
+
+## 10. Bootstrapping the first admin
+
+The system previously had no way to gain its first admin: `is_admin` cannot be
+self-granted, the admin UI is gated on it, and the signup trigger created every
+profile with it false. The only route in was a manual `UPDATE` by whoever holds
+the database password — the credential we most want people to stop reaching
+for.
+
+`admin_bootstrap_emails` makes the intended first admin explicit and auditable.
+An address listed there becomes an admin when that person signs in normally
+(Google OAuth or an email magic link — there are no passwords). No account is
+created on anyone's behalf. It is a bootstrap: once an admin exists, further
+admins should be granted by an admin.
+
+Verified transactionally: a listed address gets `is_admin=true` even with
+different capitalisation, an unlisted one gets `false`.
+
+---
+
+## 11. Service worker cache versioning
+
+`sw.js` had `VERSION = 'v1'` hardcoded. Since the file was byte-identical
+across deploys, the browser never reinstalled the worker, so `activate` never
+ran and the cache-cleanup code in it was dead: every build's chunks accumulated
+indefinitely, and shell HTML cached before a deploy kept being served offline
+while pointing at chunk hashes the server no longer had.
+
+The version now comes from the script's own URL. `next.config.ts` stamps
+`NEXT_PUBLIC_BUILD_ID` from the git SHA at build time, the registration appends
+`?v=<build id>`, and the worker reads it back. A deploy therefore produces a
+different script URL, the browser installs a new worker, and `activate` drops
+the old caches.
+
+Verified: registration is `/sw.js?v=<sha>` with caches `pg-shell-<sha>` and
+`pg-assets-<sha>`.
 
 ---
 

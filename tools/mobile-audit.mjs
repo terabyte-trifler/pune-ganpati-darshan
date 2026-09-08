@@ -51,8 +51,17 @@ for (const path of PAGES) {
     const srOnly = (el) => el.classList.contains('sr-only') ||
       (el.getBoundingClientRect().width <= 1 && el.getBoundingClientRect().height <= 1);
 
+    /*
+     * Map attribution is the WCAG 2.5.8 "inline" exception: links inside a
+     * sentence of required licence text. They cannot be enlarged to 44px
+     * without breaking the control, and they must not be removed at all.
+     * Reported forever, they train people to ignore this tool's output —
+     * which is how a real finding gets missed.
+     */
+    const licenceInline = (el) => Boolean(el.closest('.maplibregl-ctrl-attrib'));
+
     const targets = [...document.querySelectorAll('a, button, input, select, textarea, [role="button"]')]
-      .filter(visible).filter((el) => !srOnly(el))
+      .filter(visible).filter((el) => !srOnly(el) && !licenceInline(el))
       .map((el) => {
         const r = el.getBoundingClientRect();
         // A fixed element does not live in document space; adding scrollY to

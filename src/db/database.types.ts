@@ -250,8 +250,9 @@ export type CrowdDeviceBlockRow = {
   created_by: string | null;
 }
 
-export type CrowdIpThrottleRow = {
-  ip_hash: string;
+export type RateLimitBucketRow = {
+  bucket: string;
+  key_hash: string;
   window_start: string;
   count: number;
 }
@@ -287,7 +288,7 @@ export type Database = {
       crowd_report_cooldowns: Table<CrowdReportCooldownRow>;
       crowd_abuse_signals: Table<CrowdAbuseSignalRow>;
       crowd_device_blocks: Table<CrowdDeviceBlockRow>;
-      crowd_ip_throttle: Table<CrowdIpThrottleRow>;
+      rate_limit_buckets: Table<RateLimitBucketRow>;
     };
     Views: Record<never, never>;
     Functions: {
@@ -319,6 +320,15 @@ export type Database = {
         Returns: unknown;
       };
       crowd_admin_overview: { Args: Record<never, never>; Returns: unknown };
+      consume_rate_limit: {
+        Args: {
+          p_bucket: string;
+          p_key_hash: string;
+          p_window: string;
+          p_limit: number;
+        };
+        Returns: unknown;
+      };
       cleanup_crowd_data: {
         Args: { p_report_retention?: string; p_signal_retention?: string };
         Returns: unknown;

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { features } from '@/lib/env';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit, sharedRateLimit } from '@/lib/rate-limit';
 
 /**
  * Persists a darshan plan and returns a short share id.
@@ -35,11 +35,26 @@ function makeShareId() {
 }
 
 export async function POST(request: Request) {
-  const limit = rateLimit(request, { key: 'plans', limit: 12, windowMs: 60_000 });
-  if (!limit.allowed) {
+  // Two layers, cheapest first. The in-process check rejects a flood
+  // without touching the database; the shared one is the limit that
+  // actually holds when more than one instance is running.
+  const local = rateLimit(request, { key: 'plans', limit: 12, windowMs: 60_000 });
+  if (!local.allowed) {
     return NextResponse.json(
       { error: 'Too many plans created. Try again shortly.' },
-      { status: 429, headers: { 'Retry-After': String(limit.retryAfterS) } }
+      { status: 429, headers: { 'Retry-After': String(local.retryAfterS) } }
+    );
+  }
+
+  const shared = await sharedRateLimit(request, {
+    bucket: 'plans',
+    limit: 30,
+    windowSeconds: 300,
+  });
+  if (!shared.allowed) {
+    return NextResponse.json(
+      { error: 'Too many plans created. Try again shortly.' },
+      { status: 429, headers: { 'Retry-After': String(shared.retryAfterS) } }
     );
   }
 

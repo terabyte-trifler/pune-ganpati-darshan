@@ -14,7 +14,13 @@ export function ServiceWorkerRegistration() {
     if (!('serviceWorker' in navigator)) return;
 
     const register = () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      // The build id rides in the URL so a deploy produces a different
+      // script URL. That is what makes the browser install a new worker
+      // and run `activate`, which is where stale caches are dropped. The
+      // registration scope is taken from the path, so the query changes
+      // nothing about what this worker controls.
+      const url = `/sw.js?v=${process.env.NEXT_PUBLIC_BUILD_ID ?? 'dev'}`;
+      navigator.serviceWorker.register(url).catch(() => {
         // Offline support is an enhancement; failing to register is not
         // something to surface to the user.
       });

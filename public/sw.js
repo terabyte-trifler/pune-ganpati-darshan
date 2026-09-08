@@ -11,7 +11,20 @@
  *   API / analytics never cached
  */
 
-const VERSION = 'v1';
+/*
+ * Cache version, taken from this script's own URL.
+ *
+ * It used to be the literal 'v1'. Since the file never changed between
+ * deploys, the browser never reinstalled the worker, so `activate` never
+ * ran and nothing below it ever deleted anything: every build's chunks
+ * stayed cached forever, and a shell page cached before a deploy kept
+ * being served offline while pointing at chunk hashes the server had long
+ * since stopped serving.
+ *
+ * The registration appends ?v=<build id>, so this changes per deploy and
+ * the cleanup in `activate` finally does what it always claimed to.
+ */
+const VERSION = new URL(self.location.href).searchParams.get('v') || 'dev';
 const SHELL_CACHE = `pg-shell-${VERSION}`;
 const DATA_CACHE = `pg-data-${VERSION}`;
 const ASSET_CACHE = `pg-assets-${VERSION}`;

@@ -1,5 +1,9 @@
 import 'server-only';
 
+import { getSupabaseAdminClient } from '@/lib/supabase/admin';
+import { features } from '@/lib/env';
+import { clientIpFrom, hashIp } from '@/lib/client-ip';
+
 /**
  * In-memory fixed-window rate limiter.
  *
@@ -56,4 +60,54 @@ export function rateLimit(
     remaining: Math.max(0, limit - bucket.count),
     retryAfterS: Math.ceil((bucket.resetAt - now) / 1000),
   };
+}
+
+/**
+ * Cross-instance rate limit.
+ *
+ * The in-memory limiter above protects one process. On a horizontally
+ * scaled deployment that is quietly wrong: N instances multiply every
+ * limit by N, and which instance a request lands on is arbitrary — so the
+ * limit becomes a suggestion at exactly the traffic where it matters.
+ *
+ * This counts in Postgres, the store every instance already shares. Redis
+ * is the reflex answer and would be a whole piece of infrastructure to
+ * run, pay for and monitor for a few hundred writes an evening. Use it
+ * when measurement demands it, not before.
+ *
+ * Costs one round trip, so it belongs on write endpoints only. Reads are
+ * protected by the CDN and the cache, which is far cheaper.
+ *
+ * Fails OPEN: if the database is unreachable the request is allowed
+ * through. A rate limiter that takes the site down when its store blinks
+ * has converted a minor dependency into a total outage, and the layers
+ * behind this one (per-device caps, atomic cooldowns) still hold.
+ */
+export async function sharedRateLimit(
+  request: Request,
+  { bucket, limit, windowSeconds }: { bucket: string; limit: number; windowSeconds: number }
+): Promise<{ allowed: boolean; retryAfterS: number }> {
+  const ip = clientIpFrom(request);
+  if (!ip) return { allowed: true, retryAfterS: 0 };
+
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { allowed: true, retryAfterS: 0 };
+  }
+
+  try {
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await supabase.rpc('consume_rate_limit', {
+      p_bucket: bucket,
+      p_key_hash: hashIp(ip),
+      p_window: `${windowSeconds} seconds`,
+      p_limit: limit,
+    });
+
+    if (error || !data) return { allowed: true, retryAfterS: 0 };
+
+    const result = data as { allowed: boolean; retryAfter: number };
+    return { allowed: result.allowed, retryAfterS: result.retryAfter };
+  } catch {
+    return { allowed: true, retryAfterS: 0 };
+  }
 }
