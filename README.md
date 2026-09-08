@@ -320,11 +320,12 @@ the computed total rather than asserted — "One hour from Mandai" came out at
 1 hr 4 min on first build, so the route was trimmed (Tulshibaug from a queued
 darshan to a roadside look) until it genuinely fits in 59 minutes.
 
-### Navigating a route
+### Navigating
 
-Every curated route can be opened in Google Maps starting from the visitor's
-current position, not from the route's first stop. If they are already inside
-the route it offers to begin at the nearest stop instead.
+Curated routes, your own plan and shared plans all use one component, so all
+three open in Google Maps starting from the visitor's current position rather
+than the route's first stop. If they are already inside the route it offers to
+begin at the nearest stop instead.
 
 Turn-by-turn is deliberately not reimplemented: during Ganeshotsav many peth
 roads are closed to vehicles and pedestrianised, and Google has that live
@@ -335,6 +336,10 @@ Google Maps accepts at most 9 intermediate waypoints. Longer routes — the
 12-stop Great Peth Circuit — are split into parts that **overlap at the join**
 rather than being silently truncated, because quietly dropping the end of
 someone's route is worse than asking them to open two links.
+
+Sharing that component fixed a real bug: the planner built its own maps URL
+and passed every stop through, so a 12-stop darshan sent 11 waypoints and lost
+its last stops with no indication. Covered by a test that asserts the cap.
 
 ### Why queue time is modelled
 
@@ -460,11 +465,12 @@ the computed total rather than asserted — "One hour from Mandai" came out at
 1 hr 4 min on first build, so the route was trimmed (Tulshibaug from a queued
 darshan to a roadside look) until it genuinely fits in 59 minutes.
 
-### Navigating a route
+### Navigating
 
-Every curated route can be opened in Google Maps starting from the visitor's
-current position, not from the route's first stop. If they are already inside
-the route it offers to begin at the nearest stop instead.
+Curated routes, your own plan and shared plans all use one component, so all
+three open in Google Maps starting from the visitor's current position rather
+than the route's first stop. If they are already inside the route it offers to
+begin at the nearest stop instead.
 
 Turn-by-turn is deliberately not reimplemented: during Ganeshotsav many peth
 roads are closed to vehicles and pedestrianised, and Google has that live
@@ -475,6 +481,10 @@ Google Maps accepts at most 9 intermediate waypoints. Longer routes — the
 12-stop Great Peth Circuit — are split into parts that **overlap at the join**
 rather than being silently truncated, because quietly dropping the end of
 someone's route is worse than asking them to open two links.
+
+Sharing that component fixed a real bug: the planner built its own maps URL
+and passed every stop through, so a 12-stop darshan sent 11 waypoints and lost
+its last stops with no indication. Covered by a test that asserts the cap.
 
 ### Why queue time is modelled
 

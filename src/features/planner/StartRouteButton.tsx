@@ -9,8 +9,13 @@ import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
 
 /**
- * Hands a curated route to Google Maps for turn-by-turn navigation, starting
+ * Hands a set of stops to Google Maps for turn-by-turn navigation, starting
  * from where the visitor actually is.
+ *
+ * Shared by curated routes, the planner and shared plans, so all three get
+ * the same waypoint handling. The planner previously built its own maps URL
+ * and passed every stop straight through, which silently exceeded Google's
+ * limit on any plan past ten stops.
  *
  * Navigation is deliberately not reimplemented: during Ganeshotsav many peth
  * roads are closed to vehicles and pedestrianised, and Google has that live
@@ -79,11 +84,14 @@ function splitIntoLegs(stops: Ganpati[], hasOrigin: boolean): Ganpati[][] {
 }
 
 export function StartRouteButton({
-  stops, mode, routeSlug,
+  stops, mode, source, label,
 }: {
   stops: Ganpati[];
   mode: TravelMode;
-  routeSlug: string;
+  /** Where this was launched from — recorded in analytics only. */
+  source: string;
+  /** Wording for the located primary action. */
+  label?: string;
 }) {
   const { state, request } = useGeolocation();
   const [reorderFromMe, setReorderFromMe] = useState(true);
@@ -122,7 +130,7 @@ export function StartRouteButton({
 
   const open = (leg: Ganpati[], index: number) => {
     trackEvent('plan_started', {
-      props: { source: 'curated-route', route: routeSlug, leg: index, located: Boolean(origin) },
+      props: { source, leg: index, located: Boolean(origin) },
     });
     window.open(mapsUrl(index === 0 ? origin : null, leg, mode), '_blank', 'noopener');
   };
@@ -202,7 +210,7 @@ export function StartRouteButton({
             >
               <Navigation size={16} aria-hidden="true" />
               {legs.length === 1
-                ? 'Start in Google Maps'
+                ? (label ?? 'Start in Google Maps')
                 : `Open part ${i + 1} of ${legs.length} (${leg.length} stops)`}
             </Button>
           ))}

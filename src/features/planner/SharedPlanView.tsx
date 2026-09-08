@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navigation } from 'lucide-react';
+import { ListPlus } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { StartRouteButton } from './StartRouteButton';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { Button } from '@/components/ui/Button';
 import { ShareButton } from '@/features/discovery/ShareButton';
@@ -37,10 +38,18 @@ export function SharedPlanView({
     <>
       <MiniMap mandals={stops} ordered className="mt-4 h-60 w-full" />
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button size="md" onClick={adopt} className="flex-1">
-          <Navigation size={16} aria-hidden="true" />
-          Use this route
+      {/* Navigate it directly, without having to adopt it first. */}
+      <StartRouteButton
+        stops={stops}
+        mode="walk"
+        source={`shared-plan:${shareId}`}
+        label="Start this darshan"
+      />
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button variant="secondary" size="md" onClick={adopt} className="flex-1">
+          <ListPlus size={16} aria-hidden="true" />
+          Add to my darshan
         </Button>
         <ShareButton
           title="A Ganpati darshan route"

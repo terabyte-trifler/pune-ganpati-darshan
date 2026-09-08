@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Footprints, Bike, Car, TrainFront, X, GripVertical,
-  Sparkles, Navigation, Trash2, Loader2,
+  Sparkles, Trash2, Loader2,
 } from 'lucide-react';
 import { Reorder, useDragControls } from 'motion/react';
 import { usePlan } from '@/hooks/useLocalCollection';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { SavePlanShare } from './SavePlanShare';
+import { StartRouteButton } from './StartRouteButton';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   PUNE_CENTER, haversine, formatDistance, formatDuration,
@@ -149,27 +150,6 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       setBusy(false);
     }
   };
-
-  /** Hands the whole multi-stop route to Google Maps for navigation. */
-  const navigationHref = useMemo(() => {
-    if (stops.length === 0) return null;
-    const url = new URL('https://www.google.com/maps/dir/');
-    url.searchParams.set('api', '1');
-    url.searchParams.set('origin', `${origin.lat},${origin.lng}`);
-    const last = stops[stops.length - 1];
-    url.searchParams.set('destination', `${last.location.lat},${last.location.lng}`);
-    if (stops.length > 1) {
-      url.searchParams.set(
-        'waypoints',
-        stops.slice(0, -1).map((s) => `${s.location.lat},${s.location.lng}`).join('|')
-      );
-    }
-    url.searchParams.set(
-      'travelmode',
-      mode === 'walk' ? 'walking' : mode === 'transit' ? 'transit' : 'driving'
-    );
-    return url.toString();
-  }, [stops, origin, mode]);
 
   const adoptShared = () => {
     if (!sharedSlugs) return;
@@ -338,35 +318,25 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           <p role="alert" className="mt-2.5 text-[12px] text-[#ef8f88]">{error}</p>
         )}
 
-        <div className="mt-3 flex gap-2">
-          <Button
-            onClick={optimize}
-            variant="secondary"
-            size="sm"
-            disabled={stops.length < 2 || busy}
-            className="flex-1"
-          >
-            {busy ? (
-              <><Loader2 size={15} className="animate-spin" aria-hidden="true" />Optimising…</>
-            ) : (
-              <><Sparkles size={15} aria-hidden="true" />Optimise order</>
-            )}
-          </Button>
-          {navigationHref && (
-            <Button asChild size="sm" className="flex-1">
-              <a
-                href={navigationHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent('plan_started', { props: { stops: stops.length, mode } })}
-              >
-                <Navigation size={15} aria-hidden="true" />
-                Start
-              </a>
-            </Button>
+        <Button
+          onClick={optimize}
+          variant="secondary"
+          size="sm"
+          disabled={stops.length < 2 || busy}
+          full
+          className="mt-3"
+        >
+          {busy ? (
+            <><Loader2 size={15} className="animate-spin" aria-hidden="true" />Optimising…</>
+          ) : (
+            <><Sparkles size={15} aria-hidden="true" />Optimise order</>
           )}
-        </div>
+        </Button>
       </div>
+
+      {!sharedSlugs && (
+        <StartRouteButton stops={stops} mode={mode} source="planner" label="Start my darshan" />
+      )}
 
       {/* ---------------- Stops ---------------- */}
       <h2 className="mb-2 mt-6 text-[13px] font-bold uppercase tracking-wide text-[var(--faint)]">

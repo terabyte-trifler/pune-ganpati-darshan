@@ -50,7 +50,7 @@ export function RouteDetailView({
       </p>
 
       {/* ---------------- Navigate ---------------- */}
-      <StartRouteButton stops={mandals} mode={route.mode} routeSlug={route.slug} />
+      <StartRouteButton stops={mandals} mode={route.mode} source={`route:${route.slug}`} />
 
       {/* ---------------- Or take it into your own plan ---------------- */}
       <Button

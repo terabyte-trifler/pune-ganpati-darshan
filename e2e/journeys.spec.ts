@@ -349,6 +349,40 @@ test('a route longer than Google Maps allows is split, not truncated', async ({ 
   expect(waypoints).toBeLessThanOrEqual(9);
 });
 
+test('the planner navigates from your location and respects the waypoint cap', async ({ page }) => {
+  await withPuneLocation(page);
+
+  // A 12-stop plan. The planner used to build one maps URL with every stop,
+  // sending 11 waypoints where Google accepts 9 — so the end of a long
+  // darshan was silently dropped.
+  await page.goto('/routes/great-peth-circuit');
+  await page.getByRole('link', { name: /Add to my darshan/i }).click();
+  await page.waitForURL('**/plan');
+
+  await expect(page.getByText(/12 stops/)).toBeVisible();
+  await page.getByRole('button', { name: /Start from my location/i }).click();
+  await expect(page.getByRole('button', { name: /Open part 1 of 2/ })).toBeVisible();
+
+  const trip = await page.evaluate(() => {
+    let captured = '';
+    const original = window.open;
+    (window as unknown as { open: unknown }).open = (u: string) => { captured = u; return null; };
+    document.querySelectorAll('button').forEach((b) => {
+      if (/Open part 1/.test(b.textContent ?? '')) b.click();
+    });
+    (window as unknown as { open: unknown }).open = original;
+    const u = new URL(captured);
+    return {
+      origin: u.searchParams.get('origin'),
+      waypoints: (u.searchParams.get('waypoints') ?? '').split('|').filter(Boolean).length,
+    };
+  });
+
+  expect(trip.origin).toBe('18.5196,73.8553');
+  expect(trip.waypoints).toBeLessThanOrEqual(9);
+  await expect(page.getByText(/no stop is skipped/i)).toBeVisible();
+});
+
 test('Flow 7 — admin is not reachable without authorization', async ({ page }) => {
   // Authorization must not depend on hiding UI (§27). With no session the
   // route must redirect, not render.
