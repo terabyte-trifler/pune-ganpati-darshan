@@ -18,6 +18,9 @@ Supabase Postgres + RLS · Google Maps JS / Places / Routes · PWA
 | `npm test` (Vitest) | 23 passed |
 | `npm run test:e2e` (Playwright) | 17 passed, mobile + desktop |
 | `npm audit --omit=dev` | 0 vulnerabilities |
+| Live RLS checks (real anon JWT) | 9 passed |
+| Live privilege-escalation probe | 6 passed |
+| Live admin CRUD (real session) | 4 passed |
 | Lighthouse desktop | **100** perf · **100** a11y · **100** best-practices · **100** SEO |
 | Lighthouse mobile | **95** perf · **100** a11y · **100** best-practices · **100** SEO |
 
@@ -67,19 +70,32 @@ Two separate keys, because they have different threat models:
 
 ## Supabase setup
 
+One command applies the schema, RLS, functions and seed, then verifies the
+result. It tries the direct (IPv6) host first and falls back to the Mumbai
+session poolers, so it works with or without IPv6 egress:
+
 ```bash
-# 1. Point the CLI at your project
-supabase link --project-ref <your-project-ref>
+PGPASSWORD='<db password>' PROJECT_REF='<ref>' REGION=ap-south-1 \
+  ./scripts/setup-supabase.sh
+```
 
-# 2. Apply schema + RLS + functions
-supabase db push
+Then enable **Google** and/or **Email (magic link)** in Authentication →
+Providers, and add `<your-domain>/auth/callback` to the redirect allow-list.
 
-# 3. Seed the catalogue (18 real Pune mandals)
-psql "$SUPABASE_DB_URL" -f supabase/seed.sql
+**Create the first admin.** Sign in through `/signin` once, then:
 
-# 4. Make yourself an admin, after signing in once
-psql "$SUPABASE_DB_URL" \
-  -c "update profiles set is_admin = true where id = '<your-auth-user-id>';"
+```bash
+PGPASSWORD='<db password>' psql -h db.<ref>.supabase.co -U postgres -d postgres \
+  -c "update profiles set is_admin = true where id =
+      (select id from auth.users where email = 'you@example.com');"
+```
+
+### Verifying a deployment
+
+```bash
+SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<anon> \
+  node tools/verify-rls.mjs          # 9 policy checks with a real anon JWT
+ANON=<anon> node tools/verify-escalation.mjs   # 6 escalation attempts, all must fail
 ```
 
 Enable **Google** and/or **Email (magic link)** providers in
@@ -193,10 +209,11 @@ Three things are deliberate, and matter more than they look:
 | 1 | **Rate limiter is per-instance and in-memory** | On multi-instance deploys the effective limit is N× the configured one | Back `src/lib/rate-limit.ts` with Upstash/Redis |
 | 2 | **No mandal photography** | Cards render a generated gradient fallback | Add rows to `ganpati_images`; the UI already handles them, no code change |
 | 3 | **Maps not verified against a live key** | The integration is complete and typed but has not been run against real Google APIs | Add a key and re-run `npm run test:e2e` |
+| 3b | **No admin user exists yet** | `/admin` is unreachable until one is created | Sign in once, then run the SQL under *Supabase setup* |
 | 4 | **Favourites do not yet sync to the DB on sign-in** | Anonymous favourites stay device-local | Merge `localStorage` into `favorites` in the auth callback |
 | 5 | **Saved plans are local only** | `/plan` state is device-local; `darshan_plans` is schema-ready but unwired | Persist on "Share" and serve `/plan/[shareId]` |
 | 6 | **Transit mode depends on Google coverage** | Routes may return no transit route in Pune | UI already surfaces "route unavailable" |
-| 7 | **18 mandals seeded** | Pune has thousands | Use `/admin/import` — CSV/JSON import is built and validated |
+| 7 | **18 mandals seeded** | Pune has thousands | Use `/admin/import` — CSV/JSON import is built, validated and verified against the live database |
 | 8 | **Analytics has no dashboard** | Events are stored but only queryable via SQL | Build `/admin/analytics` over `analytics_events` |
 
 ---
