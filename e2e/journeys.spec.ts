@@ -112,11 +112,17 @@ test('map degrades without WebGL instead of taking the page down', async ({ page
   // switched off, blocklisted GPU drivers, older Android devices.
   await page.addInitScript(() => {
     const orig = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
-      if (String(type).includes('webgl')) return null;
-      // eslint-disable-next-line prefer-spread
-      return orig.apply(this, [type, ...rest]);
-    };
+    // The DOM overload signatures cannot express "same as original, but null
+    // for webgl", so this patch is cast rather than fought with generics.
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type: string,
+      options?: unknown
+    ) {
+      if (type.includes('webgl')) return null;
+      return (orig as (t: string, o?: unknown) => RenderingContext | null)
+        .call(this, type, options);
+    } as HTMLCanvasElement['getContext'];
   });
 
   await page.goto('/map');
