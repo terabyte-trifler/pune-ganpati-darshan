@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { getSupabasePublicClient } from '@/lib/supabase/server';
 import {
   localGanpatis,
   localAreas,
@@ -15,6 +15,10 @@ import type {
 
 /**
  * Read model for mandal data.
+ *
+ * Uses the cookieless public client: this is world-readable content, the
+ * same for every visitor, and it must be fetchable from
+ * `generateStaticParams` where no request context exists.
  *
  * Every function follows the same contract: try Supabase, and fall back to
  * the generated snapshot if Supabase is unconfigured OR the query fails.
@@ -46,7 +50,7 @@ function flatten(row: any) {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export async function getAllGanpatis(): Promise<Ganpati[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabasePublicClient();
   if (!supabase) return localGanpatis;
 
   const { data, error } = await supabase
@@ -60,7 +64,7 @@ export async function getAllGanpatis(): Promise<Ganpati[]> {
 }
 
 export async function getGanpatiBySlug(slug: string): Promise<Ganpati | null> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabasePublicClient();
   if (!supabase) return getLocalGanpati(slug);
 
   const { data, error } = await supabase
@@ -75,7 +79,7 @@ export async function getGanpatiBySlug(slug: string): Promise<Ganpati | null> {
 }
 
 export async function getAreas(): Promise<Area[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabasePublicClient();
   if (!supabase) return localAreas;
 
   const { data, error } = await supabase
@@ -100,7 +104,7 @@ export async function getAreas(): Promise<Area[]> {
 }
 
 export async function getCategories(): Promise<Category[]> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabasePublicClient();
   if (!supabase) return localCategories;
 
   const { data, error } = await supabase
@@ -120,7 +124,7 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 export async function getFestivalConfig(): Promise<FestivalConfig> {
-  const supabase = await getSupabaseServerClient();
+  const supabase = getSupabasePublicClient();
   if (!supabase) return localFestival;
 
   const { data, error } = await supabase
