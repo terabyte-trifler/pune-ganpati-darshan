@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ListPlus } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { CrowdBadge } from '@/features/crowd/CrowdBadge';
 import { StartRouteButton } from './StartRouteButton';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { Button } from '@/components/ui/Button';
@@ -95,6 +96,7 @@ export function SharedPlanView({
                 {stop.name}
               </Link>
               <p className="truncate text-[12px] text-[var(--faint)]">{stop.area.name}</p>
+              <CrowdBadge mandalId={stop.id} className="mt-1" />
             </div>
           </li>
         ))}

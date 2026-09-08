@@ -124,7 +124,10 @@ export function BottomSheet({
           onClick={cycle}
           aria-label={`Sheet ${detent}. Activate to change size.`}
           aria-expanded={detent !== 'collapsed'}
-          className="mx-auto flex h-6 w-full max-w-[120px] items-center justify-center"
+          /* h-11, not h-6: the visible grabber stays a 4px bar, but the
+             button around it has to be tappable. The hit area is what the
+             finger needs; the bar is only what the eye needs. */
+          className="mx-auto flex h-11 w-full max-w-[120px] items-center justify-center"
         >
           <span
             aria-hidden="true"

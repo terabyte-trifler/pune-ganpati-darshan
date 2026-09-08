@@ -259,11 +259,14 @@ export async function submitCrowdReport(input: {
  */
 export async function getDeviceCooldowns(
   deviceId: string,
-  mandalIds: string[]
+  /** Omit to ask about every published mandal — one call covers the app. */
+  mandalIds?: string[]
 ): Promise<Record<string, number>> {
   if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return {};
 
-  const ids = await filterKnownMandalIds(mandalIds);
+  const ids = mandalIds
+    ? await filterKnownMandalIds(mandalIds)
+    : await getKnownMandalIds();
   if (ids.length === 0) return {};
 
   const supabase = getSupabaseAdminClient();

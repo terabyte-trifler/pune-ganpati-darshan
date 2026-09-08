@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, ListPlus, Eye, DoorOpen, Clock } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { CrowdBadge } from '@/features/crowd/CrowdBadge';
 import { StartRouteButton } from './StartRouteButton';
 import { Button } from '@/components/ui/Button';
 import { CategoryBadge } from '@/components/ui/Badge';
@@ -108,6 +109,9 @@ export function RouteDetailView({
                     <span className="block text-[15px] font-semibold leading-tight text-[var(--chandan)]">
                       {stop.ganpati.name}
                     </span>
+                    {/* The most useful thing on this page mid-route: which
+                        of these five stops is currently heaving. */}
+                    <CrowdBadge mandalId={stop.ganpati.id} className="mt-1" />
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--faint)]">
                       <span>{stop.ganpati.area.name}</span>
                       {minutes != null && (

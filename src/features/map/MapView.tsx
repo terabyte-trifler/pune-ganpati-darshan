@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Search, LocateFixed, X, ChevronRight } from 'lucide-react';
 import { BottomSheet, type Detent } from './BottomSheet';
 import { useCrowdState } from '@/features/crowd/useCrowd';
+import { CrowdBadgeView } from '@/features/crowd/CrowdBadge';
+import { CrowdReportButtons } from '@/features/crowd/CrowdReportButtons';
 import { MapUnavailable } from './MapUnavailable';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import type { MapFailure } from './MapCanvas';
@@ -228,13 +230,23 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
                   <> · <span className="text-[var(--zendu)]">{formatDistance(selected.distanceM)}</span></>
                 )}
               </p>
-              <Link
-                href={`/ganpati/${selected.ganpati.slug}`}
-                className="mt-1.5 inline-flex items-center gap-0.5 text-[13px] font-semibold text-[var(--shendur)]"
-              >
-                View Ganpati
-                <ChevronRight size={14} aria-hidden="true" />
-              </Link>
+              {/* Both are inline-level, so they need a flex row to sit
+                  next to each other — left to flow, the badge and the link
+                  butt straight up against one another with no gap. */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                {/* Renders nothing until someone has reported, so silence
+                    never reads as a calm queue. */}
+                <CrowdBadgeView
+                  status={crowdState.byMandalId[selected.ganpati.id] ?? null}
+                />
+                <Link
+                  href={`/ganpati/${selected.ganpati.slug}`}
+                  className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-[var(--shendur)]"
+                >
+                  View Ganpati
+                  <ChevronRight size={14} aria-hidden="true" />
+                </Link>
+              </div>
             </div>
             <button
               type="button"
@@ -245,6 +257,15 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
               <X size={15} aria-hidden="true" />
             </button>
           </div>
+
+          {selected.ganpati.crowdReportingEnabled && (
+            <div className="mt-2 rounded-[var(--radius-card)] border border-[var(--line-strong)] bg-[var(--dhoop)] p-2.5 shadow-[var(--shadow-float)]">
+              <p className="mb-2 text-[12px] font-semibold text-[var(--faint)]">
+                How&rsquo;s the crowd here?
+              </p>
+              <CrowdReportButtons mandalId={selected.ganpati.id} compact />
+            </div>
+          )}
         </div>
       )}
 
@@ -296,6 +317,10 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
                     <p className="truncate text-[14px] font-semibold text-[var(--chandan)]">
                       {g.name}
                     </p>
+                    <CrowdBadgeView
+                      status={crowdState.byMandalId[g.id] ?? null}
+                      className="my-0.5"
+                    />
                     <p lang="mr" className="truncate text-[12px] text-[var(--muted)]">
                       {g.nameMr}
                     </p>
