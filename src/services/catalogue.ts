@@ -53,6 +53,8 @@ interface RawGanpati {
   published: boolean;
   coordinate_source: string | null;
   osm_id: string | null;
+  /** Optional: snapshots generated before the crowd feature lack it. */
+  crowd_reporting_enabled?: boolean;
   area_slug: string;
   area_name: string;
   area_name_mr: string | null;
@@ -165,6 +167,7 @@ export function toGanpati(r: RawGanpati): Ganpati {
     published: r.published,
     coordinateSource: r.coordinate_source ?? null,
     osmId: r.osm_id ?? null,
+    crowdReportingEnabled: r.crowd_reporting_enabled ?? true,
     createdAt: '',
     updatedAt: '',
   };

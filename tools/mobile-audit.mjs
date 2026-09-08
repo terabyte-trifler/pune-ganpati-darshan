@@ -8,6 +8,23 @@
  */
 import { chromium } from '@playwright/test';
 
+/**
+ * Guard against silently auditing the wrong server.
+ *
+ * The variable is BASE. Passing a plausible-looking alternative leaves the
+ * run on the default port, where it happily measures whatever else is
+ * listening and reports its layout as this app's. That produced a page of
+ * confident, entirely fictional findings before it was noticed.
+ */
+for (const wrong of ['BASE_URL', 'PLAYWRIGHT_BASE_URL', 'E2E_BASE_URL']) {
+  if (!process.env.BASE && process.env[wrong]) {
+    console.error(
+      `${wrong} is set but this tool reads BASE. Re-run with BASE=${process.env[wrong]}`
+    );
+    process.exit(1);
+  }
+}
+
 const BASE = process.env.BASE ?? 'http://127.0.0.1:3100';
 const PAGES = (process.env.PAGES ?? '/,/explore,/start,/plan,/routes,/saved,/ganpati/kasba-ganpati').split(',');
 

@@ -13,6 +13,7 @@ import { DirectionsButton } from '@/features/discovery/DirectionsButton';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { ViewTracker } from '@/features/discovery/ViewTracker';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { CrowdPanel } from '@/features/crowd/CrowdPanel';
 import { haversine } from '@/lib/geo';
 import { env } from '@/lib/env';
 
@@ -183,6 +184,16 @@ export default async function GanpatiPage({
         {/* ---------------- Facts ---------------- */}
         {/* Each wrapper holds only <dt>/<dd>; the icon lives inside the <dt>,
             because a <dl> may not contain arbitrary nested elements. */}
+        {/* Crowd sits above the reference details on purpose: timings and
+            history do not change, but whether there is a 40-minute queue
+            right now is the thing someone standing on Laxmi Road opened
+            this page to find out. */}
+        <CrowdPanel
+          mandalId={g.id}
+          mandalName={g.name}
+          reportingEnabled={g.crowdReportingEnabled}
+        />
+
         <dl className="mt-6 divide-y divide-[var(--line)] overflow-hidden surface rounded-[var(--radius-card)] border border-[var(--line)]">
           <div className="grid grid-cols-[auto_1fr] gap-x-3 p-3.5">
             <dt className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--faint)]">

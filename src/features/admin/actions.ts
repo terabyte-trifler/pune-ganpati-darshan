@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { requireAdmin } from '@/services/auth';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { ganpatiInputSchema, importRowSchema, slugify } from './schemas';
@@ -248,4 +249,84 @@ function parseCsv(text: string): Record<string, string>[] {
       header.map((key, i) => [key.trim(), (cells[i] ?? '').trim()])
     )
   );
+}
+
+/* ==================================================================== *
+ * Crowd controls (§58)
+ *
+ * Same rule as every action above: a Server Action is a public HTTP
+ * endpoint, so authorization is re-checked here rather than assumed from
+ * the fact that the page rendered.
+ * ==================================================================== */
+
+export async function toggleMandalReportingAction(
+  mandalId: string,
+  enabled: boolean
+): Promise<ActionResult> {
+  const denied = await authorize();
+  if (denied) return denied;
+
+  const id = z.string().uuid().safeParse(mandalId);
+  if (!id.success) return { ok: false, error: 'Unknown mandal.' };
+
+  try {
+    const { setMandalReporting } = await import('@/services/crowd/crowd-admin');
+    await setMandalReporting(id.data, enabled);
+  } catch {
+    return { ok: false, error: 'Could not change reporting for this mandal.' };
+  }
+
+  revalidatePath('/admin/crowd');
+  return {
+    ok: true,
+    message: enabled ? 'Reporting enabled.' : 'Reporting disabled.',
+  };
+}
+
+export async function blockDeviceAction(
+  deviceId: string,
+  reason: string
+): Promise<ActionResult> {
+  const denied = await authorize();
+  if (denied) return denied;
+
+  const parsed = z
+    .object({ deviceId: z.string().uuid(), reason: z.string().min(3).max(200) })
+    .safeParse({ deviceId, reason });
+  if (!parsed.success) return { ok: false, error: 'Invalid block request.' };
+
+  const admin = await requireAdmin();
+
+  try {
+    const { blockDevice } = await import('@/services/crowd/crowd-admin');
+    // Time-boxed by default. An indefinite block on an identifier the
+    // owner can regenerate in one tap is mostly theatre; a 7-day block
+    // costs an abuser real effort and cannot strand an honest user
+    // forever.
+    const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await blockDevice(parsed.data.deviceId, parsed.data.reason, until, admin.id);
+  } catch {
+    return { ok: false, error: 'Could not block this device.' };
+  }
+
+  revalidatePath('/admin/crowd');
+  return { ok: true, message: 'Device blocked for 7 days.' };
+}
+
+export async function unblockDeviceAction(deviceId: string): Promise<ActionResult> {
+  const denied = await authorize();
+  if (denied) return denied;
+
+  const id = z.string().uuid().safeParse(deviceId);
+  if (!id.success) return { ok: false, error: 'Invalid device.' };
+
+  try {
+    const { unblockDevice } = await import('@/services/crowd/crowd-admin');
+    await unblockDevice(id.data);
+  } catch {
+    return { ok: false, error: 'Could not unblock this device.' };
+  }
+
+  revalidatePath('/admin/crowd');
+  return { ok: true, message: 'Device unblocked.' };
 }

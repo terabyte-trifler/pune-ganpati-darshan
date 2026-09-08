@@ -110,6 +110,14 @@ export interface Ganpati {
   /** OSM element id backing the coordinate, when that is the source. */
   osmId: string | null;
 
+  /**
+   * Whether devotees may submit crowd reports for this mandal. Admins can
+   * switch it off — during a stampede warning, or when a mandal is being
+   * brigaded — and the UI hides the control rather than offering a button
+   * the server will refuse.
+   */
+  crowdReportingEnabled: boolean;
+
   createdAt: string;
   updatedAt: string;
 }

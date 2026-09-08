@@ -23,7 +23,9 @@ export type AnalyticsEventName =
   | 'plan_started'
   | 'plan_optimized'
   | 'share_clicked'
-  | 'location_enabled';
+  | 'location_enabled'
+  | 'crowd_reported'
+  | 'crowd_report_rejected';
 
 interface QueuedEvent {
   name: AnalyticsEventName;

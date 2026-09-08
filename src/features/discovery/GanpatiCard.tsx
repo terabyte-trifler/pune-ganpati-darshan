@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import { CategoryBadge } from '@/components/ui/Badge';
+import { CrowdBadge } from '@/features/crowd/CrowdBadge';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { formatDistance } from '@/lib/geo';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,11 @@ export function GanpatiCard({
         />
         <div className="absolute left-2 top-2">
           <CategoryBadge category={ganpati.category} rank={ganpati.manacheRank} />
+        </div>
+        {/* Renders nothing until someone has actually reported, so a quiet
+            mandal shows no badge rather than a reassuring one. */}
+        <div className="absolute right-2 top-2">
+          <CrowdBadge mandalId={ganpati.id} />
         </div>
       </div>
 

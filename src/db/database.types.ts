@@ -10,6 +10,7 @@ export type GanpatiCategoryEnum = 'maanache' | 'famous' | 'historic' | 'local';
 export type DataConfidenceEnum = 'verified' | 'community' | 'demo';
 export type TravelModeEnum = 'walk' | 'two_wheeler' | 'drive' | 'transit';
 export type DarshanStyleEnum = 'inside' | 'outside' | 'either';
+export type CrowdLevelEnum = 'short' | 'moving' | 'long';
 
 export type AreaRow = {
   id: string;
@@ -63,6 +64,12 @@ export type GanpatiRow = {
   featured: boolean;
   verified: boolean;
   published: boolean;
+  /** Provenance of latitude/longitude: openstreetmap, cross-checked, … */
+  coordinate_source: string | null;
+  /** OSM element id backing the coordinate, when that is the source. */
+  osm_id: string | null;
+  /** Admin kill switch for crowd reporting on this mandal. */
+  crowd_reporting_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -212,6 +219,55 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Relationships: [];
 };
 
+export type CrowdReportRow = {
+  id: string;
+  mandal_id: string;
+  device_id: string;
+  status: CrowdLevelEnum;
+  request_id: string | null;
+  created_at: string;
+}
+
+export type CrowdReportCooldownRow = {
+  device_id: string;
+  mandal_id: string;
+  last_report_at: string;
+}
+
+export type CrowdAbuseSignalRow = {
+  id: string;
+  device_id: string;
+  signal: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+export type CrowdDeviceBlockRow = {
+  device_id: string;
+  reason: string;
+  blocked_until: string | null;
+  created_at: string;
+  created_by: string | null;
+}
+
+export type CrowdIpThrottleRow = {
+  ip_hash: string;
+  window_start: string;
+  count: number;
+}
+
+/** Row shape of crowd_active_reports(). Three columns by design (§26). */
+export type CrowdActiveReportResult = {
+  mandal_id: string;
+  status: CrowdLevelEnum;
+  created_at: string;
+}
+
+export type CrowdDeviceCooldownResult = {
+  mandal_id: string;
+  retry_after: number;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -227,6 +283,11 @@ export type Database = {
       analytics_events: Table<AnalyticsEventRow>;
       routes: Table<RouteRow>;
       route_stops: Table<RouteStopRow>;
+      crowd_reports: Table<CrowdReportRow>;
+      crowd_report_cooldowns: Table<CrowdReportCooldownRow>;
+      crowd_abuse_signals: Table<CrowdAbuseSignalRow>;
+      crowd_device_blocks: Table<CrowdDeviceBlockRow>;
+      crowd_ip_throttle: Table<CrowdIpThrottleRow>;
     };
     Views: Record<never, never>;
     Functions: {
@@ -239,12 +300,36 @@ export type Database = {
         Returns: NearbyGanpatiResult[];
       };
       is_admin: { Args: Record<never, never>; Returns: boolean };
+      crowd_active_reports: {
+        Args: { p_mandal_ids: string[]; p_window?: string };
+        Returns: CrowdActiveReportResult[];
+      };
+      crowd_device_cooldowns: {
+        Args: { p_device_id: string; p_mandal_ids: string[]; p_cooldown?: string };
+        Returns: CrowdDeviceCooldownResult[];
+      };
+      submit_crowd_report: {
+        Args: {
+          p_mandal_id: string;
+          p_device_id: string;
+          p_status: CrowdLevelEnum;
+          p_request_id?: string | null;
+          p_ip_hash?: string | null;
+        };
+        Returns: unknown;
+      };
+      crowd_admin_overview: { Args: Record<never, never>; Returns: unknown };
+      cleanup_crowd_data: {
+        Args: { p_report_retention?: string; p_signal_retention?: string };
+        Returns: unknown;
+      };
     };
     Enums: {
       ganpati_category: GanpatiCategoryEnum;
       data_confidence: DataConfidenceEnum;
       travel_mode: TravelModeEnum;
       darshan_style: DarshanStyleEnum;
+      crowd_level: CrowdLevelEnum;
     };
     CompositeTypes: Record<never, never>;
   };

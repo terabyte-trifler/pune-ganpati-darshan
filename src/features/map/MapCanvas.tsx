@@ -15,6 +15,7 @@ import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
+import type { CrowdLevel } from '@/types/crowd';
 
 /**
  * The map.
@@ -41,6 +42,11 @@ export interface MapCanvasProps {
   userLocation: LatLng | null;
   routeGeometry?: [number, number][] | null;
   onReady?: (ok: boolean, failure?: MapFailure) => void;
+  /**
+   * Crowd level per mandal id. Absent means no recent reports, which is
+   * rendered as no dot at all — never as a calm queue (§32, §33).
+   */
+  crowd?: Record<string, CrowdLevel>;
 }
 
 /**
@@ -55,7 +61,10 @@ function collapseAttribution(container: HTMLElement) {
     ?.classList.remove('maplibregl-compact-show');
 }
 
-function toFeatureCollection(ganpatis: Ganpati[]): GeoJSON.FeatureCollection {
+function toFeatureCollection(
+  ganpatis: Ganpati[],
+  crowd: Record<string, CrowdLevel> = {}
+): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: ganpatis.map((g) => ({
@@ -67,6 +76,9 @@ function toFeatureCollection(ganpatis: Ganpati[]): GeoJSON.FeatureCollection {
         category: g.category,
         // Negated in symbol-sort-key so rank 1 draws above rank 5.
         manacheRank: g.manacheRank ?? 0,
+        // Omitted entirely when unknown, so the layer filter can use
+        // ['has','crowd'] and unreported mandals simply get no dot.
+        ...(crowd[g.id] ? { crowd: crowd[g.id] } : {}),
       },
     })),
   };
@@ -108,8 +120,40 @@ async function registerClusterPin(map: MapLibreMap) {
   if (!map.hasImage('cluster-pin')) map.addImage('cluster-pin', image, { pixelRatio: PIN_RASTER });
 }
 
+/**
+ * Small status dot drawn beside a pin.
+ *
+ * A separate layer rather than baking crowd into the pin artwork: the pin
+ * already varies by category and selection, and folding in four crowd
+ * states would mean 32 registered images to keep in step. One dot per
+ * level is three.
+ */
+const CROWD_DOT: Record<CrowdLevel, string> = {
+  short: '#5fb872',
+  moving: '#f2a93b',
+  long: '#e5544b',
+};
+
+async function registerCrowdDot(map: MapLibreMap, level: CrowdLevel) {
+  const id = `crowd-${level}`;
+  if (map.hasImage(id)) return;
+
+  const color = CROWD_DOT[level];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+    <circle cx="9" cy="9" r="7" fill="${color}" stroke="#14100c" stroke-width="2.5"/>
+  </svg>`;
+
+  const image = new Image(18 * PIN_RASTER, 18 * PIN_RASTER);
+  await new Promise<void>((resolve) => {
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  });
+  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: PIN_RASTER });
+}
+
 export function MapCanvas({
-  ganpatis, selectedSlug, onSelect, userLocation, routeGeometry, onReady,
+  ganpatis, selectedSlug, onSelect, userLocation, routeGeometry, onReady, crowd,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -167,6 +211,11 @@ export function MapCanvas({
       await Promise.all(
         CATEGORIES.flatMap((c) => [registerPin(map, c, false), registerPin(map, c, true)])
           .concat(registerClusterPin(map))
+          .concat(
+            (['short', 'moving', 'long'] as CrowdLevel[]).map((l) =>
+              registerCrowdDot(map, l)
+            )
+          )
       );
 
       map.addSource(SOURCE, {
@@ -260,6 +309,23 @@ export function MapCanvas({
         },
       });
 
+      map.addLayer({
+        id: 'crowd-dots',
+        type: 'symbol',
+        source: SOURCE,
+        // Only mandals that actually have a reading. No property, no dot.
+        filter: ['all', ['!', ['has', 'point_count']], ['has', 'crowd']],
+        layout: {
+          'icon-image': ['concat', 'crowd-', ['get', 'crowd']],
+          'icon-size': 0.75,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+          // Sits on the pin's upper-right shoulder. Offset is in units of
+          // the icon's own size, so it tracks the pin as it scales.
+          'icon-offset': [9, -11],
+        },
+      });
+
       map.on('click', 'clusters', async (e: MapMouseEvent) => {
         const feature = map.queryRenderedFeatures(e.point, { layers: ['clusters'] })[0];
         const clusterId = feature?.properties?.cluster_id;
@@ -333,8 +399,8 @@ export function MapCanvas({
     const map = mapRef.current;
     if (!ready || !map) return;
     const source = map.getSource(SOURCE) as GeoJSONSource | undefined;
-    source?.setData(toFeatureCollection(ganpatis));
-  }, [ganpatis, ready]);
+    source?.setData(toFeatureCollection(ganpatis, crowd));
+  }, [ganpatis, crowd, ready]);
 
   /* ---------------- Selection ---------------- */
   useEffect(() => {

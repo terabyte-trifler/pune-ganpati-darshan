@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // k6 load scripts. They run in k6's own runtime, not the app bundle,
+    // and its API requires the default-exported function this rule warns
+    // about.
+    "tools/load/**",
   ]),
 ]);
 

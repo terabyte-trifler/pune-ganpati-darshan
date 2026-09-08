@@ -5,9 +5,11 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Search, LocateFixed, X, ChevronRight } from 'lucide-react';
 import { BottomSheet, type Detent } from './BottomSheet';
+import { useCrowdState } from '@/features/crowd/useCrowd';
 import { MapUnavailable } from './MapUnavailable';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import type { MapFailure } from './MapCanvas';
+import type { CrowdLevel } from '@/types/crowd';
 import { MapSkeleton } from './MapSkeleton';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
@@ -49,6 +51,20 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
   // No API key to misconfigure, so failures are environmental: no WebGL, a
   // refused graphics context, or unreachable tiles.
   const [mapFailure, setMapFailure] = useState<MapFailure | null>(null);
+
+  /**
+   * One subscription for every marker on the map. The store polls once
+   * for the whole city, so adding crowd colour to 23 markers costs one
+   * request per 20 seconds rather than one per marker (§22).
+   */
+  const crowdState = useCrowdState();
+  const crowdLevels = useMemo(() => {
+    const out: Record<string, CrowdLevel> = {};
+    for (const [id, status] of Object.entries(crowdState.byMandalId)) {
+      if (status.status) out[id] = status.status;
+    }
+    return out;
+  }, [crowdState]);
 
   const { state: geo, request: requestLocation } = useGeolocation();
   const { items: saved, hydrated } = useFavorites();
@@ -128,6 +144,7 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
       ) : (
         <MapErrorBoundary fallback={<MapUnavailable reason="init" />}>
           <MapCanvas
+            crowd={crowdLevels}
             ganpatis={visibleGanpatis}
             selectedSlug={selectedSlug}
             onSelect={handleSelect}

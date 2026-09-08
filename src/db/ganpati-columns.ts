@@ -19,6 +19,7 @@ export const GANPATI_COLUMNS = [
   'darshan_minutes', 'peak_darshan_minutes', 'darshan_style',
   'tags', 'confidence', 'featured', 'verified', 'published',
   'coordinate_source', 'osm_id',
+  'crowd_reporting_enabled',
 ] as const;
 
 /** Fields the snapshot adds by joining; not columns on `ganpatis`. */

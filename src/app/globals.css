@@ -28,6 +28,13 @@
   --kumkum: #b3261e;        /* destructive */
   --tulsi: #4e8a5b;         /* success / verified */
 
+  /* Crowd levels. Brighter than the base palette on purpose: these carry
+     meaning at 10px on a map marker, so they are tuned for contrast on the
+     dark ground rather than for harmony with the festive palette. */
+  --crowd-short: #5fb872;
+  --crowd-moving: #f2a93b;
+  --crowd-long: #e5544b;
+
   /* Text — warm ivory, not pure white (pure white glares outdoors at night) */
   --chandan: #f0e6d2;
   --muted: rgb(240 230 210 / 0.62);

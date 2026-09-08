@@ -13,10 +13,25 @@ const MANDAL_COUNT = catalogue.ganpatis.length;
  * Each asserts on user-visible outcomes, not implementation details.
  */
 
-/** Grants geolocation pinned to Kasba Peth so "nearby" is deterministic. */
+/**
+ * Grants geolocation standing at Kasba Ganpati, so "nearby" is deterministic.
+ *
+ * Read from the catalogue rather than hardcoded. The literal pair that used
+ * to be here was Kasba's coordinate before it was re-verified against
+ * OpenStreetMap; once the real one moved ~200m, the pin was no longer at
+ * Kasba at all and the nearest mandal to it became Phani Ali Ganesh Mandir
+ * by a 4-metre margin. The test still read as though it were pinned to
+ * Kasba, which is the worst kind of stale fixture: the comment explains an
+ * intent the code no longer has.
+ */
+const KASBA = catalogue.ganpatis.find((g) => g.slug === 'kasba-ganpati')!;
+
 async function withPuneLocation(page: Page) {
   await page.context().grantPermissions(['geolocation']);
-  await page.context().setGeolocation({ latitude: 18.5196, longitude: 73.8553 });
+  await page.context().setGeolocation({
+    latitude: KASBA.latitude,
+    longitude: KASBA.longitude,
+  });
 }
 
 test('Flow 1 — search from the homepage and open a result', async ({ page }) => {
@@ -318,7 +333,7 @@ test('a curated route can be navigated from where you are', async ({ page }) => 
 
   const parsed = new URL(url);
   expect(parsed.host).toBe('www.google.com');
-  expect(parsed.searchParams.get('origin')).toBe('18.5196,73.8553');
+  expect(parsed.searchParams.get('origin')).toBe(`${KASBA.latitude},${KASBA.longitude}`);
   expect(parsed.searchParams.get('travelmode')).toBe('walking');
   // Five stops: four waypoints plus the destination.
   expect((parsed.searchParams.get('waypoints') ?? '').split('|')).toHaveLength(4);
@@ -378,7 +393,7 @@ test('the planner navigates from your location and respects the waypoint cap', a
     };
   });
 
-  expect(trip.origin).toBe('18.5196,73.8553');
+  expect(trip.origin).toBe(`${KASBA.latitude},${KASBA.longitude}`);
   expect(trip.waypoints).toBeLessThanOrEqual(9);
   await expect(page.getByText(/no stop is skipped/i)).toBeVisible();
 });
