@@ -8,15 +8,24 @@
  * conversely an empty SELECT proves nothing on an empty table. Each check
  * below therefore reads state back and compares it.
  *
- *   ANON=<anon key> node tools/verify-escalation.mjs
+ *   SUPABASE_ANON_KEY=<anon key> node tools/verify-escalation.mjs
  */
 import { createClient } from '@supabase/supabase-js';
 
-const URL = 'https://xkyvkqzbpxklpogurpdt.supabase.co';
-const EMAIL = 'plain-verify@puneganpati.test';
-const PASSWORD = 'PlainUser!2026';
+// Project and account come from the environment; this file is committed.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const EMAIL = process.env.EMAIL;
+const PASSWORD = process.env.PASSWORD;
 
-const c = createClient(URL, process.env.ANON, { auth: { persistSession: false } });
+if (!SUPABASE_URL || !process.env.SUPABASE_ANON_KEY || !EMAIL || !PASSWORD) {
+  console.error(
+    'Usage: SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<anon key> \\\n' +
+    '       EMAIL=<ordinary user> PASSWORD=<password> node tools/verify-escalation.mjs'
+  );
+  process.exit(1);
+}
+
+const c = createClient(SUPABASE_URL, process.env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 const results = [];
 const check = (name, pass, detail) => results.push({ name, pass, detail });
 

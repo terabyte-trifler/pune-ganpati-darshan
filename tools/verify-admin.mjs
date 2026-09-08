@@ -1,24 +1,40 @@
 /**
  * Exercises the admin surface end to end with a REAL authenticated session.
  *
+ * Requires a throwaway admin account you create for the run and delete after.
+ * Never point this at a real user.
+ *
  * The sign-in UI offers only Google OAuth and magic links, neither of which
  * can be driven headlessly, so the session is minted through supabase-js and
  * injected as the cookie @supabase/ssr expects. That is the same session the
  * server would have issued — only the delivery differs.
  *
- *   ANON=<anon key> BASE=http://127.0.0.1:3100 node tools/verify-admin.mjs
+ *   SUPABASE_ANON_KEY=<anon key> BASE=http://127.0.0.1:3100 node tools/verify-admin.mjs
  */
 import { chromium } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://xkyvkqzbpxklpogurpdt.supabase.co';
-const REF = 'xkyvkqzbpxklpogurpdt';
+// Everything project-specific comes from the environment: this file is
+// committed, and a hardcoded project ref or password does not belong in a
+// repository.
+const SUPABASE_URL = process.env.SUPABASE_URL;
 const BASE = process.env.BASE ?? 'http://127.0.0.1:3100';
 
-const supabase = createClient(SUPABASE_URL, process.env.ANON, { auth: { persistSession: false } });
+if (!SUPABASE_URL || !process.env.SUPABASE_ANON_KEY || !process.env.EMAIL || !process.env.PASSWORD) {
+  console.error(
+    'Usage: SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<anon key> \\\n' +
+    '       EMAIL=<admin email> PASSWORD=<admin password> node tools/verify-admin.mjs'
+  );
+  process.exit(1);
+}
+
+// The cookie name @supabase/ssr uses is derived from the project ref.
+const REF = new URL(SUPABASE_URL).hostname.split('.')[0];
+
+const supabase = createClient(SUPABASE_URL, process.env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 const { data, error } = await supabase.auth.signInWithPassword({
-  email: process.env.EMAIL ?? 'admin-verify@puneganpati.test',
-  password: process.env.PASSWORD ?? 'VerifyAdmin!2026',
+  email: process.env.EMAIL,
+  password: process.env.PASSWORD,
 });
 if (error) { console.error('sign-in failed:', error.message); process.exit(1); }
 

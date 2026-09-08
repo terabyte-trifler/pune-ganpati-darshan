@@ -113,11 +113,25 @@ PGPASSWORD='<db password>' psql -h db.<ref>.supabase.co -U postgres -d postgres 
 
 ### Verifying a deployment
 
+All three take configuration from the environment — nothing project-specific
+is committed.
+
 ```bash
-SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<anon> \
-  node tools/verify-rls.mjs          # 9 policy checks with a real anon JWT
-ANON=<anon> node tools/verify-escalation.mjs   # 6 escalation attempts, all must fail
+export SUPABASE_URL=https://<ref>.supabase.co
+export SUPABASE_ANON_KEY=<anon key>
+
+# 9 policy checks with a real anon JWT
+node tools/verify-rls.mjs
+
+# 6 escalation attempts as an ordinary signed-in user; all must fail
+EMAIL=<throwaway user> PASSWORD=<password> node tools/verify-escalation.mjs
+
+# Admin CRUD with a real session
+EMAIL=<throwaway admin> PASSWORD=<password> node tools/verify-admin.mjs
 ```
+
+The last two need throwaway accounts you create for the run and delete
+afterwards. Never point them at a real user.
 
 Enable **Google** and/or **Email (magic link)** providers in
 Authentication → Providers, and add `<your-domain>/auth/callback` to the
