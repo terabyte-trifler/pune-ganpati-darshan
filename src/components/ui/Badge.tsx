@@ -8,12 +8,23 @@ const CATEGORY_LABEL: Record<GanpatiCategory, string> = {
   local: 'Neighbourhood',
 };
 
-/** Brass is reserved for the Manache Paach and used nowhere else. */
+/**
+ * Brass is reserved for the Manache Paach and used nowhere else.
+ *
+ * The background is a near-opaque dark ground rather than a tint of the
+ * accent colour: these badges sit over photographs as well as over the dark
+ * generated placeholders, and a translucent tint became unreadable the moment
+ * real photos landed behind it (a bright temple facade behind brass text).
+ * A dark ground keeps the accent legible on anything.
+ */
 const CATEGORY_CLASS: Record<GanpatiCategory, string> = {
-  maanache: 'bg-[var(--pital)]/15 text-[var(--pital)] border-[var(--pital)]/35',
-  famous: 'bg-[var(--shendur)]/15 text-[var(--shendur)] border-[var(--shendur)]/35',
-  historic: 'bg-[var(--zendu)]/12 text-[var(--zendu)] border-[var(--zendu)]/30',
-  local: 'bg-white/5 text-[var(--muted)] border-[var(--line-strong)]',
+  maanache: 'bg-[var(--raat)]/93 text-[var(--pital)] border-[var(--pital)]/50',
+  // Vermilion is the darkest of the accents and the only one that failed
+  // 4.5:1 over a white photograph at 0.85 opacity (3.54). Raising the ground
+  // to 0.93 clears it at 4.58 without lightening the brand colour itself.
+  famous: 'bg-[var(--raat)]/93 text-[var(--shendur)] border-[var(--shendur)]/50',
+  historic: 'bg-[var(--raat)]/93 text-[var(--zendu)] border-[var(--zendu)]/45',
+  local: 'bg-[var(--raat)]/93 text-[var(--chandan)] border-[var(--line-strong)]',
 };
 
 export function CategoryBadge({
@@ -23,7 +34,7 @@ export function CategoryBadge({
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full border px-2 py-0.5',
-        'text-[11px] font-semibold leading-5',
+        'text-[11px] font-semibold leading-5 backdrop-blur-sm',
         CATEGORY_CLASS[category],
         className
       )}

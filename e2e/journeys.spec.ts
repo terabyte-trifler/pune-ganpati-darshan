@@ -73,11 +73,11 @@ test('Flow 3 — enable location and see nearby mandals sorted by distance', asy
 
 test('Flow 4 — select multiple mandals and build a route', async ({ page }) => {
   await page.goto('/ganpati/kasba-ganpati');
-  await page.getByRole('button', { name: /Add Shri Kasba Ganpati to your darshan/i }).click();
-  await expect(page.getByRole('button', { name: /Remove Shri Kasba Ganpati/i })).toBeVisible();
+  await page.getByRole('button', { name: /Add to darshan — Shri Kasba Ganpati/i }).click();
+  await expect(page.getByRole('button', { name: /In darshan — tap to remove Shri Kasba Ganpati/i })).toBeVisible();
 
   await page.goto('/ganpati/tulshibaug-ganpati');
-  await page.getByRole('button', { name: /Add Tulshibaug Ganpati to your darshan/i }).click();
+  await page.getByRole('button', { name: /Add to darshan — Tulshibaug Ganpati/i }).click();
 
   await page.goto('/plan');
   await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();

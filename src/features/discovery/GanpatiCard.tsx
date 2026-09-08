@@ -42,6 +42,11 @@ export function GanpatiCard({
           priority={priority}
           sizes={compact ? '172px' : '(max-width: 768px) 50vw, 320px'}
         />
+        {/* Scrim so the badge stays readable over a bright photograph. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[var(--raat)]/55 to-transparent"
+        />
         <div className="absolute left-2 top-2">
           <CategoryBadge category={ganpati.category} rank={ganpati.manacheRank} />
         </div>

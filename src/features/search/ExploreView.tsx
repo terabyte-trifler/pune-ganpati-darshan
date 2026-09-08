@@ -234,6 +234,12 @@ export function ExploreView({
 
       {/* ---------------- Results ---------------- */}
       <div className="px-4 pt-4">
+        {/* Card titles are h3, so the page needs this level between them and
+            the h1 — otherwise the heading order skips a rank and the document
+            outline is wrong for screen readers. */}
+        <h2 className="sr-only">
+          {query ? `Search results for ${query}` : 'Mandals'}
+        </h2>
         <p className="mb-3 text-[13px] text-[var(--faint)]" aria-live="polite">
           {results.length} {results.length === 1 ? 'mandal' : 'mandals'}
           {query && <> for &ldquo;{query}&rdquo;</>}

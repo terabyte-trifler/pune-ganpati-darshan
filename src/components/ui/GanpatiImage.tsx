@@ -21,27 +21,37 @@ function hueFor(slug: string): number {
 }
 
 export function GanpatiImage({
-  ganpati, className, sizes, priority = false,
+  ganpati, className, sizes, priority = false, showCredit = false,
 }: {
   ganpati: Pick<Ganpati, 'slug' | 'name' | 'images'>;
   className?: string;
   sizes?: string;
   priority?: boolean;
+  /** Renders the photographer credit over the image. Required by CC BY-SA
+   *  wherever the photo is shown at a size where credit is legible. */
+  showCredit?: boolean;
 }) {
   const image = ganpati.images.find((i) => i.isPrimary) ?? ganpati.images[0];
 
   if (image) {
     return (
-      <Image
-        src={image.url}
-        alt={image.alt ?? ganpati.name}
-        fill
-        sizes={sizes ?? '(max-width: 768px) 50vw, 320px'}
-        priority={priority}
-        placeholder={image.blurDataUrl ? 'blur' : 'empty'}
-        blurDataURL={image.blurDataUrl ?? undefined}
-        className={cn('object-cover', className)}
-      />
+      <>
+        <Image
+          src={image.url}
+          alt={image.alt ?? ganpati.name}
+          fill
+          sizes={sizes ?? '(max-width: 768px) 50vw, 320px'}
+          priority={priority}
+          placeholder={image.blurDataUrl ? 'blur' : 'empty'}
+          blurDataURL={image.blurDataUrl ?? undefined}
+          className={cn('object-cover', className)}
+        />
+        {showCredit && image.credit && (
+          <span className="pointer-events-none absolute bottom-1 right-1.5 max-w-full truncate rounded bg-[var(--raat)]/70 px-1.5 py-0.5 text-[10px] text-[var(--faint)] backdrop-blur-sm">
+            {image.credit}
+          </span>
+        )}
+      </>
     );
   }
 

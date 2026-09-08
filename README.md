@@ -27,8 +27,9 @@ distances and route ordering were already local, so nothing here bills.
 | Live admin CRUD (real session) | 4 passed |
 | Curated routes + wizard (E2E) | budget fit asserted |
 | Map renders real tiles (E2E) | asserted via MapLibre `idle` |
-| Lighthouse desktop | **100** perf · **100** a11y · **100** best-practices · **100** SEO |
-| Lighthouse mobile | **95** perf · **100** a11y · **100** best-practices · **100** SEO |
+| Lighthouse mobile (home / explore / routes) | **93–97** perf · **100** a11y · **100** BP · **100** SEO |
+| Lighthouse mobile (mandal detail) | **88** perf · **100** a11y · **100** BP · **100** SEO |
+| Lighthouse desktop | **100** across all four |
 
 ---
 
@@ -242,6 +243,23 @@ is six. A planner that counts only travel will cheerfully claim nine mandals
 fit in two hours and be wrong by a factor of three. Every generated plan shows
 queuing and walking separately, and the E2E suite asserts the total never
 exceeds the budget the user chose.
+
+## Photographs
+
+23 photographs cover 9 of the 18 mandals, all from
+[Wikimedia Commons](https://commons.wikimedia.org) under CC BY / CC BY-SA.
+Every image records its photographer and licence, the UI renders that credit,
+and `/licences` lists all of them and discloses that images were resized —
+which is what the licences require.
+
+**The other 9 mandals deliberately have no photograph.** No freely-licensed
+image of them exists, and using a generic Ganesha stock photo would imply it
+shows that specific mandal. They render a generated gradient placeholder keyed
+to the mandal's name instead. Photographs found elsewhere online are almost
+all all-rights-reserved and are not used.
+
+To add more: drop rows into `ganpati_images` (or use `/admin`). The UI needs
+no change.
 
 ## Data policy
 

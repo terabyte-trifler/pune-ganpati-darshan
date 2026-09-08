@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, CalendarDays } from 'lucide-react';
 import { getAllGanpatis, getGanpatiBySlug } from '@/services/ganpati';
@@ -116,7 +117,7 @@ export default async function GanpatiPage({
 
       {/* ---------------- Hero image ---------------- */}
       <div className="relative aspect-[4/3] w-full sm:aspect-[21/9]" style={{ containerType: 'inline-size' }}>
-        <GanpatiImage ganpati={g} priority sizes="100vw" />
+        <GanpatiImage ganpati={g} priority sizes="100vw" showCredit />
         <div
           aria-hidden="true"
           className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[var(--raat)] to-transparent"
@@ -169,22 +170,25 @@ export default async function GanpatiPage({
         <AddToPlanButton slug={g.slug} name={g.name} full className="mt-2" />
 
         {/* ---------------- Facts ---------------- */}
+        {/* Each wrapper holds only <dt>/<dd>; the icon lives inside the <dt>,
+            because a <dl> may not contain arbitrary nested elements. */}
         <dl className="mt-6 divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)]">
-          <div className="flex gap-3 p-3.5">
-            <MapPin size={17} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--shendur)]" />
-            <div className="min-w-0">
-              <dt className="text-[12px] text-[var(--faint)]">Location</dt>
-              <dd className="text-[14px] text-[var(--chandan)]">
-                {g.location.address ?? `${g.area.name}, Pune`}
-              </dd>
-            </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 p-3.5">
+            <dt className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--faint)]">
+              <MapPin size={15} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
+              Location
+            </dt>
+            <dd className="col-span-2 mt-0.5 pl-[23px] text-[14px] text-[var(--chandan)]">
+              {g.location.address ?? `${g.area.name}, Pune`}
+            </dd>
           </div>
 
-          <div className="flex gap-3 p-3.5">
-            <Clock size={17} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--shendur)]" />
-            <div className="min-w-0">
-              <dt className="text-[12px] text-[var(--faint)]">Darshan timings</dt>
-              <dd className="text-[14px] text-[var(--chandan)]">
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 p-3.5">
+            <dt className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--faint)]">
+              <Clock size={15} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
+              Darshan timings
+            </dt>
+            <dd className="col-span-2 mt-0.5 pl-[23px] text-[14px] text-[var(--chandan)]">
                 {g.timings.open && g.timings.close ? (
                   `${g.timings.open} – ${g.timings.close}`
                 ) : (
@@ -194,23 +198,62 @@ export default async function GanpatiPage({
                     before the festival.
                   </span>
                 )}
+            </dd>
+            {g.timings.note && (
+              <dd className="col-span-2 mt-1 pl-[23px] text-[13px] text-[var(--muted)]">
+                {g.timings.note}
               </dd>
-              {g.timings.note && (
-                <dd className="mt-1 text-[13px] text-[var(--muted)]">{g.timings.note}</dd>
-              )}
-            </div>
+            )}
           </div>
 
           {g.establishedYear && (
-            <div className="flex gap-3 p-3.5">
-              <CalendarDays size={17} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--shendur)]" />
-              <div>
-                <dt className="text-[12px] text-[var(--faint)]">Established</dt>
-                <dd className="text-[14px] text-[var(--chandan)]">{g.establishedYear}</dd>
-              </div>
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 p-3.5">
+              <dt className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--faint)]">
+                <CalendarDays size={15} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
+                Established
+              </dt>
+              <dd className="col-span-2 mt-0.5 pl-[23px] text-[14px] text-[var(--chandan)]">
+                {g.establishedYear}
+              </dd>
             </div>
           )}
         </dl>
+
+        {/* ---------------- Photos ---------------- */}
+        {g.images.length > 1 && (
+          <section className="mt-5">
+            <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[var(--faint)]">
+              Photos
+            </h2>
+            <div className="scroll-x -mx-4 flex gap-2 px-4">
+              {g.images.map((image) => (
+                <figure key={image.id} className="w-[190px] shrink-0 [scroll-snap-align:start]">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-field)]">
+                    <Image
+                      src={image.url}
+                      alt={image.alt ?? g.name}
+                      fill
+                      sizes="190px"
+                      className="object-cover"
+                    />
+                  </div>
+                  {image.credit && (
+                    <figcaption className="mt-1 truncate text-[10px] text-[var(--faint)]">
+                      {image.credit}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-[var(--faint)]">
+              Photographs from Wikimedia Commons under Creative Commons
+              licences, resized for this site.{' '}
+              <Link href="/licences" className="text-[var(--shendur)] underline">
+                Full credits
+              </Link>
+            </p>
+          </section>
+        )}
 
         {/* ---------------- Where it is ---------------- */}
         <section className="mt-4">
