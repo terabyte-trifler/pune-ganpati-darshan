@@ -12,6 +12,7 @@ import {
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE, OSM_ATTRIBUTION } from '@/lib/maps/map-style';
 import { buildMarkerSvg } from '@/lib/maps/markers';
+import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
 
@@ -31,13 +32,15 @@ import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
 const SOURCE = 'mandals';
 const CATEGORIES: GanpatiCategory[] = ['maanache', 'famous', 'historic', 'local'];
 
+export type MapFailure = 'webgl' | 'init' | 'tiles';
+
 export interface MapCanvasProps {
   ganpatis: Ganpati[];
   selectedSlug: string | null;
   onSelect: (slug: string | null) => void;
   userLocation: LatLng | null;
   routeGeometry?: [number, number][] | null;
-  onReady?: (ok: boolean) => void;
+  onReady?: (ok: boolean, failure?: MapFailure) => void;
 }
 
 function toFeatureCollection(ganpatis: Ganpati[]): GeoJSON.FeatureCollection {
@@ -83,7 +86,7 @@ export function MapCanvas({
 
   // Latest callbacks without re-running map setup.
   const onSelectRef = useRef(onSelect);
-  const onReadyRef = useRef(onReady);
+  const onReadyRef = useRef<MapCanvasProps['onReady']>(onReady);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { onReadyRef.current = onReady; }, [onReady]);
 
@@ -91,18 +94,33 @@ export function MapCanvas({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: DARK_MAP_STYLE,
-      center: [PUNE_CENTER.lng, PUNE_CENTER.lat],
-      zoom: 13.5,
-      minZoom: 10,
-      maxZoom: 19,
-      attributionControl: false,
-      // The sheet covers the lower half; keep gestures simple and predictable.
-      pitchWithRotate: false,
-      dragRotate: false,
-    });
+    // Check before constructing: MapLibre throws on a missing WebGL context,
+    // and an uncaught throw here unmounts the whole route.
+    if (!isWebglAvailable()) {
+      onReadyRef.current?.(false, 'webgl');
+      return;
+    }
+
+    let map: MapLibreMap;
+    try {
+      map = new MapLibreMap({
+        container: containerRef.current,
+        style: DARK_MAP_STYLE,
+        center: [PUNE_CENTER.lng, PUNE_CENTER.lat],
+        zoom: 13.5,
+        minZoom: 10,
+        maxZoom: 19,
+        attributionControl: false,
+        // The sheet covers the lower half; keep gestures simple and predictable.
+        pitchWithRotate: false,
+        dragRotate: false,
+      });
+    } catch (error) {
+      // Defence in depth: a driver can fail even when the probe succeeded.
+      console.error('[map] failed to initialise', error);
+      onReadyRef.current?.(false, 'init');
+      return;
+    }
     mapRef.current = map;
 
     map.addControl(
@@ -238,7 +256,7 @@ export function MapCanvas({
 
       // A missing tile or glyph at the edges is survivable; a style or source
       // failure means nothing will ever render.
-      if (/style|source|sprite/i.test(message)) onReadyRef.current?.(false);
+      if (/style|source|sprite/i.test(message)) onReadyRef.current?.(false, 'tiles');
     });
 
     // Keep the map in step with its container for later changes too:

@@ -105,6 +105,33 @@ test('Flow 4 — select multiple mandals and build a route', async ({ page }) =>
   expect(durationText).toBeTruthy();
 });
 
+test('map degrades without WebGL instead of taking the page down', async ({ page }) => {
+  // MapLibre throws when it cannot get a WebGL context. Thrown from an effect,
+  // that unmounted the whole route and left a blank screen — losing the mandal
+  // list, which never needed the map. Real causes: hardware acceleration
+  // switched off, blocklisted GPU drivers, older Android devices.
+  await page.addInitScript(() => {
+    const orig = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...rest) {
+      if (String(type).includes('webgl')) return null;
+      // eslint-disable-next-line prefer-spread
+      return orig.apply(this, [type, ...rest]);
+    };
+  });
+
+  await page.goto('/map');
+
+  // An explanation, not a blank screen.
+  await expect(
+    page.getByRole('heading', { name: /can.t draw the map|couldn.t start/i })
+  ).toBeVisible();
+
+  // And crucially, the rest of the page still works.
+  await expect(page.getByText(/18 mandals/)).toBeVisible();
+  await page.getByRole('button', { name: /Shri Kasba Ganpati/ }).first().click();
+  await expect(page.getByRole('link', { name: /View Ganpati/i })).toBeVisible();
+});
+
 test('Flow 5 — save a mandal and find it on the saved page', async ({ page }) => {
   await page.goto('/ganpati/kasba-ganpati');
   await page.getByRole('button', { name: /^Save Shri Kasba Ganpati$/i }).click();

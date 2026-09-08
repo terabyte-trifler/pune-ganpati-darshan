@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Search, LocateFixed, X, ChevronRight } from 'lucide-react';
 import { BottomSheet, type Detent } from './BottomSheet';
 import { MapUnavailable } from './MapUnavailable';
+import { MapErrorBoundary } from './MapErrorBoundary';
+import type { MapFailure } from './MapCanvas';
 import { MapSkeleton } from './MapSkeleton';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
@@ -44,9 +46,9 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
   const [detent, setDetent] = useState<Detent>('half');
   const [filters, setFilters] = useState<Set<FilterKey>>(new Set());
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
-  // The map needs no API key now, so the only failure mode is the tile
-  // service or style being unreachable.
-  const [mapFailed, setMapFailed] = useState(false);
+  // No API key to misconfigure, so failures are environmental: no WebGL, a
+  // refused graphics context, or unreachable tiles.
+  const [mapFailure, setMapFailure] = useState<MapFailure | null>(null);
 
   const { state: geo, request: requestLocation } = useGeolocation();
   const { items: saved, hydrated } = useFavorites();
@@ -116,21 +118,23 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
     if (slug) setDetent('collapsed');
   }, []);
 
-  const mapsOff = mapFailed;
+  const mapsOff = mapFailure !== null;
 
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* ---------------- Map layer ---------------- */}
       {mapsOff ? (
-        <MapUnavailable />
+        <MapUnavailable reason={mapFailure ?? 'tiles'} />
       ) : (
-        <MapCanvas
-          ganpatis={visibleGanpatis}
-          selectedSlug={selectedSlug}
-          onSelect={handleSelect}
-          userLocation={userLocation}
-          onReady={(ok) => setMapFailed(!ok)}
-        />
+        <MapErrorBoundary fallback={<MapUnavailable reason="init" />}>
+          <MapCanvas
+            ganpatis={visibleGanpatis}
+            selectedSlug={selectedSlug}
+            onSelect={handleSelect}
+            userLocation={userLocation}
+            onReady={(ok, failure) => setMapFailure(ok ? null : (failure ?? 'tiles'))}
+          />
+        </MapErrorBoundary>
       )}
 
       {/* ---------------- Top overlay ---------------- */}
