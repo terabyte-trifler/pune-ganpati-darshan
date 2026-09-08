@@ -227,13 +227,25 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 | Route | What it does |
 |---|---|
 | `/start` | Three-step builder: time budget → darshan pace → interests → a route that fits |
-| `/routes` | Curated routes, with "good for right now" chosen by Pune local time |
+| `/routes` | 16 curated routes, with "good for right now" chosen by Pune local time |
 | `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
 | `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |
 | `/map` | Full-screen map, clustered pins, filters, draggable sheet |
 
 Maps are embedded throughout — mandal pages show location, route and plan
 pages draw the ordered stops — not confined to `/map`.
+
+### Curated routes
+
+16 routes, from a four-hour full circuit down to a genuine one-hour dash.
+Shapes are the ones a Pune visitor actually asks for; the titles, copy and
+stop lists are this project's own, built from its 18 mandals and their
+measured dwell times.
+
+Where a route makes a time claim in its name, that claim is checked against
+the computed total rather than asserted — "One hour from Mandai" came out at
+1 hr 4 min on first build, so the route was trimmed (Tulshibaug from a queued
+darshan to a roadside look) until it genuinely fits in 59 minutes.
 
 ### Why queue time is modelled
 
