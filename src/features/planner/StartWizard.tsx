@@ -147,7 +147,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       {/* ---------------- Step 1: time ---------------- */}
       {step === 0 && (
         <section className="mt-6">
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--chandan)]">
+          <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
             How long do you have?
           </h1>
           <p lang="mr" className="mt-1 text-[14px] text-[var(--muted)]">किती वेळ आहे?</p>
@@ -187,7 +187,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       {/* ---------------- Step 2: what to see ---------------- */}
       {step === 1 && (
         <section className="mt-6">
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--chandan)]">
+          <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
             What do you want to see?
           </h1>
           <p className="mt-2 text-[14px] text-[var(--muted)]">Pick as many as you like.</p>
@@ -244,12 +244,12 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       {/* ---------------- Step 3: result ---------------- */}
       {step === 2 && plan && (
         <section className="mt-6">
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--chandan)]">
+          <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
             Your darshan
           </h1>
 
           {plan.stops.length === 0 ? (
-            <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-5">
+            <div className="mt-4 surface rounded-[var(--radius-card)] border border-[var(--line)] p-5">
               <p className="text-[15px] font-semibold text-[var(--chandan)]">
                 Nothing fits in {formatDuration((budget ?? 0) * 60)}
               </p>
@@ -307,7 +307,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                 {plan.stops.map((stop, i) => (
                   <li
                     key={stop.ganpati.id}
-                    className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3"
+                    className="flex items-center gap-3 surface rounded-[var(--radius-card)] border border-[var(--line)] p-3"
                   >
                     <span
                       aria-hidden="true"

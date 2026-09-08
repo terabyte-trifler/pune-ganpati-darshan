@@ -90,7 +90,7 @@ export default async function RoutePage({
 
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-[26px] font-extrabold leading-tight tracking-[-0.01em] text-[var(--chandan)]">
+            <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
               {route.title}
             </h1>
             {route.titleMr && (

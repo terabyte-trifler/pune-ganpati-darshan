@@ -7,9 +7,15 @@ import type { FestivalConfig } from '@/types/ganpati';
  * Phase comes from configuration, so a new year needs a data change only
  * (§26). Rendered on the server: the value changes at most once a day, and
  * shipping a client timer for it would be waste.
+ *
+ * During the festival this is the emotional anchor of the page — it is the
+ * one element that should feel like an occasion rather than a UI chip — so
+ * the "during" state gets brass, a lit dot and the Marathi greeting given
+ * equal weight to the English.
  */
 export function FestivalCountdown({ config }: { config: FestivalConfig }) {
   const phase = getFestivalPhase(config);
+  const during = phase.phase === 'during';
 
   const { line, sub } = (() => {
     switch (phase.phase) {
@@ -34,18 +40,43 @@ export function FestivalCountdown({ config }: { config: FestivalConfig }) {
   })();
 
   return (
-    <div className="flex items-center gap-3 rounded-full border border-[var(--line-strong)] bg-[var(--dhoop)]/70 px-3.5 py-2 backdrop-blur">
-      <span
-        aria-hidden="true"
-        className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--zendu)]"
-        style={{ boxShadow: '0 0 10px 2px rgb(242 169 59 / 0.55)' }}
-      />
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold text-[var(--chandan)]">{line}</p>
+    <div
+      className={[
+        'relative flex items-center gap-3 overflow-hidden rounded-full px-4 py-2.5',
+        'border backdrop-blur',
+        during
+          ? 'border-[var(--pital)]/40 bg-gradient-to-r from-[var(--pital)]/[0.14] via-[var(--shendur)]/[0.08] to-transparent'
+          : 'border-[var(--line-strong)] bg-[var(--dhoop)]/70',
+      ].join(' ')}
+    >
+      {/* A lit lamp rather than a status dot. */}
+      <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+        {during && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--zendu)] opacity-60" />
+        )}
+        <span
+          className="relative inline-flex h-2 w-2 rounded-full bg-[var(--zendu)]"
+          style={{ boxShadow: 'var(--glow-zendu)' }}
+        />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p
+          className={[
+            'truncate text-[13px] font-semibold',
+            during ? 'text-[var(--pital)]' : 'text-[var(--chandan)]',
+          ].join(' ')}
+        >
+          {line}
+        </p>
         <p className="truncate text-[12px] text-[var(--faint)]">{sub}</p>
       </div>
-      {phase.phase === 'during' && (
-        <span lang="mr" className="ml-auto shrink-0 text-[12px] font-semibold text-[var(--pital)]">
+
+      {during && (
+        <span
+          lang="mr"
+          className="ml-auto shrink-0 font-display text-[13px] font-bold text-[var(--zendu)]"
+        >
           {config.greetingMr}
         </span>
       )}

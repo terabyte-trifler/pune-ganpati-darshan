@@ -207,7 +207,17 @@ export function MiniMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [webglSupported]);
 
-  /* ---------------- Numbered stop pins ---------------- */
+  /* ---------------- Numbered stop pins ----------------
+     Note on target size: adjacent stops in the peths are often ~200m apart,
+     so at the zoom that shows a whole route their pins overlap and the
+     effective target falls below 24px. They are not spread apart, because
+     moving a pin away from its real position on a map people navigate by is
+     a worse defect than a small target.
+
+     This is the WCAG 2.5.8 exception: the same function — selecting a stop —
+     is available from the numbered list directly below the map, where each
+     row is a full-width target. The map pins are a convenience on top of
+     that list, never the only way to reach a stop. */
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map || !ordered) return;
@@ -220,8 +230,12 @@ export function MiniMap({
       el.setAttribute('aria-label', `Stop ${i + 1}: ${mandal.name}`);
       const active = mandal.slug === selectedSlug;
       el.style.cssText = [
-        'width:26px;height:26px;border-radius:9999px;cursor:pointer',
-        'font:700 13px/1 ui-sans-serif,system-ui,sans-serif',
+        // 32px, not 26: adjacent stops in the peths overlap, which pushed the
+        // effective target below the minimum even though each pin looked big
+        // enough on its own.
+        'width:32px;height:32px;border-radius:9999px;cursor:pointer',
+        'display:grid;place-items:center',
+        'font:700 14px/1 ui-sans-serif,system-ui,sans-serif',
         `background:${active ? '#F2A93B' : '#E2621B'}`,
         'color:#14100c;border:2px solid #14100c',
         `box-shadow:0 0 0 ${active ? 6 : 3}px rgba(226,98,27,.28)`,

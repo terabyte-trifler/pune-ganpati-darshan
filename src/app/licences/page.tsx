@@ -26,7 +26,7 @@ export default async function LicencesPage() {
   return (
     <main id="main" className="pb-nav md:pb-10">
       <div className="mx-auto max-w-3xl px-4 pt-[calc(var(--safe-top)+20px)]">
-        <h1 className="text-[26px] font-extrabold tracking-tight text-[var(--chandan)]">
+        <h1 className="font-display text-[30px] font-bold text-[var(--chandan)]">
           Data sources
         </h1>
 

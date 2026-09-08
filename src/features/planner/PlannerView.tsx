@@ -177,7 +177,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           आज कुठे जावे?
         </p>
 
-        <div className="mt-6 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-5 text-center">
+        <div className="mt-6 surface rounded-[var(--radius-card)] border border-[var(--line)] p-5 text-center">
           <p className="text-[15px] font-semibold text-[var(--chandan)]">
             No stops yet
           </p>
@@ -204,7 +204,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     <div className="mx-auto max-w-2xl px-4 py-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[24px] font-extrabold tracking-tight text-[var(--chandan)]">
+          <h1 className="font-display text-[28px] font-bold text-[var(--chandan)]">
             {sharedSlugs ? 'A shared darshan' : 'Your darshan'}
           </h1>
           <p className="text-[13px] text-[var(--muted)]">
@@ -278,7 +278,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       )}
 
       {/* ---------------- Summary ---------------- */}
-      <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--line-strong)] bg-[var(--dhoop)] p-4">
+      <div className="mt-4 surface-raised rounded-[var(--radius-card)] border border-[var(--line-strong)] p-4">
         <div className="flex items-baseline gap-4">
           <div>
             <p className="text-[22px] font-bold leading-none text-[var(--chandan)]">
@@ -348,7 +348,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           {stops.map((stop, index) => (
             <li
               key={stop.slug}
-              className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-2.5"
+              className="flex items-center gap-3 surface rounded-[var(--radius-card)] border border-[var(--line)] p-2.5"
             >
               <span
                 aria-hidden="true"
@@ -421,7 +421,7 @@ function StopRow({
       value={stop.slug}
       dragListener={false}
       dragControls={controls}
-      className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-2.5"
+      className="flex items-center gap-3 surface rounded-[var(--radius-card)] border border-[var(--line)] p-2.5"
     >
       <span
         aria-hidden="true"

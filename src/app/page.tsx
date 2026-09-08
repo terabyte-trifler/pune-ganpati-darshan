@@ -46,24 +46,34 @@ export default async function HomePage() {
 
   return (
     <main id="main" className="pb-nav md:pb-8">
-      {/* ---------------- Hero ---------------- */}
-      <section className="grain relative overflow-hidden px-4 pt-[calc(var(--safe-top)+20px)]">
-        {/* Warm glow anchored behind the wordmark */}
+      {/* ---------------- Hero ----------------
+          Layered rather than flat: a rangoli lattice for texture, a diya
+          glow for warmth, and a torana strung across the foot of the
+          section as the transition into content. Every layer is CSS or
+          inline SVG — no image requests, and it stays sharp on a dense
+          phone screen. */}
+      <section className="grain relative overflow-hidden px-4 pt-[calc(var(--safe-top)+18px)]">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-24 h-64"
+          className="rangoli pointer-events-none absolute inset-0 opacity-[0.55]"
+          style={{ maskImage: 'radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%)',
+                   WebkitMaskImage: 'radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%)' }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 -top-28 h-72"
           style={{
             background:
-              'radial-gradient(60% 60% at 50% 40%, rgb(226 98 27 / 0.28) 0%, transparent 70%)',
+              'radial-gradient(58% 58% at 50% 42%, rgb(226 98 27 / 0.34) 0%, rgb(242 169 59 / 0.10) 48%, transparent 74%)',
           }}
         />
 
         <div className="relative mx-auto max-w-2xl">
           <FestivalCountdown config={festival} />
 
-          <h1 className="mt-4 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em] text-[var(--chandan)] sm:text-[42px]">
+          <h1 className="font-display mt-5 text-[36px] font-bold leading-[1.02] text-[var(--chandan)] sm:text-[52px]">
             Experience Pune&rsquo;s
-            <span className="block bg-gradient-to-r from-[var(--zendu)] via-[var(--shendur)] to-[var(--pital)] bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-[var(--zendu)] via-[var(--shendur)] to-[var(--pital)] bg-clip-text pb-1 text-transparent">
               Ganpati
             </span>
           </h1>
@@ -72,17 +82,16 @@ export default async function HomePage() {
             Find what&rsquo;s near you and plan a walkable darshan.
           </p>
 
-          {/* Search is the most prominent control on the page (§6) */}
           <Link
             href="/explore"
-            className="mt-4 flex h-13 min-h-12 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] bg-[var(--dhoop)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
+            className="surface mt-4 flex min-h-12 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
           >
             <Search size={19} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
             Search Ganpati, mandal or area…
           </Link>
 
           <div className="mt-3 flex gap-2">
-            <Button asChild size="md" className="flex-1">
+            <Button asChild size="md" className="flex-1" style={{ boxShadow: 'var(--glow-shendur)' }}>
               <Link href="/map">Open map</Link>
             </Button>
             <Button asChild variant="secondary" size="md" className="flex-1">
@@ -93,6 +102,8 @@ export default async function HomePage() {
             </Button>
           </div>
         </div>
+
+        <div aria-hidden="true" className="torana relative mt-7 opacity-80" />
       </section>
 
       {/* ----------------------------------------------------------------
@@ -122,7 +133,7 @@ export default async function HomePage() {
                 key={r.id}
                 href={`/routes/${r.slug}`}
                 prefetch={false}
-                className="flex w-[250px] shrink-0 flex-col rounded-[var(--radius-card)] border border-[var(--line-strong)] bg-[var(--dhoop)] p-4 [scroll-snap-align:start] transition-colors hover:border-[var(--shendur)]/50"
+                className="flex w-[250px] shrink-0 flex-col surface-raised rounded-[var(--radius-card)] border border-[var(--line-strong)] p-4 [scroll-snap-align:start] transition-colors hover:border-[var(--shendur)]/50"
               >
                 <h3 className="clamp-2 text-[15px] font-bold leading-tight text-[var(--chandan)]">
                   {r.title}

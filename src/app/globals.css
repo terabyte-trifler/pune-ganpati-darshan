@@ -39,6 +39,18 @@
   --line: rgb(240 230 210 / 0.09);
   --line-strong: rgb(240 230 210 / 0.16);
 
+  /* Elevation. Cards previously sat flat on the ground with a hairline
+     border; these give them a lit top edge and a shadow that reads as depth
+     rather than as a dark rectangle on a dark rectangle. */
+  --lift-1: 0 1px 0 0 rgb(240 230 210 / 0.06) inset, 0 1px 2px rgb(8 5 2 / 0.5);
+  --lift-2: 0 1px 0 0 rgb(240 230 210 / 0.08) inset, 0 4px 16px rgb(8 5 2 / 0.55);
+  --lift-3: 0 1px 0 0 rgb(240 230 210 / 0.10) inset, 0 12px 32px rgb(8 5 2 / 0.6);
+
+  /* Warm light cast by a diya or a strung bulb. Used for glows, never fills. */
+  --glow-shendur: 0 0 24px -4px rgb(226 98 27 / 0.55);
+  --glow-zendu: 0 0 20px -2px rgb(242 169 59 / 0.5);
+  --glow-pital: 0 0 18px -2px rgb(201 162 39 / 0.45);
+
   --radius-chip: 999px;
   --radius-card: 16px;
   --radius-sheet: 24px;
@@ -73,6 +85,7 @@
   --radius-field: var(--radius-field);
 
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
   --font-devanagari: var(--font-mukta), var(--font-manrope), sans-serif;
 }
 
@@ -207,4 +220,71 @@ body {
 .maplibregl-ctrl-attrib-button {
   width: 28px;
   height: 28px;
+}
+
+/* ---------------------------------------------------------------------
+   Display type
+   Confined to hero and large section headings. Fraunces is a variable
+   serif; the optical-size and softness axes are set so it stays warm at
+   display sizes without turning decorative.
+   ------------------------------------------------------------------- */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------------
+   Festive motifs
+
+   Drawn from things physically present at a mandal — a torana strung across
+   an entrance, marigold garlands, the concentric geometry of a rangoli.
+   All are CSS or inline SVG: no image requests, and they scale without
+   pixellating on a dense phone screen.
+   ------------------------------------------------------------------- */
+
+/* Warm light pooling behind an element, as from a lamp above it. */
+.diya-glow {
+  position: relative;
+}
+.diya-glow::before {
+  content: '';
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 180px;
+  pointer-events: none;
+  background: radial-gradient(
+    55% 55% at 50% 40%,
+    rgb(226 98 27 / 0.30) 0%,
+    rgb(242 169 59 / 0.12) 45%,
+    transparent 72%
+  );
+  filter: blur(4px);
+}
+
+/* A strung garland, repeating along a horizontal edge. */
+.torana {
+  height: 14px;
+  background-repeat: repeat-x;
+  background-size: 36px 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='14'%3E%3Cpath d='M0 1c9 0 9 7 18 7s9-7 18-7' fill='none' stroke='%23C9A227' stroke-opacity='.4' stroke-width='1'/%3E%3Ccircle cx='18' cy='8.5' r='2.4' fill='%23F2A93B' fill-opacity='.55'/%3E%3Ccircle cx='6' cy='4' r='1.5' fill='%23E2621B' fill-opacity='.45'/%3E%3Ccircle cx='30' cy='4' r='1.5' fill='%23E2621B' fill-opacity='.45'/%3E%3C/svg%3E");
+}
+
+/* Rangoli lattice, sized so the repeat is not readable as a tile. */
+.rangoli {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cg fill='none' stroke='%23F2A93B' stroke-opacity='.16' stroke-width='.7'%3E%3Ccircle cx='60' cy='60' r='10'/%3E%3Ccircle cx='60' cy='60' r='22'/%3E%3Ccircle cx='60' cy='60' r='34'/%3E%3Cpath d='M60 14v92M14 60h92M27 27l66 66M93 27l-66 66'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 240px 240px;
+}
+
+/* Card surface: a lit top edge and real depth. */
+.surface {
+  background:
+    linear-gradient(180deg, rgb(240 230 210 / 0.035) 0%, transparent 42%),
+    var(--dhoop);
+  box-shadow: var(--lift-1);
+}
+.surface-raised {
+  background:
+    linear-gradient(180deg, rgb(240 230 210 / 0.05) 0%, transparent 46%),
+    var(--dhoop);
+  box-shadow: var(--lift-2);
 }

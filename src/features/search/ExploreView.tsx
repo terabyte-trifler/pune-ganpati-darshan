@@ -246,7 +246,7 @@ export function ExploreView({
         </p>
 
         {results.length === 0 ? (
-          <div className="rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] px-4 py-10 text-center">
+          <div className="surface rounded-[var(--radius-card)] border border-[var(--line)] px-4 py-10 text-center">
             <p className="text-[15px] font-semibold text-[var(--chandan)]">
               No Ganpati found
             </p>

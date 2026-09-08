@@ -90,7 +90,7 @@ export default async function RoutesPage() {
   return (
     <main id="main" className="pb-nav md:pb-10">
       <div className="mx-auto max-w-3xl px-4 pt-[calc(var(--safe-top)+20px)]">
-        <h1 className="text-[26px] font-extrabold tracking-tight text-[var(--chandan)]">
+        <h1 className="font-display text-[30px] font-bold text-[var(--chandan)]">
           Curated darshan routes
         </h1>
         <p lang="mr" className="mt-1 text-[14px] text-[var(--muted)]">दर्शन मार्ग</p>

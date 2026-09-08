@@ -44,7 +44,7 @@ export default async function AreaPage({
   return (
     <main id="main" className="pb-nav md:pb-10">
       <div className="px-4 pt-[calc(var(--safe-top)+20px)]">
-        <h1 className="text-[26px] font-extrabold tracking-tight text-[var(--chandan)]">
+        <h1 className="font-display text-[30px] font-bold text-[var(--chandan)]">
           Ganpati in {area.name}
         </h1>
         {area.nameMr && (

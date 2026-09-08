@@ -76,7 +76,7 @@ export function SharedPlanView({
         {stops.map((stop, index) => (
           <li
             key={stop.id}
-            className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-2.5"
+            className="flex items-center gap-3 surface rounded-[var(--radius-card)] border border-[var(--line)] p-2.5"
           >
             <span
               aria-hidden="true"

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Manrope, Mukta } from 'next/font/google';
+import { Manrope, Mukta, Fraunces } from 'next/font/google';
 import { BottomNav } from '@/components/BottomNav';
 import { GanpatiGlyphSprite } from '@/components/ui/GanpatiGlyphSprite';
 import { OfflineBanner } from '@/components/OfflineBanner';
@@ -12,6 +12,27 @@ const manrope = Manrope({
   variable: '--font-manrope',
   display: 'swap',
   weight: ['400', '500', '600', '700', '800'],
+});
+
+/**
+ * Display face, used only for the hero and large section titles.
+ *
+ * Manrope is an excellent interface font and a flat one at display sizes —
+ * every heading read like a label. Fraunces has real optical variation and
+ * warmth at large sizes, which is what makes a festival page feel like an
+ * occasion rather than a directory. It is deliberately confined to headings:
+ * body copy and controls stay in Manrope, because this gets read outdoors on
+ * a phone.
+ */
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  display: 'swap',
+  // One static instance. The variable file carries optical axes that render
+  // slightly better at display sizes, and two weights read marginally
+  // richer, but both put more bytes on the critical path — the hero heading
+  // is the LCP element and this ships to phones on 4G.
+  weight: ['700'],
 });
 
 /**
@@ -68,7 +89,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${manrope.variable} ${mukta.variable}`}>
+    <html lang="en" className={`${manrope.variable} ${mukta.variable} ${fraunces.variable}`}>
       <body className="min-h-dvh bg-[var(--raat)] antialiased">
         <a
           href="#main"

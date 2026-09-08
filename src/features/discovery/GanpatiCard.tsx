@@ -26,9 +26,10 @@ export function GanpatiCard({
       href={`/ganpati/${ganpati.slug}`}
       prefetch={false}
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-[var(--radius-card)]',
-        'border border-[var(--line)] bg-[var(--dhoop)]',
-        'transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.985]',
+        'surface group relative flex flex-col overflow-hidden rounded-[var(--radius-card)]',
+        'border border-[var(--line)]',
+        'transition-[transform,box-shadow] duration-200',
+        'hover:-translate-y-0.5 hover:shadow-[var(--lift-3)] active:scale-[0.985]',
         compact && 'w-[172px] shrink-0 [scroll-snap-align:start]',
         className
       )}

@@ -144,7 +144,7 @@ export default async function GanpatiPage({
           <ConfidenceBadge confidence={g.confidence} />
         </div>
 
-        <h1 className="mt-3 text-[26px] font-extrabold leading-tight tracking-[-0.01em] text-[var(--chandan)]">
+        <h1 className="font-display mt-3 text-[30px] font-bold leading-tight text-[var(--chandan)]">
           {g.name}
         </h1>
         {g.nameMr && (
@@ -183,7 +183,7 @@ export default async function GanpatiPage({
         {/* ---------------- Facts ---------------- */}
         {/* Each wrapper holds only <dt>/<dd>; the icon lives inside the <dt>,
             because a <dl> may not contain arbitrary nested elements. */}
-        <dl className="mt-6 divide-y divide-[var(--line)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)]">
+        <dl className="mt-6 divide-y divide-[var(--line)] overflow-hidden surface rounded-[var(--radius-card)] border border-[var(--line)]">
           <div className="grid grid-cols-[auto_1fr] gap-x-3 p-3.5">
             <dt className="col-span-2 flex items-center gap-2 text-[12px] text-[var(--faint)]">
               <MapPin size={15} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />

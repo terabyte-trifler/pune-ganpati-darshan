@@ -223,6 +223,30 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 
 ---
 
+## Visual design
+
+The palette derives from materials physically present at a mandal at night —
+warm brown-black lane, vermilion on the idol, marigold, brass, sandalwood
+paste. Pigment hues rather than UI hues, which is what stops it reading as a
+dark SaaS dashboard.
+
+Reserved meanings, never used decoratively: brass for the Manache Paach,
+green for verified, red for destructive.
+
+**Type.** Fraunces for headings, Manrope for everything else. Manrope is an
+excellent interface font and a flat one at display sizes — every heading read
+like a label. The serif is confined to headings: body copy and controls stay
+in Manrope because this is read outdoors on a phone. One weight only, because
+the hero heading is the LCP element and sits on the critical path.
+
+**Festive motifs** are CSS and inline SVG, not images: a torana strung across
+the foot of the hero, a rangoli lattice masked into the background, a diya
+glow behind the title. No image requests, and they stay sharp on a dense
+screen.
+
+**Surfaces** carry a lit top edge and real shadow (`--lift-1/2/3`) rather than
+a hairline border on flat dark, so cards read as objects with depth.
+
 ## Mobile
 
 The phone is the product; desktop is the responsive fallback. `npm run
@@ -235,6 +259,13 @@ outdoors and fails on anything below them:
 | Space between adjacent targets | 8 px |
 | Body text | 12 px |
 | Horizontal overflow | none, 320–1440 px |
+
+One deliberate deviation: numbered route pins on the embedded map can overlap,
+because adjacent peth mandals are ~200 m apart and at the zoom that shows a
+whole route their pins collide. They are not spread out — moving a pin off its
+real position on a map people navigate by is a worse defect than a small
+target. This is the WCAG 2.5.8 exception: selecting a stop is also available
+from the numbered list below the map, where every row is a full-width target.
 
 All seven main surfaces pass. Decisions that came out of running it:
 
@@ -368,6 +399,30 @@ available. Adding it is data entry (or `/admin`), not code.
 `/licences` covers what still does carry licence conditions — OpenStreetMap
 map tiles, coordinates and routing.
 
+## Visual design
+
+The palette derives from materials physically present at a mandal at night —
+warm brown-black lane, vermilion on the idol, marigold, brass, sandalwood
+paste. Pigment hues rather than UI hues, which is what stops it reading as a
+dark SaaS dashboard.
+
+Reserved meanings, never used decoratively: brass for the Manache Paach,
+green for verified, red for destructive.
+
+**Type.** Fraunces for headings, Manrope for everything else. Manrope is an
+excellent interface font and a flat one at display sizes — every heading read
+like a label. The serif is confined to headings: body copy and controls stay
+in Manrope because this is read outdoors on a phone. One weight only, because
+the hero heading is the LCP element and sits on the critical path.
+
+**Festive motifs** are CSS and inline SVG, not images: a torana strung across
+the foot of the hero, a rangoli lattice masked into the background, a diya
+glow behind the title. No image requests, and they stay sharp on a dense
+screen.
+
+**Surfaces** carry a lit top edge and real shadow (`--lift-1/2/3`) rather than
+a hairline border on flat dark, so cards read as objects with depth.
+
 ## Mobile
 
 The phone is the product; desktop is the responsive fallback. `npm run
@@ -380,6 +435,13 @@ outdoors and fails on anything below them:
 | Space between adjacent targets | 8 px |
 | Body text | 12 px |
 | Horizontal overflow | none, 320–1440 px |
+
+One deliberate deviation: numbered route pins on the embedded map can overlap,
+because adjacent peth mandals are ~200 m apart and at the zoom that shows a
+whole route their pins collide. They are not spread out — moving a pin off its
+real position on a map people navigate by is a worse defect than a small
+target. This is the WCAG 2.5.8 exception: selecting a stop is also available
+from the numbered list below the map, where every row is a full-width target.
 
 All seven main surfaces pass. Decisions that came out of running it:
 

@@ -34,7 +34,7 @@ export function SavedView({ ganpatis }: { ganpatis: Ganpati[] }) {
   if (saved.length === 0) {
     return (
       <div
-        className="mx-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] px-4 py-10 text-center"
+        className="mx-4 surface rounded-[var(--radius-card)] border border-[var(--line)] px-4 py-10 text-center"
         data-sync-state={syncing ? 'syncing' : synced ? 'account' : 'device'}
       >
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-[var(--line-strong)]">
