@@ -8,8 +8,8 @@
             "is_core": true,
             "name_mr": "कसबा पेठ",
             "sort_order": 1,
-            "centroid_lat": 18.5196,
-            "centroid_lng": 73.8553
+            "centroid_lat": 18.518915,
+            "centroid_lng": 73.857171
         },
         {
             "id": "735ea4bf-b240-4b4f-be5c-1f3034269b0e",
@@ -19,8 +19,8 @@
             "is_core": true,
             "name_mr": "बुधवार पेठ",
             "sort_order": 2,
-            "centroid_lat": 18.5166,
-            "centroid_lng": 73.8551
+            "centroid_lat": 18.515633,
+            "centroid_lng": 73.855441
         },
         {
             "id": "9ea20aa9-4446-4e7e-894d-afeb3c1e4fd6",
@@ -30,8 +30,8 @@
             "is_core": true,
             "name_mr": "शुक्रवार पेठ",
             "sort_order": 3,
-            "centroid_lat": 18.5109,
-            "centroid_lng": 73.8556
+            "centroid_lat": 18.511257,
+            "centroid_lng": 73.855524
         },
         {
             "id": "05b4225f-cc04-4f2d-8dd0-6614306ba57a",
@@ -41,8 +41,8 @@
             "is_core": true,
             "name_mr": "सदाशिव पेठ",
             "sort_order": 4,
-            "centroid_lat": 18.5106,
-            "centroid_lng": 73.8511
+            "centroid_lat": 18.509709,
+            "centroid_lng": 73.851811
         },
         {
             "id": "b63092c1-21aa-4633-982d-8ed5d96de884",
@@ -52,8 +52,8 @@
             "is_core": true,
             "name_mr": "नारायण पेठ",
             "sort_order": 5,
-            "centroid_lat": 18.5128,
-            "centroid_lng": 73.848
+            "centroid_lat": 18.51227,
+            "centroid_lng": 73.848102
         },
         {
             "id": "58e6b71e-8c06-4573-b633-272dedc20a68",
@@ -63,8 +63,8 @@
             "is_core": true,
             "name_mr": "गणेश पेठ",
             "sort_order": 6,
-            "centroid_lat": 18.5198,
-            "centroid_lng": 73.8588
+            "centroid_lat": 18.5217,
+            "centroid_lng": 73.8619
         },
         {
             "id": "a9bc0d26-eb85-45e7-957b-b80b4765ff58",
@@ -74,8 +74,8 @@
             "is_core": true,
             "name_mr": "शनिवार पेठ",
             "sort_order": 7,
-            "centroid_lat": 18.5155,
-            "centroid_lng": 73.85
+            "centroid_lat": 18.5148,
+            "centroid_lng": 73.8462
         },
         {
             "id": "b659e62e-0aba-49e8-9c45-d032d4ccf9dc",
@@ -85,8 +85,8 @@
             "is_core": false,
             "name_mr": "चिंचवड",
             "sort_order": 8,
-            "centroid_lat": 18.6335,
-            "centroid_lng": 73.7997
+            "centroid_lat": 18.626316,
+            "centroid_lng": 73.778442
         }
     ],
     "routes": [
@@ -1063,16 +1063,16 @@
             ],
             "images": [
             ],
-            "osm_id": null,
+            "osm_id": "way/264276391",
             "address": null,
             "name_mr": "श्रीमंत दगडूशेठ हलवाई गणपती",
             "category": "famous",
             "featured": true,
-            "latitude": 18.5163,
+            "latitude": 18.516391,
             "verified": true,
             "area_name": "Budhwar Peth",
             "area_slug": "budhwar-peth",
-            "longitude": 73.8567,
+            "longitude": 73.856084,
             "published": true,
             "confidence": "verified",
             "prominence": 1000,
@@ -1088,7 +1088,7 @@
             "darshan_minutes": 45,
             "google_place_id": null,
             "established_year": 1893,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 150
         },
         {
@@ -1102,16 +1102,16 @@
             ],
             "images": [
             ],
-            "osm_id": null,
+            "osm_id": "node/2289294092",
             "address": null,
             "name_mr": "श्री कसबा गणपती",
             "category": "maanache",
             "featured": true,
-            "latitude": 18.5196,
+            "latitude": 18.51903,
             "verified": true,
             "area_name": "Kasba Peth",
             "area_slug": "kasba-peth",
-            "longitude": 73.8553,
+            "longitude": 73.857241,
             "published": true,
             "confidence": "verified",
             "prominence": 980,
@@ -1127,7 +1127,7 @@
             "darshan_minutes": 15,
             "google_place_id": null,
             "established_year": 1893,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 40
         },
         {
@@ -1145,11 +1145,11 @@
             "name_mr": "तांबडी जोगेश्वरी गणपती",
             "category": "maanache",
             "featured": true,
-            "latitude": 18.5175,
+            "latitude": 18.51662,
             "verified": true,
             "area_name": "Budhwar Peth",
             "area_slug": "budhwar-peth",
-            "longitude": 73.8556,
+            "longitude": 73.854894,
             "published": true,
             "confidence": "verified",
             "prominence": 910,
@@ -1165,7 +1165,7 @@
             "darshan_minutes": 12,
             "google_place_id": null,
             "established_year": 1893,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 30
         },
         {
@@ -1184,11 +1184,11 @@
             "name_mr": "तुळशीबाग गणपती",
             "category": "maanache",
             "featured": true,
-            "latitude": 18.5148,
+            "latitude": 18.514268,
             "verified": true,
             "area_name": "Budhwar Peth",
             "area_slug": "budhwar-peth",
-            "longitude": 73.8551,
+            "longitude": 73.855306,
             "published": true,
             "confidence": "verified",
             "prominence": 890,
@@ -1204,7 +1204,7 @@
             "darshan_minutes": 20,
             "google_place_id": null,
             "established_year": 1901,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 45
         },
         {
@@ -1218,16 +1218,16 @@
             ],
             "images": [
             ],
-            "osm_id": null,
+            "osm_id": "node/5832579354",
             "address": null,
             "name_mr": "गुरुजी तालीम गणपती",
             "category": "maanache",
             "featured": true,
-            "latitude": 18.5163,
+            "latitude": 18.515047,
             "verified": true,
             "area_name": "Budhwar Peth",
             "area_slug": "budhwar-peth",
-            "longitude": 73.8543,
+            "longitude": 73.85466,
             "published": true,
             "confidence": "verified",
             "prominence": 870,
@@ -1243,7 +1243,7 @@
             "darshan_minutes": 8,
             "google_place_id": null,
             "established_year": 1887,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 20
         },
         {
@@ -1262,11 +1262,11 @@
             "name_mr": "केसरीवाडा गणपती",
             "category": "maanache",
             "featured": true,
-            "latitude": 18.5126,
+            "latitude": 18.515811,
             "verified": true,
             "area_name": "Narayan Peth",
             "area_slug": "narayan-peth",
-            "longitude": 73.8489,
+            "longitude": 73.849008,
             "published": true,
             "confidence": "verified",
             "prominence": 840,
@@ -1282,7 +1282,7 @@
             "darshan_minutes": 15,
             "google_place_id": null,
             "established_year": 1894,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 30
         },
         {
@@ -1301,11 +1301,11 @@
             "name_mr": "अखिल मंडई मंडळ",
             "category": "famous",
             "featured": true,
-            "latitude": 18.5109,
+            "latitude": 18.511852,
             "verified": true,
             "area_name": "Shukrawar Peth",
             "area_slug": "shukrawar-peth",
-            "longitude": 73.8556,
+            "longitude": 73.856135,
             "published": true,
             "confidence": "verified",
             "prominence": 820,
@@ -1321,7 +1321,7 @@
             "darshan_minutes": 12,
             "google_place_id": null,
             "established_year": 1893,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 30
         },
         {
@@ -1340,11 +1340,11 @@
             "name_mr": "छत्रपती राजाराम मंडळ",
             "category": "famous",
             "featured": false,
-            "latitude": 18.5094,
+            "latitude": 18.512444,
             "verified": false,
             "area_name": "Sadashiv Peth",
             "area_slug": "sadashiv-peth",
-            "longitude": 73.8484,
+            "longitude": 73.847482,
             "published": true,
             "confidence": "community",
             "prominence": 760,
@@ -1360,7 +1360,7 @@
             "darshan_minutes": 10,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 25
         },
         {
@@ -1379,11 +1379,11 @@
             "name_mr": "श्रीमंत भाऊसाहेब रंगारी गणपती",
             "category": "historic",
             "featured": true,
-            "latitude": 18.5185,
+            "latitude": 18.517583,
             "verified": true,
             "area_name": "Budhwar Peth",
             "area_slug": "budhwar-peth",
-            "longitude": 73.8527,
+            "longitude": 73.855362,
             "published": true,
             "confidence": "verified",
             "prominence": 720,
@@ -1399,7 +1399,7 @@
             "darshan_minutes": 8,
             "google_place_id": null,
             "established_year": 1892,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 20
         },
         {
@@ -1414,16 +1414,16 @@
             ],
             "images": [
             ],
-            "osm_id": null,
+            "osm_id": "way/207899908",
             "address": null,
             "name_mr": "श्री सिद्धिविनायक, सारसबाग",
             "category": "famous",
             "featured": true,
-            "latitude": 18.501,
+            "latitude": 18.500881,
             "verified": true,
             "area_name": "Sadashiv Peth",
             "area_slug": "sadashiv-peth",
-            "longitude": 73.8542,
+            "longitude": 73.85295,
             "published": true,
             "confidence": "verified",
             "prominence": 700,
@@ -1439,7 +1439,7 @@
             "darshan_minutes": 25,
             "google_place_id": null,
             "established_year": 1784,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 60
         },
         {
@@ -1453,16 +1453,16 @@
             ],
             "images": [
             ],
-            "osm_id": null,
+            "osm_id": "node/11700182023",
             "address": null,
             "name_mr": "श्री मोरया गोसावी गणपती मंदिर",
             "category": "famous",
             "featured": false,
-            "latitude": 18.6335,
+            "latitude": 18.626316,
             "verified": true,
             "area_name": "Chinchwad",
             "area_slug": "chinchwad",
-            "longitude": 73.7997,
+            "longitude": 73.778442,
             "published": true,
             "confidence": "verified",
             "prominence": 680,
@@ -1478,7 +1478,7 @@
             "darshan_minutes": 20,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 50
         },
         {
@@ -1496,11 +1496,11 @@
             "name_mr": "हुतात्मा बाबू गेनू मंडळ",
             "category": "historic",
             "featured": false,
-            "latitude": 18.5192,
+            "latitude": 18.51389,
             "verified": false,
-            "area_name": "Ganesh Peth",
-            "area_slug": "ganesh-peth",
-            "longitude": 73.859,
+            "area_name": "Budhwar Peth",
+            "area_slug": "budhwar-peth",
+            "longitude": 73.856342,
             "published": true,
             "confidence": "community",
             "prominence": 640,
@@ -1509,14 +1509,14 @@
             "timing_open": null,
             "visitor_tip": "Themed dekhava changes each year; evenings draw the crowd.",
             "area_is_core": true,
-            "area_name_mr": "गणेश पेठ",
+            "area_name_mr": "बुधवार पेठ",
             "manache_rank": null,
             "timing_close": null,
             "darshan_style": "outside",
             "darshan_minutes": 10,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 25
         },
         {
@@ -1533,11 +1533,11 @@
             "name_mr": "शनिपार मंडळ",
             "category": "historic",
             "featured": false,
-            "latitude": 18.5118,
+            "latitude": 18.512619,
             "verified": false,
             "area_name": "Sadashiv Peth",
             "area_slug": "sadashiv-peth",
-            "longitude": 73.8523,
+            "longitude": 73.852601,
             "published": true,
             "confidence": "community",
             "prominence": 560,
@@ -1553,7 +1553,7 @@
             "darshan_minutes": 6,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 15
         },
         {
@@ -1573,8 +1573,8 @@
             "featured": false,
             "latitude": 18.5119,
             "verified": false,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
+            "area_name": "Sadashiv Peth",
+            "area_slug": "sadashiv-peth",
             "longitude": 73.8522,
             "published": true,
             "confidence": "community",
@@ -1584,7 +1584,7 @@
             "timing_open": null,
             "visitor_tip": null,
             "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
+            "area_name_mr": "सदाशिव पेठ",
             "manache_rank": null,
             "timing_close": null,
             "darshan_style": "either",
@@ -1647,11 +1647,11 @@
             "name_mr": "जिलब्या मारुती मंडळ",
             "category": "local",
             "featured": false,
-            "latitude": 18.5203,
+            "latitude": 18.513319,
             "verified": false,
-            "area_name": "Ganesh Peth",
-            "area_slug": "ganesh-peth",
-            "longitude": 73.8585,
+            "area_name": "Shukrawar Peth",
+            "area_slug": "shukrawar-peth",
+            "longitude": 73.854938,
             "published": true,
             "confidence": "community",
             "prominence": 420,
@@ -1660,14 +1660,14 @@
             "timing_open": null,
             "visitor_tip": null,
             "area_is_core": true,
-            "area_name_mr": "गणेश पेठ",
+            "area_name_mr": "शुक्रवार पेठ",
             "manache_rank": null,
             "timing_close": null,
             "darshan_style": "outside",
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": 12
         },
         {
@@ -1684,11 +1684,11 @@
             "name_mr": "नातू बाग मंडळ",
             "category": "local",
             "featured": false,
-            "latitude": 18.5107,
+            "latitude": 18.510703,
             "verified": false,
             "area_name": "Sadashiv Peth",
             "area_slug": "sadashiv-peth",
-            "longitude": 73.8527,
+            "longitude": 73.853821,
             "published": true,
             "confidence": "community",
             "prominence": 400,
@@ -1704,7 +1704,44 @@
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "cross-checked",
+            "peak_darshan_minutes": 12
+        },
+        {
+            "id": "4085bb48-3bd1-496c-8726-2ad250fc9017",
+            "name": "Garud Ganpati Mandal",
+            "slug": "garud-ganpati-mandal",
+            "tags": [
+                "local"
+            ],
+            "images": [
+            ],
+            "osm_id": "node/2517303170",
+            "address": null,
+            "name_mr": "गरुड गणपती मंडळ",
+            "category": "local",
+            "featured": false,
+            "latitude": 18.5137,
+            "verified": false,
+            "area_name": "Shaniwar Peth",
+            "area_slug": "shaniwar-peth",
+            "longitude": 73.8456,
+            "published": true,
+            "confidence": "community",
+            "prominence": 380,
+            "description": "A Shaniwar Peth mandal near Bhide Pul, close to the river end of the peth walk.",
+            "timing_note": null,
+            "timing_open": null,
+            "visitor_tip": null,
+            "area_is_core": true,
+            "area_name_mr": "शनिवार पेठ",
+            "manache_rank": null,
+            "timing_close": null,
+            "darshan_style": "outside",
+            "darshan_minutes": 5,
+            "google_place_id": null,
+            "established_year": null,
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 12
         },
         {
@@ -1746,43 +1783,6 @@
             "peak_darshan_minutes": null
         },
         {
-            "id": "4085bb48-3bd1-496c-8726-2ad250fc9017",
-            "name": "Garud Ganpati Mandal",
-            "slug": "garud-ganpati-mandal",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/2517303170",
-            "address": null,
-            "name_mr": "गरुड गणपती मंडळ",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.5137,
-            "verified": false,
-            "area_name": "Shaniwar Peth",
-            "area_slug": "shaniwar-peth",
-            "longitude": 73.8456,
-            "published": true,
-            "confidence": "community",
-            "prominence": 380,
-            "description": "A Shaniwar Peth mandal near Bhide Pul, close to the river end of the peth walk.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "शनिवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 5,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 12
-        },
-        {
             "id": "b79d32bf-8d6b-4ec6-a468-1a2b136614cb",
             "name": "Hatti Ganpati Mandal",
             "slug": "hatti-ganpati-mandal",
@@ -1791,16 +1791,16 @@
             ],
             "images": [
             ],
-            "osm_id": null,
+            "osm_id": "node/2536024948",
             "address": null,
             "name_mr": "हत्ती गणपती मंडळ",
             "category": "local",
             "featured": false,
-            "latitude": 18.513,
+            "latitude": 18.511223,
             "verified": false,
             "area_name": "Narayan Peth",
             "area_slug": "narayan-peth",
-            "longitude": 73.847,
+            "longitude": 73.845858,
             "published": true,
             "confidence": "community",
             "prominence": 360,
@@ -1816,7 +1816,7 @@
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "prototype-seed",
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 12
         },
         {
@@ -1833,11 +1833,11 @@
             "name_mr": "पेरूगेट भावे मित्र मंडळ",
             "category": "local",
             "featured": false,
-            "latitude": 18.511,
+            "latitude": 18.509777,
             "verified": false,
             "area_name": "Narayan Peth",
             "area_slug": "narayan-peth",
-            "longitude": 73.8473,
+            "longitude": 73.84944,
             "published": true,
             "confidence": "community",
             "prominence": 340,
@@ -1853,7 +1853,7 @@
             "darshan_minutes": null,
             "google_place_id": null,
             "established_year": null,
-            "coordinate_source": "openstreetmap",
+            "coordinate_source": "cross-checked",
             "peak_darshan_minutes": null
         },
         {
@@ -1966,5 +1966,5 @@
             "description": "Peth mandals worth folding into a walk between the larger stops."
         }
     ],
-    "generatedAt": "2026-09-08T20:24:17.714426+00:00"
+    "generatedAt": "2026-09-08T21:54:48.660092+00:00"
 }
