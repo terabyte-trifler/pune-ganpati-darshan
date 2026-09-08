@@ -11,7 +11,7 @@ import {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
-import { buildMarkerSvg } from '@/lib/maps/markers';
+import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
@@ -72,19 +72,40 @@ function toFeatureCollection(ganpatis: Ganpati[]): GeoJSON.FeatureCollection {
   };
 }
 
-/** Loads an SVG data URI into the map's image registry. */
+/**
+ * Loads an SVG data URI into the map's image registry.
+ *
+ * Rasterised at 3x rather than 2x: phones have been 3x for years, and the
+ * mark is detailed enough that the difference shows as soft edges on the ears
+ * and trunk.
+ */
+const PIN_RASTER = 3;
+
 async function registerPin(map: MapLibreMap, category: GanpatiCategory, selected: boolean) {
   const id = `pin-${category}${selected ? '-sel' : ''}`;
   if (map.hasImage(id)) return;
 
   const { url, size } = buildMarkerSvg(category, selected);
-  const image = new Image(size * 2, size * 2);
+  const image = new Image(size * PIN_RASTER, size * PIN_RASTER);
   await new Promise<void>((resolve) => {
     image.onload = () => resolve();
     image.onerror = () => resolve();
     image.src = url;
   });
-  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 2 });
+  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: PIN_RASTER });
+}
+
+/** Loads the cluster's Ganpati artwork. Scaled per count by `icon-size`. */
+async function registerClusterPin(map: MapLibreMap) {
+  if (map.hasImage('cluster-pin')) return;
+  const { url, size } = buildClusterPinSvg();
+  const image = new Image(size * PIN_RASTER, size * PIN_RASTER);
+  await new Promise<void>((resolve) => {
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+  });
+  if (!map.hasImage('cluster-pin')) map.addImage('cluster-pin', image, { pixelRatio: PIN_RASTER });
 }
 
 export function MapCanvas({
@@ -145,6 +166,7 @@ export function MapCanvas({
       collapseAttribution(map.getContainer());
       await Promise.all(
         CATEGORIES.flatMap((c) => [registerPin(map, c, false), registerPin(map, c, true)])
+          .concat(registerClusterPin(map))
       );
 
       map.addSource(SOURCE, {
@@ -177,17 +199,21 @@ export function MapCanvas({
         paint: { 'line-color': '#E2621B', 'line-width': 4, 'line-opacity': 0.9 },
       });
 
+      // A cluster is several mandals, so it is drawn as a Ganpati too —
+      // brass rather than vermilion, and larger the more it holds. It was a
+      // bare orange disc, the only thing on the map that marked mandals
+      // without looking like one.
       map.addLayer({
         id: 'clusters',
-        type: 'circle',
+        type: 'symbol',
         source: SOURCE,
         filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': '#E2621B',
-          'circle-opacity': 0.9,
-          'circle-stroke-color': '#14100C',
-          'circle-stroke-width': 2,
-          'circle-radius': ['step', ['get', 'point_count'], 16, 10, 20, 25, 26],
+        layout: {
+          'icon-image': 'cluster-pin',
+          'icon-size': ['step', ['get', 'point_count'], 0.58, 10, 0.72, 25, 0.86],
+          // Clusters sit close together at low zoom; without this MapLibre
+          // drops the colliding ones and mandals silently vanish.
+          'icon-allow-overlap': true,
         },
       });
 
@@ -199,9 +225,20 @@ export function MapCanvas({
         layout: {
           'text-field': ['get', 'point_count_abbreviated'],
           'text-font': ['Noto Sans Bold'],
-          'text-size': 13,
+          'text-size': 12,
+          // Offset to the pin's shoulder so the count reads as a badge on the
+          // Ganpati rather than covering its face.
+          'text-offset': [1.15, -1.05],
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
         },
-        paint: { 'text-color': '#14100C' },
+        paint: {
+          'text-color': '#F6EFE3',
+          // Stands in for a badge: a solid halo keeps the count legible over
+          // both the pin and whatever street is behind it.
+          'text-halo-color': '#14100C',
+          'text-halo-width': 2.4,
+        },
       });
 
       map.addLayer({
@@ -211,7 +248,13 @@ export function MapCanvas({
         filter: ['!', ['has', 'point_count']],
         layout: {
           'icon-image': ['concat', 'pin-', ['get', 'category']],
-          'icon-size': 0.5,
+          // Was a flat 0.5, which drew the 34px artwork at 17px — small
+          // enough that the Ganpati collapsed into an anonymous dot, so the
+          // map marked mandals with something you could not tell was one.
+          // Grows with zoom: wide out, pins are position markers and want to
+          // stay out of each other's way; zoomed in you are choosing between
+          // mandals and the mark has to be readable.
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.68, 14, 0.88, 16, 1.05],
           'icon-allow-overlap': true,
           'symbol-sort-key': ['-', 0, ['get', 'manacheRank']],
         },

@@ -11,7 +11,7 @@ import {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
-import { buildMarkerSvg } from '@/lib/maps/markers';
+import { buildMarkerSvg, buildRouteStopSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { boundsOf } from '@/lib/geo';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
@@ -61,13 +61,15 @@ async function registerPin(map: MapLibreMap, category: GanpatiCategory) {
   const id = `mini-${category}`;
   if (map.hasImage(id)) return;
   const { url, size } = buildMarkerSvg(category, false);
-  const image = new Image(size * 2, size * 2);
+  // 3x raster: see MapCanvas. These maps are small, so a soft pin is the
+  // most conspicuous thing on them.
+  const image = new Image(size * 3, size * 3);
   await new Promise<void>((resolve) => {
     image.onload = () => resolve();
     image.onerror = () => resolve();
     image.src = url;
   });
-  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 2 });
+  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 3 });
 }
 
 export function MiniMap({
@@ -169,7 +171,9 @@ export function MiniMap({
           source: 'mandals',
           layout: {
             'icon-image': ['concat', 'mini-', ['get', 'category']],
-            'icon-size': 0.46,
+            // Near full size: these maps are framed on one mandal or a small
+            // cluster of them, so there is room for the mark to read.
+            'icon-size': 0.95,
             'icon-allow-overlap': true,
           },
         });
@@ -208,11 +212,14 @@ export function MiniMap({
   }, [webglSupported]);
 
   /* ---------------- Numbered stop pins ----------------
+     Each stop is the Ganpati mark with its order in a badge, so a route map
+     is recognisably a map of Ganpatis rather than a map of numbers.
+
      Note on target size: adjacent stops in the peths are often ~200m apart,
      so at the zoom that shows a whole route their pins overlap and the
-     effective target falls below 24px. They are not spread apart, because
-     moving a pin away from its real position on a map people navigate by is
-     a worse defect than a small target.
+     effective target can still fall below 40px. They are not spread apart,
+     because moving a pin away from its real position on a map people
+     navigate by is a worse defect than a small target.
 
      This is the WCAG 2.5.8 exception: the same function — selecting a stop —
      is available from the numbered list directly below the map, where each
@@ -224,22 +231,35 @@ export function MiniMap({
 
     numberedRef.current.forEach((m) => m.remove());
     numberedRef.current = mandals.map((mandal, i) => {
+      const active = mandal.slug === selectedSlug;
+      const { url, size } = buildRouteStopSvg(active);
+      const badge = Math.round(size * 0.44);
+
       const el = document.createElement('button');
       el.type = 'button';
-      el.textContent = String(i + 1);
       el.setAttribute('aria-label', `Stop ${i + 1}: ${mandal.name}`);
-      const active = mandal.slug === selectedSlug;
       el.style.cssText = [
-        // 32px, not 26: adjacent stops in the peths overlap, which pushed the
-        // effective target below the minimum even though each pin looked big
-        // enough on its own.
-        'width:32px;height:32px;border-radius:9999px;cursor:pointer',
-        'display:grid;place-items:center',
-        'font:700 14px/1 ui-sans-serif,system-ui,sans-serif',
-        `background:${active ? '#F2A93B' : '#E2621B'}`,
-        'color:#14100c;border:2px solid #14100c',
-        `box-shadow:0 0 0 ${active ? 6 : 3}px rgba(226,98,27,.28)`,
+        `width:${size}px;height:${size}px`,
+        'position:relative;padding:0;border:0;background:transparent;cursor:pointer',
+        `background-image:url("${url}")`,
+        'background-size:contain;background-repeat:no-repeat;background-position:center',
       ].join(';');
+
+      // The order rides in a badge rather than replacing the mark. Kept in the
+      // DOM so it stays crisp on a high-density screen and picks up the
+      // page's own font, which a rasterised data URI would not.
+      const order = document.createElement('span');
+      order.textContent = String(i + 1);
+      order.setAttribute('aria-hidden', 'true');
+      order.style.cssText = [
+        `position:absolute;top:0;right:0;width:${badge}px;height:${badge}px`,
+        'display:grid;place-items:center;border-radius:9999px',
+        `font:700 ${Math.round(badge * 0.62)}px/1 ui-sans-serif,system-ui,sans-serif`,
+        'background:#14100c;color:#f6efe3',
+        `border:1.5px solid ${active ? '#f2a93b' : '#e2621b'}`,
+      ].join(';');
+      el.appendChild(order);
+
       el.addEventListener('click', () => onSelectRef.current?.(mandal.slug));
 
       return new Marker({ element: el })

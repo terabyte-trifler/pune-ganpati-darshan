@@ -74,15 +74,50 @@ export function buildMarkerSvg(
   return { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, size };
 }
 
-/** Cluster bubble — size and warmth scale with the number of mandals inside. */
-export function buildClusterSvg(count: number): MarkerVisual {
-  const size = count < 10 ? 40 : count < 25 ? 48 : 56;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
-    <circle cx="24" cy="24" r="22" fill="#e2621b" opacity="0.22"/>
-    <circle cx="24" cy="24" r="16" fill="#e2621b" stroke="#14100c" stroke-width="2"/>
-    <text x="24" y="29" text-anchor="middle"
-          font-family="ui-sans-serif,system-ui,sans-serif" font-size="15"
-          font-weight="700" fill="#14100c">${count}</text>
+/**
+ * Route stop pin.
+ *
+ * The same Ganpati mark every other pin on the maps uses, with the stop
+ * number in a badge over it. Stops were previously plain numbered discs,
+ * which left the one map where every single point is a Ganpati as the only
+ * map that never said so.
+ *
+ * The number is deliberately not drawn here. It is a DOM element layered over
+ * this artwork, so it renders in the page's own font at the device's real
+ * pixel density rather than being rasterised into a data URI.
+ */
+export function buildRouteStopSvg(selected: boolean): MarkerVisual {
+  const color = selected ? '#f2a93b' : '#e2621b';
+  // 40px, up from the old 32px disc: a Ganpati silhouette needs the room to
+  // read, and the larger target is worth having where stops overlap.
+  const size = selected ? 48 : 40;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
+    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="0.3"/>` : ''}
+    <circle cx="12" cy="12" r="10.2" fill="${color}" stroke="#14100c" stroke-width="1.6"/>
+    ${glyph('#14100c')}
+    ${eyes(color)}
+  </svg>`;
+
+  return { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, size };
+}
+
+/**
+ * Cluster pin — one Ganpati standing for the several inside it.
+ *
+ * Brass rather than vermilion so a cluster is not read as a single mandal at
+ * a glance, and drawn at one size only: the map scales it by count through
+ * `icon-size`, which keeps this to a single registered image instead of one
+ * per bucket. The count itself is a text layer on top.
+ */
+export function buildClusterPinSvg(): MarkerVisual {
+  const size = 56;
+  const color = '#c9a227';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="11.4" fill="${color}" opacity="0.24"/>
+    <circle cx="12" cy="12" r="10.2" fill="${color}" stroke="#14100c" stroke-width="1.8"/>
+    ${glyph('#14100c')}
+    ${eyes(color)}
   </svg>`;
   return { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, size };
 }

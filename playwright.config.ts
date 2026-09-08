@@ -4,6 +4,25 @@ import { defineConfig, devices } from '@playwright/test';
  * E2E runs against a production build: the app's caching, static generation
  * and service worker only behave correctly there.
  */
+/**
+ * Guard against a silent false pass.
+ *
+ * The variable is E2E_BASE_URL. Setting a plausible-looking alternative
+ * instead leaves the run on the default port with `reuseExistingServer`, so
+ * it happily tests whatever else is already listening there and reports a
+ * full green suite for a build it never loaded.
+ */
+const MISNAMED = ['PLAYWRIGHT_BASE_URL', 'BASE_URL', 'E2E_URL'] as const;
+if (!process.env.E2E_BASE_URL) {
+  const wrong = MISNAMED.find((name) => process.env[name]);
+  if (wrong) {
+    throw new Error(
+      `${wrong} is set but the variable this config reads is E2E_BASE_URL. ` +
+        `Re-run with E2E_BASE_URL=${process.env[wrong]}.`
+    );
+  }
+}
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
