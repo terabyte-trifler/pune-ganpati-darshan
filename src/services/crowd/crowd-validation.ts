@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UUID_PATTERN } from '@/lib/uuid';
 
 /**
  * Input validation for every crowd endpoint.
@@ -9,12 +10,19 @@ import { z } from 'zod';
  * payloads, unbounded batches, and attacker-chosen cache keys (§52, §53).
  */
 
-/** Matches the client's `crypto.randomUUID()` and the DB's CHECK. */
-export const deviceIdSchema = z.string().uuid();
+/**
+ * The SAME rule the browser applies before storing an id (lib/uuid.ts).
+ *
+ * It used to be `z.string().uuid()` while the client used a looser regex.
+ * An id that satisfied one and not the other was stored permanently and
+ * rejected on every submission — reporting broken forever on that device,
+ * reported to the user as "try again shortly".
+ */
+export const deviceIdSchema = z.string().regex(UUID_PATTERN, 'not a UUID');
 
 export const crowdLevelSchema = z.enum(['short', 'moving', 'long']);
 
-export const mandalIdSchema = z.string().uuid();
+export const mandalIdSchema = z.string().regex(UUID_PATTERN, 'not a UUID');
 
 /**
  * Idempotency key. Length-bounded and restricted to a safe alphabet: it is

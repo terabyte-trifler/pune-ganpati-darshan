@@ -172,8 +172,14 @@ test('the API rejects malformed input rather than trusting it', async ({ request
 
   // A mandal id that is not a UUID never reaches a cache key.
   expect((await request.get('/api/crowd/not-a-uuid')).status()).toBe(400);
-  // A well-formed id for a mandal that does not exist.
-  expect((await request.get('/api/crowd/00000000-0000-0000-0000-000000000000')).status()).toBe(404);
+
+  // A genuinely well-formed v4 id for a mandal that does not exist. This
+  // used to be the all-zeros "nil" UUID, which is a sentinel rather than a
+  // real identifier and is rejected by the shared UUID rule before any
+  // lookup happens — so it was testing the validator, not the 404 path.
+  expect(
+    (await request.get('/api/crowd/deadbeef-1234-4abc-8def-0123456789ab')).status()
+  ).toBe(404);
 });
 
 test('batch reads are bounded and validated', async ({ request }) => {

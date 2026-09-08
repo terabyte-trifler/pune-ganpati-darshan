@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import { Loader2 } from 'lucide-react';
-import { getDeviceId, newRequestId } from './device';
+import { getDeviceId, newRequestId, resetDeviceId } from './device';
 import { applyCrowdStatus, refreshCrowd } from './crowd-store';
 import {
   getCooldownState,
@@ -117,8 +117,19 @@ export function CrowdReportButtons({
         case 'reporting_disabled':
           setNotice('Reporting is turned off for this mandal.');
           break;
+        case 'unavailable':
+          setNotice('Crowd reporting is temporarily unavailable.');
+          break;
+        case 'invalid_request':
+          // The server refused this device's id. Retrying with the same
+          // one fails identically every time, so replace it — otherwise
+          // reporting is permanently dead on this device and the old
+          // "try again shortly" was simply untrue.
+          resetDeviceId();
+          setNotice('Something was wrong with this device. Tap again to retry.');
+          break;
         default:
-          setNotice('Could not send that report. Try again shortly.');
+          setNotice('Could not send that report.');
       }
     } catch {
       setNotice('You appear to be offline. Your report was not sent.');

@@ -103,6 +103,10 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
 
   if (error || !data) {
+    console.error('[crowd] snapshot failed', {
+      code: error?.code,
+      message: error?.message,
+    });
     recordCrowdMetric('crowd_error', 1);
     throw new CrowdUnavailableError();
   }
@@ -227,7 +231,14 @@ export async function submitCrowdReport(input: {
   recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
 
   if (error || !data) {
-    // Never surface a database error to a caller (§29).
+    // The caller gets a generic reason (§29) — but swallowing the cause
+    // entirely made "unavailable" undiagnosable, so it is logged here,
+    // server-side only, where it can never reach a client.
+    console.error('[crowd] submit failed', {
+      mandalId: input.mandalId,
+      code: error?.code,
+      message: error?.message,
+    });
     recordCrowdMetric('crowd_error', 1);
     return { success: false, reason: 'unavailable' };
   }
