@@ -226,7 +226,7 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 
 | Route | What it does |
 |---|---|
-| `/start` | Three-step builder: time budget → darshan pace → interests → a route that fits |
+| `/start` | Two questions — how long you have, what you want to see — then a route that fits |
 | `/routes` | 16 curated routes, with "good for right now" chosen by Pune local time |
 | `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
 | `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |
@@ -316,7 +316,7 @@ map tiles, coordinates and routing.
 
 | Route | What it does |
 |---|---|
-| `/start` | Three-step builder: time budget → darshan pace → interests → a route that fits |
+| `/start` | Two questions — how long you have, what you want to see — then a route that fits |
 | `/routes` | 16 curated routes, with "good for right now" chosen by Pune local time |
 | `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
 | `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |

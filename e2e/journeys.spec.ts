@@ -175,11 +175,8 @@ test('Flow 6 — share copies a working link', async ({ page, context }) => {
 test('Flow 9 — the wizard builds a route that fits the time budget', async ({ page }) => {
   await page.goto('/start');
 
-  // Step 1: time budget.
+  // Two questions only: how long, and what to see.
   await page.getByRole('button', { name: '2 hours' }).click();
-  // Step 2: pace.
-  await page.getByRole('button', { name: /A bit of both/i }).click();
-  // Step 3: interests.
   await page.getByRole('button', { name: /The famous ones/i }).click();
   await page.getByRole('button', { name: /Build my route/i }).click();
 
@@ -196,6 +193,20 @@ test('Flow 9 — the wizard builds a route that fits the time budget', async ({ 
   // Queue time must be shown separately — it is the part people underestimate.
   await expect(page.getByText(/darshan$/).first()).toBeVisible();
   await expect(page.getByText(/travel$/).first()).toBeVisible();
+
+  // Pace is adjusted on the result, where its effect is visible. Queuing at
+  // every stop must fit fewer mandals than viewing mostly from the road —
+  // this also guards the dwell times actually reaching the planner, which
+  // they once did not.
+  const countStops = async () =>
+    Number((await page.getByText(/\d+ mandals · about/).first().textContent())
+      ?.match(/(\d+) mandals/)?.[1] ?? 0);
+
+  await page.getByRole('button', { name: /^Queue at every stop$/ }).click();
+  const thorough = await countStops();
+  await page.getByRole('button', { name: /^Mostly from outside$/ }).click();
+  const quick = await countStops();
+  expect(quick).toBeGreaterThan(thorough);
 
   // Taking the route hands it to the planner.
   await page.getByRole('button', { name: /Use this route/i }).click();

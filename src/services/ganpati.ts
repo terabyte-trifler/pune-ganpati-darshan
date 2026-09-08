@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { getSupabasePublicClient } from '@/lib/supabase/server';
+import { GANPATI_COLUMNS } from '@/db/ganpati-columns';
 import {
   localGanpatis,
   localAreas,
@@ -13,6 +14,12 @@ import type {
   Area, Category, FestivalConfig, Ganpati, GanpatiCategory,
 } from '@/types/ganpati';
 
+const GANPATI_SELECT = `
+  ${GANPATI_COLUMNS.join(', ')},
+  areas!inner ( slug, name, name_mr, is_core ),
+  ganpati_images ( id, url, alt, credit, width, height, blur_data_url, sort_order, is_primary )
+`;
+
 /**
  * Read model for mandal data.
  *
@@ -24,15 +31,6 @@ import type {
  * the generated snapshot if Supabase is unconfigured OR the query fails.
  * A festival visitor on a congested network still gets the catalogue (§35).
  */
-
-const GANPATI_SELECT = `
-  id, slug, name, name_mr, description, visitor_tip, category,
-  address, latitude, longitude, google_place_id, manache_rank, prominence,
-  established_year, timing_open, timing_close, timing_note, tags,
-  confidence, featured, verified, published, coordinate_source, osm_id,
-  areas!inner ( slug, name, name_mr, is_core ),
-  ganpati_images ( id, url, alt, credit, width, height, blur_data_url, sort_order, is_primary )
-`;
 
 /** Supabase returns the joined area nested; flatten it into the raw shape. */
 /* eslint-disable @typescript-eslint/no-explicit-any */

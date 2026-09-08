@@ -4,8 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Clock, ChevronLeft, Footprints, Bike, Car,
-  Eye, Scale, DoorOpen, Sparkles, MapPin,
+  Clock, ChevronLeft, Footprints, Bike, Car, Sparkles, MapPin,
 } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { Button } from '@/components/ui/Button';
@@ -19,8 +18,7 @@ import { cn } from '@/lib/utils';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
 
 /**
- * Three-step route builder: how long you have → how you want to take darshan
- * → what you want to see.
+ * Two-question route builder: how long you have, and what you want to see.
  *
  * The whole thing runs on the device. The catalogue is already loaded, dwell
  * times are data, and the ordering solver is local — so there is no request,
@@ -36,24 +34,17 @@ const BUDGETS = [
   { minutes: 360, label: '6 hours' },
 ];
 
-const PACES: Array<{
-  key: DarshanPace; icon: typeof Eye; title: string; body: string; recommended?: boolean;
-}> = [
-  {
-    key: 'thorough', icon: DoorOpen,
-    title: 'Go inside every mandal',
-    body: 'Queue at each stop. Fewer mandals, the full experience.',
-  },
-  {
-    key: 'balanced', icon: Scale,
-    title: 'A bit of both', recommended: true,
-    body: 'Queue where it is quick, see the big ones from the road.',
-  },
-  {
-    key: 'quick', icon: Eye,
-    title: 'See as many as I can',
-    body: 'Darshan from outside wherever possible. Covers the most ground.',
-  },
+/**
+ * Pace changes the plan a lot — it decides whether you queue at Dagdusheth or
+ * look from the road — but asking about it up front was a poor question: it
+ * is abstract, and you cannot judge the answer before seeing a plan. It now
+ * lives on the result, phrased as the outcome rather than the intent, where
+ * changing it visibly rewrites the route.
+ */
+const PACES: Array<{ key: DarshanPace; label: string }> = [
+  { key: 'thorough', label: 'Queue at every stop' },
+  { key: 'balanced', label: 'A bit of both' },
+  { key: 'quick', label: 'Mostly from outside' },
 ];
 
 const INTERESTS: Array<{ key: Interest; label: string; labelMr?: string }> = [
@@ -85,7 +76,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
   const origin = geo.status === 'ready' ? geo.position : PUNE_CENTER;
 
   const plan = useMemo(() => {
-    if (budget === null || step < 3) return null;
+    if (budget === null || step < 2) return null;
     return buildItinerary({
       budgetMinutes: budget,
       interests: [...interests],
@@ -106,7 +97,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
   };
 
   const buildRoute = () => {
-    setStep(3);
+    setStep(2);
     trackEvent('plan_created', {
       props: { source: 'wizard', budget: budget ?? 0, pace, interests: [...interests].join(',') },
     });
@@ -118,7 +109,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
     router.push('/plan');
   };
 
-  const steps = ['Time', 'Style', 'Interests', 'Your route'];
+  const steps = ['Time', 'What to see', 'Your route'];
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-nav pt-[calc(var(--safe-top)+16px)] md:pb-10">
@@ -193,47 +184,8 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
         </section>
       )}
 
-      {/* ---------------- Step 2: pace ---------------- */}
+      {/* ---------------- Step 2: what to see ---------------- */}
       {step === 1 && (
-        <section className="mt-6">
-          <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--chandan)]">
-            How do you want to take darshan?
-          </h1>
-          <div className="mt-5 space-y-2">
-            {PACES.map(({ key, icon: Icon, title, body, recommended }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => { setPace(key); setStep(2); }}
-                className={cn(
-                  'flex w-full items-start gap-3 rounded-[var(--radius-card)] border p-4 text-left transition-colors',
-                  pace === key
-                    ? 'border-[var(--shendur)] bg-[var(--shendur)]/10'
-                    : 'border-[var(--line)] bg-[var(--dhoop)] hover:border-[var(--shendur)]/40'
-                )}
-              >
-                <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--shendur)]" />
-                <span className="min-w-0">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-[15px] font-semibold text-[var(--chandan)]">{title}</span>
-                    {recommended && (
-                      <span className="rounded-full border border-[var(--pital)]/40 px-1.5 text-[10px] font-bold uppercase tracking-wide text-[var(--pital)]">
-                        Recommended
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-0.5 block text-[13px] leading-relaxed text-[var(--muted)]">
-                    {body}
-                  </span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ---------------- Step 3: interests ---------------- */}
-      {step === 2 && (
         <section className="mt-6">
           <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--chandan)]">
             What do you want to see?
@@ -289,8 +241,8 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
         </section>
       )}
 
-      {/* ---------------- Step 4: result ---------------- */}
-      {step === 3 && plan && (
+      {/* ---------------- Step 3: result ---------------- */}
+      {step === 2 && plan && (
         <section className="mt-6">
           <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[var(--chandan)]">
             Your darshan
@@ -322,7 +274,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                 className="mt-4 h-56 w-full"
               />
 
-              <div className="mt-4 flex gap-2 text-[12px] text-[var(--faint)]">
+              <div className="mt-4 flex flex-wrap gap-2 text-[12px] text-[var(--faint)]">
                 <span className="rounded-full border border-[var(--line)] px-2.5 py-1">
                   {formatDuration(plan.darshanMinutes * 60)} darshan
                 </span>
@@ -330,6 +282,26 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                   {formatDuration(plan.travelMinutes * 60)} travel
                 </span>
               </div>
+
+              {/* Adjusting pace here rewrites the plan in place, so the
+                  trade-off is visible instead of hypothetical. */}
+              <fieldset className="mt-5">
+                <legend className="mb-2 text-[13px] text-[var(--muted)]">
+                  Want more mandals, or longer at each one?
+                </legend>
+                <div className="scroll-x flex gap-2">
+                  {PACES.map((p) => (
+                    <Chip
+                      key={p.key}
+                      selected={pace === p.key}
+                      onClick={() => setPace(p.key)}
+                      className="h-9"
+                    >
+                      {p.label}
+                    </Chip>
+                  ))}
+                </div>
+              </fieldset>
 
               <ol className="mt-4 space-y-2">
                 {plan.stops.map((stop, i) => (
