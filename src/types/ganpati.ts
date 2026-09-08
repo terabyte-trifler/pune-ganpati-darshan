@@ -14,6 +14,9 @@ export type DataConfidence = 'verified' | 'community' | 'demo';
 
 export type TravelMode = 'walk' | 'two_wheeler' | 'drive' | 'transit';
 
+/** Whether you queue to go in, or take darshan from the road. */
+export type DarshanStyle = 'inside' | 'outside' | 'either';
+
 export interface Area {
   id: string;
   slug: string;
@@ -82,6 +85,17 @@ export interface Ganpati {
   establishedYear: number | null;
 
   timings: Timings;
+
+  /**
+   * Typical minutes spent AT the mandal — queue plus darshan, excluding
+   * travel. This is what makes a time-budgeted route possible: at Dagdusheth
+   * the queue dwarfs the walk. Null when unknown; never guessed per-mandal.
+   */
+  darshanMinutes: number | null;
+  /** The bad case, when a queue is genuinely unpredictable. */
+  peakDarshanMinutes: number | null;
+  darshanStyle: DarshanStyle;
+
   images: GanpatiImage[];
   tags: string[];
 
@@ -132,4 +146,31 @@ export interface DarshanPlan {
   totalDurationS: number | null;
   stops: PlanStop[];
   createdAt: string;
+}
+
+/** A stop on a curated route. Overrides the mandal's default dwell time. */
+export interface RouteStop {
+  ganpati: Ganpati;
+  position: number;
+  darshanMinutes: number | null;
+  darshanStyle: DarshanStyle | null;
+  note: string | null;
+}
+
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night' | 'any';
+
+export interface CuratedRoute {
+  id: string;
+  slug: string;
+  title: string;
+  titleMr: string | null;
+  summary: string | null;
+  description: string | null;
+  mode: TravelMode;
+  timeOfDay: TimeOfDay;
+  themes: string[];
+  /** Sum of stop dwell times, cached. Travel time is computed separately. */
+  totalDarshanS: number | null;
+  featured: boolean;
+  stops: RouteStop[];
 }

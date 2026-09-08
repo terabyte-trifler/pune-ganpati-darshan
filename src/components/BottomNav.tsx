@@ -21,7 +21,7 @@ const TABS = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/map', label: 'Map', icon: Map },
-  { href: '/plan', label: 'Plan', icon: Route },
+  { href: '/routes', label: 'Routes', icon: Route },
   { href: '/saved', label: 'Saved', icon: Heart },
 ] as const;
 

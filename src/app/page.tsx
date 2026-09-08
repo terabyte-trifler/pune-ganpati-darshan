@@ -3,6 +3,8 @@ import { Search, Route as RouteIcon, ChevronRight } from 'lucide-react';
 import {
   getAllGanpatis, getAreas, getFestivalConfig, getManachePaach,
 } from '@/services/ganpati';
+import { getRoutes, computeRouteTotals } from '@/services/routes';
+import { formatDuration } from '@/lib/geo';
 import { FestivalCountdown } from '@/features/discovery/FestivalCountdown';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
@@ -22,11 +24,12 @@ import { Button } from '@/components/ui/Button';
 export const revalidate = 3600;
 
 export default async function HomePage() {
-  const [festival, all, manache, areas] = await Promise.all([
+  const [festival, all, manache, areas, routes] = await Promise.all([
     getFestivalConfig(),
     getAllGanpatis(),
     getManachePaach(),
     getAreas(),
+    getRoutes(),
   ]);
 
   const iconic = all.filter((g) => g.category !== 'maanache').slice(0, 8);
@@ -75,9 +78,9 @@ export default async function HomePage() {
               <Link href="/map">Open map</Link>
             </Button>
             <Button asChild variant="secondary" size="md" className="flex-1">
-              <Link href="/plan">
+              <Link href="/start">
                 <RouteIcon size={16} aria-hidden="true" />
-                Plan darshan
+                Build my route
               </Link>
             </Button>
           </div>
@@ -160,6 +163,39 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ---------------- Curated routes ---------------- */}
+      <section className="mt-10">
+        <SectionHeader title="Ready-made routes" titleMr="दर्शन मार्ग" href="/routes" />
+        <div className="scroll-x flex gap-3 px-4 pb-1">
+          {routes.slice(0, 5).map((r) => {
+            const totals = computeRouteTotals(r);
+            return (
+              <Link
+                key={r.id}
+                href={`/routes/${r.slug}`}
+                prefetch={false}
+                className="w-[230px] shrink-0 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3.5 [scroll-snap-align:start] transition-colors hover:border-[var(--shendur)]/40"
+              >
+                <h3 className="clamp-2 text-[14px] font-bold leading-tight text-[var(--chandan)]">
+                  {r.title}
+                </h3>
+                {r.summary && (
+                  <p className="clamp-2 mt-1 text-[12px] leading-relaxed text-[var(--muted)]">
+                    {r.summary}
+                  </p>
+                )}
+                <p className="mt-2 text-[12px] text-[var(--faint)]">
+                  {totals.stopCount} stops ·{' '}
+                  <span className="text-[var(--zendu)]">
+                    about {formatDuration(totals.totalS)}
+                  </span>
+                </p>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ---------------- Plan CTA ---------------- */}
       <section className="mt-10 px-4">
         <div className="grain relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--line-strong)] bg-gradient-to-br from-[#2a1a0e] to-[var(--dhoop)] p-5">
@@ -167,11 +203,11 @@ export default async function HomePage() {
             Build your darshan
           </h2>
           <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-[var(--muted)]">
-            Pick the mandals you want, choose how you&rsquo;re travelling, and
-            we&rsquo;ll order the stops into the shortest route.
+            Tell us how long you have and what you want to see. We count
+            queuing as well as walking, so the plan actually fits.
           </p>
           <Button asChild size="md" className="mt-4">
-            <Link href="/plan">Start planning</Link>
+            <Link href="/start">Build my route</Link>
           </Button>
         </div>
       </section>

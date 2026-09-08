@@ -23,6 +23,22 @@ select jsonb_pretty(jsonb_build_object(
     select coalesce(jsonb_agg(to_jsonb(c) - 'created_at' - 'updated_at' order by c.sort_order), '[]'::jsonb)
     from categories c
   ),
+  'routes', (
+    select coalesce(jsonb_agg(
+      (to_jsonb(r) - 'created_at' - 'updated_at')
+      || jsonb_build_object('stops', coalesce((
+           select jsonb_agg(jsonb_build_object(
+             'ganpati_slug', g2.slug, 'position', st.position,
+             'darshan_minutes', st.darshan_minutes,
+             'darshan_style', st.darshan_style, 'note', st.note
+           ) order by st.position)
+           from route_stops st join ganpatis g2 on g2.id = st.ganpati_id
+           where st.route_id = r.id
+         ), '[]'::jsonb))
+      order by r.sort_order
+    ), '[]'::jsonb)
+    from routes r where r.published
+  ),
   'ganpatis', (
     select coalesce(jsonb_agg(
       (to_jsonb(g) - 'created_at' - 'updated_at' - 'area_id')

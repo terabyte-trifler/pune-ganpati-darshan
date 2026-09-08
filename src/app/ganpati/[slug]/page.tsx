@@ -11,6 +11,7 @@ import { AddToPlanButton } from '@/features/planner/AddToPlanButton';
 import { DirectionsButton } from '@/features/discovery/DirectionsButton';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { ViewTracker } from '@/features/discovery/ViewTracker';
+import { MiniMap } from '@/features/map/MiniMapLoader';
 import { haversine } from '@/lib/geo';
 import { env } from '@/lib/env';
 
@@ -210,6 +211,19 @@ export default async function GanpatiPage({
             </div>
           )}
         </dl>
+
+        {/* ---------------- Where it is ---------------- */}
+        <section className="mt-4">
+          <h2 className="mb-2 text-[13px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            Where it is
+          </h2>
+          <MiniMap mandals={[g]} zoom={16} className="h-56 w-full" />
+          <p className="mt-1.5 text-[11px] text-[var(--faint)]">
+            {g.confidence === 'verified'
+              ? 'Location is cross-checked.'
+              : 'Location is accurate to the lane rather than the doorway.'}
+          </p>
+        </section>
 
         {/* ---------------- Visitor tip ---------------- */}
         {g.visitorTip && (

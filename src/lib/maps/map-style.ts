@@ -177,5 +177,10 @@ export const DARK_MAP_STYLE: StyleSpecification = {
   ],
 };
 
+/**
+ * Attribution string for surfaces that are NOT MapLibre maps (a static
+ * fallback image, say). Live maps get this automatically from the TileJSON,
+ * so passing it to AttributionControl only duplicates the credit.
+ */
 export const OSM_ATTRIBUTION =
   '<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a> · <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a>';

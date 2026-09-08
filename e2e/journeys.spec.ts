@@ -164,6 +164,54 @@ test('Flow 6 — share copies a working link', async ({ page, context }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Kasba Ganpati');
 });
 
+test('Flow 9 — the wizard builds a route that fits the time budget', async ({ page }) => {
+  await page.goto('/start');
+
+  // Step 1: time budget.
+  await page.getByRole('button', { name: '2 hours' }).click();
+  // Step 2: pace.
+  await page.getByRole('button', { name: /A bit of both/i }).click();
+  // Step 3: interests.
+  await page.getByRole('button', { name: /The famous ones/i }).click();
+  await page.getByRole('button', { name: /Build my route/i }).click();
+
+  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+
+  // The headline claim must hold: the plan fits inside the chosen budget.
+  const summary = await page.getByText(/of your 2 hr/).textContent();
+  expect(summary).toBeTruthy();
+  const match = summary!.match(/about (?:(\d+) hr ?)?(?:(\d+) min)?/);
+  const totalMinutes = Number(match?.[1] ?? 0) * 60 + Number(match?.[2] ?? 0);
+  expect(totalMinutes).toBeGreaterThan(0);
+  expect(totalMinutes, 'plan must fit the 2 hour budget').toBeLessThanOrEqual(120);
+
+  // Queue time must be shown separately — it is the part people underestimate.
+  await expect(page.getByText(/darshan$/).first()).toBeVisible();
+  await expect(page.getByText(/travel$/).first()).toBeVisible();
+
+  // Taking the route hands it to the planner.
+  await page.getByRole('button', { name: /Use this route/i }).click();
+  await expect(page).toHaveURL(/\/plan/);
+  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+});
+
+test('Flow 10 — curated routes are browsable and reusable', async ({ page }) => {
+  await page.goto('/routes');
+  await expect(page.getByRole('heading', { name: /Curated darshan routes/i })).toBeVisible();
+
+  await page.getByRole('link', { name: /Manache 5 Sakal Walk/i }).first().click();
+  await expect(page).toHaveURL(/\/routes\/manache-5-sakal-walk/);
+
+  // Five ceremonial stops, each with a queue estimate.
+  await expect(page.getByText('Shri Kasba Ganpati')).toBeVisible();
+  await expect(page.getByText(/about \d+ min/).first()).toBeVisible();
+
+  // The route map renders.
+  await expect(page.locator('[data-minimap-ready="true"]')).toBeAttached({ timeout: 30_000 });
+
+  await expect(page.locator('body')).not.toContainText(/NaN|Infinity|undefined/);
+});
+
 test('Flow 7 — admin is not reachable without authorization', async ({ page }) => {
   // Authorization must not depend on hiding UI (§27). With no session the
   // route must redirect, not render.

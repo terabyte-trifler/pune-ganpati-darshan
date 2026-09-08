@@ -10,7 +10,7 @@ import {
   type ErrorEvent,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { DARK_MAP_STYLE, OSM_ATTRIBUTION } from '@/lib/maps/map-style';
+import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
 import { buildMarkerSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
@@ -124,7 +124,9 @@ export function MapCanvas({
     mapRef.current = map;
 
     map.addControl(
-      new AttributionControl({ compact: true, customAttribution: OSM_ATTRIBUTION }),
+      // No customAttribution: the TileJSON already supplies the required
+      // OpenStreetMap/OpenMapTiles credit, and adding ours duplicated it.
+      new AttributionControl({ compact: true }),
       'bottom-left'
     );
 

@@ -9,6 +9,7 @@
 export type GanpatiCategoryEnum = 'maanache' | 'famous' | 'historic' | 'local';
 export type DataConfidenceEnum = 'verified' | 'community' | 'demo';
 export type TravelModeEnum = 'walk' | 'two_wheeler' | 'drive' | 'transit';
+export type DarshanStyleEnum = 'inside' | 'outside' | 'either';
 
 export type AreaRow = {
   id: string;
@@ -54,6 +55,9 @@ export type GanpatiRow = {
   timing_open: string | null;
   timing_close: string | null;
   timing_note: string | null;
+  darshan_minutes: number | null;
+  peak_darshan_minutes: number | null;
+  darshan_style: DarshanStyleEnum;
   tags: string[];
   confidence: DataConfidenceEnum;
   featured: boolean;
@@ -170,6 +174,37 @@ export type NearbyGanpatiResult = Omit<SearchGanpatiResult, 'rank'> & {
  * fail that check silently — the schema resolves to `never` and every query
  * result becomes `never`. Type aliases do satisfy it.
  */
+export type RouteRow = {
+  id: string;
+  slug: string;
+  title: string;
+  title_mr: string | null;
+  summary: string | null;
+  description: string | null;
+  mode: TravelModeEnum;
+  time_of_day: string | null;
+  themes: string[];
+  total_distance_m: number | null;
+  total_walk_s: number | null;
+  total_darshan_s: number | null;
+  featured: boolean;
+  published: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type RouteStopRow = {
+  id: string;
+  route_id: string;
+  ganpati_id: string;
+  position: number;
+  darshan_minutes: number | null;
+  darshan_style: DarshanStyleEnum | null;
+  note: string | null;
+  created_at: string;
+};
+
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
   Insert: Insert;
@@ -190,6 +225,8 @@ export type Database = {
       darshan_plan_stops: Table<DarshanPlanStopRow>;
       festival_config: Table<FestivalConfigRow>;
       analytics_events: Table<AnalyticsEventRow>;
+      routes: Table<RouteRow>;
+      route_stops: Table<RouteStopRow>;
     };
     Views: Record<never, never>;
     Functions: {
@@ -207,6 +244,7 @@ export type Database = {
       ganpati_category: GanpatiCategoryEnum;
       data_confidence: DataConfidenceEnum;
       travel_mode: TravelModeEnum;
+      darshan_style: DarshanStyleEnum;
     };
     CompositeTypes: Record<never, never>;
   };

@@ -19,12 +19,13 @@ distances and route ordering were already local, so nothing here bills.
 | `npm run build` | 45 pages, 0 errors |
 | `npx tsc --noEmit` | 0 errors |
 | `npm run lint` | 0 problems |
-| `npm test` (Vitest) | 23 passed |
-| `npm run test:e2e` (Playwright) | 17 passed, mobile + desktop |
+| `npm test` (Vitest) | 34 passed |
+| `npm run test:e2e` (Playwright) | 23 passed, mobile + desktop |
 | `npm audit --omit=dev` | 0 vulnerabilities |
 | Live RLS checks (real anon JWT) | 9 passed |
 | Live privilege-escalation probe | 6 passed |
 | Live admin CRUD (real session) | 4 passed |
+| Curated routes + wizard (E2E) | budget fit asserted |
 | Map renders real tiles (E2E) | asserted via MapLibre `idle` |
 | Lighthouse desktop | **100** perf · **100** a11y · **100** best-practices · **100** SEO |
 | Lighthouse mobile | **95** perf · **100** a11y · **100** best-practices · **100** SEO |
@@ -205,6 +206,28 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 `docs/04-performance.md`.
 
 ---
+
+## Route surfaces
+
+| Route | What it does |
+|---|---|
+| `/start` | Three-step builder: time budget → darshan pace → interests → a route that fits |
+| `/routes` | Curated routes, with "good for right now" chosen by Pune local time |
+| `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
+| `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |
+| `/map` | Full-screen map, clustered pins, filters, draggable sheet |
+
+Maps are embedded throughout — mandal pages show location, route and plan
+pages draw the ordered stops — not confined to `/map`.
+
+### Why queue time is modelled
+
+`darshan_minutes` per mandal is what makes a time budget honest. Dagdusheth
+alone is ~45 minutes typical and ~150 at peak, while the walk from Tulshibaug
+is six. A planner that counts only travel will cheerfully claim nine mandals
+fit in two hours and be wrong by a factor of three. Every generated plan shows
+queuing and walking separately, and the E2E suite asserts the total never
+exceeds the budget the user chose.
 
 ## Data policy
 

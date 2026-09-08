@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { ShareButton } from '@/features/discovery/ShareButton';
+import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   PUNE_CENTER, haversine, formatDistance, formatDuration,
   estimateDurationSeconds, DETOUR_FACTOR,
@@ -235,6 +236,20 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           Starting from <span className="text-[var(--chandan)]">Pune city centre</span>.
           <span className="ml-1 font-semibold text-[var(--shendur)]">Use my location →</span>
         </button>
+      )}
+
+      {/* ---------------- Route map ---------------- */}
+      <MiniMap
+        mandals={stops}
+        ordered
+        routeGeometry={result?.geometry ?? null}
+        className="mt-4 h-64 w-full"
+      />
+      {!result?.geometry && stops.length > 1 && (
+        <p className="mt-1.5 text-[11px] text-[var(--faint)]">
+          Stops are connected in order. Tap Optimise to draw the actual walking
+          path along the lanes.
+        </p>
       )}
 
       {/* ---------------- Summary ---------------- */}

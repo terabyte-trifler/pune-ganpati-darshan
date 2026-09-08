@@ -5,8 +5,12 @@ import type {
   Ganpati,
   GanpatiCategory,
   DataConfidence,
+  DarshanStyle,
   FestivalConfig,
   GanpatiImage,
+  CuratedRoute,
+  TimeOfDay,
+  TravelMode,
 } from '@/types/ganpati';
 
 /**
@@ -39,6 +43,9 @@ interface RawGanpati {
   timing_open: string | null;
   timing_close: string | null;
   timing_note: string | null;
+  darshan_minutes: number | null;
+  peak_darshan_minutes: number | null;
+  darshan_style: 'inside' | 'outside' | 'either';
   tags: string[];
   confidence: DataConfidence;
   featured: boolean;
@@ -82,6 +89,21 @@ interface RawCatalogue {
     name_mr: string | null; description: string | null; sort_order: number;
   }>;
   ganpatis: RawGanpati[];
+  routes?: RawRoute[];
+}
+
+interface RawRoute {
+  id: string; slug: string; title: string; title_mr: string | null;
+  summary: string | null; description: string | null;
+  mode: TravelMode; time_of_day: string | null; themes: string[];
+  total_distance_m: number | null; total_walk_s: number | null;
+  total_darshan_s: number | null;
+  featured: boolean; published: boolean; sort_order: number;
+  stops: Array<{
+    ganpati_slug: string; position: number;
+    darshan_minutes: number | null;
+    darshan_style: DarshanStyle | null; note: string | null;
+  }>;
 }
 
 const raw = catalogue as unknown as RawCatalogue;
@@ -130,6 +152,9 @@ export function toGanpati(r: RawGanpati): Ganpati {
       close: r.timing_close,
       note: r.timing_note,
     },
+    darshanMinutes: r.darshan_minutes,
+    peakDarshanMinutes: r.peak_darshan_minutes,
+    darshanStyle: r.darshan_style ?? 'either',
     images: r.images.map(toImage).sort((a, b) => a.sortOrder - b.sortOrder),
     tags: r.tags,
     confidence: r.confidence,
@@ -180,3 +205,36 @@ export const localFestival: FestivalConfig = {
 
 const bySlug = new Map(localGanpatis.map((g) => [g.slug, g]));
 export const getLocalGanpati = (slug: string) => bySlug.get(slug) ?? null;
+
+/** Curated routes from the generated snapshot, joined to their mandals. */
+export const localRoutes: CuratedRoute[] = (raw.routes ?? []).map((r) => ({
+  id: r.id,
+  slug: r.slug,
+  title: r.title,
+  titleMr: r.title_mr,
+  summary: r.summary,
+  description: r.description,
+  mode: r.mode,
+  timeOfDay: (r.time_of_day ?? 'any') as TimeOfDay,
+  themes: r.themes,
+  totalDarshanS: r.total_darshan_s,
+  featured: r.featured,
+  stops: r.stops
+    .map((s) => {
+      const ganpati = bySlug.get(s.ganpati_slug);
+      return ganpati
+        ? {
+            ganpati,
+            position: s.position,
+            darshanMinutes: s.darshan_minutes,
+            darshanStyle: s.darshan_style,
+            note: s.note,
+          }
+        : null;
+    })
+    .filter((s): s is NonNullable<typeof s> => s !== null)
+    .sort((a, b) => a.position - b.position),
+}));
+
+export const getLocalRoute = (slug: string) =>
+  localRoutes.find((r) => r.slug === slug) ?? null;
