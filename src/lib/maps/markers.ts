@@ -21,13 +21,33 @@ const CATEGORY_COLOR: Record<GanpatiCategory, string> = {
 };
 
 /**
- * A stylised Ganpati silhouette: crown arc, trunk curve and ear. Kept to a
- * few paths so it stays legible at 14px on a phone.
+ * Compact Ganpati silhouette for map pins, matching GanpatiGlyph.
+ *
+ * Redrawn rather than reused: at 34px the full illustration's tusks, tilak
+ * and crown band collapse into noise. This keeps only the features that
+ * survive at pin size — crown, ears, head, eyes, trunk.
+ *
+ * Coordinates are in the marker's 24x24 viewBox, centred on the pin.
  */
-const GLYPH = `
-  <path d="M12 5.2c1.9 0 3.4 1.2 3.4 3 0 .9-.4 1.6-.9 2.2.9.5 1.5 1.4 1.5 2.5 0 1.9-1.7 3.3-3.9 3.3-.6 0-1-.4-1-1s.4-1 1-1c1.1 0 1.9-.6 1.9-1.3 0-.6-.5-1.1-1.4-1.2-.5 0-.9-.5-.9-1 0-.4.2-.7.6-.9.5-.3.7-.7.7-1.1 0-.6-.4-1-1-1s-1 .4-1 1c0 .6-.4 1-1 1s-1-.4-1-1c0-1.8 1.5-3 3-3z" fill="#14100c" opacity="0.9"/>
-  <path d="M8.6 8.4c-.4-.5-1-.8-1.6-.8" stroke="#14100c" stroke-width="1.1" stroke-linecap="round" fill="none" opacity="0.75"/>
-`;
+function glyph(ink: string): string {
+  return `
+    <g fill="${ink}">
+      <circle cx="12" cy="5.4" r="0.9"/>
+      <path d="M12 6.9c1.6 0 2.9 1.1 3.4 2.7H8.6C9.1 8 10.4 6.9 12 6.9Z"/>
+      <path d="M8.9 10.4c-2 -1 -4.3 -.5 -5.2 1.3-.9 1.8-.2 4.2 1.5 5.2 1.2.7 2.6.6 3.7-.2Z" opacity="0.62"/>
+      <path d="M15.1 10.4c2-1 4.3-.5 5.2 1.3.9 1.8.2 4.2-1.5 5.2-1.2.7-2.6.6-3.7-.2Z" opacity="0.62"/>
+      <path d="M12 8.6c2.6 0 4.5 1.9 4.5 4.4v2c0 2.4-1.9 4.3-4.5 4.3s-4.5-1.9-4.5-4.3v-2c0-2.5 1.9-4.4 4.5-4.4Z"/>
+      <path d="M12 15.2c0 2-.2 3.4-1 4.5-.6.8-.5 1.8.4 2.1.7.2 1.4-.2 1.4-.9"
+            fill="none" stroke="${ink}" stroke-width="1.5" stroke-linecap="round"/>
+    </g>`;
+}
+
+/** Eye knockouts, drawn in the pin's own colour so they read as shadow. */
+function eyes(ground: string): string {
+  return `
+    <ellipse cx="10.3" cy="12.1" rx="0.75" ry="0.9" fill="${ground}"/>
+    <ellipse cx="13.7" cy="12.1" rx="0.75" ry="0.9" fill="${ground}"/>`;
+}
 
 export interface MarkerVisual {
   url: string;
@@ -46,8 +66,9 @@ export function buildMarkerSvg(
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
     ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="0.28"/>` : ''}
-    <circle cx="12" cy="12" r="9" fill="${color}" stroke="#14100c" stroke-width="${ring}"/>
-    ${GLYPH}
+    <circle cx="12" cy="12" r="10.2" fill="${color}" stroke="#14100c" stroke-width="${ring}"/>
+    ${glyph('#14100c')}
+    ${eyes(color)}
   </svg>`;
 
   return { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, size };

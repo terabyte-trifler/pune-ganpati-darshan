@@ -254,9 +254,15 @@ which is what the licences require.
 
 **The other 9 mandals deliberately have no photograph.** No freely-licensed
 image of them exists, and using a generic Ganesha stock photo would imply it
-shows that specific mandal. They render a generated gradient placeholder keyed
-to the mandal's name instead. Photographs found elsewhere online are almost
-all all-rights-reserved and are not used.
+shows that specific mandal. Photographs found elsewhere online are almost all
+all-rights-reserved and are not used.
+
+Those entries render a drawn Ganpati silhouette (`GanpatiGlyph`) on a gradient
+keyed to the mandal's name. A drawn symbol is honest in a way a borrowed photo
+is not — it is plainly an illustration, so it decorates the card without
+claiming to depict that mandal. It replaced the mandal's initial letter, which
+read as a missing asset rather than a considered placeholder. The same
+silhouette is used for map pins, so the visual language is consistent.
 
 To add more: drop rows into `ganpati_images` (or use `/admin`). The UI needs
 no change.

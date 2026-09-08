@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { GanpatiGlyph } from './GanpatiGlyph';
 import type { Ganpati } from '@/types/ganpati';
 
 /**
@@ -56,6 +57,10 @@ export function GanpatiImage({
   }
 
   const hue = hueFor(ganpati.slug);
+  // Dark tone of the same hue, so the knocked-out eyes read as shadow rather
+  // than as holes punched to a foreign colour.
+  const knockout = `hsl(${hue - 8} 45% 13%)`;
+
   return (
     <div
       role="img"
@@ -75,13 +80,14 @@ export function GanpatiImage({
           <path d="M18 42a32 32 0 0 1 64 0" strokeWidth="1" />
         </g>
       </svg>
-      <span
-        aria-hidden="true"
-        className="relative font-semibold text-[var(--zendu)]/70"
-        style={{ fontSize: 'clamp(24px, 14cqw, 44px)' }}
-      >
-        {ganpati.name.replace(/^(Shri|Shrimant)\s+/i, '').charAt(0)}
-      </span>
+
+      {/* A drawn Ganpati rather than the mandal's initial: a letter read as a
+          missing asset, where an illustration reads as an intentional
+          placeholder — while still not implying it depicts this mandal. */}
+      <GanpatiGlyph
+        knockout={knockout}
+        className="relative h-[62%] w-[62%] text-[var(--zendu)] opacity-80"
+      />
     </div>
   );
 }
