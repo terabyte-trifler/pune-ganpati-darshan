@@ -63,19 +63,26 @@ test('Flow 2 — open the map, see a real map, select a mandal', async ({ page }
   await expect(page.getByRole('link', { name: /View Ganpati/i })).toBeVisible();
 });
 
-test('Flow 3 — enable location and see nearby mandals sorted by distance', async ({ page }) => {
+test('Flow 3 — mandals show immediately, then sort by distance on request', async ({ page }) => {
   await withPuneLocation(page);
   await page.goto('/');
 
-  await page.getByRole('button', { name: /Near me/i }).click();
-
-  const rail = page.getByRole('heading', { name: 'Ganpati near you' })
+  // Mandals must be visible before any location is granted: the section used
+  // to render a permission prompt instead of content, so declining left it
+  // permanently empty.
+  const rail = page.getByRole('heading', { name: /best known|near you/i })
     .locator('xpath=ancestor::section');
-  // Scope to the card rail; the section header also contains a "See all" link.
   const cards = rail.locator('a[href^="/ganpati/"]');
+  await expect(cards.first()).toBeVisible();
+  const beforeCount = await cards.count();
+  expect(beforeCount).toBeGreaterThan(0);
+
+  // Granting location re-sorts by distance rather than revealing the list.
+  await page.getByRole('button', { name: /Sort by what.s closest/i }).click();
+
+  await expect(page.getByRole('heading', { name: 'Ganpati near you' })).toBeVisible();
   // Kasba Ganpati is at the pinned coordinates, so it must come first.
   await expect(cards.first()).toContainText('Kasba Ganpati');
-  // And it must show a real distance, not a placeholder.
   await expect(cards.first()).toContainText(/\d+\s*(m|km)/);
 });
 

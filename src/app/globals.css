@@ -168,3 +168,43 @@ body {
 .animate-heart-pop {
   animation: heart-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* ---------------------------------------------------------------------
+   MapLibre controls
+   MapLibre ships 29px buttons, which are below the 44px minimum for a
+   comfortable touch target and awkward to hit while walking. Enlarged
+   here rather than per-map so every surface gets it.
+   ------------------------------------------------------------------- */
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-in,
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-out,
+.maplibregl-ctrl-group button.maplibregl-ctrl-compass,
+.maplibregl-ctrl-group button.maplibregl-ctrl-fullscreen {
+  width: 44px !important;
+  height: 44px !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top-color: var(--line);
+}
+.maplibregl-ctrl-group {
+  background: rgb(20 16 12 / 0.92);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-float);
+}
+/* MapLibre's icons are dark SVGs meant for a light control; invert them. */
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(0.9);
+}
+.maplibregl-ctrl-attrib {
+  background: rgb(20 16 12 / 0.85) !important;
+  color: var(--muted);
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--muted);
+}
+/* The compact toggle is also a touch target. */
+.maplibregl-ctrl-attrib-button {
+  width: 28px;
+  height: 28px;
+}

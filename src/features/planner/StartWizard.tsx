@@ -177,7 +177,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
 
           <Link
             href="/explore"
-            className="mt-5 inline-block text-[13px] text-[var(--faint)] underline"
+            className="mt-4 inline-flex min-h-11 items-center text-[13px] text-[var(--faint)] underline"
           >
             Skip — let me browse on my own
           </Link>
@@ -199,7 +199,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                 selected={interests.has(i.key)}
                 onClick={() => toggleInterest(i.key)}
                 lang={i.labelMr ? 'mr' : undefined}
-                className="h-10 text-[14px]"
+                className="text-[14px]"
               >
                 {i.label}
               </Chip>
@@ -215,7 +215,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                 key={key}
                 selected={mode === key}
                 onClick={() => setMode(key)}
-                className="inline-flex h-10 items-center gap-1.5 text-[14px]"
+                className="inline-flex items-center gap-1.5 text-[14px]"
               >
                 <Icon size={14} aria-hidden="true" />
                 {label}
@@ -295,7 +295,7 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                       key={p.key}
                       selected={pace === p.key}
                       onClick={() => setPace(p.key)}
-                      className="h-9"
+                      
                     >
                       {p.label}
                     </Chip>

@@ -157,8 +157,8 @@ function Field({
     <label className="block">
       <span className="mb-1 block text-[12px] font-semibold text-[var(--muted)]">{label}</span>
       <input name={name} className={inputClass} aria-invalid={Boolean(error)} {...props} />
-      {hint && !error && <span className="mt-1 block text-[11px] text-[var(--faint)]">{hint}</span>}
-      {error && <span className="mt-1 block text-[11px] text-[#ef8f88]">{error}</span>}
+      {hint && !error && <span className="mt-1 block text-[12px] text-[var(--faint)]">{hint}</span>}
+      {error && <span className="mt-1 block text-[12px] text-[#ef8f88]">{error}</span>}
     </label>
   );
 }

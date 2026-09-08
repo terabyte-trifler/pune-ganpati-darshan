@@ -125,7 +125,7 @@ export default async function GanpatiPage({
         <Link
           href="/explore"
           aria-label="Back to explore"
-          className="absolute left-4 grid h-10 w-10 place-items-center rounded-full bg-[var(--raat)]/70 backdrop-blur"
+          className="absolute left-4 grid h-11 w-11 place-items-center rounded-full bg-[var(--raat)]/70 backdrop-blur"
           style={{ top: 'calc(var(--safe-top) + 12px)' }}
         >
           <ArrowLeft size={19} aria-hidden="true" />
@@ -138,7 +138,7 @@ export default async function GanpatiPage({
             context or the image container paints over it. */}
         <div className="relative z-10 -mt-6 flex flex-wrap items-center gap-2">
           <CategoryBadge category={g.category} rank={g.manacheRank} />
-          <span className="rounded-full border border-[var(--line-strong)] bg-[var(--dhoop)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted)]">
+          <span className="rounded-full border border-[var(--line-strong)] bg-[var(--dhoop)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
             {g.area.name}
           </span>
           <ConfidenceBadge confidence={g.confidence} />
@@ -157,17 +157,28 @@ export default async function GanpatiPage({
           </p>
         )}
 
-        {/* ---------------- Primary actions ---------------- */}
-        <div className="mt-5 flex items-center gap-2">
-          <DirectionsButton ganpati={g} className="flex-1" />
-          <SaveButton slug={g.slug} name={g.name} />
-          <ShareButton
-            title={g.name}
-            text={g.description ?? undefined}
-            path={`/ganpati/${g.slug}`}
-          />
+        {/*
+          Primary actions, pinned to the bottom of the viewport on phones once
+          they would scroll away. "Get directions" is the whole point of the
+          page, and on a phone held one-handed it was otherwise stranded above
+          the fold after any scrolling. `sticky` keeps it in normal flow until
+          that happens, so nothing is duplicated and desktop is unaffected.
+        */}
+        <div
+          className="sticky z-20 -mx-4 mt-5 border-t border-[var(--line)] bg-[var(--raat)]/95 px-4 py-3 backdrop-blur-xl md:static md:mx-0 md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+          style={{ bottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
+        >
+          <div className="flex items-center gap-2">
+            <DirectionsButton ganpati={g} className="flex-1" />
+            <SaveButton slug={g.slug} name={g.name} />
+            <ShareButton
+              title={g.name}
+              text={g.description ?? undefined}
+              path={`/ganpati/${g.slug}`}
+            />
+          </div>
+          <AddToPlanButton slug={g.slug} name={g.name} full className="mt-2" />
         </div>
-        <AddToPlanButton slug={g.slug} name={g.name} full className="mt-2" />
 
         {/* ---------------- Facts ---------------- */}
         {/* Each wrapper holds only <dt>/<dd>; the icon lives inside the <dt>,
@@ -245,7 +256,7 @@ export default async function GanpatiPage({
                 </figure>
               ))}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-[var(--faint)]">
+            <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
               Each photograph is credited to its photographer.{' '}
               <Link href="/licences" className="text-[var(--shendur)] underline">
                 Sources and licences
@@ -260,7 +271,7 @@ export default async function GanpatiPage({
             Where it is
           </h2>
           <MiniMap mandals={[g]} zoom={16} className="h-56 w-full" />
-          <p className="mt-1.5 text-[11px] text-[var(--faint)]">
+          <p className="mt-1.5 text-[12px] text-[var(--faint)]">
             {g.confidence === 'verified'
               ? 'Location is cross-checked.'
               : 'Location is accurate to the lane rather than the doorway.'}
@@ -313,7 +324,10 @@ export default async function GanpatiPage({
         {g.confidence === 'verified'
           ? 'Location and history for this mandal are cross-checked. Timings are set by the mandal each year.'
           : 'This entry is compiled from community information. Coordinates are accurate to the lane rather than the doorway.'}{' '}
-        <Link href={`/category/${g.category}`} className="text-[var(--shendur)] underline">
+        <Link
+          href={`/category/${g.category}`}
+          className="mt-2 inline-flex min-h-11 items-center text-[var(--shendur)] underline"
+        >
           More {CATEGORY_LABEL[g.category]} mandals
         </Link>
       </p>

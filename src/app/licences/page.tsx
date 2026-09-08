@@ -70,7 +70,7 @@ export default async function LicencesPage() {
                   <Link href={`/ganpati/${g.slug}`} className="text-[14px] text-[var(--chandan)]">
                     {g.name}
                   </Link>
-                  <span className="shrink-0 font-mono text-[11px] text-[var(--faint)]">
+                  <span className="shrink-0 font-mono text-[12px] text-[var(--faint)]">
                     {g.osmId}
                   </span>
                 </li>

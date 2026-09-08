@@ -52,22 +52,21 @@ export default async function HomePage() {
         <div className="relative mx-auto max-w-2xl">
           <FestivalCountdown config={festival} />
 
-          <h1 className="mt-6 text-[34px] font-extrabold leading-[1.05] tracking-[-0.02em] text-[var(--chandan)] sm:text-[42px]">
+          <h1 className="mt-4 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em] text-[var(--chandan)] sm:text-[42px]">
             Experience Pune&rsquo;s
             <span className="block bg-gradient-to-r from-[var(--zendu)] via-[var(--shendur)] to-[var(--pital)] bg-clip-text text-transparent">
               Ganpati
             </span>
           </h1>
 
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[var(--muted)]">
-            Find the mandals near you, see the Manache Paach in ceremonial
-            order, and plan a walkable darshan route through the old peths.
+          <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[var(--muted)]">
+            Find what&rsquo;s near you and plan a walkable darshan.
           </p>
 
           {/* Search is the most prominent control on the page (§6) */}
           <Link
             href="/explore"
-            className="mt-5 flex h-14 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] bg-[var(--dhoop)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
+            className="mt-4 flex h-13 min-h-12 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] bg-[var(--dhoop)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
           >
             <Search size={19} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
             Search Ganpati, mandal or area…
@@ -88,7 +87,7 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------- Near you ---------------- */}
-      <section className="mt-10">
+      <section className="mt-7">
         <NearbyRail ganpatis={all} />
       </section>
 

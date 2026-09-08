@@ -14,7 +14,7 @@ export function Chip({
       type="button"
       aria-pressed={selected}
       className={cn(
-        'h-9 shrink-0 rounded-full border px-3.5 text-[13px] font-medium',
+        'h-11 shrink-0 rounded-full border px-4 text-[13px] font-medium',
         'transition-colors duration-150 active:scale-[0.97]',
         'scroll-ml-4 [scroll-snap-align:start]',
         selected

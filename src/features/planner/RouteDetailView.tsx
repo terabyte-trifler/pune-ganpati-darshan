@@ -44,7 +44,7 @@ export function RouteDetailView({
         onSelect={setSelected}
         className="h-64 w-full sm:h-80"
       />
-      <p className="mt-1.5 text-[11px] text-[var(--faint)]">
+      <p className="mt-1.5 text-[12px] text-[var(--faint)]">
         Stops are shown in walking order. Tap a number to see which mandal it is.
       </p>
 
@@ -57,7 +57,7 @@ export function RouteDetailView({
           </Link>
         </Button>
       </div>
-      <p className="mt-1.5 text-[11px] leading-relaxed text-[var(--faint)]">
+      <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">
         Copies these {totals.stopCount} stops into your darshan, where you can
         reorder them, add your own, or start navigation.
       </p>

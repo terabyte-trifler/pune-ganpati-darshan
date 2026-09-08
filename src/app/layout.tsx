@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Manrope, Mukta } from 'next/font/google';
 import { BottomNav } from '@/components/BottomNav';
+import { GanpatiGlyphSprite } from '@/components/ui/GanpatiGlyphSprite';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { env } from '@/lib/env';
@@ -75,6 +76,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
+        <GanpatiGlyphSprite />
         <OfflineBanner />
         {children}
         <BottomNav />

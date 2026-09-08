@@ -72,7 +72,7 @@ function RouteCard({ route, highlight = false }: { route: CuratedRoute; highligh
           </span>
         </div>
 
-        <p className="text-[11px] text-[var(--faint)]">
+        <p className="text-[12px] text-[var(--faint)]">
           {TIME_LABEL[route.timeOfDay] ?? 'Any time'} · includes about{' '}
           {formatDuration(totals.darshanS)} queuing and darshan
         </p>

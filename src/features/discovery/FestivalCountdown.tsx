@@ -42,7 +42,7 @@ export function FestivalCountdown({ config }: { config: FestivalConfig }) {
       />
       <div className="min-w-0">
         <p className="truncate text-[13px] font-semibold text-[var(--chandan)]">{line}</p>
-        <p className="truncate text-[11px] text-[var(--faint)]">{sub}</p>
+        <p className="truncate text-[12px] text-[var(--faint)]">{sub}</p>
       </div>
       {phase.phase === 'during' && (
         <span lang="mr" className="ml-auto shrink-0 text-[12px] font-semibold text-[var(--pital)]">

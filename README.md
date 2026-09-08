@@ -176,6 +176,7 @@ from drifting from the database.
 | `npm run lint` | ESLint |
 | `npm run typecheck` | tsc --noEmit |
 | `npm run visual` | screenshot + horizontal-overflow sweep |
+| `npm run audit:mobile` | tap-target, spacing and text-size audit at 390px |
 
 ---
 
@@ -221,6 +222,36 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 `docs/04-performance.md`.
 
 ---
+
+## Mobile
+
+The phone is the product; desktop is the responsive fallback. `npm run
+audit:mobile` measures the things that decide whether a page works one-handed
+outdoors and fails on anything below them:
+
+| Check | Threshold |
+|---|---|
+| Tap targets | 44 × 44 px (WCAG 2.5.5) |
+| Space between adjacent targets | 8 px |
+| Body text | 12 px |
+| Horizontal overflow | none, 320–1440 px |
+
+All seven main surfaces pass. Decisions that came out of running it:
+
+- **The home page shows mandals, not a permission prompt.** "Ganpati near you"
+  used to render a consent card and nothing else, so the most useful answer on
+  the page was gated behind a dialog — and anyone who declined saw an empty
+  section forever. It now lists the best-known mandals immediately and
+  re-sorts by distance when location is granted.
+- **The mandal page pins its actions.** "Get directions" is the point of that
+  page and was stranded above the fold after any scrolling, so it sticks to
+  the bottom of the viewport on phones while staying in normal flow on
+  desktop.
+- **The glyph is one SVG sprite.** Inlining ~15 paths per card meant 276
+  shapes on /explore. A single `<symbol>` plus `<use>` took the home page from
+  82 to 95 while it started showing eight mandals instead of a prompt.
+- **MapLibre's 29 px zoom buttons are enlarged to 44 px**, and its stylesheet
+  loads after Tailwind, so that override needs the specificity to win.
 
 ## Route surfaces
 
@@ -311,6 +342,36 @@ available. Adding it is data entry (or `/admin`), not code.
 
 `/licences` covers what still does carry licence conditions — OpenStreetMap
 map tiles, coordinates and routing.
+
+## Mobile
+
+The phone is the product; desktop is the responsive fallback. `npm run
+audit:mobile` measures the things that decide whether a page works one-handed
+outdoors and fails on anything below them:
+
+| Check | Threshold |
+|---|---|
+| Tap targets | 44 × 44 px (WCAG 2.5.5) |
+| Space between adjacent targets | 8 px |
+| Body text | 12 px |
+| Horizontal overflow | none, 320–1440 px |
+
+All seven main surfaces pass. Decisions that came out of running it:
+
+- **The home page shows mandals, not a permission prompt.** "Ganpati near you"
+  used to render a consent card and nothing else, so the most useful answer on
+  the page was gated behind a dialog — and anyone who declined saw an empty
+  section forever. It now lists the best-known mandals immediately and
+  re-sorts by distance when location is granted.
+- **The mandal page pins its actions.** "Get directions" is the point of that
+  page and was stranded above the fold after any scrolling, so it sticks to
+  the bottom of the viewport on phones while staying in normal flow on
+  desktop.
+- **The glyph is one SVG sprite.** Inlining ~15 paths per card meant 276
+  shapes on /explore. A single `<symbol>` plus `<use>` took the home page from
+  82 to 95 while it started showing eight mandals instead of a prompt.
+- **MapLibre's 29 px zoom buttons are enlarged to 44 px**, and its stylesheet
+  loads after Tailwind, so that override needs the specificity to win.
 
 ## Route surfaces
 

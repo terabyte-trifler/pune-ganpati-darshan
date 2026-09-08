@@ -125,7 +125,7 @@ export default async function RoutePage({
               <dd className="mt-1 text-[18px] font-bold leading-none text-[var(--chandan)]">
                 {value}
               </dd>
-              <dt className="mt-1 text-[11px] text-[var(--faint)]">{label}</dt>
+              <dt className="mt-1 text-[12px] text-[var(--faint)]">{label}</dt>
             </div>
           ))}
         </dl>

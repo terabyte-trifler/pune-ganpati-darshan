@@ -291,7 +291,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
         className="mt-4 h-64 w-full"
       />
       {!result?.geometry && stops.length > 1 && (
-        <p className="mt-1.5 text-[11px] text-[var(--faint)]">
+        <p className="mt-1.5 text-[12px] text-[var(--faint)]">
           Stops are connected in order. Tap Optimise to draw the actual walking
           path along the lanes.
         </p>
@@ -304,13 +304,13 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
             <p className="text-[22px] font-bold leading-none text-[var(--chandan)]">
               {totalDistance !== null ? formatDistance(totalDistance) : '—'}
             </p>
-            <p className="mt-1 text-[11px] text-[var(--faint)]">distance</p>
+            <p className="mt-1 text-[12px] text-[var(--faint)]">distance</p>
           </div>
           <div>
             <p className="text-[22px] font-bold leading-none text-[var(--chandan)]">
               {totalDuration !== null ? formatDuration(totalDuration) : '—'}
             </p>
-            <p className="mt-1 text-[11px] text-[var(--faint)]">
+            <p className="mt-1 text-[12px] text-[var(--faint)]">
               {isEstimate
                 ? 'estimated'
                 : result?.durationSource === 'provider'

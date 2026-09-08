@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "visual": "node tools/visual-check.mjs",
-    "db:catalogue": "./scripts/export-catalogue.sh"
+    "db:catalogue": "./scripts/export-catalogue.sh",
+    "audit:mobile": "node tools/mobile-audit.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",

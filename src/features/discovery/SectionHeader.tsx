@@ -22,7 +22,9 @@ export function SectionHeader({
       {href && (
         <Link
           href={href}
-          className="flex shrink-0 items-center gap-0.5 py-1 text-[13px] font-medium text-[var(--shendur)]"
+          // -mr-2 keeps the visual edge aligned while the tap area extends
+          // to the full 44px minimum.
+          className="-mr-2 flex min-h-11 shrink-0 items-center gap-0.5 px-2 py-2 text-[13px] font-medium text-[var(--shendur)]"
         >
           {hrefLabel}
           <ChevronRight size={14} aria-hidden="true" />

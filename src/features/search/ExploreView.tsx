@@ -164,7 +164,7 @@ export function ExploreView({
           >
             <SlidersHorizontal size={18} aria-hidden="true" />
             {activeFilterCount > 0 && (
-              <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-[var(--shendur)] text-[11px] font-bold text-[#1a0e04]">
+              <span className="absolute -right-1 -top-1 grid h-5 w-5 place-items-center rounded-full bg-[var(--shendur)] text-[12px] font-bold text-[#1a0e04]">
                 {activeFilterCount}
               </span>
             )}
@@ -266,7 +266,7 @@ export function ExploreView({
             )}
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 pb-6 sm:grid-cols-3 lg:grid-cols-4">
             {results.map(({ ganpati, distanceM }, i) => (
               <li key={ganpati.id}>
                 <GanpatiCard
@@ -287,7 +287,7 @@ export function ExploreView({
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[var(--faint)]">
+      <p className="mb-1.5 text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
         {label}
       </p>
       <div className="scroll-x flex gap-2 pb-1">{children}</div>
