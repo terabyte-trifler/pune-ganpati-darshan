@@ -235,6 +235,23 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 Maps are embedded throughout — mandal pages show location, route and plan
 pages draw the ordered stops — not confined to `/map`.
 
+### Coordinate provenance
+
+Every mandal records where its coordinate came from (`coordinate_source`,
+`osm_id`), because the catalogue mixes sources and this app sends people
+walking on these numbers.
+
+Cross-checking the original seed against OpenStreetMap
+(`tools/verify-coordinates.mjs`) found six mandals with an independently
+mapped counterpart, and **two disagreeing by more than 400m** — a different
+lane in the peths. Those two had no recorded origin; the OSM nodes are named,
+tagged as places of worship, and re-checkable by id, so they were adopted and
+the change recorded rather than made silently. Dagdusheth agreed to within
+66m, which is what gave confidence the comparison itself was sound.
+
+Mandals added from OSM carry `darshan_minutes = NULL`: there is no basis for a
+queue estimate on them, and the planner already handles unknown dwell honestly.
+
 ### Curated routes
 
 16 routes, from a four-hour full circuit down to a genuine one-hour dash.
@@ -258,7 +275,7 @@ exceeds the budget the user chose.
 
 ## Photographs
 
-23 photographs cover 9 of the 18 mandals, all from
+23 photographs cover 9 of the 23 mandals, all from
 [Wikimedia Commons](https://commons.wikimedia.org) under CC BY / CC BY-SA.
 Every image records its photographer and licence, the UI renders that credit,
 and `/licences` lists all of them and discloses that images were resized —

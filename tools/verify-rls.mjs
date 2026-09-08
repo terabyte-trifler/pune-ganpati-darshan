@@ -23,14 +23,18 @@ const check = (name, pass, detail = '') =>
   results.push({ name, pass, detail });
 
 // 1. Public catalogue must be readable by anyone.
+//
+// Asserts "some rows came back", not an exact count: this checks the SELECT
+// policy, and pinning it to the catalogue size made an unrelated data
+// addition look like a security regression.
 {
   const { data, error } = await anon.from('ganpatis').select('slug');
-  check('anon CAN read ganpatis', !error && data?.length === 18,
+  check('anon CAN read ganpatis', !error && (data?.length ?? 0) > 0,
     error ? error.message : `${data?.length} rows`);
 }
 {
   const { data, error } = await anon.from('areas').select('slug');
-  check('anon CAN read areas', !error && data?.length === 8,
+  check('anon CAN read areas', !error && (data?.length ?? 0) > 0,
     error ? error.message : `${data?.length} rows`);
 }
 

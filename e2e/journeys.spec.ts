@@ -1,4 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
+import catalogue from '../src/content/catalogue.json';
+
+/**
+ * Counts come from the catalogue, not from literals. Hardcoding "18 mandals"
+ * meant every data addition broke three unrelated tests for no reason, which
+ * trains people to update numbers without reading what failed.
+ */
+const MANDAL_COUNT = catalogue.ganpatis.length;
 
 /**
  * The eight user journeys the product must support (§56).
@@ -50,7 +58,7 @@ test('Flow 2 — open the map, see a real map, select a mandal', async ({ page }
   await expect(page.locator('.maplibregl-ctrl-attrib')).toBeAttached();
 
   // The sheet lists every mandal, and selecting one opens its card.
-  await expect(page.getByText(/18 mandals/)).toBeVisible();
+  await expect(page.getByText(new RegExp(`${MANDAL_COUNT} mandals`))).toBeVisible();
   await page.getByRole('button', { name: /Shri Kasba Ganpati/ }).first().click();
   await expect(page.getByRole('link', { name: /View Ganpati/i })).toBeVisible();
 });
@@ -133,7 +141,7 @@ test('map degrades without WebGL instead of taking the page down', async ({ page
   ).toBeVisible();
 
   // And crucially, the rest of the page still works.
-  await expect(page.getByText(/18 mandals/)).toBeVisible();
+  await expect(page.getByText(new RegExp(`${MANDAL_COUNT} mandals`))).toBeVisible();
   await page.getByRole('button', { name: /Shri Kasba Ganpati/ }).first().click();
   await expect(page.getByRole('link', { name: /View Ganpati/i })).toBeVisible();
 });
@@ -246,7 +254,7 @@ test('every seeded mandal page resolves', async ({ request }) => {
     .map((m) => m[1])
     .filter((u) => u.includes('/ganpati/'));
 
-  expect(urls.length).toBe(18);
+  expect(urls.length).toBe(MANDAL_COUNT);
 
   for (const url of urls.slice(0, 5)) {
     const response = await request.get(new URL(url).pathname);

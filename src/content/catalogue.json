@@ -1096,6 +1096,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "श्रीमंत दगडूशेठ हलवाई गणपती",
             "category": "famous",
@@ -1120,6 +1121,7 @@
             "darshan_minutes": 45,
             "google_place_id": null,
             "established_year": 1893,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 150
         },
         {
@@ -1144,6 +1146,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "श्री कसबा गणपती",
             "category": "maanache",
@@ -1168,6 +1171,7 @@
             "darshan_minutes": 15,
             "google_place_id": null,
             "established_year": 1893,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 40
         },
         {
@@ -1213,6 +1217,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "तांबडी जोगेश्वरी गणपती",
             "category": "maanache",
@@ -1237,6 +1242,7 @@
             "darshan_minutes": 12,
             "google_place_id": null,
             "established_year": 1893,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 30
         },
         {
@@ -1283,6 +1289,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "तुळशीबाग गणपती",
             "category": "maanache",
@@ -1307,6 +1314,7 @@
             "darshan_minutes": 20,
             "google_place_id": null,
             "established_year": 1901,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 45
         },
         {
@@ -1353,6 +1361,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "गुरुजी तालीम गणपती",
             "category": "maanache",
@@ -1377,6 +1386,7 @@
             "darshan_minutes": 8,
             "google_place_id": null,
             "established_year": 1887,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 20
         },
         {
@@ -1390,6 +1400,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "केसरीवाडा गणपती",
             "category": "maanache",
@@ -1414,6 +1425,7 @@
             "darshan_minutes": 15,
             "google_place_id": null,
             "established_year": 1894,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 30
         },
         {
@@ -1427,6 +1439,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "अखिल मंडई मंडळ",
             "category": "famous",
@@ -1451,6 +1464,7 @@
             "darshan_minutes": 12,
             "google_place_id": null,
             "established_year": 1893,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 30
         },
         {
@@ -1464,6 +1478,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "छत्रपती राजाराम मंडळ",
             "category": "famous",
@@ -1488,6 +1503,7 @@
             "darshan_minutes": 10,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 25
         },
         {
@@ -1501,6 +1517,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "श्रीमंत भाऊसाहेब रंगारी गणपती",
             "category": "historic",
@@ -1525,6 +1542,7 @@
             "darshan_minutes": 8,
             "google_place_id": null,
             "established_year": 1892,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 20
         },
         {
@@ -1539,6 +1557,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "श्री सिद्धिविनायक, सारसबाग",
             "category": "famous",
@@ -1563,6 +1582,7 @@
             "darshan_minutes": 25,
             "google_place_id": null,
             "established_year": 1784,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 60
         },
         {
@@ -1576,6 +1596,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "श्री मोरया गोसावी गणपती मंदिर",
             "category": "famous",
@@ -1600,6 +1621,7 @@
             "darshan_minutes": 20,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 50
         },
         {
@@ -1645,6 +1667,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "हुतात्मा बाबू गेनू मंडळ",
             "category": "historic",
@@ -1669,6 +1692,7 @@
             "darshan_minutes": 10,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 25
         },
         {
@@ -1713,6 +1737,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "शनिपार मंडळ",
             "category": "historic",
@@ -1737,6 +1762,7 @@
             "darshan_minutes": 6,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 15
         },
         {
@@ -1760,15 +1786,16 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": "node/12176170904",
             "address": null,
             "name_mr": "निंबाळकर तालीम मंडळ",
             "category": "historic",
             "featured": false,
-            "latitude": 18.5138,
+            "latitude": 18.5119,
             "verified": false,
             "area_name": "Budhwar Peth",
             "area_slug": "budhwar-peth",
-            "longitude": 73.8558,
+            "longitude": 73.8522,
             "published": true,
             "confidence": "community",
             "prominence": 540,
@@ -1784,7 +1811,47 @@
             "darshan_minutes": 6,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 15
+        },
+        {
+            "id": "e1af0677-2eea-462c-bdbb-db20bcfa1791",
+            "name": "Shree Trishund Ganpati Mandir",
+            "slug": "trishund-ganpati-mandir",
+            "tags": [
+                "historic",
+                "heritage",
+                "temple"
+            ],
+            "images": [
+            ],
+            "osm_id": "node/11846700223",
+            "address": null,
+            "name_mr": "श्री त्रिशुंड गणपती मंदिर",
+            "category": "historic",
+            "featured": false,
+            "latitude": 18.5217,
+            "verified": false,
+            "area_name": "Ganesh Peth",
+            "area_slug": "ganesh-peth",
+            "longitude": 73.8619,
+            "published": true,
+            "confidence": "community",
+            "prominence": 480,
+            "description": "An eighteenth-century stone temple in Nana Peth, known for its carved facade and the unusual three-trunked idol it is named for.",
+            "timing_note": null,
+            "timing_open": null,
+            "visitor_tip": null,
+            "area_is_core": true,
+            "area_name_mr": "गणेश पेठ",
+            "manache_rank": null,
+            "timing_close": null,
+            "darshan_style": "either",
+            "darshan_minutes": null,
+            "google_place_id": null,
+            "established_year": null,
+            "coordinate_source": "openstreetmap",
+            "peak_darshan_minutes": null
         },
         {
             "id": "7c863e37-de61-4e39-8b95-4af1a9821c9b",
@@ -1828,6 +1895,7 @@
                     "blur_data_url": null
                 }
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "जिलब्या मारुती मंडळ",
             "category": "local",
@@ -1852,6 +1920,7 @@
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 12
         },
         {
@@ -1863,6 +1932,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "नातू बाग मंडळ",
             "category": "local",
@@ -1887,7 +1957,46 @@
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 12
+        },
+        {
+            "id": "e3e16e0b-16ca-413b-801d-0b639f60d495",
+            "name": "Chinchechi Talim Ganpati",
+            "slug": "chinchechi-talim-ganpati",
+            "tags": [
+                "historic",
+                "talim"
+            ],
+            "images": [
+            ],
+            "osm_id": "node/5832547676",
+            "address": null,
+            "name_mr": "चिंचेची तालीम गणपती",
+            "category": "historic",
+            "featured": false,
+            "latitude": 18.5086,
+            "verified": false,
+            "area_name": "Shukrawar Peth",
+            "area_slug": "shukrawar-peth",
+            "longitude": 73.8555,
+            "published": true,
+            "confidence": "community",
+            "prominence": 380,
+            "description": "A talim mandal in the Shukrawar Peth lanes, part of the wrestling-gymnasium tradition that produced several of Pune's early mandals.",
+            "timing_note": null,
+            "timing_open": null,
+            "visitor_tip": null,
+            "area_is_core": true,
+            "area_name_mr": "शुक्रवार पेठ",
+            "manache_rank": null,
+            "timing_close": null,
+            "darshan_style": "either",
+            "darshan_minutes": null,
+            "google_place_id": null,
+            "established_year": null,
+            "coordinate_source": "openstreetmap",
+            "peak_darshan_minutes": null
         },
         {
             "id": "4085bb48-3bd1-496c-8726-2ad250fc9017",
@@ -1898,15 +2007,16 @@
             ],
             "images": [
             ],
+            "osm_id": "node/2517303170",
             "address": null,
             "name_mr": "गरुड गणपती मंडळ",
             "category": "local",
             "featured": false,
-            "latitude": 18.5155,
+            "latitude": 18.5137,
             "verified": false,
             "area_name": "Shaniwar Peth",
             "area_slug": "shaniwar-peth",
-            "longitude": 73.85,
+            "longitude": 73.8456,
             "published": true,
             "confidence": "community",
             "prominence": 380,
@@ -1922,6 +2032,7 @@
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "openstreetmap",
             "peak_darshan_minutes": 12
         },
         {
@@ -1933,6 +2044,7 @@
             ],
             "images": [
             ],
+            "osm_id": null,
             "address": null,
             "name_mr": "हत्ती गणपती मंडळ",
             "category": "local",
@@ -1957,7 +2069,120 @@
             "darshan_minutes": 5,
             "google_place_id": null,
             "established_year": null,
+            "coordinate_source": "prototype-seed",
             "peak_darshan_minutes": 12
+        },
+        {
+            "id": "92be5aec-daeb-44e5-af97-3ee8cf68ea28",
+            "name": "Perugate Bhave Mitra Mandal",
+            "slug": "perugate-bhave-mandal",
+            "tags": [
+                "local"
+            ],
+            "images": [
+            ],
+            "osm_id": "way/217773614",
+            "address": null,
+            "name_mr": "पेरूगेट भावे मित्र मंडळ",
+            "category": "local",
+            "featured": false,
+            "latitude": 18.511,
+            "verified": false,
+            "area_name": "Narayan Peth",
+            "area_slug": "narayan-peth",
+            "longitude": 73.8473,
+            "published": true,
+            "confidence": "community",
+            "prominence": 340,
+            "description": "A Narayan Peth mandal at Perugate, named for the Bhave school it stands beside.",
+            "timing_note": null,
+            "timing_open": null,
+            "visitor_tip": null,
+            "area_is_core": true,
+            "area_name_mr": "नारायण पेठ",
+            "manache_rank": null,
+            "timing_close": null,
+            "darshan_style": "either",
+            "darshan_minutes": null,
+            "google_place_id": null,
+            "established_year": null,
+            "coordinate_source": "openstreetmap",
+            "peak_darshan_minutes": null
+        },
+        {
+            "id": "66d726d0-9bd7-44bd-9b20-0b8320c72b8e",
+            "name": "Mati Ganpati",
+            "slug": "mati-ganpati",
+            "tags": [
+                "local"
+            ],
+            "images": [
+            ],
+            "osm_id": "node/2870389543",
+            "address": null,
+            "name_mr": "माती गणपती",
+            "category": "local",
+            "featured": false,
+            "latitude": 18.5159,
+            "verified": false,
+            "area_name": "Shaniwar Peth",
+            "area_slug": "shaniwar-peth",
+            "longitude": 73.8468,
+            "published": true,
+            "confidence": "community",
+            "prominence": 320,
+            "description": "A Shaniwar Peth mandal on the western side of the peth core.",
+            "timing_note": null,
+            "timing_open": null,
+            "visitor_tip": null,
+            "area_is_core": true,
+            "area_name_mr": "शनिवार पेठ",
+            "manache_rank": null,
+            "timing_close": null,
+            "darshan_style": "either",
+            "darshan_minutes": null,
+            "google_place_id": null,
+            "established_year": null,
+            "coordinate_source": "openstreetmap",
+            "peak_darshan_minutes": null
+        },
+        {
+            "id": "154489b4-6c62-4d0b-b700-72596d98092d",
+            "name": "Phani Ali Ganesh Mandir",
+            "slug": "phani-ali-ganesh-mandir",
+            "tags": [
+                "local",
+                "temple"
+            ],
+            "images": [
+            ],
+            "osm_id": "node/6241949025",
+            "address": null,
+            "name_mr": "फणी आळी गणेश मंदिर",
+            "category": "local",
+            "featured": false,
+            "latitude": 18.5188,
+            "verified": false,
+            "area_name": "Kasba Peth",
+            "area_slug": "kasba-peth",
+            "longitude": 73.8571,
+            "published": true,
+            "confidence": "community",
+            "prominence": 300,
+            "description": "A lane temple in the Kasba Peth quarter, a short walk from the gramdaivat.",
+            "timing_note": null,
+            "timing_open": null,
+            "visitor_tip": null,
+            "area_is_core": true,
+            "area_name_mr": "कसबा पेठ",
+            "manache_rank": null,
+            "timing_close": null,
+            "darshan_style": "either",
+            "darshan_minutes": null,
+            "google_place_id": null,
+            "established_year": null,
+            "coordinate_source": "openstreetmap",
+            "peak_darshan_minutes": null
         }
     ],
     "categories": [
@@ -1994,5 +2219,5 @@
             "description": "Peth mandals worth folding into a walk between the larger stops."
         }
     ],
-    "generatedAt": "2026-09-08T19:31:54.766548+00:00"
+    "generatedAt": "2026-09-08T19:38:25.675379+00:00"
 }
