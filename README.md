@@ -294,6 +294,96 @@ fit in two hours and be wrong by a factor of three. Every generated plan shows
 queuing and walking separately, and the E2E suite asserts the total never
 exceeds the budget the user chose.
 
+## Imagery
+
+**No photographs of the mandals are used.** Every mandal is shown with a drawn
+Ganpati mark (`GanpatiGlyph`) on a gradient keyed to its name.
+
+That is a deliberate choice, not a gap. An illustration is plainly not a
+picture of a specific mandal, whereas a borrowed or generic photo implies
+something untrue about a real place — the same reasoning that keeps darshan
+timings unpublished. It also means the site carries no third-party image
+licensing at all.
+
+The image pipeline remains intact: `ganpati_images` rows render automatically
+in the hero and gallery, with per-photo credit, whenever real photography is
+available. Adding it is data entry (or `/admin`), not code.
+
+`/licences` covers what still does carry licence conditions — OpenStreetMap
+map tiles, coordinates and routing.
+
+## Route surfaces
+
+| Route | What it does |
+|---|---|
+| `/start` | Three-step builder: time budget → darshan pace → interests → a route that fits |
+| `/routes` | 16 curated routes, with "good for right now" chosen by Pune local time |
+| `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
+| `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |
+| `/map` | Full-screen map, clustered pins, filters, draggable sheet |
+
+Maps are embedded throughout — mandal pages show location, route and plan
+pages draw the ordered stops — not confined to `/map`.
+
+### Favourites and saved plans
+
+Favourites are written to `localStorage` first, always. Saving a mandal has to
+work instantly, offline and without an account — someone in a crowded lane on
+patchy 4G should not wait on a round-trip to tap a heart.
+
+Signing in **merges** rather than replaces, so mandals saved before creating an
+account are kept, and a second device gets the union rather than whichever
+side wrote last. Removals propagate explicitly, so a later merge cannot
+resurrect something deleted.
+
+Plans are shareable two ways. `/plan/[shareId]` persists to `darshan_plans`
+and gives a short, durable link; if storage is unavailable the Share button
+falls back to `/plan?stops=…`, which carries the route in the URL and
+therefore always works. Either link opens read-only with an explicit "use this
+route" — opening someone else's plan must never overwrite your own.
+
+Verified with `tools/verify-favorites-sync.mjs`, which uses two independent
+browser contexts sharing an account but not localStorage — the case a
+single-context test would miss.
+
+### Coordinate provenance
+
+Every mandal records where its coordinate came from (`coordinate_source`,
+`osm_id`), because the catalogue mixes sources and this app sends people
+walking on these numbers.
+
+Cross-checking the original seed against OpenStreetMap
+(`tools/verify-coordinates.mjs`) found six mandals with an independently
+mapped counterpart, and **two disagreeing by more than 400m** — a different
+lane in the peths. Those two had no recorded origin; the OSM nodes are named,
+tagged as places of worship, and re-checkable by id, so they were adopted and
+the change recorded rather than made silently. Dagdusheth agreed to within
+66m, which is what gave confidence the comparison itself was sound.
+
+Mandals added from OSM carry `darshan_minutes = NULL`: there is no basis for a
+queue estimate on them, and the planner already handles unknown dwell honestly.
+
+### Curated routes
+
+16 routes, from a four-hour full circuit down to a genuine one-hour dash.
+Shapes are the ones a Pune visitor actually asks for; the titles, copy and
+stop lists are this project's own, built from its 18 mandals and their
+measured dwell times.
+
+Where a route makes a time claim in its name, that claim is checked against
+the computed total rather than asserted — "One hour from Mandai" came out at
+1 hr 4 min on first build, so the route was trimmed (Tulshibaug from a queued
+darshan to a roadside look) until it genuinely fits in 59 minutes.
+
+### Why queue time is modelled
+
+`darshan_minutes` per mandal is what makes a time budget honest. Dagdusheth
+alone is ~45 minutes typical and ~150 at peak, while the walk from Tulshibaug
+is six. A planner that counts only travel will cheerfully claim nine mandals
+fit in two hours and be wrong by a factor of three. Every generated plan shows
+queuing and walking separately, and the E2E suite asserts the total never
+exceeds the budget the user chose.
+
 ## Photographs
 
 23 photographs cover 9 of the 23 mandals, all from
@@ -342,7 +432,7 @@ Three things are deliberate, and matter more than they look:
 | 3 | **No admin user exists yet** | `/admin` is unreachable until one is created | Sign in once, then run the SQL under *Supabase setup* |
 | 4 | **Favourites sync only while signed in** | Signed out they stay on the device, which is deliberate — saving must work with no account and no network | — |
 | 5 | **Shared plan links cannot be revoked** | `/plan/[shareId]` is public to anyone holding the id | Expose an "unshare" action that clears `is_public` |
-| 6 | **14 of 23 mandals have no photograph** | Cards fall back to the drawn Ganpati silhouette | Add rows to `ganpati_images`; no code change needed |
+| 6 | **No mandal photography** | Every card shows the drawn Ganpati mark. Deliberate — see *Imagery* | Add rows to `ganpati_images`; no code change needed |
 | 7 | **Four known mandals are missing** | Nagarkar Talim, Shahu Chowk, Hirabaug and Khadakmal Ali could not be located from any verifiable source, so they are absent rather than approximated | Survey coordinates, then `/admin/import` |
 | 8 | **Some coordinates are prototype-seeded** | 16 of 23 have no independent confirmation; two were found 400m+ out and corrected | Run `tools/verify-coordinates.mjs` as OSM coverage improves |
 | 9 | **Analytics has no dashboard** | Events are stored but only queryable via SQL | Build `/admin/analytics` over `analytics_events` |

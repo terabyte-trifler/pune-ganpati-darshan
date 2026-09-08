@@ -1062,39 +1062,6 @@
                 "aarti"
             ],
             "images": [
-                {
-                    "id": "e1ca08da-1e3a-40dd-8a6a-e9eec0617892",
-                    "alt": "Shrimant Dagdusheth Halwai Ganpati, Pune",
-                    "url": "/mandals/dagdusheth-halwai-ganpati/1.jpg",
-                    "width": 1200,
-                    "credit": "Universalashic / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 1600,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "662ca247-5087-4cf7-a6f9-33e2d5066409",
-                    "alt": "Shrimant Dagdusheth Halwai Ganpati, Pune",
-                    "url": "/mandals/dagdusheth-halwai-ganpati/2.jpg",
-                    "width": 1200,
-                    "credit": "Universalashic / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 1600,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "49aa8c14-57a0-4da1-9711-be32c5825fc4",
-                    "alt": "Shrimant Dagdusheth Halwai Ganpati, Pune",
-                    "url": "/mandals/dagdusheth-halwai-ganpati/3.jpg",
-                    "width": 1200,
-                    "credit": "Ketaki Pole / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 1600,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1134,17 +1101,6 @@
                 "heritage"
             ],
             "images": [
-                {
-                    "id": "a3956b7c-85b6-480c-8428-05fa0038b95d",
-                    "alt": "Shri Kasba Ganpati, Pune",
-                    "url": "/mandals/kasba-ganpati/1.jpg",
-                    "width": 1200,
-                    "credit": "Universalashic / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1183,39 +1139,6 @@
                 "heritage"
             ],
             "images": [
-                {
-                    "id": "837e0df2-fcec-4ae6-9273-db776dbea8a7",
-                    "alt": "Tambdi Jogeshwari Ganpati, Pune",
-                    "url": "/mandals/tambdi-jogeshwari/1.jpg",
-                    "width": 1200,
-                    "credit": "Pakshya / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "338a4700-bc25-4019-9a85-234fb6e39037",
-                    "alt": "Tambdi Jogeshwari Ganpati, Pune",
-                    "url": "/mandals/tambdi-jogeshwari/2.jpg",
-                    "width": 1200,
-                    "credit": "ANI(GM) / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 2137,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "26d3050f-c454-45f3-b3d0-a07698b81b88",
-                    "alt": "Tambdi Jogeshwari Ganpati, Pune",
-                    "url": "/mandals/tambdi-jogeshwari/3.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1255,39 +1178,6 @@
                 "market"
             ],
             "images": [
-                {
-                    "id": "b0ec04e5-9334-49dd-acff-463a0a0d813e",
-                    "alt": "Tulshibaug Ganpati, Pune",
-                    "url": "/mandals/tulshibaug-ganpati/1.jpg",
-                    "width": 1200,
-                    "credit": "ANI(GM) / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 1600,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "f7f1a2e6-adda-45da-bb75-b8fddbe4a81e",
-                    "alt": "Tulshibaug Ganpati, Pune",
-                    "url": "/mandals/tulshibaug-ganpati/2.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 1600,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "68226007-e855-4bc0-bef9-425c561b6935",
-                    "alt": "Tulshibaug Ganpati, Pune",
-                    "url": "/mandals/tulshibaug-ganpati/3.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 1600,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1327,39 +1217,6 @@
                 "heritage"
             ],
             "images": [
-                {
-                    "id": "860a72bb-ccae-4df6-934f-a4f6f8cdffb4",
-                    "alt": "Guruji Talim Ganpati, Pune",
-                    "url": "/mandals/guruji-talim/1.jpg",
-                    "width": 1200,
-                    "credit": "ANI(GM) / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "b424dbf8-b37d-4d76-af90-93613a09ade9",
-                    "alt": "Guruji Talim Ganpati, Pune",
-                    "url": "/mandals/guruji-talim/2.jpg",
-                    "width": 1200,
-                    "credit": "Suraj.patekar / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 800,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "f773684c-c158-4910-8eb5-574e02c1a942",
-                    "alt": "Guruji Talim Ganpati, Pune",
-                    "url": "/mandals/guruji-talim/3.jpg",
-                    "width": 1200,
-                    "credit": "Suraj.patekar / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 800,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1633,39 +1490,6 @@
                 "dekhava"
             ],
             "images": [
-                {
-                    "id": "381b129e-2e04-4547-b1ae-614999a53892",
-                    "alt": "Hutatma Babu Genu Mandal, Pune",
-                    "url": "/mandals/hutatma-babu-genu-mandal/1.jpg",
-                    "width": 1200,
-                    "credit": "Pooja Jadhav / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "f37a77ec-644f-42f2-8189-66430c645110",
-                    "alt": "Hutatma Babu Genu Mandal, Pune",
-                    "url": "/mandals/hutatma-babu-genu-mandal/2.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "7d6d463b-150d-4b19-8299-256c6d1f0caf",
-                    "alt": "Hutatma Babu Genu Mandal, Pune",
-                    "url": "/mandals/hutatma-babu-genu-mandal/3.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1703,39 +1527,6 @@
                 "historic"
             ],
             "images": [
-                {
-                    "id": "3dfad5cd-02fa-4791-a7c8-c4f3d31beb1f",
-                    "alt": "Shanipar Mandal, Pune",
-                    "url": "/mandals/shanipar-mandal/1.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "73856cc1-0e6b-46cb-86e2-b3f76d5e5a8a",
-                    "alt": "Shanipar Mandal, Pune",
-                    "url": "/mandals/shanipar-mandal/2.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "02ead561-b90d-4afd-897b-b5b97ef986a3",
-                    "alt": "Shanipar Mandal, Pune",
-                    "url": "/mandals/shanipar-mandal/3.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -1774,17 +1565,6 @@
                 "talim"
             ],
             "images": [
-                {
-                    "id": "e9804311-bdc3-4531-9c2a-6457c32fcbaf",
-                    "alt": "Nimbalkar Talim Mandal, Pune",
-                    "url": "/mandals/nimbalkar-talim-mandal/1.jpg",
-                    "width": 1200,
-                    "credit": "DesiBoy101 / CC BY-SA 4.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": "node/12176170904",
             "address": null,
@@ -1861,39 +1641,6 @@
                 "local"
             ],
             "images": [
-                {
-                    "id": "2190a2bd-65d3-4a1c-b018-b9b2fb16c466",
-                    "alt": "Jilbya Maruti Mandal, Pune",
-                    "url": "/mandals/jilbya-maruti-mandal/1.jpg",
-                    "width": 1200,
-                    "credit": "ANI(GM) / CC BY-SA 3.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": true,
-                    "sort_order": 0,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "c9d1f0bb-f139-40c0-bb85-ea4aa9c46419",
-                    "alt": "Jilbya Maruti Mandal, Pune",
-                    "url": "/mandals/jilbya-maruti-mandal/2.jpg",
-                    "width": 1200,
-                    "credit": "Suyashjust4u / CC BY 3.0 via Wikimedia Commons",
-                    "height": 900,
-                    "is_primary": false,
-                    "sort_order": 1,
-                    "blur_data_url": null
-                },
-                {
-                    "id": "00e58718-af79-46c7-9dee-328487ae3198",
-                    "alt": "Jilbya Maruti Mandal, Pune",
-                    "url": "/mandals/jilbya-maruti-mandal/3.jpg",
-                    "width": 1200,
-                    "credit": "Suyashjust4u / CC BY 3.0 via Wikimedia Commons",
-                    "height": 1695,
-                    "is_primary": false,
-                    "sort_order": 2,
-                    "blur_data_url": null
-                }
             ],
             "osm_id": null,
             "address": null,
@@ -2219,5 +1966,5 @@
             "description": "Peth mandals worth folding into a walk between the larger stops."
         }
     ],
-    "generatedAt": "2026-09-08T19:38:25.675379+00:00"
+    "generatedAt": "2026-09-08T20:24:17.714426+00:00"
 }

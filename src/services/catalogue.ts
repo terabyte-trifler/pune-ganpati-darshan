@@ -51,6 +51,8 @@ interface RawGanpati {
   featured: boolean;
   verified: boolean;
   published: boolean;
+  coordinate_source: string | null;
+  osm_id: string | null;
   area_slug: string;
   area_name: string;
   area_name_mr: string | null;
@@ -161,6 +163,8 @@ export function toGanpati(r: RawGanpati): Ganpati {
     featured: r.featured,
     verified: r.verified,
     published: r.published,
+    coordinateSource: r.coordinate_source ?? null,
+    osmId: r.osm_id ?? null,
     createdAt: '',
     updatedAt: '',
   };

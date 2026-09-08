@@ -105,6 +105,11 @@ export interface Ganpati {
   /** Unpublished mandals are visible to admins only (enforced by RLS). */
   published: boolean;
 
+  /** Where the coordinate came from: openstreetmap, prototype-seed, … */
+  coordinateSource: string | null;
+  /** OSM element id backing the coordinate, when that is the source. */
+  osmId: string | null;
+
   createdAt: string;
   updatedAt: string;
 }

@@ -29,7 +29,7 @@ const GANPATI_SELECT = `
   id, slug, name, name_mr, description, visitor_tip, category,
   address, latitude, longitude, google_place_id, manache_rank, prominence,
   established_year, timing_open, timing_close, timing_note, tags,
-  confidence, featured, verified, published,
+  confidence, featured, verified, published, coordinate_source, osm_id,
   areas!inner ( slug, name, name_mr, is_core ),
   ganpati_images ( id, url, alt, credit, width, height, blur_data_url, sort_order, is_primary )
 `;

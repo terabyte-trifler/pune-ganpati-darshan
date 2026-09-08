@@ -246,10 +246,9 @@ export default async function GanpatiPage({
               ))}
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-[var(--faint)]">
-              Photographs from Wikimedia Commons under Creative Commons
-              licences, resized for this site.{' '}
+              Each photograph is credited to its photographer.{' '}
               <Link href="/licences" className="text-[var(--shendur)] underline">
-                Full credits
+                Sources and licences
               </Link>
             </p>
           </section>
