@@ -19,8 +19,6 @@ const optional = <T extends z.ZodTypeAny>(schema: T) =>
 const clientSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: optional(z.string().url()),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: optional(z.string().min(20)),
-  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: optional(z.string().min(10)),
-  NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: optional(z.string().min(1)),
   NEXT_PUBLIC_APP_URL: z.preprocess(
     (v) => (v === '' || v === undefined ? 'http://localhost:3000' : v),
     z.string().url()
@@ -35,8 +33,6 @@ const clientSchema = z.object({
 const rawClientEnv = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-  NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
 };
 
@@ -58,7 +54,8 @@ export const env: z.infer<typeof clientSchema> = parsedClient.data;
  * being asserted at boot.
  */
 export const features = {
-  maps: Boolean(env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
+  // The map needs no key: OpenFreeMap tiles are open. Only Supabase is
+  // conditional now.
   supabase: Boolean(
     env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ),

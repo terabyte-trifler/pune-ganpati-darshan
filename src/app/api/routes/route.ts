@@ -8,9 +8,10 @@ import { rateLimit } from '@/lib/rate-limit';
 /**
  * Route computation proxy.
  *
- * The Routes API key stays on the server (§30). This endpoint is the only
- * thing that talks to Google Routes, which also gives us one place to
- * rate-limit and cap cost (§58).
+ * The only thing that talks to a routing provider, which gives us one place
+ * to rate-limit, cap cost and keep any routing key server-side. Degrades to
+ * locally-estimated timings — clearly labelled as such — when no router is
+ * reachable, so the planner keeps working offline.
  */
 
 export const runtime = 'nodejs';
@@ -72,7 +73,11 @@ export async function POST(request: Request) {
   const route = await computeRoute(origin, orderedStops, mode);
 
   if (!route.ok) {
-    if (route.reason === 'no-api-key') {
+    // 'unavailable' means we could not reach any router (offline, or the
+    // public OSRM instance is down). Ordering above is still real, so return
+    // it with estimated timings that the client labels as estimates rather
+    // than failing the whole request.
+    if (route.reason === 'unavailable') {
       // Honest degraded response: ordering is real, timings are estimates,
       // and the client labels them as such rather than implying Google data.
       const matrix = estimateMatrix([origin, ...orderedStops], mode);
@@ -89,7 +94,9 @@ export async function POST(request: Request) {
         optimizedBy,
         distanceM: null,
         durationS: Math.round(durationS),
-        polyline: null,
+        geometry: null,
+        provider: null,
+        durationSource: 'derived' as const,
         legs,
       });
     }
@@ -105,7 +112,9 @@ export async function POST(request: Request) {
     optimizedBy,
     distanceM: route.data.distanceM,
     durationS: route.data.durationS,
-    polyline: route.data.polyline,
+    geometry: route.data.geometry,
+    provider: route.data.provider,
+    durationSource: route.data.durationSource,
     legs: route.data.legs,
   });
 }

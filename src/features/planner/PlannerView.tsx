@@ -43,6 +43,9 @@ interface RouteResult {
   optimizedBy: 'routes-matrix' | 'local-estimate' | 'none';
   distanceM: number | null;
   durationS: number;
+  geometry: [number, number][] | null;
+  provider: 'osrm' | 'ors' | null;
+  durationSource: 'provider' | 'derived';
   legs: Array<{ distanceM: number; durationS: number }>;
 }
 
@@ -248,17 +251,28 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
               {totalDuration !== null ? formatDuration(totalDuration) : '—'}
             </p>
             <p className="mt-1 text-[11px] text-[var(--faint)]">
-              {isEstimate ? 'estimated' : 'via Google Routes'}
+              {isEstimate
+                ? 'estimated'
+                : result?.durationSource === 'provider'
+                  ? `routed · ${result.provider === 'ors' ? 'OpenRouteService' : 'OSRM'}`
+                  : 'from routed distance'}
             </p>
           </div>
         </div>
 
-        {isEstimate && (
+        {isEstimate ? (
           <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--faint)]">
-            Estimated from straight-line distance. Tap Optimise for a routed
-            time that follows real streets.
+            Estimated from straight-line distance (×1.71, measured against real
+            walks in the peths). Tap Optimise for a distance that follows the
+            actual lanes.
           </p>
-        )}
+        ) : result?.durationSource === 'derived' ? (
+          <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--faint)]">
+            Distance follows real streets. The time is worked out from that
+            distance at walking pace, because the routing service does not
+            model {MODES.find((m) => m.key === mode)?.label.toLowerCase()} speed.
+          </p>
+        ) : null}
 
         {error && (
           <p role="alert" className="mt-2.5 text-[12px] text-[#ef8f88]">{error}</p>

@@ -4,7 +4,11 @@ A mobile-first web app for Ganeshotsav in Pune: find mandals, see what's near
 you, and plan a walkable darshan route through the old peths.
 
 **Stack:** Next.js 16 (App Router, RSC) · TypeScript strict · Tailwind v4 ·
-Supabase Postgres + RLS · Google Maps JS / Places / Routes · PWA
+Supabase Postgres + RLS · MapLibre GL + OpenFreeMap · OSRM routing · PWA
+
+**No map billing.** The map needs no API key, no account and no card: tiles
+come from OpenFreeMap (OpenStreetMap data) and routing from OSRM. Search,
+distances and route ordering were already local, so nothing here bills.
 
 ---
 
@@ -21,6 +25,7 @@ Supabase Postgres + RLS · Google Maps JS / Places / Routes · PWA
 | Live RLS checks (real anon JWT) | 9 passed |
 | Live privilege-escalation probe | 6 passed |
 | Live admin CRUD (real session) | 4 passed |
+| Map renders real tiles (E2E) | asserted via MapLibre `idle` |
 | Lighthouse desktop | **100** perf · **100** a11y · **100** best-practices · **100** SEO |
 | Lighthouse mobile | **95** perf · **100** a11y · **100** best-practices · **100** SEO |
 
@@ -45,9 +50,10 @@ Nothing is stubbed — every feature either works or says why it cannot.
 
 | Variable | Required | Scope | Purpose |
 |---|---|---|---|
-| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | for the map | browser | Maps JS + Places |
-| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | optional | browser | cloud map style (needed for Advanced Markers) |
-| `GOOGLE_MAPS_SERVER_API_KEY` | for routing | **server only** | Routes + Route Matrix |
+| *(map tiles)* | **none** | — | OpenFreeMap needs no key |
+| `ROUTING_OSRM_URL` | optional | **server only** | OSRM endpoint; defaults to the public demo |
+| `ROUTING_OSRM_HAS_PROFILES` | optional | **server only** | `true` only if your OSRM serves real foot/bike profiles |
+| `OPENROUTESERVICE_API_KEY` | optional | **server only** | better routing; free tier, no card |
 | `NEXT_PUBLIC_SUPABASE_URL` | for the DB | browser | project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | for the DB | browser | anon key (RLS enforced) |
 | `SUPABASE_SERVICE_ROLE_KEY` | for admin | **server only** | bypasses RLS |
@@ -56,15 +62,29 @@ Nothing is stubbed — every feature either works or says why it cannot.
 Validated by zod at import (`src/lib/env.ts`). A blank value means "feature
 off", not "invalid" — the build fails loudly on a genuinely malformed value.
 
-### Restricting the Google keys
+### Map and routing providers
 
-Two separate keys, because they have different threat models:
+**Tiles — OpenFreeMap.** OpenStreetMap vector tiles, no key, no account, no
+quota. The dark style in `src/lib/maps/map-style.ts` is written from scratch
+against the same pigment palette as the rest of the app rather than
+recolouring an off-the-shelf theme. OSM attribution is rendered on the map
+and is a licence requirement — do not remove it.
 
-- **Browser key** — public by nature. Restrict by **HTTP referrer** to your
-  domains, and by API to *Maps JavaScript API* + *Places API* only.
-- **Server key** — restrict by **IP address** and to *Routes API* only. It is
-  read exclusively inside `src/lib/maps/routes.ts`, which is marked
-  `server-only`, so importing it from a Client Component is a build error.
+**Routing — OSRM by default.** No key. Two cautions before launch:
+
+1. The public demo at `router.project-osrm.org` is **not for production** —
+   self-host and set `ROUTING_OSRM_URL`.
+2. The demo hosts only the **car profile** and ignores the profile in the
+   URL: `/foot`, `/bike` and `/driving` return identical distances *and*
+   durations (measured: 7.6 m/s for all of them). Its distances are real road
+   distances and worth using; its walking durations are car durations. So
+   unless you self-host with real profiles and set
+   `ROUTING_OSRM_HAS_PROFILES=true`, the app keeps the routed distance and
+   derives the time from measured mode speed, and labels it
+   *"from routed distance"* rather than claiming a routed ETA.
+
+**OpenRouteService (optional).** Set `OPENROUTESERVICE_API_KEY` for genuine
+per-mode profiles and a real quota. Free tier, signup, no card.
 
 ---
 
@@ -208,8 +228,10 @@ Three things are deliberate, and matter more than they look:
 |---|---|---|---|
 | 1 | **Rate limiter is per-instance and in-memory** | On multi-instance deploys the effective limit is N× the configured one | Back `src/lib/rate-limit.ts` with Upstash/Redis |
 | 2 | **No mandal photography** | Cards render a generated gradient fallback | Add rows to `ganpati_images`; the UI already handles them, no code change |
-| 3 | **Maps not verified against a live key** | The integration is complete and typed but has not been run against real Google APIs | Add a key and re-run `npm run test:e2e` |
+| 3 | **Public OSRM demo is dev-only** | Rate-limited, no SLA, car profile only | Self-host OSRM (or set an ORS key) before launch |
 | 3b | **No admin user exists yet** | `/admin` is unreachable until one is created | Sign in once, then run the SQL under *Supabase setup* |
+| 3c | **maplibre-gl pinned to v5** | v6 constructs the map but never fires `load` — no tiles, no errors | Re-test v6 on a later release; v5 is stable and current |
+| 3d | **No Places autocomplete** | Search covers the catalogue only, not arbitrary Pune addresses | Add Photon/Nominatim (both free) if address search is wanted |
 | 4 | **Favourites do not yet sync to the DB on sign-in** | Anonymous favourites stay device-local | Merge `localStorage` into `favorites` in the auth callback |
 | 5 | **Saved plans are local only** | `/plan` state is device-local; `darshan_plans` is schema-ready but unwired | Persist on "Share" and serve `/plan/[shareId]` |
 | 6 | **Transit mode depends on Google coverage** | Routes may return no transit route in Pune | UI already surfaces "route unavailable" |

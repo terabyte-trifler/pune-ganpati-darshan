@@ -64,12 +64,34 @@ eyeballed:
 0.56 was chosen over the 0.52 minimum for headroom, while staying visibly
 below `--muted` (0.62) so the type hierarchy survives.
 
+## Accuracy: the detour factor was wrong
+
+Pre-route estimates multiply straight-line distance by a detour factor. The
+original value, 1.3, was a guess.
+
+Measured against real pedestrian routing over 22 mandal pairs in the peth
+core (`tools/calibrate-detour.mjs`):
+
+| | ratio |
+|---|---|
+| median | **×1.71** |
+| mean | ×1.80 |
+| range | ×1.26 – ×2.83 |
+
+So 1.3 understated real walks by roughly 30%. Now 1.71.
+
+The residual error is not random: hops under 400 m detour proportionally more
+(×2.4–2.8), because the peth grid rarely lets you walk directly. A
+distance-dependent curve would fit better, but 22 samples do not justify one,
+and any estimate is replaced by a real routed value once the router responds.
+
 ## Deliberate performance decisions
 
 | Decision | Why |
 |---|---|
 | Catalogue rendered in Server Components | Mandal content is in the initial HTML; the page is useful before hydration |
-| Maps JS behind `next/dynamic` | Routes without a map ship no Maps JS at all |
+| MapLibre behind `next/dynamic` | Routes without a map ship none of its ~200 KB; homepage scores are unchanged by the map |
+| Mandals as one clustered GeoJSON source | MapLibre clusters on the GPU and renders only what is on screen, instead of one marker object per mandal |
 | Nearby sorting is local haversine | Zero API calls, zero cost, works offline |
 | Routes matrix requested once per optimisation | The TSP solver runs locally over the result, not one call per candidate ordering |
 | Routes field masks | Only the 3 fields rendered are requested — the main cost and latency lever |

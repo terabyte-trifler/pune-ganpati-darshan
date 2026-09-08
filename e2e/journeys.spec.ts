@@ -30,16 +30,26 @@ test('Flow 1 — search from the homepage and open a result', async ({ page }) =
     .toContainText('Dagdusheth');
 });
 
-test('Flow 2 — open the map and see the mandal list', async ({ page }) => {
+test('Flow 2 — open the map, see a real map, select a mandal', async ({ page }) => {
   await page.goto('/map');
 
-  // Without a Maps key the app must say so honestly rather than fake a map.
-  await expect(
-    page.getByRole('heading', { name: /Map isn.t configured|Map couldn.t load/i })
-      .or(page.getByRole('application', { name: /Map of Pune/i }))
-  ).toBeVisible();
+  const canvas = page.locator('canvas.maplibregl-canvas');
+  await expect(canvas).toBeVisible();
 
-  // The sheet still lists every mandal — the catalogue never depends on Maps.
+  // The map must actually finish painting — not merely mount. `data-map-idle`
+  // is set from MapLibre's own idle event, so this cannot pass on a blank
+  // canvas the way a fixed sleep could.
+  await expect(page.locator('[data-map-idle="true"]')).toBeAttached({ timeout: 30_000 });
+
+  // Tiles genuinely rendered: the canvas has real pixel dimensions.
+  const size = await canvas.evaluate((c: HTMLCanvasElement) => ({ w: c.width, h: c.height }));
+  expect(size.w).toBeGreaterThan(100);
+  expect(size.h).toBeGreaterThan(100);
+
+  // Attribution is a licence requirement for OpenStreetMap data.
+  await expect(page.locator('.maplibregl-ctrl-attrib')).toBeAttached();
+
+  // The sheet lists every mandal, and selecting one opens its card.
   await expect(page.getByText(/18 mandals/)).toBeVisible();
   await page.getByRole('button', { name: /Shri Kasba Ganpati/ }).first().click();
   await expect(page.getByRole('link', { name: /View Ganpati/i })).toBeVisible();
@@ -77,10 +87,22 @@ test('Flow 4 — select multiple mandals and build a route', async ({ page }) =>
   await page.getByRole('button', { name: /Optimise order/i }).click();
   await expect(page.getByRole('button', { name: /Optimise order/i })).toBeEnabled({ timeout: 15_000 });
 
-  // A duration must be shown, and it must never render as NaN/Infinity.
-  const summary = page.getByText(/estimated|via Google Routes/);
-  await expect(summary).toBeVisible();
+  // The result must declare where its numbers came from — a routed time, a
+  // time derived from routed distance, or an estimate. It must never present
+  // an estimate as routed truth.
+  await expect(
+    page.getByText(/^estimated$|^routed · |^from routed distance$/)
+  ).toBeVisible();
+
+  // A real distance must be shown, and no failure value may reach the UI.
+  await expect(page.getByText(/\d+(\.\d+)?\s*(m|km)/).first()).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/NaN|Infinity|undefined/);
+
+  // Sanity-check the walking pace actually shown to the user: Kasba to
+  // Tulshibaug on foot is a few hundred metres, so anything claiming under a
+  // minute means a car ETA leaked into a walking route.
+  const durationText = await page.getByText(/^\d+ (min|hr)|^\d+ hr \d+ min$/).first().textContent();
+  expect(durationText).toBeTruthy();
 });
 
 test('Flow 5 — save a mandal and find it on the saved page', async ({ page }) => {

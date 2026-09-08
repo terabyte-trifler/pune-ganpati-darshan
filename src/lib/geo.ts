@@ -30,10 +30,21 @@ export function haversine(a: LatLng, b: LatLng): number {
 
 /**
  * Straight-line distance understates real travel. This factor approximates
- * street-network distance in the dense peth grid for *sorting and rough
- * estimates only* — never presented as a routed distance.
+ * street-network distance for *sorting and rough estimates only* — it is
+ * never presented as a routed distance.
+ *
+ * Calibrated against real pedestrian routing over 22 mandal pairs in the
+ * peth core (tools/calibrate-detour.mjs): median ×1.71, mean ×1.80, range
+ * ×1.26–×2.83. The previous value of 1.3 was a guess and understated real
+ * walks by roughly 30%.
+ *
+ * The residual error is not random: short hops detour proportionally more
+ * (×2.4–2.8 under 400 m) because the peth grid rarely lets you walk
+ * directly. A distance-dependent curve would fit better, but 22 samples is
+ * too few to justify one — and any estimate is replaced by a real routed
+ * value as soon as the router is reachable.
  */
-export const DETOUR_FACTOR = 1.3;
+export const DETOUR_FACTOR = 1.71;
 
 /** Metres per second by mode, tuned for festival-period congestion. */
 export const MODE_SPEED_MPS = {

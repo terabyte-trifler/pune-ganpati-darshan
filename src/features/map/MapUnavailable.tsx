@@ -3,13 +3,15 @@ import { MapPinOff } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 /**
- * Shown when Maps cannot load — no key configured, or the SDK failed.
+ * Shown when the map cannot render.
  *
- * This is deliberately NOT a decorative fake map (§12). It states what is
- * wrong, and routes the user to the parts of the product that still work,
- * because the whole catalogue is usable without Maps (§35).
+ * With OpenFreeMap there is no API key to misconfigure, so the only real
+ * cause is the tile service or style being unreachable. This is deliberately
+ * NOT a decorative fake map (§12): it says what is wrong and routes the user
+ * to the parts of the product that still work, because the whole catalogue
+ * is usable without the map (§35).
  */
-export function MapUnavailable({ reason }: { reason: 'no-api-key' | 'load-failed' }) {
+export function MapUnavailable() {
   return (
     /* Centred in the space above the sheet, not the whole viewport, so the
        message is never clipped by it. */
@@ -20,25 +22,16 @@ export function MapUnavailable({ reason }: { reason: 'no-api-key' | 'load-failed
         </div>
 
         <h2 className="mt-4 text-[17px] font-bold text-[var(--chandan)]">
-          {reason === 'no-api-key' ? 'Map isn’t configured' : 'Map couldn’t load'}
+          Map couldn&rsquo;t load
         </h2>
 
         <p className="mt-2 text-[14px] leading-relaxed text-[var(--muted)]">
-          {reason === 'no-api-key' ? (
-            <>
-              Add a Google Maps API key as{' '}
-              <code className="rounded bg-[var(--dhoop-2)] px-1 py-0.5 text-[12px] text-[var(--zendu)]">
-                NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-              </code>{' '}
-              to enable the map.
-            </>
-          ) : (
-            'Check your connection and try again. Everything else still works offline.'
-          )}
+          The map tiles are unreachable right now. Check your connection and
+          try again.
         </p>
 
         <p className="mt-3 text-[13px] text-[var(--faint)]">
-          Mandal details, search and your saved darshan do not need the map.
+          Mandal details, search and your saved darshan all work without it.
         </p>
 
         <div className="mt-5 flex justify-center gap-2">

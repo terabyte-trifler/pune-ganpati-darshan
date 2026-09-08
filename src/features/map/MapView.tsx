@@ -13,7 +13,6 @@ import { CategoryBadge } from '@/components/ui/Badge';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useFavorites } from '@/hooks/useLocalCollection';
 import { haversine, formatDistance } from '@/lib/geo';
-import { isMapsConfigured, type MapsLoadResult } from '@/lib/maps/maps-client';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { Area, Ganpati, GanpatiCategory } from '@/types/ganpati';
@@ -21,7 +20,8 @@ import type { Area, Ganpati, GanpatiCategory } from '@/types/ganpati';
 /**
  * The map surface.
  *
- * Maps JS is code-split so the bundle is only paid for on this route (§33).
+ * MapLibre is code-split so its ~200 KB is only paid for on this route (§33),
+ * and it is client-only because it needs a real canvas.
  */
 const MapCanvas = dynamic(
   () => import('./MapCanvas').then((m) => m.MapCanvas),
@@ -44,7 +44,9 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
   const [detent, setDetent] = useState<Detent>('half');
   const [filters, setFilters] = useState<Set<FilterKey>>(new Set());
   const [areaFilter, setAreaFilter] = useState<string | null>(null);
-  const [mapResult, setMapResult] = useState<MapsLoadResult | null>(null);
+  // The map needs no API key now, so the only failure mode is the tile
+  // service or style being unreachable.
+  const [mapFailed, setMapFailed] = useState(false);
 
   const { state: geo, request: requestLocation } = useGeolocation();
   const { items: saved, hydrated } = useFavorites();
@@ -114,26 +116,20 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
     if (slug) setDetent('collapsed');
   }, []);
 
-  const mapsOff = !isMapsConfigured() || (mapResult && !mapResult.ok);
+  const mapsOff = mapFailed;
 
   return (
     <div className="fixed inset-0 overflow-hidden">
       {/* ---------------- Map layer ---------------- */}
       {mapsOff ? (
-        <MapUnavailable
-          reason={
-            !isMapsConfigured()
-              ? 'no-api-key'
-              : (mapResult as { reason: 'load-failed' }).reason
-          }
-        />
+        <MapUnavailable />
       ) : (
         <MapCanvas
           ganpatis={visibleGanpatis}
           selectedSlug={selectedSlug}
           onSelect={handleSelect}
           userLocation={userLocation}
-          onLoadResult={setMapResult}
+          onReady={(ok) => setMapFailed(!ok)}
         />
       )}
 

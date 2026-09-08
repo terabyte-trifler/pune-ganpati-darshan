@@ -17,7 +17,8 @@ const optional = <T extends z.ZodTypeAny>(schema: T) =>
 
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: optional(z.string().min(20)),
-  GOOGLE_MAPS_SERVER_API_KEY: optional(z.string().min(10)),
+  OPENROUTESERVICE_API_KEY: optional(z.string().min(10)),
+  ROUTING_OSRM_URL: optional(z.string().url()),
 });
 
 let cache: z.infer<typeof serverSchema> | null = null;
@@ -30,7 +31,8 @@ export function serverEnv(): z.infer<typeof serverSchema> {
   if (!cache) {
     cache = serverSchema.parse({
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      GOOGLE_MAPS_SERVER_API_KEY: process.env.GOOGLE_MAPS_SERVER_API_KEY,
+      OPENROUTESERVICE_API_KEY: process.env.OPENROUTESERVICE_API_KEY,
+      ROUTING_OSRM_URL: process.env.ROUTING_OSRM_URL,
     });
   }
   return cache;
