@@ -317,18 +317,17 @@ Three things are deliberate, and matter more than they look:
 | # | Limitation | Impact | Fix |
 |---|---|---|---|
 | 1 | **Rate limiter is per-instance and in-memory** | On multi-instance deploys the effective limit is N× the configured one | Back `src/lib/rate-limit.ts` with Upstash/Redis |
-| 2 | **No mandal photography** | Cards render a generated gradient fallback | Add rows to `ganpati_images`; the UI already handles them, no code change |
-| 3 | **Public OSRM demo is dev-only** | Rate-limited, no SLA, car profile only | Self-host OSRM (or set an ORS key) before launch |
-| 3b | **No admin user exists yet** | `/admin` is unreachable until one is created | Sign in once, then run the SQL under *Supabase setup* |
-| 3c | **maplibre-gl pinned to v5** | v6 constructs the map but never fires `load` — no tiles, no errors | Re-test v6 on a later release; v5 is stable and current |
-| 3d | **No Places autocomplete** | Search covers the catalogue only, not arbitrary Pune addresses | Add Photon/Nominatim (both free) if address search is wanted |
-| 4 | **Favourites do not yet sync to the DB on sign-in** | Anonymous favourites stay device-local | Merge `localStorage` into `favorites` in the auth callback |
-| 5 | **Saved plans are local only** | `/plan` state is device-local; `darshan_plans` is schema-ready but unwired | Persist on "Share" and serve `/plan/[shareId]` |
-| 6 | **Transit mode depends on Google coverage** | Routes may return no transit route in Pune | UI already surfaces "route unavailable" |
-| 7 | **18 mandals seeded** | Pune has thousands | Use `/admin/import` — CSV/JSON import is built, validated and verified against the live database |
-| 8 | **Analytics has no dashboard** | Events are stored but only queryable via SQL | Build `/admin/analytics` over `analytics_events` |
-
----
+| 2 | **Public OSRM demo is dev-only** | Rate-limited, no SLA, and it serves only the car profile — so walking *times* are derived from routed distance, not routed directly | Self-host OSRM, or set `OPENROUTESERVICE_API_KEY` |
+| 3 | **No admin user exists yet** | `/admin` is unreachable until one is created | Sign in once, then run the SQL under *Supabase setup* |
+| 4 | **Favourites and plans are device-local** | They survive reloads and work offline, but do not follow you to another device. The UI never claims otherwise. `favorites` / `darshan_plans` are schema- and RLS-ready but unwired | Merge localStorage into the tables on sign-in |
+| 5 | **Shared plans are stateless links** | `/plan?stops=…` carries the route in the URL, so a very long plan makes a long link, and the sender cannot revoke it | Persist to `darshan_plans` and serve `/plan/[shareId]` |
+| 6 | **14 of 23 mandals have no photograph** | Cards fall back to the drawn Ganpati silhouette | Add rows to `ganpati_images`; no code change needed |
+| 7 | **Four known mandals are missing** | Nagarkar Talim, Shahu Chowk, Hirabaug and Khadakmal Ali could not be located from any verifiable source, so they are absent rather than approximated | Survey coordinates, then `/admin/import` |
+| 8 | **Some coordinates are prototype-seeded** | 16 of 23 have no independent confirmation; two were found 400m+ out and corrected | Run `tools/verify-coordinates.mjs` as OSM coverage improves |
+| 9 | **Analytics has no dashboard** | Events are stored but only queryable via SQL | Build `/admin/analytics` over `analytics_events` |
+| 10 | **Mandal detail scores 88 on mobile** | Below the 90 target; a photo hero on throttled 4G. Every other page is 93–100 | Pre-generate hero variants, or drop the hero aspect on small screens |
+| 11 | **maplibre-gl pinned to v5** | v6 constructs the map but never fires `load` — no tiles, no errors | Re-test v6 on a later release |
+| 12 | **No Places-style address search** | Search covers the catalogue, not arbitrary Pune addresses | Add Photon/Nominatim (both free) if wanted |
 
 ## Recommended next features
 

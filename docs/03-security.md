@@ -130,6 +130,9 @@ Any future policy test must assert on state, not on status codes.
    multi-instance deploy the effective limit is N× configured. Back it with
    Redis/Upstash before launch.
 2. **No CSP header yet.** Adding one requires nonce-based script handling for
-   Next's inline bootstrap plus allowances for Google Maps.
-3. **Maps keys must be restricted in the Google Cloud console** — code cannot
-   enforce this. See the README table.
+   Next's inline bootstrap, plus allowances for the OpenFreeMap tile and
+   glyph endpoints MapLibre fetches at runtime.
+3. **Routing runs against a public OSRM instance by default.** It is
+   rate-limited and has no uptime commitment; self-host and set
+   `ROUTING_OSRM_URL` before launch. There is no map key to leak, because the
+   tile provider needs none.

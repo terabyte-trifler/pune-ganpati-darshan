@@ -18,7 +18,7 @@ src/
   components/ui/           primitives (Button, Sheet, Chip, Skeleton, Dialog)
   services/                ganpati.ts plans.ts favorites.ts analytics.ts search.ts
   lib/
-    maps/                  maps-client · places · routes · geocoding · markers · dark-style
+    maps/                  map-style · routes · markers · webgl
     supabase/              client(browser) · server(RSC) · admin(service-role, server-only)
     env.ts                 zod-validated, throws at import
     geo.ts                 haversine, bbox, formatting — pure, unit-tested
@@ -64,7 +64,7 @@ supabase/seed.sql          18 real Pune mandals
 | 2 | Design tokens, app shell, bottom nav, home, cards | renders at 320–1440px |
 | 3 | Supabase schema + RLS + seed + services | `db push`, RLS tests pass |
 | 4 | Detail pages, search, filters, areas/categories | every seed slug resolves |
-| 5 | Maps: dark style, markers, clustering, sheet, sync | 60fps pan on mid-tier |
+| 5 | Maps: dark style, markers, clustering, sheet, sync | tiles render, no API key |
 | 6 | Planner: stops, modes, optimiser, Routes proxy | route math unit-tested |
 | 7 | Favourites, share, saved plans, auth | anonymous path never blocked |
 | 8 | Admin CRUD + CSV import | RLS denies non-admin |

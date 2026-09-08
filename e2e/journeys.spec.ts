@@ -220,6 +220,32 @@ test('Flow 10 — curated routes are browsable and reusable', async ({ page }) =
   await expect(page.locator('body')).not.toContainText(/NaN|Infinity|undefined/);
 });
 
+test('a shared plan link opens the shared route, without destroying your own', async ({ page }) => {
+  // The Share button emits /plan?stops=... The planner used to ignore that
+  // parameter entirely, so every shared link opened an empty planner — a
+  // button that looked functional and was not.
+  await page.goto('/plan?stops=kasba-ganpati,tulshibaug-ganpati,guruji-talim');
+
+  await expect(page.getByRole('heading', { name: 'A shared darshan' })).toBeVisible();
+  await expect(page.getByText(/Someone shared this route/i)).toBeVisible();
+  await expect(page.getByText('Shri Kasba Ganpati')).toBeVisible();
+  await expect(page.getByText('Tulshibaug Ganpati')).toBeVisible();
+
+  // Now with a plan of the visitor's own: opening someone else's link must
+  // not silently replace it.
+  await page.goto('/ganpati/dagdusheth-halwai-ganpati');
+  await page.getByRole('button', { name: /Add to darshan — Shrimant Dagdusheth/i }).click();
+
+  await page.goto('/plan?stops=kasba-ganpati,guruji-talim');
+  await expect(page.getByRole('link', { name: /Keep my 1 stop/i })).toBeVisible();
+
+  // Adopting it is an explicit choice.
+  await page.getByRole('button', { name: /^Use this route$/ }).click();
+  await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+  await expect(page.getByText(/2 stops/)).toBeVisible();
+});
+
 test('Flow 7 — admin is not reachable without authorization', async ({ page }) => {
   // Authorization must not depend on hiding UI (§27). With no session the
   // route must redirect, not render.

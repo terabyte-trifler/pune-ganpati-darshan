@@ -45,6 +45,18 @@ export interface MiniMapProps {
   interactive?: boolean;
 }
 
+/**
+ * MapLibre's compact attribution still opens expanded on first render, which
+ * covers a good part of a small map. Collapse it to the (i) button; the
+ * credit stays one tap away, which is what the OpenStreetMap licence asks
+ * for — it must be available, not permanently overlaid.
+ */
+function collapseAttribution(container: HTMLElement) {
+  container
+    .querySelector('.maplibregl-ctrl-attrib')
+    ?.classList.remove('maplibregl-compact-show');
+}
+
 async function registerPin(map: MapLibreMap, category: GanpatiCategory) {
   const id = `mini-${category}`;
   if (map.hasImage(id)) return;
@@ -114,8 +126,8 @@ export function MiniMap({
     if (interactive) {
       map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     }
-
     map.on('load', async () => {
+      collapseAttribution(map.getContainer());
       await Promise.all(CATEGORIES.map((c) => registerPin(map, c)));
 
       map.addSource('route', {
@@ -176,6 +188,8 @@ export function MiniMap({
       }
 
       map.resize();
+      // Resizing can re-open it, so collapse once more afterwards.
+      collapseAttribution(map.getContainer());
       setReady(true);
     });
 

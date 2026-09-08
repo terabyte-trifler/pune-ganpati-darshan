@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Footprints, Bike, Car, TrainFront, X, GripVertical,
   Sparkles, Navigation, Trash2, Loader2,
@@ -52,6 +53,23 @@ interface RouteResult {
 
 export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
   const { items: planSlugs, replace, remove, hydrated } = usePlan();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  /**
+   * A shared plan arrives as ?stops=slug,slug. It is shown read-only rather
+   * than written straight into the visitor's own darshan: someone opening a
+   * friend's link should not silently lose the plan they already built.
+   * Previously this parameter was ignored entirely, so every shared link
+   * opened to an empty planner — the Share button produced a dead URL.
+   */
+  const sharedSlugs = useMemo(() => {
+    const raw = searchParams.get('stops');
+    if (!raw) return null;
+    const valid = new Set(ganpatis.map((g) => g.slug));
+    const slugs = raw.split(',').map((s) => s.trim()).filter((s) => valid.has(s));
+    return slugs.length > 0 ? slugs : null;
+  }, [searchParams, ganpatis]);
   const { state: geo, request: requestLocation } = useGeolocation();
   const [mode, setMode] = useState<TravelMode>('walk');
   const [result, setResult] = useState<RouteResult | null>(null);
@@ -64,9 +82,11 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     [ganpatis]
   );
 
+  const activeSlugs = sharedSlugs ?? planSlugs;
+
   const stops = useMemo(
-    () => planSlugs.map((s) => bySlug.get(s)).filter((g): g is Ganpati => Boolean(g)),
-    [planSlugs, bySlug]
+    () => activeSlugs.map((s) => bySlug.get(s)).filter((g): g is Ganpati => Boolean(g)),
+    [activeSlugs, bySlug]
   );
 
   const origin = geo.status === 'ready' ? geo.position : PUNE_CENTER;
@@ -151,7 +171,14 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     return url.toString();
   }, [stops, origin, mode]);
 
-  if (!hydrated) {
+  const adoptShared = () => {
+    if (!sharedSlugs) return;
+    replace(sharedSlugs);
+    trackEvent('plan_created', { props: { source: 'shared-link', stops: sharedSlugs.length } });
+    router.push('/plan');
+  };
+
+  if (!hydrated && !sharedSlugs) {
     return (
       <div className="px-4 py-10 text-center text-[14px] text-[var(--muted)]">
         Loading your darshan…
@@ -160,7 +187,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
   }
 
   /* ---------------- Empty state ---------------- */
-  if (stops.length === 0) {
+  if (stops.length === 0 && !sharedSlugs) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8">
         <h1 className="text-[26px] font-extrabold tracking-tight text-[var(--chandan)]">
@@ -198,18 +225,40 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-[24px] font-extrabold tracking-tight text-[var(--chandan)]">
-            Your darshan
+            {sharedSlugs ? 'A shared darshan' : 'Your darshan'}
           </h1>
           <p className="text-[13px] text-[var(--muted)]">
-            {stops.length} {stops.length === 1 ? 'stop' : 'stops'} · from {originLabel}
+            {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
+            {!sharedSlugs && <> · from {originLabel}</>}
           </p>
         </div>
-        <ShareButton
-          title="My Ganpati darshan route"
-          text={`${stops.length} mandals in Pune`}
-          path={`/plan?stops=${planSlugs.join(',')}`}
-        />
+        {!sharedSlugs && (
+          <ShareButton
+            title="My Ganpati darshan route"
+            text={`${stops.length} mandals in Pune`}
+            path={`/plan?stops=${planSlugs.join(',')}`}
+          />
+        )}
       </div>
+
+      {sharedSlugs && (
+        <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--zendu)]/30 bg-[var(--zendu)]/[0.07] p-4">
+          <p className="text-[14px] font-semibold text-[var(--chandan)]">
+            Someone shared this route with you
+          </p>
+          <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
+            It won&rsquo;t replace your own darshan unless you choose to use it.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={adoptShared}>Use this route</Button>
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/plan">
+                {planSlugs.length > 0 ? `Keep my ${planSlugs.length} stops` : 'Build my own'}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ---------------- Travel mode ---------------- */}
       <div className="scroll-x mt-4 flex gap-2">
@@ -328,6 +377,35 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
         Route order
       </h2>
 
+      {sharedSlugs ? (
+        <ol className="space-y-2">
+          {stops.map((stop, index) => (
+            <li
+              key={stop.slug}
+              className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-2.5"
+            >
+              <span
+                aria-hidden="true"
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--shendur)]/40 text-[12px] font-bold text-[var(--shendur)]"
+              >
+                {index + 1}
+              </span>
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
+                <GanpatiImage ganpati={stop} sizes="48px" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <Link
+                  href={`/ganpati/${stop.slug}`}
+                  className="block truncate text-[14px] font-semibold text-[var(--chandan)]"
+                >
+                  {stop.name}
+                </Link>
+                <p className="truncate text-[12px] text-[var(--faint)]">{stop.area.name}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
       <Reorder.Group
         axis="y"
         values={planSlugs}
@@ -344,15 +422,18 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           />
         ))}
       </Reorder.Group>
+      )}
 
-      <button
-        type="button"
-        onClick={() => { replace([]); setResult(null); }}
-        className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-[var(--faint)]"
-      >
-        <Trash2 size={14} aria-hidden="true" />
-        Clear darshan
-      </button>
+      {!sharedSlugs && (
+        <button
+          type="button"
+          onClick={() => { replace([]); setResult(null); }}
+          className="mt-4 inline-flex items-center gap-1.5 text-[13px] text-[var(--faint)]"
+        >
+          <Trash2 size={14} aria-hidden="true" />
+          Clear darshan
+        </button>
+      )}
     </div>
   );
 }

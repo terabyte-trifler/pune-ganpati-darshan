@@ -19,8 +19,11 @@ for (const { path: p, name, width, height = 900, full = true } of targets) {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
 
-  const res = await page.goto(`${BASE}${p}`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(400);
+  // Not 'networkidle': pages embedding a map stream tiles continuously, so it
+  // never fires and every such page times out.
+  const res = await page.goto(`${BASE}${p}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('load').catch(() => {});
+  await page.waitForTimeout(900);
 
   // Horizontal overflow is an explicit failure condition (§63).
   const overflow = await page.evaluate(() => {

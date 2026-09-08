@@ -43,6 +43,18 @@ export interface MapCanvasProps {
   onReady?: (ok: boolean, failure?: MapFailure) => void;
 }
 
+/**
+ * MapLibre's compact attribution still opens expanded on first render, which
+ * covers a good part of a small map. Collapse it to the (i) button; the
+ * credit stays one tap away, which is what the OpenStreetMap licence asks
+ * for — it must be available, not permanently overlaid.
+ */
+function collapseAttribution(container: HTMLElement) {
+  container
+    .querySelector('.maplibregl-ctrl-attrib')
+    ?.classList.remove('maplibregl-compact-show');
+}
+
 function toFeatureCollection(ganpatis: Ganpati[]): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -129,8 +141,8 @@ export function MapCanvas({
       new AttributionControl({ compact: true }),
       'bottom-left'
     );
-
     map.on('load', async () => {
+      collapseAttribution(map.getContainer());
       await Promise.all(
         CATEGORIES.flatMap((c) => [registerPin(map, c, false), registerPin(map, c, true)])
       );
