@@ -1,0 +1,218 @@
+# Pune Ganpati Darshan
+
+A mobile-first web app for Ganeshotsav in Pune: find mandals, see what's near
+you, and plan a walkable darshan route through the old peths.
+
+**Stack:** Next.js 16 (App Router, RSC) · TypeScript strict · Tailwind v4 ·
+Supabase Postgres + RLS · Google Maps JS / Places / Routes · PWA
+
+---
+
+## Status
+
+| Check | Result |
+|---|---|
+| `npm run build` | 45 pages, 0 errors |
+| `npx tsc --noEmit` | 0 errors |
+| `npm run lint` | 0 problems |
+| `npm test` (Vitest) | 23 passed |
+| `npm run test:e2e` (Playwright) | 17 passed, mobile + desktop |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| Lighthouse desktop | **100** perf · **100** a11y · **100** best-practices · **100** SEO |
+| Lighthouse mobile | **95** perf · **100** a11y · **100** best-practices · **100** SEO |
+
+---
+
+## Quick start
+
+```bash
+npm install
+cp .env.example .env.local     # works with everything blank
+npm run dev                    # http://localhost:3000
+```
+
+The app runs with **no credentials at all**. With no Supabase it serves the
+generated catalogue in `src/content/catalogue.json`; with no Maps key the map
+surface shows an explicit "Map isn't configured" state instead of a fake map.
+Nothing is stubbed — every feature either works or says why it cannot.
+
+---
+
+## Environment variables
+
+| Variable | Required | Scope | Purpose |
+|---|---|---|---|
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | for the map | browser | Maps JS + Places |
+| `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | optional | browser | cloud map style (needed for Advanced Markers) |
+| `GOOGLE_MAPS_SERVER_API_KEY` | for routing | **server only** | Routes + Route Matrix |
+| `NEXT_PUBLIC_SUPABASE_URL` | for the DB | browser | project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | for the DB | browser | anon key (RLS enforced) |
+| `SUPABASE_SERVICE_ROLE_KEY` | for admin | **server only** | bypasses RLS |
+| `NEXT_PUBLIC_APP_URL` | yes | both | canonical URLs, sitemap, OG |
+
+Validated by zod at import (`src/lib/env.ts`). A blank value means "feature
+off", not "invalid" — the build fails loudly on a genuinely malformed value.
+
+### Restricting the Google keys
+
+Two separate keys, because they have different threat models:
+
+- **Browser key** — public by nature. Restrict by **HTTP referrer** to your
+  domains, and by API to *Maps JavaScript API* + *Places API* only.
+- **Server key** — restrict by **IP address** and to *Routes API* only. It is
+  read exclusively inside `src/lib/maps/routes.ts`, which is marked
+  `server-only`, so importing it from a Client Component is a build error.
+
+---
+
+## Supabase setup
+
+```bash
+# 1. Point the CLI at your project
+supabase link --project-ref <your-project-ref>
+
+# 2. Apply schema + RLS + functions
+supabase db push
+
+# 3. Seed the catalogue (18 real Pune mandals)
+psql "$SUPABASE_DB_URL" -f supabase/seed.sql
+
+# 4. Make yourself an admin, after signing in once
+psql "$SUPABASE_DB_URL" \
+  -c "update profiles set is_admin = true where id = '<your-auth-user-id>';"
+```
+
+Enable **Google** and/or **Email (magic link)** providers in
+Authentication → Providers, and add `<your-domain>/auth/callback` to the
+redirect allow-list.
+
+### Migrations
+
+| File | Contents |
+|---|---|
+| `20260908090000_init.sql` | 10 tables, enums, constraints, indexes, `updated_at` triggers |
+| `20260908090100_rls.sql` | RLS policies for every table + admin self-grant guard |
+| `20260908090200_functions.sql` | `search_ganpatis()`, `nearby_ganpatis()` |
+
+The schema was validated end-to-end against PostgreSQL 17 before shipping:
+all three migrations apply cleanly, the seed loads, both RPCs return correct
+results, and the integrity constraints (`manache_rank_matches_category`,
+unique `manache_rank`, `timings_paired`) were each confirmed to reject bad
+input.
+
+### Regenerating the offline catalogue
+
+`src/content/catalogue.json` is **generated**, never hand-edited:
+
+```bash
+./scripts/export-catalogue.sh "$SUPABASE_DB_URL"
+```
+
+The SQL seed is the single source of truth; this keeps the offline snapshot
+from drifting from the database.
+
+---
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | dev server |
+| `npm run build` / `npm start` | production build / serve |
+| `npm test` | Vitest unit tests |
+| `npm run test:e2e` | Playwright, mobile + desktop |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | tsc --noEmit |
+| `npm run visual` | screenshot + horizontal-overflow sweep |
+
+---
+
+## Deployment
+
+Vercel is the intended target (the app is a standard Next 16 App Router build).
+
+1. Import the repo, set all environment variables from the table above.
+2. Set `NEXT_PUBLIC_APP_URL` to the production origin — sitemap, canonicals
+   and OG tags derive from it.
+3. Add the production domain to the browser key's referrer restrictions, and
+   the deployment's egress IPs to the server key's IP restrictions.
+4. `supabase db push` against the production project.
+
+**Before going live**, replace the in-memory rate limiter
+(`src/lib/rate-limit.ts`) with a shared store — it protects one instance
+only. See *Known limitations*.
+
+---
+
+## Architecture
+
+```
+src/
+  app/          routes only — thin, mostly Server Components
+  features/     composed UI by domain (map, planner, discovery, search, …)
+  components/   reusable primitives
+  services/     business logic — the only layer that talks to the DB
+  lib/
+    maps/       the ONLY place that touches google.maps.*
+    supabase/   client (browser) · server (RSC) · admin (service-role)
+    env.ts      zod-validated
+    geo.ts      pure, unit-tested
+  db/           typed schema bindings
+  content/      generated catalogue snapshot
+```
+
+Dependencies point downward only. UI never imports a Supabase client
+directly. See `docs/02-architecture.md`.
+
+Full write-ups: `docs/01-product-audit.md` (reference audit + product
+decisions), `docs/02-architecture.md`, `docs/03-security.md`,
+`docs/04-performance.md`.
+
+---
+
+## Data policy
+
+Three things are deliberate, and matter more than they look:
+
+1. **No invented darshan timings.** Mandals announce them days before the
+   festival. The schema models timings fully and the UI renders them when
+   present, but the seed ships `null` and the page says *"Not announced yet"*.
+   A confident wrong time sends a real person across the city for nothing.
+2. **Every record carries a `confidence` value** — `verified`, `community`
+   or `demo` — and the UI shows it. A visitor deciding whether to cross Pune
+   deserves to know which claims are checked.
+3. **`prominence` is a sort weight, not a rating.** It is never rendered as
+   stars, and there are no invented review scores anywhere in the product.
+
+---
+
+## Known limitations
+
+| # | Limitation | Impact | Fix |
+|---|---|---|---|
+| 1 | **Rate limiter is per-instance and in-memory** | On multi-instance deploys the effective limit is N× the configured one | Back `src/lib/rate-limit.ts` with Upstash/Redis |
+| 2 | **No mandal photography** | Cards render a generated gradient fallback | Add rows to `ganpati_images`; the UI already handles them, no code change |
+| 3 | **Maps not verified against a live key** | The integration is complete and typed but has not been run against real Google APIs | Add a key and re-run `npm run test:e2e` |
+| 4 | **Favourites do not yet sync to the DB on sign-in** | Anonymous favourites stay device-local | Merge `localStorage` into `favorites` in the auth callback |
+| 5 | **Saved plans are local only** | `/plan` state is device-local; `darshan_plans` is schema-ready but unwired | Persist on "Share" and serve `/plan/[shareId]` |
+| 6 | **Transit mode depends on Google coverage** | Routes may return no transit route in Pune | UI already surfaces "route unavailable" |
+| 7 | **18 mandals seeded** | Pune has thousands | Use `/admin/import` — CSV/JSON import is built and validated |
+| 8 | **Analytics has no dashboard** | Events are stored but only queryable via SQL | Build `/admin/analytics` over `analytics_events` |
+
+---
+
+## Recommended next features
+
+1. **Live crowd signal** — the single highest-value addition. Queue length is
+   what actually decides where a visitor goes next; even coarse
+   crowd-sourced reporting beats none.
+2. **Sync favourites and plans on sign-in** (limitations 4 and 5) — the
+   schema and RLS are already in place.
+3. **Visarjan-day mode** — procession routes and road closures; the day the
+   app is most used and most useless without closure data.
+4. **Real photography with a rights model** — mandal-submitted images via the
+   existing `ganpati_images` table.
+5. **Marathi UI locale** — content is already bilingual; the chrome is not.
+   Add `next-intl` and a `LocaleProvider`.
+6. **Timings ingestion** — a small admin flow for entering timings as mandals
+   announce them, so the honest gap closes during festival week.

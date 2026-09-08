@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Design tokens.
+
+   The palette is derived from materials physically present at a mandal
+   at night — the warm brown-black of an unlit lane, vermilion on the
+   idol, marigold garlands, brass lamps, sandalwood paste. This is why it
+   reads as festive rather than as a dark SaaS dashboard: the hues are
+   pigment hues, not UI hues.
+
+   Reserved meanings (do not reuse decoratively):
+     --pital  (brass)  → Manache Paach only
+     --tulsi  (green)  → success / verified only
+     --kumkum (red)    → destructive only
+   ===================================================================== */
+
+:root {
+  /* Surfaces — warm near-blacks, never neutral grey */
+  --raat: #14100c;          /* page ground */
+  --dhoop: #1f1913;         /* raised card */
+  --dhoop-2: #26201a;       /* hover / pressed */
+
+  /* Accents */
+  --shendur: #e2621b;       /* vermilion — primary action */
+  --zendu: #f2a93b;         /* marigold — highlight */
+  --pital: #c9a227;         /* brass — Manache Paach */
+  --kumkum: #b3261e;        /* destructive */
+  --tulsi: #4e8a5b;         /* success / verified */
+
+  /* Text — warm ivory, not pure white (pure white glares outdoors at night) */
+  --chandan: #f0e6d2;
+  --muted: rgb(240 230 210 / 0.62);
+  /* 0.56 is the floor that still clears WCAG AA (4.5:1) for 12px text on
+     every surface token: 5.39 on --raat, 5.23 on --dhoop, 5.03 on --dhoop-2.
+     Anything lighter fails on cards. */
+  --faint: rgb(240 230 210 / 0.56);
+
+  --line: rgb(240 230 210 / 0.09);
+  --line-strong: rgb(240 230 210 / 0.16);
+
+  --radius-chip: 999px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
+  --radius-field: 12px;
+
+  --shadow-sheet: 0 -8px 32px rgb(10 6 2 / 0.6);
+  --shadow-float: 0 4px 16px rgb(10 6 2 / 0.5);
+
+  /* Safe areas — the bottom nav and sheet must clear the home indicator */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-height: 56px;
+}
+
+@theme inline {
+  --color-raat: var(--raat);
+  --color-dhoop: var(--dhoop);
+  --color-dhoop-2: var(--dhoop-2);
+  --color-shendur: var(--shendur);
+  --color-zendu: var(--zendu);
+  --color-pital: var(--pital);
+  --color-kumkum: var(--kumkum);
+  --color-tulsi: var(--tulsi);
+  --color-chandan: var(--chandan);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --radius-card: var(--radius-card);
+  --radius-sheet: var(--radius-sheet);
+  --radius-field: var(--radius-field);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-devanagari: var(--font-mukta), var(--font-manrope), sans-serif;
+}
+
+/* ---------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------- */
+html {
+  background: var(--raat);
+  /* iOS: stop rubber-band scrolling revealing white behind the app shell */
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: var(--raat);
+  color: var(--chandan);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* never allow a stray wide child to scroll the page sideways (§63) */
+  overflow-x: hidden;
+}
+
+/* Marathi text gets a Devanagari-tuned face and slightly looser leading */
+:lang(mr),
+.devanagari {
+  font-family: var(--font-devanagari);
+  line-height: 1.65;
+}
+
+/* Visible, high-contrast focus for keyboard users (§37) */
+:focus-visible {
+  outline: 2px solid var(--zendu);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect reduced-motion: all decorative motion collapses to instant */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Utilities
+   ------------------------------------------------------------------- */
+
+/* Warm film grain. A single tiled SVG — no image request, no layout cost. */
+.grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Horizontal scrollers: hide the bar but keep keyboard + momentum scrolling */
+.scroll-x {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* Line clamping for card copy */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pb-nav {
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 16px);
+}
+
+/* Save-button pop. A keyframe rather than a JS animation runtime, because
+   this button appears on every card. */
+@keyframes heart-pop {
+  0%   { transform: scale(0.7); }
+  55%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.animate-heart-pop {
+  animation: heart-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}

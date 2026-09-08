@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+build/
+.env*.local
+.env
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/supabase/.branches
+/supabase/.temp
