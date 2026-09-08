@@ -13,7 +13,7 @@ import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { CategoryBadge } from '@/components/ui/Badge';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { useFavorites } from '@/hooks/useLocalCollection';
+import { useFavorites } from '@/hooks/useFavorites';
 import { haversine, formatDistance } from '@/lib/geo';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';

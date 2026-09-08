@@ -1,7 +1,7 @@
 'use client';
 
 import { Heart } from 'lucide-react';
-import { useFavorites } from '@/hooks/useLocalCollection';
+import { useFavorites } from '@/hooks/useFavorites';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 

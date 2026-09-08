@@ -163,5 +163,9 @@ export function useLocalCollection(key: string) {
 export const FAVORITES_KEY = 'pg.favorites';
 export const PLAN_KEY = 'pg.plan';
 
-export const useFavorites = () => useLocalCollection(FAVORITES_KEY);
+/**
+ * Device-local favourites. Most callers want `useFavorites` from
+ * `@/hooks/useFavorites`, which layers account sync on top of this.
+ */
+export const useLocalFavorites = () => useLocalCollection(FAVORITES_KEY);
 export const usePlan = () => useLocalCollection(PLAN_KEY);

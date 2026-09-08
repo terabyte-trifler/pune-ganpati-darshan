@@ -6,7 +6,7 @@ import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { Chip } from '@/components/ui/Chip';
 import { searchGanpatis } from '@/services/search';
 import { useGeolocation } from '@/hooks/useGeolocation';
-import { useFavorites } from '@/hooks/useLocalCollection';
+import { useFavorites } from '@/hooks/useFavorites';
 import { haversine } from '@/lib/geo';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';

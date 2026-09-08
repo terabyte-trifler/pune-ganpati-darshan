@@ -235,6 +235,27 @@ decisions), `docs/02-architecture.md`, `docs/03-security.md`,
 Maps are embedded throughout — mandal pages show location, route and plan
 pages draw the ordered stops — not confined to `/map`.
 
+### Favourites and saved plans
+
+Favourites are written to `localStorage` first, always. Saving a mandal has to
+work instantly, offline and without an account — someone in a crowded lane on
+patchy 4G should not wait on a round-trip to tap a heart.
+
+Signing in **merges** rather than replaces, so mandals saved before creating an
+account are kept, and a second device gets the union rather than whichever
+side wrote last. Removals propagate explicitly, so a later merge cannot
+resurrect something deleted.
+
+Plans are shareable two ways. `/plan/[shareId]` persists to `darshan_plans`
+and gives a short, durable link; if storage is unavailable the Share button
+falls back to `/plan?stops=…`, which carries the route in the URL and
+therefore always works. Either link opens read-only with an explicit "use this
+route" — opening someone else's plan must never overwrite your own.
+
+Verified with `tools/verify-favorites-sync.mjs`, which uses two independent
+browser contexts sharing an account but not localStorage — the case a
+single-context test would miss.
+
 ### Coordinate provenance
 
 Every mandal records where its coordinate came from (`coordinate_source`,
@@ -319,13 +340,13 @@ Three things are deliberate, and matter more than they look:
 | 1 | **Rate limiter is per-instance and in-memory** | On multi-instance deploys the effective limit is N× the configured one | Back `src/lib/rate-limit.ts` with Upstash/Redis |
 | 2 | **Public OSRM demo is dev-only** | Rate-limited, no SLA, and it serves only the car profile — so walking *times* are derived from routed distance, not routed directly | Self-host OSRM, or set `OPENROUTESERVICE_API_KEY` |
 | 3 | **No admin user exists yet** | `/admin` is unreachable until one is created | Sign in once, then run the SQL under *Supabase setup* |
-| 4 | **Favourites and plans are device-local** | They survive reloads and work offline, but do not follow you to another device. The UI never claims otherwise. `favorites` / `darshan_plans` are schema- and RLS-ready but unwired | Merge localStorage into the tables on sign-in |
-| 5 | **Shared plans are stateless links** | `/plan?stops=…` carries the route in the URL, so a very long plan makes a long link, and the sender cannot revoke it | Persist to `darshan_plans` and serve `/plan/[shareId]` |
+| 4 | **Favourites sync only while signed in** | Signed out they stay on the device, which is deliberate — saving must work with no account and no network | — |
+| 5 | **Shared plan links cannot be revoked** | `/plan/[shareId]` is public to anyone holding the id | Expose an "unshare" action that clears `is_public` |
 | 6 | **14 of 23 mandals have no photograph** | Cards fall back to the drawn Ganpati silhouette | Add rows to `ganpati_images`; no code change needed |
 | 7 | **Four known mandals are missing** | Nagarkar Talim, Shahu Chowk, Hirabaug and Khadakmal Ali could not be located from any verifiable source, so they are absent rather than approximated | Survey coordinates, then `/admin/import` |
 | 8 | **Some coordinates are prototype-seeded** | 16 of 23 have no independent confirmation; two were found 400m+ out and corrected | Run `tools/verify-coordinates.mjs` as OSM coverage improves |
 | 9 | **Analytics has no dashboard** | Events are stored but only queryable via SQL | Build `/admin/analytics` over `analytics_events` |
-| 10 | **Mandal detail scores 88 on mobile** | Below the 90 target; a photo hero on throttled 4G. Every other page is 93–100 | Pre-generate hero variants, or drop the hero aspect on small screens |
+| 10 | **First view of each image is slower** | Mandal detail measures 82 cold and **90 warm**: the first request per image pays Next's on-demand optimisation. A CDN serves every later visitor the warm path | Pre-generate variants at build, or rely on CDN caching |
 | 11 | **maplibre-gl pinned to v5** | v6 constructs the map but never fires `load` — no tiles, no errors | Re-test v6 on a later release |
 | 12 | **No Places-style address search** | Search covers the catalogue, not arbitrary Pune addresses | Add Photon/Nominatim (both free) if wanted |
 

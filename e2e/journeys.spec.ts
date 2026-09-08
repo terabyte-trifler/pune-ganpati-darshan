@@ -246,6 +246,35 @@ test('a shared plan link opens the shared route, without destroying your own', a
   await expect(page.getByText(/2 stops/)).toBeVisible();
 });
 
+test('sharing a plan produces a durable link that opens the route', async ({ page, request }) => {
+  // The planner persists the plan and shares /plan/<id>, falling back to the
+  // stateless ?stops= form when storage is unavailable. Both must open the
+  // actual route — the failure this guards against is a link that opens empty.
+  const created = await request.post('/api/plans', {
+    data: { slugs: ['kasba-ganpati', 'tambdi-jogeshwari'], mode: 'walk', title: 'E2E Darshan' },
+  });
+
+  if (created.status() === 501) {
+    // Storage not configured in this environment; the stateless form covers it.
+    test.skip(true, 'plan storage unconfigured');
+    return;
+  }
+
+  expect(created.status()).toBe(201);
+  const { shareId } = await created.json();
+  expect(shareId).toMatch(/^[a-z0-9]{10}$/);
+
+  await page.goto(`/plan/${shareId}`);
+  await expect(page.getByRole('heading', { name: /E2E Darshan/ })).toBeVisible();
+  await expect(page.getByText('Shri Kasba Ganpati')).toBeVisible();
+  await expect(page.getByText('Tambdi Jogeshwari Ganpati')).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/NaN|undefined/);
+
+  // An unknown id must 404 rather than render an empty plan.
+  const missing = await request.get('/plan/zzzzzzzzzz');
+  expect(missing.status()).toBe(404);
+});
+
 test('Flow 7 — admin is not reachable without authorization', async ({ page }) => {
   // Authorization must not depend on hiding UI (§27). With no session the
   // route must redirect, not render.

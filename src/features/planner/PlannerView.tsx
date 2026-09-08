@@ -13,7 +13,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
-import { ShareButton } from '@/features/discovery/ShareButton';
+import { SavePlanShare } from './SavePlanShare';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   PUNE_CENTER, haversine, formatDistance, formatDuration,
@@ -233,11 +233,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           </p>
         </div>
         {!sharedSlugs && (
-          <ShareButton
-            title="My Ganpati darshan route"
-            text={`${stops.length} mandals in Pune`}
-            path={`/plan?stops=${planSlugs.join(',')}`}
-          />
+          <SavePlanShare slugs={planSlugs} mode={mode} />
         )}
       </div>
 
