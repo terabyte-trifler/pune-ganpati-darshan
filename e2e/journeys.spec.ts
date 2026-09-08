@@ -293,6 +293,62 @@ test('sharing a plan produces a durable link that opens the route', async ({ pag
   expect(missing.status()).toBe(404);
 });
 
+test('a curated route can be navigated from where you are', async ({ page }) => {
+  await withPuneLocation(page);
+  await page.goto('/routes/manache-5-sakal-walk');
+
+  await page.getByRole('button', { name: /Start from my location/i }).click();
+
+  // Geolocation resolves asynchronously; wait for the located state rather
+  // than reading the URL from a button that has not rendered yet.
+  await expect(page.getByRole('button', { name: /Start in Google Maps/i })).toBeVisible();
+
+  // The route must open in Google Maps with the visitor's own position as the
+  // origin, not the first stop.
+  const url = await page.evaluate(() => {
+    let captured = '';
+    const original = window.open;
+    (window as unknown as { open: unknown }).open = (u: string) => { captured = u; return null; };
+    document.querySelectorAll('button').forEach((b) => {
+      if (/Start in Google Maps|Open part 1/.test(b.textContent ?? '')) b.click();
+    });
+    (window as unknown as { open: unknown }).open = original;
+    return captured;
+  });
+
+  const parsed = new URL(url);
+  expect(parsed.host).toBe('www.google.com');
+  expect(parsed.searchParams.get('origin')).toBe('18.5196,73.8553');
+  expect(parsed.searchParams.get('travelmode')).toBe('walking');
+  // Five stops: four waypoints plus the destination.
+  expect((parsed.searchParams.get('waypoints') ?? '').split('|')).toHaveLength(4);
+});
+
+test('a route longer than Google Maps allows is split, not truncated', async ({ page }) => {
+  await withPuneLocation(page);
+  await page.goto('/routes/great-peth-circuit');
+  await page.getByRole('button', { name: /Start from my location/i }).click();
+
+  // Google Maps caps intermediate waypoints at 9. Silently dropping stops
+  // from a 12-stop circuit would send someone off with a route missing its
+  // end, so it is split into parts that overlap at the join.
+  await expect(page.getByRole('button', { name: /Open part 1 of 2/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Open part 2 of 2/ })).toBeVisible();
+  await expect(page.getByText(/no stop is skipped/i)).toBeVisible();
+
+  const waypoints = await page.evaluate(() => {
+    let captured = '';
+    const original = window.open;
+    (window as unknown as { open: unknown }).open = (u: string) => { captured = u; return null; };
+    document.querySelectorAll('button').forEach((b) => {
+      if (/Open part 1/.test(b.textContent ?? '')) b.click();
+    });
+    (window as unknown as { open: unknown }).open = original;
+    return (new URL(captured).searchParams.get('waypoints') ?? '').split('|').length;
+  });
+  expect(waypoints).toBeLessThanOrEqual(9);
+});
+
 test('Flow 7 — admin is not reachable without authorization', async ({ page }) => {
   // Authorization must not depend on hiding UI (§27). With no session the
   // route must redirect, not render.

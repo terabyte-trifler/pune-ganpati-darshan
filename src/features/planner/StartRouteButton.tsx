@@ -1,0 +1,221 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { Navigation, LocateFixed, Loader2, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { haversine, formatDistance, type LatLng } from '@/lib/geo';
+import { trackEvent } from '@/services/analytics';
+import type { Ganpati, TravelMode } from '@/types/ganpati';
+
+/**
+ * Hands a curated route to Google Maps for turn-by-turn navigation, starting
+ * from where the visitor actually is.
+ *
+ * Navigation is deliberately not reimplemented: during Ganeshotsav many peth
+ * roads are closed to vehicles and pedestrianised, and Google has that live
+ * where this app does not. The universal `dir/?api=1` URL opens the installed
+ * app when there is one and the web otherwise.
+ *
+ * Location is requested only on tap, and the coordinates go into the maps URL
+ * — they are never sent to this app's servers.
+ */
+
+/**
+ * Google Maps accepts at most 9 intermediate waypoints, so 11 points in
+ * total. Longer routes are split rather than silently truncated: dropping
+ * stops from a 12-stop circuit without saying so would send someone off with
+ * a route quietly missing its end.
+ */
+const MAX_WAYPOINTS = 9;
+const MAX_POINTS_PER_LEG = MAX_WAYPOINTS + 2;
+
+function mapsUrl(origin: LatLng | null, stops: Ganpati[], mode: TravelMode) {
+  const url = new URL('https://www.google.com/maps/dir/');
+  url.searchParams.set('api', '1');
+
+  if (origin) url.searchParams.set('origin', `${origin.lat},${origin.lng}`);
+  else {
+    const first = stops[0];
+    url.searchParams.set('origin', `${first.location.lat},${first.location.lng}`);
+  }
+
+  const destination = stops[stops.length - 1];
+  url.searchParams.set('destination', `${destination.location.lat},${destination.location.lng}`);
+  url.searchParams.set('destination_place_id', destination.location.googlePlaceId ?? '');
+  if (!destination.location.googlePlaceId) url.searchParams.delete('destination_place_id');
+
+  const intermediate = origin ? stops.slice(0, -1) : stops.slice(1, -1);
+  if (intermediate.length > 0) {
+    url.searchParams.set(
+      'waypoints',
+      intermediate.map((s) => `${s.location.lat},${s.location.lng}`).join('|')
+    );
+  }
+
+  url.searchParams.set(
+    'travelmode',
+    mode === 'walk' ? 'walking' : mode === 'transit' ? 'transit' : 'driving'
+  );
+  return url.toString();
+}
+
+/** Splits a long route into legs Google Maps can actually take. */
+function splitIntoLegs(stops: Ganpati[], hasOrigin: boolean): Ganpati[][] {
+  const capacity = hasOrigin ? MAX_POINTS_PER_LEG - 1 : MAX_POINTS_PER_LEG;
+  if (stops.length <= capacity) return [stops];
+
+  const legs: Ganpati[][] = [];
+  let index = 0;
+  while (index < stops.length) {
+    const leg = stops.slice(index, index + capacity);
+    legs.push(leg);
+    // Each following leg begins where the previous one ended, so the join is
+    // continuous rather than a gap.
+    index += capacity - 1;
+    if (legs.length > 5) break;
+  }
+  return legs;
+}
+
+export function StartRouteButton({
+  stops, mode, routeSlug,
+}: {
+  stops: Ganpati[];
+  mode: TravelMode;
+  routeSlug: string;
+}) {
+  const { state, request } = useGeolocation();
+  const [reorderFromMe, setReorderFromMe] = useState(true);
+  const origin = state.status === 'ready' ? state.position : null;
+
+  /** Distance from the visitor to where the route begins. */
+  const distanceToStart = useMemo(() => {
+    if (!origin || stops.length === 0) return null;
+    const first = stops[0];
+    return haversine(origin, { lat: first.location.lat, lng: first.location.lng });
+  }, [origin, stops]);
+
+  /** The nearest stop, so a visitor already inside the route can join it. */
+  const nearestIndex = useMemo(() => {
+    if (!origin) return 0;
+    let best = 0;
+    let bestDistance = Infinity;
+    stops.forEach((s, i) => {
+      const d = haversine(origin, { lat: s.location.lat, lng: s.location.lng });
+      if (d < bestDistance) { bestDistance = d; best = i; }
+    });
+    return best;
+  }, [origin, stops]);
+
+  const ordered = useMemo(() => {
+    if (!origin || !reorderFromMe || nearestIndex === 0) return stops;
+    // Start at whichever stop is closest, then continue in the route's order
+    // and pick up the earlier stops at the end.
+    return [...stops.slice(nearestIndex), ...stops.slice(0, nearestIndex)];
+  }, [stops, origin, reorderFromMe, nearestIndex]);
+
+  const legs = useMemo(
+    () => splitIntoLegs(ordered, Boolean(origin)),
+    [ordered, origin]
+  );
+
+  const open = (leg: Ganpati[], index: number) => {
+    trackEvent('plan_started', {
+      props: { source: 'curated-route', route: routeSlug, leg: index, located: Boolean(origin) },
+    });
+    window.open(mapsUrl(index === 0 ? origin : null, leg, mode), '_blank', 'noopener');
+  };
+
+  return (
+    <div className="mt-4">
+      {!origin ? (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => { trackEvent('location_enabled'); request(); }}
+              size="md"
+              className="flex-1"
+              disabled={state.status === 'locating'}
+            >
+              {state.status === 'locating' ? (
+                <><Loader2 size={16} className="animate-spin" aria-hidden="true" />Finding you…</>
+              ) : (
+                <><LocateFixed size={16} aria-hidden="true" />Start from my location</>
+              )}
+            </Button>
+          </div>
+          <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">
+            {state.status === 'denied'
+              ? 'Location is off in your browser.'
+              : state.status === 'unavailable'
+                ? 'We couldn’t get your location.'
+                : 'Used to start navigation from where you are. It goes straight to Google Maps, not to us.'}
+          </p>
+          {state.status !== 'idle' && state.status !== 'locating' && (
+            <Button
+              onClick={() => open(legs[0], 0)}
+              variant="secondary"
+              size="md"
+              full
+              className="mt-2"
+            >
+              <Navigation size={16} aria-hidden="true" />
+              Open the route in Google Maps anyway
+            </Button>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="mb-2 flex items-center gap-1.5 text-[13px] text-[var(--muted)]">
+            <MapPin size={13} aria-hidden="true" className="text-[var(--tulsi)]" />
+            {distanceToStart !== null && nearestIndex === 0 ? (
+              <>The route starts {formatDistance(distanceToStart)} from you.</>
+            ) : (
+              <>
+                You&rsquo;re closest to stop {nearestIndex + 1},{' '}
+                {stops[nearestIndex].name.replace(/^(Shri|Shrimant)\s+/i, '')}.
+              </>
+            )}
+          </p>
+
+          {nearestIndex > 0 && (
+            <label className="mb-3 flex items-center gap-2 text-[13px] text-[var(--muted)]">
+              <input
+                type="checkbox"
+                checked={reorderFromMe}
+                onChange={(e) => setReorderFromMe(e.target.checked)}
+                className="h-4 w-4 accent-[var(--shendur)]"
+              />
+              Begin at the nearest stop instead of the first
+            </label>
+          )}
+
+          {legs.map((leg, i) => (
+            <Button
+              key={i}
+              onClick={() => open(leg, i)}
+              size="md"
+              full
+              variant={i === 0 ? 'primary' : 'secondary'}
+              className={i > 0 ? 'mt-2' : ''}
+            >
+              <Navigation size={16} aria-hidden="true" />
+              {legs.length === 1
+                ? 'Start in Google Maps'
+                : `Open part ${i + 1} of ${legs.length} (${leg.length} stops)`}
+            </Button>
+          ))}
+
+          {legs.length > 1 && (
+            <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
+              Google Maps takes up to {MAX_WAYPOINTS} stops between start and
+              finish, so this route opens in {legs.length} parts. Each part
+              begins where the last one ended — no stop is skipped.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}

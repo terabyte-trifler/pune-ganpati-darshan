@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, Navigation, Eye, DoorOpen, Clock } from 'lucide-react';
+import { ChevronRight, ListPlus, Eye, DoorOpen, Clock } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { StartRouteButton } from './StartRouteButton';
 import { Button } from '@/components/ui/Button';
 import { CategoryBadge } from '@/components/ui/Badge';
 import { usePlan } from '@/hooks/useLocalCollection';
@@ -48,18 +49,26 @@ export function RouteDetailView({
         Stops are shown in walking order. Tap a number to see which mandal it is.
       </p>
 
-      {/* ---------------- Take this route ---------------- */}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button asChild size="md" className="flex-1" onClick={useThisRoute}>
-          <Link href="/plan">
-            <Navigation size={16} aria-hidden="true" />
-            Use this route
-          </Link>
-        </Button>
-      </div>
+      {/* ---------------- Navigate ---------------- */}
+      <StartRouteButton stops={mandals} mode={route.mode} routeSlug={route.slug} />
+
+      {/* ---------------- Or take it into your own plan ---------------- */}
+      <Button
+        asChild
+        variant="secondary"
+        size="md"
+        full
+        className="mt-3"
+        onClick={useThisRoute}
+      >
+        <Link href="/plan">
+          <ListPlus size={16} aria-hidden="true" />
+          Add to my darshan
+        </Link>
+      </Button>
       <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">
         Copies these {totals.stopCount} stops into your darshan, where you can
-        reorder them, add your own, or start navigation.
+        reorder them or add your own.
       </p>
 
       {/* ---------------- Stops ---------------- */}

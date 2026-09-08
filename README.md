@@ -263,7 +263,7 @@ All seven main surfaces pass. Decisions that came out of running it:
 |---|---|
 | `/start` | Two questions — how long you have, what you want to see — then a route that fits |
 | `/routes` | 16 curated routes, with "good for right now" chosen by Pune local time |
-| `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
+| `/routes/[slug]` | Numbered stops on a map, per-stop queue time, navigate from where you are |
 | `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |
 | `/map` | Full-screen map, clustered pins, filters, draggable sheet |
 
@@ -319,6 +319,22 @@ Where a route makes a time claim in its name, that claim is checked against
 the computed total rather than asserted — "One hour from Mandai" came out at
 1 hr 4 min on first build, so the route was trimmed (Tulshibaug from a queued
 darshan to a roadside look) until it genuinely fits in 59 minutes.
+
+### Navigating a route
+
+Every curated route can be opened in Google Maps starting from the visitor's
+current position, not from the route's first stop. If they are already inside
+the route it offers to begin at the nearest stop instead.
+
+Turn-by-turn is deliberately not reimplemented: during Ganeshotsav many peth
+roads are closed to vehicles and pedestrianised, and Google has that live
+where this app does not. Coordinates go straight into the maps URL and never
+reach this app's servers.
+
+Google Maps accepts at most 9 intermediate waypoints. Longer routes — the
+12-stop Great Peth Circuit — are split into parts that **overlap at the join**
+rather than being silently truncated, because quietly dropping the end of
+someone's route is worse than asking them to open two links.
 
 ### Why queue time is modelled
 
@@ -387,7 +403,7 @@ All seven main surfaces pass. Decisions that came out of running it:
 |---|---|
 | `/start` | Two questions — how long you have, what you want to see — then a route that fits |
 | `/routes` | 16 curated routes, with "good for right now" chosen by Pune local time |
-| `/routes/[slug]` | Numbered stops on a map, per-stop queue time, "Use this route" |
+| `/routes/[slug]` | Numbered stops on a map, per-stop queue time, navigate from where you are |
 | `/plan` | Your own stops: reorder, optimise, route line on a map, hand off to navigation |
 | `/map` | Full-screen map, clustered pins, filters, draggable sheet |
 
@@ -443,6 +459,22 @@ Where a route makes a time claim in its name, that claim is checked against
 the computed total rather than asserted — "One hour from Mandai" came out at
 1 hr 4 min on first build, so the route was trimmed (Tulshibaug from a queued
 darshan to a roadside look) until it genuinely fits in 59 minutes.
+
+### Navigating a route
+
+Every curated route can be opened in Google Maps starting from the visitor's
+current position, not from the route's first stop. If they are already inside
+the route it offers to begin at the nearest stop instead.
+
+Turn-by-turn is deliberately not reimplemented: during Ganeshotsav many peth
+roads are closed to vehicles and pedestrianised, and Google has that live
+where this app does not. Coordinates go straight into the maps URL and never
+reach this app's servers.
+
+Google Maps accepts at most 9 intermediate waypoints. Longer routes — the
+12-stop Great Peth Circuit — are split into parts that **overlap at the join**
+rather than being silently truncated, because quietly dropping the end of
+someone's route is worse than asking them to open two links.
 
 ### Why queue time is modelled
 
