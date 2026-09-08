@@ -3,7 +3,7 @@ import { Search, Route as RouteIcon, ChevronRight } from 'lucide-react';
 import {
   getAllGanpatis, getAreas, getFestivalConfig, getManachePaach,
 } from '@/services/ganpati';
-import { getRoutes, computeRouteTotals } from '@/services/routes';
+import { getRoutes, computeRouteTotals, routesForNow } from '@/services/routes';
 import { formatDuration } from '@/lib/geo';
 import { FestivalCountdown } from '@/features/discovery/FestivalCountdown';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
@@ -33,6 +33,15 @@ export default async function HomePage() {
   ]);
 
   const iconic = all.filter((g) => g.category !== 'maanache').slice(0, 8);
+
+  // Time-appropriate routes lead, with the remaining featured ones behind
+  // them so the rail is never short.
+  const nowRoutes = routesForNow(routes);
+  const nowSlugs = new Set(nowRoutes.map((r) => r.slug));
+  const leadRoutes = [
+    ...nowRoutes,
+    ...routes.filter((r) => r.featured && !nowSlugs.has(r.slug)),
+  ].slice(0, 6);
   const coreAreas = areas.filter((a) => a.isCore);
 
   return (
@@ -83,6 +92,56 @@ export default async function HomePage() {
               </Link>
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------------
+          Ready-made routes lead the page.
+
+          A visitor arriving mid-festival wants to know what to do, not to
+          assemble a plan from a list of names. A route answers that in one
+          tap, and the ones offered first are chosen by the time of day in
+          Pune — an evening dekhava trail is useless at 9am.
+          ---------------------------------------------------------------- */}
+      <section className="mt-7">
+        <SectionHeader
+          title={nowRoutes.length > 0 ? 'Good for right now' : 'Ready-made routes'}
+          titleMr="दर्शन मार्ग"
+          href="/routes"
+        />
+        <p className="mb-3 px-4 text-[13px] leading-relaxed text-[var(--muted)]">
+          {nowRoutes.length > 0
+            ? 'Walkable routes suited to the time of day, with queuing counted.'
+            : 'Walkable routes with the queuing time counted, not just the walking.'}
+        </p>
+        <div className="scroll-x flex gap-3 px-4 pb-1">
+          {leadRoutes.map((r) => {
+            const totals = computeRouteTotals(r);
+            return (
+              <Link
+                key={r.id}
+                href={`/routes/${r.slug}`}
+                prefetch={false}
+                className="flex w-[250px] shrink-0 flex-col rounded-[var(--radius-card)] border border-[var(--line-strong)] bg-[var(--dhoop)] p-4 [scroll-snap-align:start] transition-colors hover:border-[var(--shendur)]/50"
+              >
+                <h3 className="clamp-2 text-[15px] font-bold leading-tight text-[var(--chandan)]">
+                  {r.title}
+                </h3>
+                {r.summary && (
+                  <p className="clamp-2 mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
+                    {r.summary}
+                  </p>
+                )}
+                <div className="mt-auto flex items-center gap-2 pt-3 text-[12px] text-[var(--faint)]">
+                  <span>{totals.stopCount} stops</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="font-medium text-[var(--zendu)]">
+                    about {formatDuration(totals.totalS)}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -159,39 +218,6 @@ export default async function HomePage() {
               </span>
             </Link>
           ))}
-        </div>
-      </section>
-
-      {/* ---------------- Curated routes ---------------- */}
-      <section className="mt-10">
-        <SectionHeader title="Ready-made routes" titleMr="दर्शन मार्ग" href="/routes" />
-        <div className="scroll-x flex gap-3 px-4 pb-1">
-          {routes.slice(0, 5).map((r) => {
-            const totals = computeRouteTotals(r);
-            return (
-              <Link
-                key={r.id}
-                href={`/routes/${r.slug}`}
-                prefetch={false}
-                className="w-[230px] shrink-0 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3.5 [scroll-snap-align:start] transition-colors hover:border-[var(--shendur)]/40"
-              >
-                <h3 className="clamp-2 text-[14px] font-bold leading-tight text-[var(--chandan)]">
-                  {r.title}
-                </h3>
-                {r.summary && (
-                  <p className="clamp-2 mt-1 text-[12px] leading-relaxed text-[var(--muted)]">
-                    {r.summary}
-                  </p>
-                )}
-                <p className="mt-2 text-[12px] text-[var(--faint)]">
-                  {totals.stopCount} stops ·{' '}
-                  <span className="text-[var(--zendu)]">
-                    about {formatDuration(totals.totalS)}
-                  </span>
-                </p>
-              </Link>
-            );
-          })}
         </div>
       </section>
 

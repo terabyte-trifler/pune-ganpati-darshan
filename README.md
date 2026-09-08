@@ -238,6 +238,10 @@ outdoors and fails on anything below them:
 
 All seven main surfaces pass. Decisions that came out of running it:
 
+- **Ready-made routes lead the page.** A visitor arriving mid-festival wants
+  to know what to do, not to assemble a plan from a list of names — a route
+  answers that in one tap. Which routes appear first is chosen by the time of
+  day in Pune, since an evening dekhava trail is useless at 9am.
 - **The home page shows mandals, not a permission prompt.** "Ganpati near you"
   used to render a consent card and nothing else, so the most useful answer on
   the page was gated behind a dialog — and anyone who declined saw an empty
@@ -358,6 +362,10 @@ outdoors and fails on anything below them:
 
 All seven main surfaces pass. Decisions that came out of running it:
 
+- **Ready-made routes lead the page.** A visitor arriving mid-festival wants
+  to know what to do, not to assemble a plan from a list of names — a route
+  answers that in one tap. Which routes appear first is chosen by the time of
+  day in Pune, since an evening dekhava trail is useless at 9am.
 - **The home page shows mandals, not a permission prompt.** "Ganpati near you"
   used to render a consent card and nothing else, so the most useful answer on
   the page was gated behind a dialog — and anyone who declined saw an empty
