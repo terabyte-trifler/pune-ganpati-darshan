@@ -12,7 +12,7 @@ import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
 /**
- * "Right now" — the first thing on the homepage.
+ * "Live crowd tracker" — the first thing on the homepage.
  *
  * This exists because live queue reporting is the one thing the app does
  * that a list of mandals cannot, and it was buried below the fold behind a
@@ -43,6 +43,8 @@ interface Ranked {
   level: CrowdLevel;
   label: string;
   distanceM: number | null;
+  /** When this mandal was last reported — NOT when the snapshot was built. */
+  lastUpdated: string | null;
 }
 
 /** "2 min ago" — minute resolution, matching CrowdPanel. */
@@ -78,7 +80,7 @@ function Heading({ suffix }: { suffix?: string | null }) {
           aria-hidden="true"
           className="inline-block h-2 w-2 shrink-0 rounded-full bg-[var(--shendur)]"
         />
-        Right now
+        Live crowd tracker
       </h2>
       {suffix && (
         <span className="shrink-0 text-[12px] text-[var(--faint)]">{suffix}</span>
@@ -106,6 +108,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
           distanceM: position
             ? haversine(position, { lat: g.location.lat, lng: g.location.lng })
             : null,
+          lastUpdated: status.lastUpdated,
         } satisfies Ranked;
       })
       .filter((r): r is Ranked => r !== null);
@@ -186,7 +189,13 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
   return (
     <>
       <Shell>
-        <Heading suffix={ago ? (stale ? `last known · ${ago}` : `updated ${ago}`) : null} />
+        {/* The header no longer claims a freshness. `computedAt` is when the
+            snapshot was BUILT, not when anyone reported, so "updated just
+            now" sat above readings that could be eighty minutes old. Each
+            row carries its own time instead; the header speaks only when the
+            whole snapshot is known to be stale, which is a different fact
+            and worth saying. */}
+        <Heading suffix={stale && ago ? `last known · ${ago}` : null} />
 
         {rows.length > 0 ? (
           <>
@@ -194,35 +203,51 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
               Shortest queues
             </p>
             <ul className="mt-1.5 divide-y divide-[var(--line)]">
-              {rows.map(({ g, level, label, distanceM }) => (
-                <li key={g.id}>
-                  <Link
-                    href={`/ganpati/${g.slug}`}
-                    prefetch={false}
-                    className="flex min-h-11 items-center justify-between gap-3 py-2.5"
-                  >
-                    <span className="flex min-w-0 items-center gap-2.5">
-                      <CrowdDot level={level} size={10} />
-                      <span className="truncate text-[14px] text-[var(--chandan)]">
-                        {g.name}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2.5">
-                      {distanceM !== null && (
-                        <span className="text-[12px] text-[var(--faint)]">
-                          {formatDistance(distanceM)}
+              {rows.map(({ g, level, label, distanceM, lastUpdated }) => {
+                // Each mandal's OWN freshness. A reading can be 80 minutes
+                // old inside a snapshot computed a second ago, so this is
+                // the only honest place to put a time.
+                const rowAge =
+                  nowMs !== null && lastUpdated
+                    ? Math.max(0, nowMs - Date.parse(lastUpdated))
+                    : null;
+                const rowAgo = agoText(Number.isFinite(rowAge) ? rowAge : null);
+
+                return (
+                  <li key={g.id}>
+                    <Link
+                      href={`/ganpati/${g.slug}`}
+                      prefetch={false}
+                      className="flex min-h-11 items-center justify-between gap-3 py-2.5"
+                    >
+                      <span className="flex min-w-0 items-start gap-2.5">
+                        <span className="mt-[5px] flex shrink-0">
+                          <CrowdDot level={level} size={10} />
                         </span>
-                      )}
+                        <span className="flex min-w-0 flex-col">
+                          <span className="truncate text-[14px] text-[var(--chandan)]">
+                            {g.name}
+                          </span>
+                          <span className="mt-0.5 truncate text-[12px] text-[var(--faint)]">
+                            {[
+                              distanceM !== null ? formatDistance(distanceM) : null,
+                              rowAgo ? `reported ${rowAgo}` : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </span>
+                      </span>
                       <span
-                        className="text-[13px] font-semibold"
+                        className="shrink-0 text-[13px] font-semibold"
                         style={{ color: CROWD_COLOR[level] }}
                       >
                         {label}
                       </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </>
         ) : (
