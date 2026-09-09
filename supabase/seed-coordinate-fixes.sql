@@ -43,6 +43,26 @@ from (values
 where ganpatis.slug = v.slug;
 
 -- ---------------------------------------------------------------------
+-- Admin override: Dagdusheth
+--
+-- Supplied directly by the product owner and takes precedence over the
+-- OpenStreetMap pass above, which sat ~143m away from this point. The OSM
+-- reference is cleared along with it: leaving way/264276391 here would
+-- claim OpenStreetMap provenance for a coordinate OpenStreetMap did not
+-- supply, which is exactly what coordinate_source exists to prevent.
+--
+-- 143m matters beyond tidiness — the "You're here" prompt only claims a
+-- mandal within 120m, so the old point and this one are not interchangeable
+-- for someone standing at the mandap.
+-- ---------------------------------------------------------------------
+update ganpatis set
+  latitude = 18.515140,
+  longitude = 73.856379,
+  coordinate_source = 'admin',
+  osm_id = null
+where slug = 'dagdusheth-halwai-ganpati';
+
+-- ---------------------------------------------------------------------
 -- The two mandals the cross-check could not cover.
 --
 -- Sarasbaug: the second source had no coordinate, and OSM's "Sarasbaug" is
