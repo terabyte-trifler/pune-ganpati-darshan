@@ -61,7 +61,21 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything except static assets and image optimisation.
-    '/((?!_next/static|_next/image|favicon.ico|icons/|sw.js|manifest.webmanifest|.*\\.png$).*)',
+    /*
+     * Everything except Next's own internals and static assets.
+     *
+     * This excluded `_next/static` and `_next/image` but not `_next/hmr`,
+     * so in development every hot-reload WebSocket upgrade was routed
+     * through this middleware, which answered with an ordinary HTTP
+     * response. The handshake failed with ERR_INVALID_HTTP_RESPONSE, the
+     * dev client never connected, and the page never hydrated — the app
+     * rendered correctly and then did nothing at all when tapped, with no
+     * error to explain why. Production was unaffected, which is what made
+     * it look like a data problem rather than a routing one.
+     *
+     * Nothing under `_next/` needs a session refresh, so the whole prefix
+     * is excluded rather than enumerating the parts.
+     */
+    '/((?!_next/|favicon.ico|icons/|sw.js|manifest.webmanifest|.*\\.png$).*)',
   ],
 };
