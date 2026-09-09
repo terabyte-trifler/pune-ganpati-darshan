@@ -101,8 +101,22 @@ All 10 tables have RLS enabled with explicit policies:
 
 ## Privacy
 
-- Geolocation is requested **only on explicit tap**, never on load.
-- Coordinates never leave the device: nearby sorting is local haversine.
+- Geolocation is requested **on open**, on the home page only. The Permissions
+  API is checked first, so a visitor who already granted it is located with no
+  dialog, one who denied is never re-asked, and only a first-timer sees a
+  prompt (`PROMPT_ON_OPEN` in `useGeolocation.ts`). Deep links to a single
+  mandal never ask.
+- Coordinates stay on the device for **everything except routing**. Nearby
+  sorting, distances, the map's radius filter and the "You're here" report
+  prompt are all local haversine against already-loaded data — no request, and
+  they work offline. Crowd reports carry `deviceId`, `status` and `requestId`
+  only: the server is never told where the reporter was.
+- **The one exception**: tapping *Optimise order* in the planner POSTs `origin`
+  to `/api/routes`, which forwards it to `ROUTING_OSRM_URL` — by default the
+  **public OSRM demo server**, a third party, with the coordinates in the URL
+  path where servers routinely log them. It is opt-in per action, never
+  automatic. Self-hosting OSRM removes the third party entirely; see
+  `src/lib/maps/routes.ts`, which says as much.
 - Analytics stores no PII — no IP, no user id; the session id is a random
   value in `sessionStorage` that dies with the tab.
 - `/saved` and `/admin` are `noindex` and disallowed in `robots.txt`.

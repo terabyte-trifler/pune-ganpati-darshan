@@ -61,9 +61,3 @@ export function parseMandalIdList(raw: string | null): string[] | null {
   const parsed = z.array(mandalIdSchema).min(1).max(MAX_BATCH_IDS).safeParse(ids);
   return parsed.success ? parsed.data : null;
 }
-
-export const nearbyQuerySchema = z.object({
-  lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180),
-  radiusM: z.coerce.number().int().min(100).max(20_000).default(3_000),
-});
