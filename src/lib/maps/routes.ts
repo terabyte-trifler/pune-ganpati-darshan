@@ -98,6 +98,44 @@ async function fetchJson(url: string, init?: RequestInit) {
   }
 }
 
+/**
+ * How long a router answer stays good for.
+ *
+ * A day, because the answer cannot change faster than the streets do. Every
+ * one of these queries asks the same question — how far apart are two fixed
+ * points on foot — and the mandals do not move. Caching it is not a
+ * freshness trade, it is declining to ask twice.
+ *
+ * This matters because the default deployment talks to the public OSRM demo
+ * server, which is rate-limited and explicitly not for production use. Every
+ * "Optimise" tap previously sent two uncached requests there. During a
+ * festival, thousands of people build routes around the same handful of
+ * popular mandals, so almost all of those requests are re-asking a question
+ * already answered. Vercel's Data Cache is shared across instances, so one
+ * answer serves every instance until it expires.
+ */
+const ROUTER_CACHE_SECONDS = 86_400;
+
+/**
+ * Coordinates rounded before they become part of a cache key.
+ *
+ * Full float precision makes every request unique, which is the same as
+ * having no cache at all: two people standing a metre apart would each pay
+ * for their own router call. The precision is chosen per use, because the
+ * two calls have different tolerances:
+ *
+ *   3 dp (~110m) for the MATRIX. Its only job is to order stops that are
+ *   hundreds of metres apart, so 110m cannot change the answer, and it lets
+ *   everyone in the same lane share one cached table.
+ *
+ *   4 dp (~11m) for the GEOMETRY, which is drawn on the map. 11m is a few
+ *   pixels at street zoom — invisible — while still collapsing repeat taps
+ *   and back-navigation onto one entry.
+ */
+function cacheableCoords(points: LatLng[], dp: number): string {
+  return points.map((p) => `${p.lng.toFixed(dp)},${p.lat.toFixed(dp)}`).join(';');
+}
+
 /* ---------------------------------------------------------------------
    Single multi-stop route, in the given order.
    ------------------------------------------------------------------- */
@@ -121,12 +159,12 @@ async function computeRouteOsrm(
   points: LatLng[],
   mode: TravelMode
 ): Promise<RoutesResult<ComputedRoute>> {
-  const coords = points.map((p) => `${p.lng},${p.lat}`).join(';');
+  const coords = cacheableCoords(points, 4);
   const url = `${OSRM_URL}/route/v1/${OSRM_PROFILE[mode]}/${coords}?overview=full&geometries=geojson&steps=false`;
 
   let response: Response;
   try {
-    response = await fetchJson(url);
+    response = await fetchJson(url, { next: { revalidate: ROUTER_CACHE_SECONDS } });
   } catch {
     return { ok: false, reason: 'unavailable' };
   }
@@ -243,7 +281,7 @@ export async function computeRouteMatrix(
     };
   }
 
-  const coords = points.map((p) => `${p.lng},${p.lat}`).join(';');
+  const coords = cacheableCoords(points, 3);
   // Request distances too: when the deployment has no real profile for this
   // mode its durations are car times, and ordering stops by car time gives a
   // different (wrong) walking route.
@@ -252,7 +290,7 @@ export async function computeRouteMatrix(
 
   let response: Response;
   try {
-    response = await fetchJson(url);
+    response = await fetchJson(url, { next: { revalidate: ROUTER_CACHE_SECONDS } });
   } catch {
     return { ok: false, reason: 'unavailable' };
   }
