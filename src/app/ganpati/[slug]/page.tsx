@@ -191,6 +191,7 @@ export default async function GanpatiPage({
         <CrowdPanel
           mandalId={g.id}
           mandalName={g.name}
+          mandalLocation={g.location}
           reportingEnabled={g.crowdReportingEnabled}
         />
 

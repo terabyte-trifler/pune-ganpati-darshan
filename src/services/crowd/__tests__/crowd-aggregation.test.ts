@@ -26,6 +26,7 @@ function report(status: CrowdLevel, ageMinutes: number): CrowdReportInput {
     mandalId: 'm1',
     status,
     createdAt: new Date(NOW - ageMinutes * 60_000).toISOString(),
+    atMandal: true,
   };
 }
 
@@ -245,7 +246,7 @@ describe('aggregateSnapshot', () => {
   it('returns an entry for every requested mandal, including silent ones', () => {
     const statuses = aggregateSnapshot(
       ['a', 'b', 'c'],
-      [{ mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString() }],
+      [{ mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString(), atMandal: true }],
       NOW
     );
     expect(statuses.map((s) => s.mandalId)).toEqual(['a', 'b', 'c']);
@@ -257,8 +258,8 @@ describe('aggregateSnapshot', () => {
     const statuses = aggregateSnapshot(
       ['a', 'b'],
       [
-        { mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString() },
-        { mandalId: 'b', status: 'short', createdAt: new Date(NOW).toISOString() },
+        { mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString(), atMandal: true },
+        { mandalId: 'b', status: 'short', createdAt: new Date(NOW).toISOString(), atMandal: true },
       ],
       NOW
     );
@@ -269,10 +270,70 @@ describe('aggregateSnapshot', () => {
   it('ignores reports for mandals that were not asked for', () => {
     const statuses = aggregateSnapshot(
       ['a'],
-      [{ mandalId: 'zzz', status: 'long', createdAt: new Date(NOW).toISOString() }],
+      [{ mandalId: 'zzz', status: 'long', createdAt: new Date(NOW).toISOString(), atMandal: true }],
       NOW
     );
     expect(statuses).toHaveLength(1);
     expect(statuses[0].status).toBeNull();
+  });
+});
+
+describe('proximity weighting', () => {
+  /** A report `ageMinutes` old, with explicit provenance. */
+  const at = (
+    status: CrowdLevel,
+    atMandal: boolean,
+    ageMinutes = 1
+  ): CrowdReportInput => ({
+    mandalId: 'm1',
+    status,
+    createdAt: new Date(NOW - ageMinutes * 60_000).toISOString(),
+    atMandal,
+  });
+
+  it('lets people at the mandal outvote a larger group who are not', () => {
+    // Two at the gate against three who are not, all equally fresh, so
+    // only provenance separates them: 2 x 1.0 beats 3 x 0.5.
+    const result = aggregateMandal('m1', [
+      at('long', true),
+      at('long', true),
+      at('short', false),
+      at('short', false),
+      at('short', false),
+    ], NOW);
+
+    expect(result.status).toBe('long');
+  });
+
+  it('still lets a clear off-site majority win', () => {
+    // Half weight is not no weight. People who walked past are worth
+    // hearing, and one on-site report must not veto them.
+    const result = aggregateMandal('m1', [
+      at('long', true),
+      at('short', false),
+      at('short', false),
+      at('short', false),
+    ], NOW);
+
+    expect(result.status).toBe('short');
+  });
+
+  it('does not let proximity override staleness', () => {
+    // An 80-minute-old on-site report against a fresh off-site one.
+    // Freshness and proximity multiply; neither may dominate the other.
+    const result = aggregateMandal('m1', [
+      at('long', true, 80),
+      at('short', false, 1),
+    ], NOW);
+
+    expect(result.status).toBe('short');
+  });
+
+  it('treats a missing position as off-site rather than blocking the report', () => {
+    // A device that cannot get a fix still gets a voice, at half weight.
+    const result = aggregateMandal('m1', [at('moving', false)], NOW);
+
+    expect(result.status).toBe('moving');
+    expect(result.reportCount).toBe(1);
   });
 });

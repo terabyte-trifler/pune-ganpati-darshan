@@ -52,6 +52,12 @@ export const reportBodySchema = z.object({
   deviceId: deviceIdSchema,
   status: crowdLevelSchema,
   requestId: requestIdSchema.optional(),
+  /**
+   * Whether the client believed it was at the mandal. Optional so an older
+   * client keeps working, and a boolean rather than coordinates so nobody's
+   * position ends up in a request log to support a weighting hint.
+   */
+  atMandal: z.boolean().optional(),
 });
 
 /** `?mandalIds=a,b,c` for the GET form of the batch read. */

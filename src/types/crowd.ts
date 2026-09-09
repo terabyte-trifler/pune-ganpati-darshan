@@ -54,6 +54,11 @@ export interface CrowdReportInput {
   mandalId: string;
   status: CrowdLevel;
   createdAt: string;
+  /**
+   * The client believed it was within ~100m when it submitted. A quality
+   * hint for weighting, never a security boundary — see the migration.
+   */
+  atMandal: boolean;
 }
 
 /** Outcome of a submission attempt. Mirrors the RPC's contract (§29). */

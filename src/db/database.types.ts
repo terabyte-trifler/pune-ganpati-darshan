@@ -257,11 +257,16 @@ export type RateLimitBucketRow = {
   count: number;
 }
 
-/** Row shape of crowd_active_reports(). Three columns by design (§26). */
+/**
+ * Row shape of crowd_active_reports(). Deliberately narrow (§26): the
+ * aggregator needs the level, when it was said, and whether the person was
+ * there. No device identifier ever leaves the database.
+ */
 export type CrowdActiveReportResult = {
   mandal_id: string;
   status: CrowdLevelEnum;
   created_at: string;
+  at_mandal: boolean | null;
 }
 
 export type CrowdDeviceCooldownResult = {
@@ -316,6 +321,7 @@ export type Database = {
           p_status: CrowdLevelEnum;
           p_request_id?: string | null;
           p_ip_hash?: string | null;
+          p_at_mandal?: boolean;
         };
         Returns: unknown;
       };

@@ -54,10 +54,13 @@ function agoText(ms: number | null): string | null {
 export function CrowdPanel({
   mandalId,
   mandalName,
+  mandalLocation,
   reportingEnabled,
 }: {
   mandalId: string;
   mandalName: string;
+  /** Used only to decide whether a report counts as made on site. */
+  mandalLocation: { lat: number; lng: number };
   reportingEnabled: boolean;
 }) {
   const { status, stale, unavailable, loading } = useCrowdStatus(mandalId);
@@ -141,7 +144,7 @@ export function CrowdPanel({
       {/* ---------------- Report ---------------- */}
       {reportingEnabled && (
         <div className="mt-4 border-t border-[var(--line)] pt-4">
-          <CrowdReportButtons mandalId={mandalId} />
+          <CrowdReportButtons mandalId={mandalId} location={mandalLocation} />
         </div>
       )}
     </section>

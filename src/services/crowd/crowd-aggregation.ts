@@ -43,6 +43,27 @@ export const ACTIVE_WINDOW_MINUTES = 90;
  */
 export const FRESHNESS_HALF_LIFE_MINUTES = 30;
 
+/**
+ * How much less a report counts when it was not made at the mandal.
+ *
+ * Someone standing at the gate is reporting what they can see. Someone
+ * elsewhere is reporting what they remember, or heard, or assume. Both are
+ * worth having — the "Seen any of these?" prompt deliberately invites the
+ * second kind from people who walked past — but they are not equal
+ * evidence, and weighting them equally let the larger, vaguer group
+ * outvote the people actually there.
+ *
+ * A half, not a tenth. Off-site reports are usually honest recollection
+ * minutes old, and a mandal whose only reports are off-site should still
+ * show something rather than nothing. Two people at the gate outweigh
+ * three who are not, which is the intended shape.
+ */
+export const OFFSITE_WEIGHT = 0.5;
+
+export function proximityWeight(atMandal: boolean): number {
+  return atMandal ? 1 : OFFSITE_WEIGHT;
+}
+
 /** Ordering used for trend maths. Not exposed; purely internal. */
 const SEVERITY: Record<CrowdLevel, number> = { short: 0, moving: 1, long: 2 };
 
@@ -156,6 +177,7 @@ export function aggregateMandal(
       status: r.status,
       ageMinutes: (nowMs - Date.parse(r.createdAt)) / 60_000,
       createdAt: r.createdAt,
+      atMandal: r.atMandal,
     }))
     // Drop anything outside the window up front so reportCount reflects
     // what is actually influencing the result, not what is in the table.
@@ -176,7 +198,11 @@ export function aggregateMandal(
   }
 
   const scores: Record<CrowdLevel, number> = { short: 0, moving: 0, long: 0 };
-  for (const r of aged) scores[r.status] += freshnessWeight(r.ageMinutes);
+  // Freshness and proximity multiply: a stale on-site report and a fresh
+  // off-site one can legitimately land at similar weight.
+  for (const r of aged) {
+    scores[r.status] += freshnessWeight(r.ageMinutes) * proximityWeight(r.atMandal);
+  }
 
   const mass = scores.short + scores.moving + scores.long;
 

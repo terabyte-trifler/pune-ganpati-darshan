@@ -263,7 +263,11 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
               <p className="mb-2 text-[12px] font-semibold text-[var(--faint)]">
                 How&rsquo;s the crowd here?
               </p>
-              <CrowdReportButtons mandalId={selected.ganpati.id} compact />
+              <CrowdReportButtons
+              mandalId={selected.ganpati.id}
+              location={selected.ganpati.location}
+              compact
+            />
             </div>
           )}
         </div>

@@ -11,6 +11,8 @@ import {
   subscribeToCooldowns,
 } from './cooldown-store';
 import { useClockMs } from './useCrowd';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { haversine, type LatLng } from '@/lib/geo';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -52,6 +54,19 @@ const OPTIONS: { level: CrowdLevel; label: string; hint: string }[] = [
 const CONFIRM_MS = 5_000;
 
 /**
+ * Inside this, a report counts as made AT the mandal and the aggregator
+ * gives it full weight; outside it, half (see OFFSITE_WEIGHT).
+ *
+ * The accuracy bound matters as much as the distance. A fix good to 400m
+ * cannot support "within 100m" — claiming it anyway would hand full weight
+ * to a guess. So both must hold, and when the device does not know where it
+ * is the report is simply submitted as off-site rather than blocked: a
+ * remote report is still worth having, just worth less.
+ */
+const AT_MANDAL_RADIUS_M = 100;
+const AT_MANDAL_MAX_ACCURACY_M = 100;
+
+/**
  * A short, single buzz on tap.
  *
  * Wrapped because `navigator.vibrate` is absent on iOS and throws in some
@@ -85,13 +100,34 @@ function remainingText(seconds: number): string {
 
 export function CrowdReportButtons({
   mandalId,
+  location,
   compact = false,
   onReported,
 }: {
   mandalId: string;
+  /**
+   * The mandal's own position. Optional: without it a report is submitted
+   * as off-site, which is the honest default when we cannot tell.
+   */
+  location?: LatLng;
   compact?: boolean;
   onReported?: () => void;
 }) {
+  const { state: geo } = useGeolocation();
+
+  /**
+   * Client-asserted, and the server treats it as a hint rather than a fact —
+   * anyone can POST it. The cost of lying is capped by the rules behind it:
+   * one report per device per mandal per hour means a liar buys one extra
+   * unit of weight on one mandal, and someone willing to forge this could
+   * mint device ids just as easily.
+   */
+  const atMandal =
+    location !== undefined &&
+    geo.status === 'ready' &&
+    geo.accuracyM <= AT_MANDAL_MAX_ACCURACY_M &&
+    haversine(geo.position, location) <= AT_MANDAL_RADIUS_M;
+
   const [submitting, setSubmitting] = useState<CrowdLevel | null>(null);
   /** The level this device just reported, kept so the row can show it back. */
   const [reported, setReported] = useState<CrowdLevel | null>(null);
@@ -154,6 +190,7 @@ export function CrowdReportButtons({
           // A fresh key per attempt. The retry that must not duplicate is
           // the network's, and fetch does not silently replay a POST.
           requestId: newRequestId(),
+          atMandal,
         }),
       });
 

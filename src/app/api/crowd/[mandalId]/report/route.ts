@@ -78,6 +78,7 @@ export async function POST(
       status: body.data.status,
       requestId: body.data.requestId,
       ip: clientIpFrom(request),
+      atMandal: body.data.atMandal,
     });
 
     if (!result.success) {

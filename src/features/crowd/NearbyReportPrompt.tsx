@@ -138,7 +138,11 @@ export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
         <div className="mt-3">
           {/* Keyed so switching mandal resets the row rather than carrying
               the previous one's thank-you or error across. */}
-          <CrowdReportButtons key={active.g.id} mandalId={active.g.id} />
+          <CrowdReportButtons
+            key={active.g.id}
+            mandalId={active.g.id}
+            location={active.g.location}
+          />
         </div>
       </section>
     );
@@ -178,7 +182,7 @@ export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
               </span>
             </div>
             <div className="mt-2">
-              <CrowdReportButtons mandalId={r.g.id} compact />
+              <CrowdReportButtons mandalId={r.g.id} location={r.g.location} compact />
             </div>
           </li>
         ))}

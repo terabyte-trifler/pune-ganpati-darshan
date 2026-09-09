@@ -115,6 +115,7 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
     mandalId: row.mandal_id,
     status: row.status,
     createdAt: row.created_at,
+    atMandal: row.at_mandal ?? false,
   }));
 
   const now = Date.now();
@@ -211,6 +212,8 @@ export async function submitCrowdReport(input: {
   status: CrowdLevel;
   requestId?: string;
   ip?: string | null;
+  /** Client-asserted proximity. A weighting hint, never a boundary. */
+  atMandal?: boolean;
 }): Promise<CrowdSubmitResult> {
   if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return { success: false, reason: 'unavailable' };
@@ -227,6 +230,7 @@ export async function submitCrowdReport(input: {
     p_status: input.status,
     p_request_id: input.requestId ?? null,
     p_ip_hash: input.ip ? hashIp(input.ip) : null,
+    p_at_mandal: input.atMandal ?? false,
   });
   recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
 
