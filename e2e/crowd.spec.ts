@@ -514,3 +514,37 @@ test('the live crowd section says so when crowd data cannot be reached', async (
   // The rest of the page must survive it.
   await expect(page.locator('a[href^="/ganpati/"]').first()).toBeVisible();
 });
+
+test.describe('walking between mandals', () => {
+  test.use({
+    permissions: ['geolocation'],
+    geolocation: { latitude: 18.51514, longitude: 73.856379, accuracy: 20 }, // Dagdusheth
+  });
+
+  /**
+   * The app used to take one fix and keep it forever, so someone who walked
+   * three hundred metres was still told they were where they opened it. That
+   * is the single situation this feature exists for, and only a reload fixed
+   * it.
+   *
+   * The refresh must also use `maximumAge: 0` — any allowance lets the
+   * browser answer from the stale fix it already holds, which reproduced the
+   * original bug exactly while looking like working code.
+   */
+  test('the prompt follows the visitor without a reload', async ({ page }) => {
+    await withFreshDevice(page);
+    await page.goto('/');
+
+    const prompt = page.locator(AT_PROMPT);
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByText(/Dagdusheth/i)).toBeVisible();
+
+    // Walk to Kasba Ganpati, ~400m north. No navigation, no reload.
+    await page.context().setGeolocation({ latitude: 18.51903, longitude: 73.857241 });
+    // Taking the phone out of a pocket is the moment the fix is re-taken.
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+
+    await expect(prompt.getByText(/Kasba Ganpati/i)).toBeVisible({ timeout: 15_000 });
+    await expect(prompt.getByText(/Dagdusheth/i)).toHaveCount(0);
+  });
+});

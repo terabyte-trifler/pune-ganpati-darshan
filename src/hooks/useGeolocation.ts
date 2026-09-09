@@ -6,9 +6,24 @@ import type { LatLng } from '@/lib/geo';
 /**
  * Geolocation.
  *
- * The position is fetched once per request rather than watched, which
- * avoids draining the battery of someone walking around Pune all evening
- * (§46).
+ * The position was originally fetched exactly once and never again, to
+ * avoid draining the battery of someone walking around Pune all evening
+ * (§46). That reasoning was backwards: a person walking around Pune all
+ * evening is precisely the one whose position has to keep up. Standing at
+ * Tambdi Jogeshwari while the app insists you are at Dagdusheth — because
+ * that is where you opened it three hundred metres ago — is worse than any
+ * battery saving, and it broke the one feature this app exists for.
+ *
+ * It still does not use `watchPosition`, which keeps the GPS awake
+ * continuously. Instead the position is re-acquired at the two moments it
+ * can actually be wrong and seen:
+ *
+ *   - when the tab becomes visible again, which is the dominant pattern —
+ *     phone into pocket, walk, phone out;
+ *   - on a slow interval while the app is genuinely on screen.
+ *
+ * Both stop when the page is hidden or nothing is listening, mirroring how
+ * the crowd store paces its own polling.
  *
  * The fix is held in ONE module-level store rather than in each caller's
  * state. Two components that each owned a copy would each show their own
@@ -33,11 +48,120 @@ const listeners = new Set<() => void>();
 function setState(next: GeoState) {
   state = next;
   for (const listener of listeners) listener();
+  // The first successful fix is what makes refreshing possible at all, so
+  // the timer is (re)evaluated whenever the state changes rather than only
+  // when a component subscribes.
+  syncRefreshTimer();
+}
+
+/* ------------------------------------------------------------------ *
+ * Keeping the position current while someone walks.
+ * ------------------------------------------------------------------ */
+
+const REFRESH_INTERVAL_MS = 60_000;
+
+/**
+ * Below this, a new fix is treated as the same place.
+ *
+ * Consumer GPS jitters by several metres while stationary. Without this
+ * every refresh would publish a new object, re-render every subscriber and
+ * re-sort the nearby rail, for movement that never happened. 12m is under
+ * the 120m radius that decides "You're here", so it cannot mask a real
+ * arrival.
+ */
+const SIGNIFICANT_MOVE_M = 12;
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+function metresBetween(a: LatLng, b: LatLng): number {
+  const R = 6371008.8;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/** Refresh only a position we already hold: this must never raise a prompt. */
+function shouldRefresh(): boolean {
+  if (typeof document === 'undefined' || typeof navigator === 'undefined') return false;
+  if (!navigator.geolocation) return false;
+  if (listeners.size === 0) return false;
+  if (document.visibilityState === 'hidden') return false;
+  return state.status === 'ready';
+}
+
+function refreshLocation() {
+  if (!shouldRefresh()) return;
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const next: LatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // Publish only real movement, so standing still costs no renders.
+      if (
+        state.status === 'ready' &&
+        metresBetween(state.position, next) < SIGNIFICANT_MOVE_M &&
+        Math.abs(state.accuracyM - pos.coords.accuracy) < SIGNIFICANT_MOVE_M
+      ) {
+        return;
+      }
+      setState({ status: 'ready', position: next, accuracyM: pos.coords.accuracy });
+    },
+    () => {
+      // A failed refresh keeps the last known fix. Downgrading to 'denied'
+      // here would blank the nearby prompt over one bad reading in a lane
+      // with no sky.
+    },
+    {
+      enableHighAccuracy: true,
+      // MUST be 0. Any other value lets the browser answer from the fix it
+      // already holds — which is the stale one we are trying to replace —
+      // so the position would never change no matter how far you walked.
+      // This was exactly the bug: with a 15s allowance the refresh returned
+      // the cached Dagdusheth fix while the device was standing at Kasba.
+      maximumAge: 0,
+      timeout: 10_000,
+    }
+  );
+}
+
+function syncRefreshTimer() {
+  if (shouldRefresh()) {
+    refreshTimer ??= setInterval(refreshLocation, REFRESH_INTERVAL_MS);
+  } else if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+function onVisibilityChange() {
+  syncRefreshTimer();
+  // Returning to the app is the moment the held position is most likely to
+  // be stale — the walk happened with the screen off.
+  if (document.visibilityState === 'visible') refreshLocation();
 }
 
 function subscribe(listener: () => void): () => void {
+  const first = listeners.size === 0;
   listeners.add(listener);
-  return () => listeners.delete(listener);
+
+  if (first && typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    // Some mobile browsers restore a page without firing visibilitychange.
+    window.addEventListener('pageshow', onVisibilityChange);
+  }
+  syncRefreshTimer();
+
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pageshow', onVisibilityChange);
+    }
+    syncRefreshTimer();
+  };
 }
 
 const getSnapshot = () => state;
@@ -155,4 +279,8 @@ export function useGeolocation() {
 export function resetGeolocationForTesting() {
   state = IDLE;
   listeners.clear();
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
 }
