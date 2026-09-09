@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { MapPin } from 'lucide-react';
-import { useGeolocation } from '@/hooks/useGeolocation';
+import { useAutoLocate, useGeolocation } from '@/hooks/useGeolocation';
 import { haversine, formatDistance } from '@/lib/geo';
 import { CrowdReportButtons } from './CrowdReportButtons';
 import { cn } from '@/lib/utils';
@@ -24,10 +24,10 @@ import type { Ganpati } from '@/types/ganpati';
  *   near — "Seen any of these?". No claim at all, just a shortlist, so a
  *          coarse fix is fine.
  *
- * Renders nothing until location is granted. The brief forbids prompting
- * for permission on load (§14), and the nearby rail below already owns the
- * one "locate me" button — a second one competing with it would be worse
- * than none.
+ * Renders nothing until a position is known. Location is now acquired on
+ * open (see `useAutoLocate`), so for anyone who has granted it before this
+ * appears without a tap. The nearby rail below still owns the only visible
+ * "locate me" button, for the first-time visitor who declines.
  */
 
 /** Inside this, someone is standing at the mandal rather than near it. */
@@ -54,6 +54,9 @@ interface Ranked {
 }
 
 export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
+  // Acquires the position on open. Mounted here because this component is
+  // always present on the home page, whether or not it renders anything.
+  useAutoLocate();
   const { state } = useGeolocation();
   const [pickedId, setPickedId] = useState<string | null>(null);
 

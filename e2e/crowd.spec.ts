@@ -385,12 +385,12 @@ const NEAR_PROMPT = 'section[aria-labelledby="near-report-heading"]';
 /** The first catalogue mandal, with its real coordinates. */
 const ANCHOR = catalogue.ganpatis[0];
 
-test('the report prompt stays hidden until location is granted', async ({ page }) => {
+test('the report prompt stays hidden when location is refused', async ({ page }) => {
   await withFreshDevice(page);
   await page.goto('/');
 
-  // §14: nothing may provoke a permission prompt on load, so there is
-  // nothing to show yet either.
+  // No permission granted in this context, so the on-open request is
+  // refused and there is nothing the prompt could honestly claim.
   await expect(page.locator(AT_PROMPT)).toHaveCount(0);
   await expect(page.locator(NEAR_PROMPT)).toHaveCount(0);
 });
@@ -404,8 +404,9 @@ test.describe('standing at a mandal, with a precise fix', () => {
   test('names the mandal and offers the buttons without a search', async ({ page }) => {
     await withFreshDevice(page);
     await page.goto('/');
-    await page.getByRole('button', { name: /closest/i }).click();
 
+    // No tap: permission is already granted, so the position arrives on
+    // open and the prompt is simply there.
     const prompt = page.locator(AT_PROMPT);
     await expect(prompt).toBeVisible();
     await expect(prompt.getByText(ANCHOR.name)).toBeVisible();
@@ -424,7 +425,6 @@ test.describe('at the same spot, but with a coarse fix', () => {
   test('refuses to claim you are anywhere and offers a shortlist instead', async ({ page }) => {
     await withFreshDevice(page);
     await page.goto('/');
-    await page.getByRole('button', { name: /closest/i }).click();
 
     await expect(page.locator(NEAR_PROMPT)).toBeVisible();
     // The point of the accuracy gate: no "you're here" claim it cannot support.
@@ -441,7 +441,6 @@ test.describe('nowhere near Pune', () => {
   test('shows no prompt at all', async ({ page }) => {
     await withFreshDevice(page);
     await page.goto('/');
-    await page.getByRole('button', { name: /closest/i }).click();
 
     await expect(page.locator(AT_PROMPT)).toHaveCount(0);
     await expect(page.locator(NEAR_PROMPT)).toHaveCount(0);

@@ -51,7 +51,16 @@ supabase/seed.sql          18 real Pune mandals
 | `/api/routes`, `/api/plans`, `/api/analytics`, `/api/revalidate` | route handlers | zod-validated, rate-limited |
 
 ## Data flow: "Ganpati near me"
-1. Client asks for geolocation **only on explicit tap** ("Near me"), never on load (§14).
+1. Client acquires geolocation **on open**, via `useAutoLocate` on the home page.
+   This reverses the original §14 rule ("only on explicit tap, never on load"), on the
+   product owner's instruction, because reporting a queue is worth far more when the app
+   already knows which mandal you are standing at.
+   The Permissions API is queried first, so the three cases stay distinct:
+   already **granted** → position fetched with no dialog at all (every returning visitor);
+   **denied** → nothing attempted, since a page cannot un-deny itself;
+   **prompt** → first-time visitor, governed by `PROMPT_ON_OPEN` in `useGeolocation.ts`.
+   Set that to `false` to restore tap-only behaviour. Only the home page mounts it —
+   never a deep link to a single mandal.
 2. Coordinates stay on the device. Sorting uses local haversine against already-loaded mandals —
    **zero API calls, works offline** (D3).
 3. Distance renders as "1.2 km away". No ETA is claimed until Routes is actually called.
