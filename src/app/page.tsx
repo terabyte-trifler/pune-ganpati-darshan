@@ -9,15 +9,17 @@ import { FestivalCountdown } from '@/features/discovery/FestivalCountdown';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
-import { NearbyReportPrompt } from '@/features/crowd/NearbyReportPrompt';
+import { LiveCrowdSection } from '@/features/crowd/LiveCrowdSection';
 import { Button } from '@/components/ui/Button';
 
 /**
  * Homepage.
  *
  * A Server Component: the catalogue is in the initial HTML, so the page is
- * useful before hydration on a slow connection (§33). The only client
- * island is the nearby rail, which needs geolocation.
+ * useful before hydration on a slow connection (§33). The client islands
+ * are the live crowd section and the nearby rail, both of which need state
+ * the server does not have — reports that change by the minute, and the
+ * visitor's position.
  *
  * Revalidated hourly — mandal data changes rarely, and the countdown moves
  * once a day.
@@ -108,7 +110,25 @@ export default async function HomePage() {
       </section>
 
       {/* ----------------------------------------------------------------
-          Ready-made routes lead the page.
+          Live crowd leads the page.
+
+          Reporting a queue is the one thing this app does that a list of
+          mandals cannot, and it used to sit below the fold. What a devotee
+          wants mid-festival is not "which mandals exist" but "where can I
+          actually get darshan right now", and this is the only section that
+          answers it. It carries its own margins and never renders an empty
+          shelf — when nobody has reported it becomes the invitation to
+          report instead.
+          ---------------------------------------------------------------- */}
+      <LiveCrowdSection ganpatis={all} />
+
+      {/* ----------------------------------------------------------------
+          Ready-made routes, second.
+
+          Once a visitor knows where the queues are short, the next question
+          is what to actually do with the evening. A route answers that in
+          one tap, and the ones offered first are chosen by the time of day
+          in Pune — an evening dekhava trail is useless at 9am.
 
           A visitor arriving mid-festival wants to know what to do, not to
           assemble a plan from a list of names. A route answers that in one
@@ -158,13 +178,6 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------- Near you ---------------- */}
-      {/* The report prompt sits directly above the rail so the two share
-          one location grant and read as one "where you are" block. It
-          carries its own top margin and renders nothing until location is
-          granted — wrapping it in a spaced <section> here would leave a
-          gap on the page for everyone who has not granted it. */}
-      <NearbyReportPrompt ganpatis={all} />
-
       <section className="mt-7">
         <NearbyRail ganpatis={all} />
       </section>

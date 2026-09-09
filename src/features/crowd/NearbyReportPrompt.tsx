@@ -24,10 +24,14 @@ import type { Ganpati } from '@/types/ganpati';
  *   near — "Seen any of these?". No claim at all, just a shortlist, so a
  *          coarse fix is fine.
  *
- * Renders nothing until a position is known. Location is now acquired on
- * open (see `useAutoLocate`), so for anyone who has granted it before this
- * appears without a tap. The nearby rail below still owns the only visible
- * "locate me" button, for the first-time visitor who declines.
+ * Renders nothing until a position is known. Location is acquired on open
+ * (see `useAutoLocate`), so for anyone who has granted it before this
+ * appears without a tap. The nearby rail further down still owns the only
+ * visible "locate me" button, for the first-time visitor who declines.
+ *
+ * Rendered by <LiveCrowdSection>, directly beneath it, so the page carries
+ * one crowd block that both shows the live picture and collects it — rather
+ * than two unrelated crowd cards in different places.
  */
 
 /** Inside this, someone is standing at the mandal rather than near it. */
@@ -89,7 +93,7 @@ export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
 
     return (
       <section
-        className="surface mx-4 mt-7 rounded-[var(--radius-card)] border border-[var(--pital)]/35 p-4"
+        className="surface mx-4 mt-3 rounded-[var(--radius-card)] border border-[var(--pital)]/35 p-4"
         aria-labelledby="at-mandal-heading"
       >
         <p
@@ -147,7 +151,7 @@ export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
 
   return (
     <section
-      className="surface mx-4 mt-7 rounded-[var(--radius-card)] border border-[var(--line)] p-4"
+      className="surface mx-4 mt-3 rounded-[var(--radius-card)] border border-[var(--line)] p-4"
       aria-labelledby="near-report-heading"
     >
       <p

@@ -446,3 +446,71 @@ test.describe('nowhere near Pune', () => {
     await expect(page.locator(NEAR_PROMPT)).toHaveCount(0);
   });
 });
+
+/* ------------------------------------------------------------------ *
+ * "Right now" — the live crowd section that leads the homepage.
+ *
+ * Its empty state is the part worth guarding. Reports expire after 90
+ * minutes, so before the festival and on any quiet morning there is
+ * genuinely nothing to show, and a top section that could only say "no
+ * data" would make the app look broken to a first-time visitor.
+ * ------------------------------------------------------------------ */
+
+const LIVE_SECTION = 'section[aria-labelledby="live-crowd-heading"]';
+
+test('the live crowd section leads the homepage and links onward', async ({ page }) => {
+  await withFreshDevice(page);
+  await page.goto('/');
+
+  const section = page.locator(LIVE_SECTION);
+  await expect(section).toBeVisible();
+
+  // It must come before the routes rail: the whole point of the section is
+  // that it answers the first question, not the second.
+  const routes = page.getByRole('heading', { name: /good for right now|ready-made routes/i });
+  await expect(routes).toBeVisible();
+  const order = await page.evaluate((selector) => {
+    const first = document.querySelector(selector);
+    const second = [...document.querySelectorAll('h2')].find((h) =>
+      /good for right now|ready-made routes/i.test(h.textContent ?? '')
+    );
+    if (!first || !second) return null;
+    // 4 === DOCUMENT_POSITION_FOLLOWING
+    return (first.compareDocumentPosition(second) & 4) === 4;
+  }, LIVE_SECTION);
+  expect(order, 'live crowd section must precede the routes rail').toBe(true);
+});
+
+test('the live crowd section invites a report when nobody has reported', async ({ page }) => {
+  await withFreshDevice(page);
+
+  // An empty snapshot, not an error: "nobody has reported" and "we cannot
+  // reach the service" are different states and must not look alike (§55).
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ statuses: [], computedAt: new Date().toISOString(), stale: false }),
+    })
+  );
+
+  await page.goto('/');
+  const section = page.locator(LIVE_SECTION);
+  await expect(section).toBeVisible();
+  await expect(section.getByText(/no queues reported yet/i)).toBeVisible();
+  await expect(section.getByText(/you would be the first/i)).toBeVisible();
+});
+
+test('the live crowd section says so when crowd data cannot be reached', async ({ page }) => {
+  await withFreshDevice(page);
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"x"}' })
+  );
+
+  await page.goto('/');
+  const section = page.locator(LIVE_SECTION);
+  await expect(section).toBeVisible();
+  await expect(section.getByText(/temporarily unavailable/i)).toBeVisible();
+  // The rest of the page must survive it.
+  await expect(page.locator('a[href^="/ganpati/"]').first()).toBeVisible();
+});
