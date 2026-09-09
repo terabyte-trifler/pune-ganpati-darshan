@@ -13,3 +13,5 @@ next-env.d.ts
 /playwright/.cache/
 /supabase/.branches
 /supabase/.temp
+.vercel
+.env*
