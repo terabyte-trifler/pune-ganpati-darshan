@@ -61,6 +61,13 @@ export const metadata: Metadata = {
     "Discover Pune's Ganpati mandals, see what's near you, and plan a walkable darshan route through the old peths for Ganeshotsav.",
   applicationName: 'Pune Ganpati Darshan',
   manifest: '/manifest.webmanifest',
+  // favicon.ico is picked up from app/ by convention, but iOS only
+  // auto-discovers an apple-touch-icon at the site ROOT. Ours lives under
+  // /icons, so without this link "Add to Home Screen" fell back to a
+  // screenshot of the page instead of the app mark.
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     title: 'Pune Ganpati',
