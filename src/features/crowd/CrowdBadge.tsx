@@ -69,9 +69,14 @@ export function CrowdBadgeView({
     >
       <CrowdDot level={level} />
       {status.label}
-      {/* The report count is what makes this a crowd signal rather than a
-          claim. One report and thirty must not look identical. */}
-      <span className="font-normal opacity-70">· {status.reportCount}</span>
+      {/* The count used to sit here, on the reasoning that one report and
+          thirty must not look identical. It is hidden for now because the
+          numbers are still small enough that showing them undersells a
+          reading that is nonetheless the best available. The tradeoff is
+          real and one-directional: this badge can no longer distinguish a
+          lone report from a well-supported one, so the detail panel's
+          confidence wording is now the only strength cue a visitor gets.
+          Admins read the actual counts at /admin/crowd. */}
     </span>
   );
 }

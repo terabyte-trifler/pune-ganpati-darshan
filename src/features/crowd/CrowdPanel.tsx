@@ -103,10 +103,14 @@ export function CrowdPanel({
             {status?.label}
           </p>
 
+          {/* The raw report count is deliberately not shown here. While the
+              catalogue is young the honest numbers are small, and "1 recent
+              report" reads as a broken feature rather than an early one. The
+              qualitative confidence wording carries the same caveat without
+              inviting that reading. Counts remain visible to admins at
+              /admin/crowd, which is the surface that acts on them. */}
           <p className="mt-2 text-[13px] text-[var(--muted)]">
-            {status && CONFIDENCE_WORDING[status.confidence]} ·{' '}
-            {status?.reportCount}{' '}
-            {status?.reportCount === 1 ? 'recent report' : 'recent reports'}
+            {status && CONFIDENCE_WORDING[status.confidence]}
           </p>
 
           {ago && (

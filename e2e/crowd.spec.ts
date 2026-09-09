@@ -85,9 +85,20 @@ test('submitting a report is acknowledged and starts the cooldown', async ({ pag
   await expect(panel.getByText(/thanks/i)).toBeVisible();
   await expect(panel.getByText(/helps other devotees/i)).toBeVisible();
 
-  // The buttons are gone, so there is nothing to tap that the server would
+  // During the thank-you there is nothing to tap that the server would
   // refuse.
   await expect(panel.getByRole('button', { name: 'Moving' })).toHaveCount(0);
+
+  // The thank-you then retires and hands the row back — disabled, and
+  // carrying the reason. It used to stop at "Thanks" until a reload, which
+  // hid the reading the report had just moved.
+  const moving = panel.getByRole('button', { name: 'Moving' });
+  await expect(moving).toBeVisible({ timeout: 15_000 });
+  await expect(moving).toBeDisabled();
+  await expect(panel.getByText(/you can report again/i)).toBeVisible();
+
+  // The level this device chose is announced, not just outlined.
+  await expect(moving).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('the cooldown is enforced by the server, not just the button state', async ({ page, request }) => {
