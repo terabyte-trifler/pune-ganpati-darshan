@@ -9,6 +9,7 @@ import { FestivalCountdown } from '@/features/discovery/FestivalCountdown';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
+import { NearbyReportPrompt } from '@/features/crowd/NearbyReportPrompt';
 import { Button } from '@/components/ui/Button';
 
 /**
@@ -157,6 +158,13 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------- Near you ---------------- */}
+      {/* The report prompt sits directly above the rail so the two share
+          one location grant and read as one "where you are" block. It
+          carries its own top margin and renders nothing until location is
+          granted — wrapping it in a spaced <section> here would leave a
+          gap on the page for everyone who has not granted it. */}
+      <NearbyReportPrompt ganpatis={all} />
+
       <section className="mt-7">
         <NearbyRail ganpatis={all} />
       </section>

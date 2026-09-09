@@ -230,7 +230,7 @@ export function CrowdReportButtons({
         )}
         {blocked && (
           <p className="mt-1 text-[12px] text-[var(--faint)]">
-            You can report again {remainingText(remainingS)}.
+            You can report it again {remainingText(remainingS)}.
           </p>
         )}
       </div>
@@ -309,8 +309,8 @@ export function CrowdReportButtons({
       {blocked && (
         <p className="mt-2 text-[12px] text-[var(--faint)]">
           {reported
-            ? `You reported this mandal — you can report again ${remainingText(remainingS)}.`
-            : `You reported this mandal recently — you can report again ${remainingText(remainingS)}.`}
+            ? `You reported this mandal — you can report it again ${remainingText(remainingS)}.`
+            : `You reported this mandal recently — you can report it again ${remainingText(remainingS)}.`}
         </p>
       )}
 

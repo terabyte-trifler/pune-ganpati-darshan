@@ -95,7 +95,7 @@ test('submitting a report is acknowledged and starts the cooldown', async ({ pag
   const moving = panel.getByRole('button', { name: 'Moving' });
   await expect(moving).toBeVisible({ timeout: 15_000 });
   await expect(moving).toBeDisabled();
-  await expect(panel.getByText(/you can report again/i)).toBeVisible();
+  await expect(panel.getByText(/you can report it again/i)).toBeVisible();
 
   // The level this device chose is announced, not just outlined.
   await expect(moving).toHaveAttribute('aria-pressed', 'true');
@@ -368,4 +368,82 @@ test('the map lets you see and report crowd without leaving it', async ({ page }
   await report.click();
 
   await expect(page.getByText(/thanks/i)).toBeVisible();
+});
+
+/* ------------------------------------------------------------------ *
+ * Reporting without searching first.
+ *
+ * The home page works out which mandal you mean from the position you
+ * already shared, so someone standing in a queue does not have to type a
+ * name to rate it. These assert the two claims the prompt can make and,
+ * more importantly, the cases where it must refuse to make either.
+ * ------------------------------------------------------------------ */
+
+const AT_PROMPT = 'section[aria-labelledby="at-mandal-heading"]';
+const NEAR_PROMPT = 'section[aria-labelledby="near-report-heading"]';
+
+/** The first catalogue mandal, with its real coordinates. */
+const ANCHOR = catalogue.ganpatis[0];
+
+test('the report prompt stays hidden until location is granted', async ({ page }) => {
+  await withFreshDevice(page);
+  await page.goto('/');
+
+  // §14: nothing may provoke a permission prompt on load, so there is
+  // nothing to show yet either.
+  await expect(page.locator(AT_PROMPT)).toHaveCount(0);
+  await expect(page.locator(NEAR_PROMPT)).toHaveCount(0);
+});
+
+test.describe('standing at a mandal, with a precise fix', () => {
+  test.use({
+    permissions: ['geolocation'],
+    geolocation: { latitude: ANCHOR.latitude, longitude: ANCHOR.longitude, accuracy: 20 },
+  });
+
+  test('names the mandal and offers the buttons without a search', async ({ page }) => {
+    await withFreshDevice(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: /closest/i }).click();
+
+    const prompt = page.locator(AT_PROMPT);
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByText(ANCHOR.name)).toBeVisible();
+    await expect(prompt.getByRole('button', { name: 'Report Moving crowd' })).toBeVisible();
+  });
+});
+
+test.describe('at the same spot, but with a coarse fix', () => {
+  test.use({
+    permissions: ['geolocation'],
+    // Wider than the distance between neighbouring peth mandals, so the
+    // app cannot know which one you are at.
+    geolocation: { latitude: ANCHOR.latitude, longitude: ANCHOR.longitude, accuracy: 400 },
+  });
+
+  test('refuses to claim you are anywhere and offers a shortlist instead', async ({ page }) => {
+    await withFreshDevice(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: /closest/i }).click();
+
+    await expect(page.locator(NEAR_PROMPT)).toBeVisible();
+    // The point of the accuracy gate: no "you're here" claim it cannot support.
+    await expect(page.locator(AT_PROMPT)).toHaveCount(0);
+  });
+});
+
+test.describe('nowhere near Pune', () => {
+  test.use({
+    permissions: ['geolocation'],
+    geolocation: { latitude: 19.076, longitude: 72.8777, accuracy: 20 },
+  });
+
+  test('shows no prompt at all', async ({ page }) => {
+    await withFreshDevice(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: /closest/i }).click();
+
+    await expect(page.locator(AT_PROMPT)).toHaveCount(0);
+    await expect(page.locator(NEAR_PROMPT)).toHaveCount(0);
+  });
 });
