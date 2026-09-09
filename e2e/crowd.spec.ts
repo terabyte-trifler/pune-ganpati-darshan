@@ -527,8 +527,13 @@ test.describe('walking between mandals', () => {
    * is the single situation this feature exists for, and only a reload fixed
    * it.
    *
-   * The refresh must also use `maximumAge: 0` — any allowance lets the
-   * browser answer from the stale fix it already holds, which reproduced the
+   * `watchPosition` must deliver this with NO trigger at all — no tab
+   * switch, no tick, no reload. The test deliberately does nothing except
+   * move the device, because anything else would also pass against the
+   * weaker interval-based version this replaced.
+   *
+   * The watch must also use `maximumAge: 0`. Any allowance lets the browser
+   * answer from the stale fix it already holds, which reproduced the
    * original bug exactly while looking like working code.
    */
   test('the prompt follows the visitor without a reload', async ({ page }) => {
@@ -539,12 +544,10 @@ test.describe('walking between mandals', () => {
     await expect(prompt).toBeVisible();
     await expect(prompt.getByText(/Dagdusheth/i)).toBeVisible();
 
-    // Walk to Kasba Ganpati, ~400m north. No navigation, no reload.
+    // Walk to Kasba Ganpati, ~400m north. Nothing else happens.
     await page.context().setGeolocation({ latitude: 18.51903, longitude: 73.857241 });
-    // Taking the phone out of a pocket is the moment the fix is re-taken.
-    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
 
-    await expect(prompt.getByText(/Kasba Ganpati/i)).toBeVisible({ timeout: 15_000 });
+    await expect(prompt.getByText(/Kasba Ganpati/i)).toBeVisible({ timeout: 20_000 });
     await expect(prompt.getByText(/Dagdusheth/i)).toHaveCount(0);
   });
 });
