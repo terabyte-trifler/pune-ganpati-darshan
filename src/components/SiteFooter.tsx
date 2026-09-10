@@ -74,7 +74,7 @@ export function SiteFooter() {
             </Link>
             <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
               Live queue reports from devotees, and walkable routes that count
-              the queue as well as the walk.
+              the queue as well as the walk. Free for everyone, always.
             </p>
           </div>
 
@@ -123,7 +123,8 @@ export function SiteFooter() {
             </a>
           </p>
           <p className="max-w-md text-pretty sm:text-right">
-            An independent project — not affiliated with any mandal, trust or
+            Free and non-commercial — no ads, no fees, nothing sold. An
+            independent project, not affiliated with any mandal, trust or
             festival committee.
           </p>
         </div>

@@ -40,7 +40,7 @@ const DOES = [
   'Routes built around the time you actually have, counting the queue as well as the walk',
   'Live queue reports from devotees, on the map, expiring after ninety minutes',
   'Metro-aware — which station to board, where to change, where to get off',
-  'No account, no ads, and nothing you do here is tied to your name',
+  'Free and non-commercial — no ads, no fees, and nothing tied to your name',
 ];
 
 const LINKS = [
@@ -117,14 +117,16 @@ export default function AboutPage() {
               as well as the walk.
             </p>
             <p className="text-[16px] text-[var(--muted)]">
-              Free, no ads, no account.
+              It is free and it is not a business. No ads, no fees, no
+              account, and nothing about you is sold to anyone.
             </p>
           </div>
 
           <p className="prose-measure mt-4 rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
-            An independent side project. Not affiliated with any mandal, trust
-            or festival committee, and timings and queue reports come from
-            devotees rather than from the mandals themselves.
+            A non-commercial side project, run at my own cost and free for
+            everyone. Not affiliated with any mandal, trust or festival
+            committee, and timings and queue reports come from devotees rather
+            than from the mandals themselves.
           </p>
         </section>
 
@@ -278,6 +280,8 @@ export default function AboutPage() {
                 Use it freely.
               </strong>{' '}
               Free for planning your own darshan, with no account and no ads.
+              Nothing here is sold and nothing is behind a payment — it is run
+              at my own cost.
             </p>
             <p>
               <strong className="font-semibold text-[var(--chandan)]">
@@ -342,9 +346,10 @@ export default function AboutPage() {
               <strong className="font-semibold text-[var(--chandan)]">
                 Offered as-is.
               </strong>{' '}
-              A side project with no warranty, not affiliated with any mandal,
-              trust, festival committee, the Pune Municipal Corporation or
-              Maharashtra Metro.
+              A non-commercial side project with no warranty, not affiliated
+              with any mandal, trust, festival committee, the Pune Municipal
+              Corporation or Maharashtra Metro. It is not a registered
+              non-profit or a charity, and it does not collect donations.
             </p>
           </div>
         </section>

@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     template: '%s · Pune Ganpati Darshan',
   },
   description:
-    "Discover Pune's Ganpati mandals, see what's near you, and plan a walkable darshan route through the old peths for Ganeshotsav.",
+    "Live queue reports from devotees, and walkable darshan routes through Pune's old peths for Ganeshotsav. Free and non-commercial — no ads, no account.",
   applicationName: 'Pune Ganpati Darshan',
   manifest: '/manifest.webmanifest',
   // favicon.ico is picked up from app/ by convention, but iOS only
