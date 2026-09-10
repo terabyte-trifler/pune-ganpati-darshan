@@ -60,6 +60,31 @@ All 10 tables have RLS enabled with explicit policies:
 - `/admin` is gated **three times**: `proxy.ts` (fast edge rejection),
   `getSessionUser()`/`requireAdmin()` in the page, and RLS at the database.
   Hiding UI is never the boundary (§27).
+- **Admin needs two independent things**, in two different systems:
+  `profiles.is_admin` in Postgres (users cannot self-assign it — the
+  `profiles_no_self_admin` trigger enforces that), *and* the account's email
+  in `ADMIN_EMAILS`, an environment variable in the hosting platform.
+  `src/lib/admin-access.ts` is the single place that decides, and it is pure
+  string comparison so it can be tested on its own.
+  - They fail independently, which is the point. A database compromise that
+    flips `is_admin` grants nothing without also editing an environment
+    variable; someone who can edit environment variables still needs a row
+    in a table they cannot write to.
+  - The allowlist only ever **narrows**. An email in `ADMIN_EMAILS` without
+    `is_admin` is not an admin — otherwise setting one variable would itself
+    be a way in.
+  - Unset or empty means *no allowlist*, and admin falls back to the database
+    flag alone. Failing open on a missing variable keeps local development
+    and any un-configured deployment working, and is only acceptable because
+    the database flag is still required.
+  - Set in production on the Vercel project `fennr1/pune-ganpati-darshan`
+    (Production environment) to the owner's address alone. Changing it takes
+    a redeploy to take effect, like any other environment variable.
+- Separately, **account creation itself is allowlisted in the database**:
+  `20260910160000_signin_allowlist.sql` puts a `BEFORE INSERT` trigger on
+  `auth.users`, so only the owner's address can ever create an account at
+  all — through the app, curl, the Supabase dashboard or an OAuth callback.
+  That migration verifies itself in the same transaction that installs it.
 - Server Actions re-check `requireAdmin()` on every call — a Server Action is
   a public HTTP endpoint.
 - Auth uses `supabase.auth.getUser()` (revalidates the JWT server-side), never
