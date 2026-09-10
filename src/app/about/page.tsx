@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Mail, Phone, ArrowLeft, ExternalLink } from 'lucide-react';
 import { SiteFooter } from '@/components/SiteFooter';
 import { StoredData } from '@/features/settings/StoredData';
+import { AuthorAvatar } from '@/features/settings/AuthorAvatar';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -65,17 +66,24 @@ export default function AboutPage() {
           Pune Ganpati
         </Link>
 
-        <h1 className="font-display mt-2 text-[30px] font-bold leading-tight text-[var(--chandan)]">
+        <h1 className="font-display mt-2 text-[32px] font-bold leading-tight text-[var(--chandan)]">
           About
         </h1>
-        <p className="mt-1.5 text-[14px] text-[var(--muted)]">
-          Built by{' '}
-          <span className="font-semibold text-[var(--chandan)]">Gurnoor Singh</span>
-          {' '}— Terabyte Trifler
-        </p>
-        <p className="mt-0.5 text-[12px] text-[var(--faint)]">
-          Last updated: {LAST_UPDATED}
-        </p>
+
+        <div className="mt-4 flex items-center gap-3">
+          <AuthorAvatar name="Gurnoor Singh" />
+          <div className="min-w-0">
+            <p className="text-[15px] font-semibold text-[var(--chandan)]">
+              Gurnoor Singh
+            </p>
+            <p className="text-[13px] text-[var(--muted)]">
+              Terabyte Trifler · Pune
+            </p>
+            <p className="mt-0.5 text-[12px] text-[var(--faint)]">
+              Updated {LAST_UPDATED}
+            </p>
+          </div>
+        </div>
 
         {/* Anchors, so a link can point at the terms or the disclaimer
             rather than at the top of a long page. */}
@@ -88,43 +96,33 @@ export default function AboutPage() {
         </nav>
 
         {/* ---------------- Why ---------------- */}
+        {/* ---------------- Why ----------------
+            Four lines, and they are the pitch rather than the story.
+            This ran to six paragraphs of how a darshan evening goes wrong,
+            which is a thing to read rather than a thing to grasp — and the
+            reader is usually standing up. */}
         <section id="why" className="mt-7">
-          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
             Why I built this
           </h2>
-          <div className="mt-2.5 space-y-3.5 text-[15px] leading-relaxed text-[var(--muted)]">
+          <div className="prose-measure mt-3 space-y-3 text-[17px] leading-[1.65] text-[var(--chandan)]">
             <p>
-              Every Ganeshotsav the same evening plays out. You set off with a
-              list of mandals, and somewhere around the second one you realise
-              the list was never a plan. Nobody tells you that Dagdusheth alone
-              can take the better part of an hour, so the five mandals you were
-              going to see become two, and you spend the rest of the night
-              walking between them.
+              Ganeshotsav is a crowd problem before it is a walking problem. At
+              the big mandals the queue is most of the evening — Dagdusheth
+              alone can take an hour.
             </p>
-            <p>
-              Almost every guide to the festival is a list. A list cannot tell
-              you what fits. This app counts the <em>queue</em> as well as the
-              walk, because at the big mandals the queue is most of the evening
-              — so when it says three hours, it means three hours.
+            <p className="text-[16px] text-[var(--muted)]">
+              So the app tracks the crowd live. Anyone standing at a mandal taps
+              short, moving or long, and everyone else sees it on the map within
+              seconds. Then it plans your route around that, counting the queue
+              as well as the walk.
             </p>
-            <p>
-              The other half is that queues change by the hour and no list can
-              keep up. So the app asks the people who are already standing
-              there. Anyone within a short distance of a mandal can report
-              whether the queue is short, moving or long, it takes one tap, and
-              everyone else sees it on the map straight away. Reports expire
-              after ninety minutes, because a queue from two hours ago is not
-              news. When nobody has reported, the app says so rather than
-              guessing — an unknown queue is never dressed up as a calm one.
-            </p>
-            <p>
-              It is free, it has no ads, and it needs no account. Nothing you
-              do here is tied to your name, and your location is used on your
-              phone to work out what is near you — it is never stored.
+            <p className="text-[16px] text-[var(--muted)]">
+              Free, no ads, no account.
             </p>
           </div>
 
-          <p className="mt-4 rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          <p className="prose-measure mt-4 rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
             An independent side project. Not affiliated with any mandal, trust
             or festival committee, and timings and queue reports come from
             devotees rather than from the mandals themselves.
@@ -133,10 +131,10 @@ export default function AboutPage() {
 
         {/* ---------------- What it does ---------------- */}
         <section id="what" className="mt-8">
-          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
             What it does
           </h2>
-          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--muted)]">
+          <p className="prose-measure mt-3 text-[16px] leading-[1.72] text-[var(--muted)]">
             Pune&rsquo;s Ganeshotsav fills the old peth lanes with sarvajanik
             mandals — the Manache Paach, the big dekhava sets, the light shows
             that only run after dark. This app is for getting round them on
@@ -146,7 +144,7 @@ export default function AboutPage() {
             {DOES.map((d) => (
               <li
                 key={d}
-                className="flex gap-2.5 text-[14px] leading-relaxed text-[var(--muted)]"
+                className="prose-measure flex gap-2.5 text-[15px] leading-[1.7] text-[var(--muted)]"
               >
                 <span
                   aria-hidden="true"
@@ -160,10 +158,10 @@ export default function AboutPage() {
 
         {/* ---------------- Contact ---------------- */}
         <section id="contact" className="mt-8">
-          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
             Get in touch
           </h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-[var(--muted)]">
+          <p className="prose-measure mt-2 text-[15px] leading-[1.7] text-[var(--muted)]">
             A wrong timing, a missing mandal, a mandal in the wrong place on the
             map — tell me and I will fix it. Corrections from people who were
             actually there are the only way this stays accurate.
@@ -225,10 +223,10 @@ export default function AboutPage() {
 
         {/* ---------------- Stored data ---------------- */}
         <section id="data" className="mt-9">
-          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
             Your data
           </h2>
-          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--muted)]">
+          <p className="prose-measure mt-3 text-[16px] leading-[1.72] text-[var(--muted)]">
             There is no account, so there is nothing about you on a server to
             delete. Six small things are kept on your own device, and you can
             remove any of them here.
@@ -236,7 +234,7 @@ export default function AboutPage() {
 
           <StoredData />
 
-          <div className="mt-4 space-y-3 text-[13px] leading-relaxed text-[var(--muted)]">
+          <div className="prose-measure mt-4 space-y-3.5 text-[14px] leading-[1.7] text-[var(--muted)]">
             <p>
               <strong className="font-semibold text-[var(--chandan)]">
                 Location.
@@ -272,24 +270,37 @@ export default function AboutPage() {
 
         {/* ---------------- Policies ---------------- */}
         <section id="terms" className="mt-9">
-          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
             Terms of use
           </h2>
-          <div className="mt-2.5 space-y-3 text-[14px] leading-relaxed text-[var(--muted)]">
+          <div className="prose-measure mt-3 space-y-3.5 text-[15px] leading-[1.72] text-[var(--muted)]">
             <p>
-              Free to use for planning your own darshan. Please do not scrape
-              the catalogue or the queue data, republish it as your own, or
-              resell it — it is assembled by hand and corrected by people who
-              were there.
+              <strong className="font-semibold text-[var(--chandan)]">
+                Use it freely.
+              </strong>{' '}
+              Free for planning your own darshan, with no account and no ads.
             </p>
             <p>
-              Report what you actually saw. Deliberately false queue reports
-              send other people to the wrong place on the busiest nights of the
-              year, and reporting is rate-limited per device so that a single
-              phone cannot swing a mandal&rsquo;s reading.
+              <strong className="font-semibold text-[var(--chandan)]">
+                Don&rsquo;t scrape or resell it.
+              </strong>{' '}
+              The catalogue and the queue data are assembled by hand and
+              corrected by people who were actually there. Please don&rsquo;t
+              republish them as your own.
             </p>
             <p>
-              Map data is © OpenStreetMap contributors, used under the{' '}
+              <strong className="font-semibold text-[var(--chandan)]">
+                Report what you saw.
+              </strong>{' '}
+              False queue reports send people to the wrong place on the busiest
+              nights of the year. Reporting is limited per device, so one phone
+              cannot swing a mandal&rsquo;s reading.
+            </p>
+            <p>
+              <strong className="font-semibold text-[var(--chandan)]">
+                Credit where it is due.
+              </strong>{' '}
+              Map data is © OpenStreetMap contributors, under the{' '}
               <Link href="/licences" className="text-[var(--shendur)] underline">
                 Open Database Licence
               </Link>
@@ -300,32 +311,41 @@ export default function AboutPage() {
         </section>
 
         <section id="disclaimer" className="mt-8">
-          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
             Disclaimer
           </h2>
-          <div className="mt-2.5 space-y-3 text-[14px] leading-relaxed text-[var(--muted)]">
+          <div className="prose-measure mt-3 space-y-3.5 text-[15px] leading-[1.72] text-[var(--muted)]">
             <p>
-              Guidance, not instruction. Every time here is an estimate, every
-              queue reading is somebody&rsquo;s opinion from up to ninety
-              minutes ago, and both can be wrong. Timings are not confirmed by
-              the mandals.
+              <strong className="font-semibold text-[var(--chandan)]">
+                Everything here is an estimate.
+              </strong>{' '}
+              Every time is a guess, every queue reading is somebody&rsquo;s
+              opinion from up to ninety minutes ago, and both can be wrong.
+              Timings are not confirmed by the mandals.
             </p>
             <p>
-              Ganeshotsav crowds are genuinely dense and the peth lanes are
-              narrow. Follow the police and the mandal volunteers over anything
-              this app says, keep to marked routes, and do not use your phone
-              for navigation while walking in a crowd. Visarjan days close roads
-              at short notice.
+              <strong className="font-semibold text-[var(--chandan)]">
+                People on the ground know better than this app.
+              </strong>{' '}
+              Follow the police and the mandal volunteers over anything you read
+              here. Keep to marked routes, and don&rsquo;t navigate by phone
+              while walking in a crowd. Visarjan days close roads at short
+              notice.
             </p>
             <p>
-              Routes are planned on foot. Vehicle access to the peths is
-              restricted during the festival, which is why there is no driving
-              mode.
+              <strong className="font-semibold text-[var(--chandan)]">
+                Routes are walked, not driven.
+              </strong>{' '}
+              Vehicle access to the peths is restricted during the festival,
+              which is why there is no driving mode.
             </p>
             <p>
-              This is a side project offered as-is, with no warranty. It is not
-              affiliated with any mandal, trust, festival committee, the Pune
-              Municipal Corporation or Maharashtra Metro.
+              <strong className="font-semibold text-[var(--chandan)]">
+                Offered as-is.
+              </strong>{' '}
+              A side project with no warranty, not affiliated with any mandal,
+              trust, festival committee, the Pune Municipal Corporation or
+              Maharashtra Metro.
             </p>
           </div>
         </section>
