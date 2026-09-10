@@ -842,6 +842,38 @@ test('Flow 18 — the app says who made it, and can be reached', async ({ page }
   // both the mandals and the app.
   await expect(page.getByText(/[Nn]ot affiliated with any mandal/).first()).toBeVisible();
 
+  // The policy sections the page promises in its own contents nav.
+  for (const id of ['why', 'what', 'contact', 'data', 'terms', 'disclaimer']) {
+    await expect(page.locator(`section#${id}`)).toHaveCount(1);
+  }
+  await expect(page.getByRole('heading', { name: 'Terms of use' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Disclaimer' })).toBeVisible();
+
+  // The storage controls must actually clear what they name — a privacy
+  // page whose buttons do nothing is worse than no page.
+  await page.evaluate(() => {
+    localStorage.setItem('pg.plan', '["kasba-ganpati"]');
+    localStorage.setItem('pg.favorites', '["tulshibaug-ganpati"]');
+    localStorage.setItem('ganpatigo_device_id', 'kept-by-the-first-control');
+  });
+  await page.getByRole('button', { name: /^Clear$/ }).first().click();
+  await page.waitForTimeout(1500);
+  expect(
+    await page.evaluate(() => [
+      localStorage.getItem('pg.plan'),
+      localStorage.getItem('pg.favorites'),
+      // Clearing the plan must NOT reset the reporting id: that would hand
+      // anyone a one-tap way past the per-device cooldown.
+      localStorage.getItem('ganpatigo_device_id'),
+    ])
+  ).toEqual([null, null, 'kept-by-the-first-control']);
+
+  await page.getByRole('button', { name: /^Reset$/ }).click();
+  await page.waitForTimeout(1500);
+  expect(
+    await page.evaluate(() => localStorage.getItem('ganpatigo_device_id'))
+  ).toBeNull();
+
   // And the licences page is now reachable from here.
   await page.getByRole('link', { name: /Data & licences/ }).click();
   await expect(page).toHaveURL(/\/licences$/);

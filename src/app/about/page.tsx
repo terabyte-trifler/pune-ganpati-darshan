@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Mail, Phone, ArrowLeft, ExternalLink } from 'lucide-react';
 import { SiteFooter } from '@/components/SiteFooter';
+import { StoredData } from '@/features/settings/StoredData';
 
 export const metadata: Metadata = {
   title: 'About',
@@ -23,6 +24,24 @@ export const revalidate = 3600;
  * request, which is what makes a small independent project trustworthy:
  * there is a person on the other end of it.
  */
+
+const LAST_UPDATED = '10 September 2026';
+
+const SECTIONS = [
+  { id: 'why', label: 'Why' },
+  { id: 'what', label: 'What it does' },
+  { id: 'contact', label: 'Contact' },
+  { id: 'data', label: 'Your data' },
+  { id: 'terms', label: 'Terms' },
+  { id: 'disclaimer', label: 'Disclaimer' },
+];
+
+const DOES = [
+  'Routes built around the time you actually have, counting the queue as well as the walk',
+  'Live queue reports from devotees, on the map, expiring after ninety minutes',
+  'Metro-aware — which station to board, where to change, where to get off',
+  'Works offline once loaded, with no account and no ads',
+];
 
 const LINKS = [
   { label: 'X', handle: '@singhgurnoor080', href: 'https://x.com/singhgurnoor080' },
@@ -54,9 +73,22 @@ export default function AboutPage() {
           <span className="font-semibold text-[var(--chandan)]">Gurnoor Singh</span>
           {' '}— Terabyte Trifler
         </p>
+        <p className="mt-0.5 text-[12px] text-[var(--faint)]">
+          Last updated: {LAST_UPDATED}
+        </p>
+
+        {/* Anchors, so a link can point at the terms or the disclaimer
+            rather than at the top of a long page. */}
+        <nav className="mt-4 flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
+          {SECTIONS.map((sx) => (
+            <a key={sx.id} href={`#${sx.id}`} className="text-[var(--shendur)] underline">
+              {sx.label}
+            </a>
+          ))}
+        </nav>
 
         {/* ---------------- Why ---------------- */}
-        <section className="mt-7">
+        <section id="why" className="mt-7">
           <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
             Why I built this
           </h2>
@@ -99,8 +131,35 @@ export default function AboutPage() {
           </p>
         </section>
 
+        {/* ---------------- What it does ---------------- */}
+        <section id="what" className="mt-8">
+          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            What it does
+          </h2>
+          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--muted)]">
+            Pune&rsquo;s Ganeshotsav fills the old peth lanes with sarvajanik
+            mandals — the Manache Paach, the big dekhava sets, the light shows
+            that only run after dark. This app is for getting round them on
+            foot without guesswork.
+          </p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {DOES.map((d) => (
+              <li
+                key={d}
+                className="flex gap-2.5 text-[14px] leading-relaxed text-[var(--muted)]"
+              >
+                <span
+                  aria-hidden="true"
+                  className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--shendur)]"
+                />
+                {d}
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* ---------------- Contact ---------------- */}
-        <section className="mt-8">
+        <section id="contact" className="mt-8">
           <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
             Get in touch
           </h2>
@@ -162,6 +221,113 @@ export default function AboutPage() {
             </a>
             , where I build software for other people the rest of the year.
           </p>
+        </section>
+
+        {/* ---------------- Stored data ---------------- */}
+        <section id="data" className="mt-9">
+          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            Your data
+          </h2>
+          <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--muted)]">
+            There is no account, so there is nothing about you on a server to
+            delete. Six small things are kept on your own device, and you can
+            remove any of them here.
+          </p>
+
+          <StoredData />
+
+          <div className="mt-4 space-y-3 text-[13px] leading-relaxed text-[var(--muted)]">
+            <p>
+              <strong className="font-semibold text-[var(--chandan)]">
+                Location.
+              </strong>{' '}
+              Used on your phone to work out which mandals are near you and
+              whether you are close enough to report a queue. It is never sent
+              to the server and never stored — a queue report carries a yes or
+              no, not a position.
+            </p>
+            <p>
+              <strong className="font-semibold text-[var(--chandan)]">
+                Queue reports.
+              </strong>{' '}
+              Stored with an anonymous device id so the same phone cannot
+              report the same mandal twice in an hour. No name and no account.
+              Your IP address is not kept either — a salted one-way hash of it
+              is, purely so one connection cannot flood the tracker, and the
+              address itself cannot be recovered from it. Reports stop counting
+              after ninety minutes and are deleted after that.
+            </p>
+            <p>
+              <strong className="font-semibold text-[var(--chandan)]">
+                Analytics.
+              </strong>{' '}
+              Page views are counted with a session id that lasts until you
+              close the tab. The city the request came from is recorded — city
+              and no finer, resolved before the request reaches the app, with
+              no coordinates, no postal code and no IP address kept. Nothing is
+              sold, and there are no third-party trackers or ad networks.
+            </p>
+          </div>
+        </section>
+
+        {/* ---------------- Policies ---------------- */}
+        <section id="terms" className="mt-9">
+          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            Terms of use
+          </h2>
+          <div className="mt-2.5 space-y-3 text-[14px] leading-relaxed text-[var(--muted)]">
+            <p>
+              Free to use for planning your own darshan. Please do not scrape
+              the catalogue or the queue data, republish it as your own, or
+              resell it — it is assembled by hand and corrected by people who
+              were there.
+            </p>
+            <p>
+              Report what you actually saw. Deliberately false queue reports
+              send other people to the wrong place on the busiest nights of the
+              year, and reporting is rate-limited per device so that a single
+              phone cannot swing a mandal&rsquo;s reading.
+            </p>
+            <p>
+              Map data is © OpenStreetMap contributors, used under the{' '}
+              <Link href="/licences" className="text-[var(--shendur)] underline">
+                Open Database Licence
+              </Link>
+              . Mandal names, photographs and the festival itself belong to the
+              mandals.
+            </p>
+          </div>
+        </section>
+
+        <section id="disclaimer" className="mt-8">
+          <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            Disclaimer
+          </h2>
+          <div className="mt-2.5 space-y-3 text-[14px] leading-relaxed text-[var(--muted)]">
+            <p>
+              Guidance, not instruction. Every time here is an estimate, every
+              queue reading is somebody&rsquo;s opinion from up to ninety
+              minutes ago, and both can be wrong. Timings are not confirmed by
+              the mandals.
+            </p>
+            <p>
+              Ganeshotsav crowds are genuinely dense and the peth lanes are
+              narrow. Follow the police and the mandal volunteers over anything
+              this app says, keep to marked routes, and do not use your phone
+              for navigation while walking in a crowd. Visarjan days close roads
+              at short notice.
+            </p>
+            <p>
+              Routes are planned on foot. Vehicle access to the peths is
+              restricted during the festival, which is why there is no driving
+              mode.
+            </p>
+            <p>
+              This is a side project offered as-is, with no warranty. It is not
+              affiliated with any mandal, trust, festival committee, the Pune
+              Municipal Corporation or Maharashtra Metro.
+            </p>
+          </div>
         </section>
 
         <SiteFooter className="mt-10" />
