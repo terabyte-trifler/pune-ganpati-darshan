@@ -19,6 +19,30 @@ export function SignInForm() {
 
   const supabase = getSupabaseBrowserClient();
 
+  /**
+   * Sign-in is allowlisted in the database, and Supabase flattens the
+   * trigger's message into a generic "Database error saving new user"
+   * before it reaches here. Showing that verbatim reads as the site being
+   * broken rather than the account not being permitted, so it is mapped to
+   * something a person can act on.
+   *
+   * Matched on substrings rather than a code because Supabase does not
+   * give this case one; if the wording upstream changes, the fallback is
+   * the provider's own message, which is no worse than today.
+   */
+  const readableError = (message: string): string => {
+    const m = message.toLowerCase();
+    if (
+      m.includes('database error saving new user') ||
+      m.includes('sign-up is not open') ||
+      m.includes('signups not allowed') ||
+      m.includes('signup is disabled')
+    ) {
+      return 'This site does not accept new accounts. Everything except saving across devices works without signing in.';
+    }
+    return message;
+  };
+
   const signInWithGoogle = async () => {
     if (!supabase) return;
     setError(null);
@@ -26,7 +50,7 @@ export function SignInForm() {
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
-    if (error) setError(error.message);
+    if (error) setError(readableError(error.message));
   };
 
   const sendMagicLink = async (event: React.FormEvent) => {
@@ -41,7 +65,7 @@ export function SignInForm() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(readableError(error.message));
       setStatus('idle');
     } else {
       setStatus('sent');
