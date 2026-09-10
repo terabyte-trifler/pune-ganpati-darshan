@@ -229,8 +229,8 @@ export default function AboutPage() {
           </h2>
           <p className="prose-measure mt-3 text-[16px] leading-[1.72] text-[var(--muted)]">
             There is no account, so there is nothing about you on a server to
-            delete. Six small things are kept on your own device, and you can
-            remove any of them here.
+            delete. Seven small things are kept on your own device, and you
+            can remove any of them here.
           </p>
 
           <StoredData />

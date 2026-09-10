@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/Button';
  */
 
 /** Kept in step with the modules that own these keys. */
-const PLAN_KEYS = ['pg.plan', 'pg.favorites'] as const;
+const PLAN_KEYS = ['pg.plan', 'pg.favorites', 'pg.mode'] as const;
 const VISIT_KEYS = ['pg.session', 'pg.referrer'] as const;
 const CACHE_KEYS = ['ganpatigo_crowd_snapshot'] as const;
 const DEVICE_KEYS = ['ganpatigo_device_id'] as const;
@@ -45,8 +45,8 @@ const ACTIONS: {
     scope: 'plan',
     title: 'Clear your darshan and saved mandals',
     detail:
-      'The stops in your plan and every mandal you have saved. Nothing else changes.',
-    keys: 'pg.plan · pg.favorites',
+      'The stops in your plan, how you said you are getting around, and every mandal you have saved. Nothing else changes.',
+    keys: 'pg.plan · pg.favorites · pg.mode',
     label: 'Clear',
   },
   {

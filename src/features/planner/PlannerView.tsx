@@ -15,6 +15,7 @@ import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { SavePlanShare } from './SavePlanShare';
 import { StartWizard } from './StartWizard';
+import { useTravelMode } from './travel-mode-store';
 import { StartRouteButton } from './StartRouteButton';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdBadge } from '@/features/crowd/CrowdBadge';
@@ -106,7 +107,9 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
    * dialog; it only picks up a permission the visitor has already given.
    */
   useResolveLocation();
-  const [mode, setMode] = useState<TravelMode>('walk');
+  // Shared with the wizard, so a route built for the metro is not then
+  // described as a walk. See travel-mode-store.
+  const [mode, setMode] = useTravelMode();
   const [result, setResult] = useState<RouteResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();

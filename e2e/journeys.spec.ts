@@ -1061,3 +1061,53 @@ test('Flow 23 — a mandal page does not load the map before it is needed', asyn
     .scrollIntoViewIfNeeded();
   await expect(page.locator('[data-minimap-ready="true"]')).toBeVisible({ timeout: 20000 });
 });
+
+test('Flow 24 — the way you said you are travelling survives the handover', async ({ page }) => {
+  /**
+   * The wizard asked and the planner did not listen.
+   *
+   * Choosing Metro or Two-wheeler on /start ORDERED the route for that
+   * mode — the optimiser uses it, and so do the dwell and travel
+   * estimates — and then handed over to a planner that started at Walk.
+   * So a route built for a scooter was presented as a walk with the totals
+   * recomputed at walking pace, which is wrong in a way nobody would think
+   * to check.
+   */
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ statuses: [], computedAt: new Date().toISOString(), stale: false }),
+    })
+  );
+
+  const pressed = async () => {
+    for (const name of ['Walk', 'Two-wheeler', 'Metro']) {
+      const button = page.getByRole('button', { name, exact: true });
+      if ((await button.count()) && (await button.first().getAttribute('aria-pressed')) === 'true') {
+        return name;
+      }
+    }
+    return null;
+  };
+
+  for (const [chosen, shown] of [
+    ['Metro', 'Metro'],
+    ['Two-wheeler', 'Two-wheeler'],
+    ['Walking', 'Walk'],
+  ] as const) {
+    await page.goto('/start');
+    await page.getByRole('button', { name: '2 hours' }).click();
+    await page.getByRole('button', { name: /The famous ones/ }).click();
+    await page.getByRole('button', { name: chosen, exact: true }).click();
+    await page.getByRole('button', { name: /Build my route/i }).click();
+
+    await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
+    expect(await pressed(), `chose ${chosen} on /start`).toBe(shown);
+
+    // It belongs to the darshan, not to one visit, so it outlives a reload.
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
+    expect(await pressed(), `${chosen} after a reload`).toBe(shown);
+  }
+});

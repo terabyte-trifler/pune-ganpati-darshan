@@ -5,7 +5,7 @@ import { join } from 'node:path';
 /**
  * The privacy page has to stay true.
  *
- * "Your data" names six storage keys and offers to clear them. A key added
+ * "Your data" names seven storage keys and offers to clear them. A key added
  * anywhere else in the app would make that list quietly incomplete — the
  * page would still read well, and it would be a false claim on the one
  * page whose whole job is being checkable.
@@ -23,6 +23,7 @@ function walk(dir: string): string[] {
 const DECLARED = new Set([
   'pg.plan',
   'pg.favorites',
+  'pg.mode',
   'pg.session',
   'pg.referrer',
   'ganpatigo_crowd_snapshot',

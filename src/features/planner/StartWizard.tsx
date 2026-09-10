@@ -20,6 +20,7 @@ import { stationById, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
+import { useTravelMode } from './travel-mode-store';
 
 /**
  * Two-question route builder: how long you have, and what you want to see.
@@ -97,7 +98,9 @@ export function StartWizard({
    */
   const pace: DarshanPace = 'balanced';
   const [interests, setInterests] = useState<Set<Interest>>(new Set());
-  const [mode, setMode] = useState<TravelMode>('walk');
+  // Persisted, so the planner opens on the mode that was chosen here
+  // and the route is described the way it was ordered.
+  const [mode, setMode] = useTravelMode();
   /**
    * Kasba Peth by default. Mandai has more mandals inside a ten-minute
    * walk and would otherwise be the obvious guess, but it is boarding-only
