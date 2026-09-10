@@ -534,6 +534,52 @@ test('the live crowd section leads the homepage and links onward', async ({ page
   expect(order, 'live crowd section must precede the routes rail').toBe(true);
 });
 
+test('the tracker ends with a key to the colours the map uses', async ({ page }) => {
+  /**
+   * The pins carry the queue now — a whole pin is green, amber or red —
+   * so without this the map is a code with no key.
+   *
+   * Pinned to a snapshot with all three levels present, because the
+   * legend lives on the live branch and a quiet morning would otherwise
+   * decide whether this test runs.
+   */
+  await withFreshDevice(page);
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        computedAt: new Date().toISOString(),
+        stale: false,
+        statuses: [
+          { mandalId: catalogue.ganpatis[0].id, status: 'short', label: 'Short',
+            lastUpdated: new Date().toISOString(), reportCount: 2, confidence: 'strong' },
+          { mandalId: catalogue.ganpatis[1].id, status: 'moving', label: 'Moving',
+            lastUpdated: new Date().toISOString(), reportCount: 2, confidence: 'strong' },
+          { mandalId: catalogue.ganpatis[2].id, status: 'long', label: '30+ min',
+            lastUpdated: new Date().toISOString(), reportCount: 2, confidence: 'strong' },
+        ],
+      }),
+    })
+  );
+  await page.goto('/');
+
+  const section = page.locator(LIVE_SECTION);
+  await expect(section).toBeVisible();
+
+  // All three levels named, in the same words the report buttons use.
+  for (const label of ['Short', 'Moving', '30+ min']) {
+    await expect(section.getByText(label, { exact: true }).first()).toBeVisible();
+  }
+  await expect(section.getByText('straight in')).toBeVisible();
+  await expect(section.getByText('queue, but moving')).toBeVisible();
+
+  // And that the map speaks the same language — including what grey means,
+  // which is the one a reader would otherwise guess wrong.
+  await expect(section.getByText(/drawn in its queue.s colour/)).toBeVisible();
+  await expect(section.getByText(/Grey means nobody has reported/)).toBeVisible();
+});
+
 test('the live crowd section invites a report when nobody has reported', async ({ page }) => {
   await withFreshDevice(page);
 

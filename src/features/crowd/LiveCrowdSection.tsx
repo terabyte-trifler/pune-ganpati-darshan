@@ -33,6 +33,51 @@ import type { CrowdLevel } from '@/types/crowd';
  * shelf, and it never dresses an absence up as a calm queue (§32, §33).
  */
 
+/**
+ * What the three colours mean, and that the map speaks the same language.
+ *
+ * The pins carry the queue now — a whole pin is green, amber or red — so
+ * the tracker has to say what those colours are, or the map is a code with
+ * no key. Placed at the end of the section rather than the top: someone
+ * who has just read three live rows already has the idea, and this
+ * confirms it and points at where else it applies.
+ *
+ * Level is carried by shape as well as colour, matching CrowdBadge, so it
+ * still reads in greyscale and to a colour-blind visitor (§37).
+ */
+function Legend() {
+  return (
+    <div className="mt-3 border-t border-[var(--line)] pt-3">
+      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        {LEGEND.map(({ level, label, hint }) => (
+          <li key={level} className="flex items-center gap-1.5">
+            <CrowdDot level={level} size={9} />
+            <span
+              className="text-[13px] font-semibold"
+              style={{ color: CROWD_COLOR[level] }}
+            >
+              {label}
+            </span>
+            <span className="text-[12px] text-[var(--faint)]">{hint}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
+        Every mandal on the map is drawn in its queue&rsquo;s colour, and it
+        changes as people report. Grey means nobody has reported that one
+        yet — not that it is quiet.
+      </p>
+    </div>
+  );
+}
+
+/** The same three the report buttons offer, in the same words. */
+const LEGEND: { level: CrowdLevel; label: string; hint: string }[] = [
+  { level: 'short', label: 'Short', hint: 'straight in' },
+  { level: 'moving', label: 'Moving', hint: 'queue, but moving' },
+  { level: 'long', label: '30+ min', hint: 'heavy' },
+];
+
 const MAX_ROWS = 3;
 
 /** Short first, then moving. Long is summarised, never listed. */
@@ -275,6 +320,8 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
           See every mandal on the map
           <ChevronRight size={15} aria-hidden="true" />
         </Link>
+
+        <Legend />
       </Shell>
 
       <NearbyReportPrompt ganpatis={ganpatis} />
