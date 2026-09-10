@@ -52,6 +52,43 @@ function sessionId(): string {
   }
 }
 
+const REFERRER_KEY = 'pg.referrer';
+
+/**
+ * Where this session arrived from — the referring HOST only.
+ *
+ * Captured once and kept for the session, because `document.referrer` is
+ * the previous page: it names Instagram on the first pageview and then
+ * names us on every one after, which would report the app as its own
+ * biggest traffic source.
+ *
+ * Only the host is ever sent. A full referrer URL carries search terms,
+ * private group links and document titles, and none of that belongs in an
+ * analytics table. Our own host resolves to null so internal navigation
+ * reads as direct rather than as a referral from ourselves.
+ */
+function referrerHost(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const stored = sessionStorage.getItem(REFERRER_KEY);
+    if (stored !== null) return stored === '' ? undefined : stored;
+
+    let host = '';
+    if (document.referrer) {
+      try {
+        const url = new URL(document.referrer);
+        if (url.host && url.host !== window.location.host) host = url.host;
+      } catch {
+        // A referrer that is not a parseable URL tells us nothing.
+      }
+    }
+    sessionStorage.setItem(REFERRER_KEY, host);
+    return host === '' ? undefined : host;
+  } catch {
+    return undefined;
+  }
+}
+
 function flush() {
   if (typeof window === 'undefined' || queue.length === 0) return;
 
@@ -59,7 +96,11 @@ function flush() {
   queue = [];
   flushTimer = null;
 
-  const payload = JSON.stringify({ sessionId: sessionId(), events: batch });
+  const payload = JSON.stringify({
+    sessionId: sessionId(),
+    referrerHost: referrerHost(),
+    events: batch,
+  });
 
   try {
     if (navigator.sendBeacon) {

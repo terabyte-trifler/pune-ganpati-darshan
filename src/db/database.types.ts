@@ -152,6 +152,17 @@ export type AnalyticsEventRow = {
   ganpati_id: string | null;
   props: Record<string, unknown>;
   created_at: string;
+  /**
+   * Request origin, at city grain and no finer. Filled from Vercel's
+   * geolocation headers server-side, never from the client. Latitude,
+   * longitude and postal code arrive on the same request and are
+   * deliberately not stored — see the traffic_origin migration.
+   */
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  /** Host only, e.g. "instagram.com". Never a full URL. */
+  referrer_host: string | null;
 }
 
 /** Return shape of the search_ganpatis() RPC. */
@@ -326,6 +337,10 @@ export type Database = {
         Returns: unknown;
       };
       crowd_admin_overview: { Args: Record<never, never>; Returns: unknown };
+      traffic_origin_overview: {
+        Args: { p_window?: string; p_limit?: number };
+        Returns: unknown;
+      };
       consume_rate_limit: {
         Args: {
           p_bucket: string;
