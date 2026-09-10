@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { computeRoute, computeRouteMatrix, MAX_MATRIX_POINTS } from '@/lib/maps/routes';
+import { computeRoute, computeRouteMatrix } from '@/lib/maps/routes';
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { rateLimit } from '@/lib/rate-limit';
@@ -22,9 +22,26 @@ const pointSchema = z.object({
   lng: z.number().min(-180).max(180),
 });
 
+/**
+ * As many stops as a saved plan can hold.
+ *
+ * This used to be MAX_MATRIX_POINTS - 1, which is 9, and it was wrong in a
+ * way that showed up as a mystery: the planner puts no limit on a darshan,
+ * so adding a tenth mandal and tapping Optimise returned a bare
+ * "Invalid request" with nothing to act on.
+ *
+ * The matrix limit is a property of ONE routing provider's table endpoint,
+ * not of this request. Above ten points computeRouteMatrix declines and the
+ * handler already orders the stops locally and labels the result
+ * 'local-estimate' — the same honest degrade it does when the router is
+ * unreachable. The schema was rejecting requests before that path could
+ * run. 20 matches the cap on a shared plan, so the two agree.
+ */
+const MAX_STOPS = 20;
+
 const bodySchema = z.object({
   origin: pointSchema,
-  stops: z.array(pointSchema).min(1).max(MAX_MATRIX_POINTS - 1),
+  stops: z.array(pointSchema).min(1).max(MAX_STOPS),
   // Retired values are accepted and translated rather than rejected: an
   // older tab or a saved plan can still post 'drive'. Rejecting those
   // would 400 a request the app itself produced last week.
@@ -47,8 +64,23 @@ export async function POST(request: Request) {
   let parsed;
   try {
     parsed = bodySchema.parse(await request.json());
-  } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+  } catch (error) {
+    // "Invalid request" alone is unactionable — it was returned for a plan
+    // that was merely too long, and read as a bug in the app. Say which
+    // field failed, and say the common case in words.
+    const issues = error instanceof z.ZodError ? error.issues : [];
+    const tooManyStops = issues.some(
+      (i) => i.path[0] === 'stops' && i.code === 'too_big'
+    );
+    return NextResponse.json(
+      {
+        error: tooManyStops
+          ? `A darshan can hold up to ${MAX_STOPS} stops. Remove a few and try again.`
+          : 'Invalid request',
+        fields: issues.map((i) => i.path.join('.')).filter(Boolean),
+      },
+      { status: 400 }
+    );
   }
 
   const { origin, stops, mode, optimize } = parsed;

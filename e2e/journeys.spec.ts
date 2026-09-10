@@ -658,3 +658,78 @@ test('Flow 15 — route pins sit where the map projects them', async ({ page }) 
     ).toBeLessThanOrEqual(2);
   }
 });
+
+test('Flow 16 — a long darshan still optimises instead of being rejected', async ({ request }) => {
+  // Room to wait out the endpoint's own rate limiter if the suite trips it.
+  test.setTimeout(120_000);
+  /**
+   * Guards a bug that hit anyone with a big plan.
+   *
+   * The stop limit on this endpoint was MAX_MATRIX_POINTS - 1, which is 9.
+   * That number is a property of one routing provider's table endpoint, not
+   * of the request — and the planner puts no limit on a darshan, so adding
+   * a tenth mandal and tapping Optimise returned a bare "Invalid request"
+   * with nothing to act on.
+   *
+   * Above ten points the handler is meant to order the stops locally and
+   * label the result 'local-estimate', the same degrade it does when the
+   * router is unreachable. The schema was rejecting the request before that
+   * path could run.
+   */
+  const body = (n: number) => ({
+    origin: { lat: 18.5214, lng: 73.8595 },
+    stops: Array.from({ length: n }, (_, i) => ({
+      lat: 18.51 + i * 0.001,
+      lng: 73.85 + i * 0.001,
+    })),
+    mode: 'walk',
+    optimize: true,
+  });
+
+  /**
+   * The endpoint rate-limits to 20 requests a minute per IP, and every
+   * worker in this suite shares one. That protection is real and worth
+   * keeping, so the test waits it out rather than being given a way
+   * around it — a backdoor in a rate limiter is a worse thing to own than
+   * a slow test.
+   */
+  const post = async (n: number) => {
+    let res = await request.post('/api/routes', { data: body(n) });
+    if (res.status() === 429) {
+      const wait = Number(res.headers()['retry-after'] ?? 60);
+      await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
+      res = await request.post('/api/routes', { data: body(n) });
+    }
+    return res;
+  };
+
+  // Inside the matrix limit: the real router orders it.
+  const nine = await post(9);
+  expect(nine.status()).toBe(200);
+  expect((await nine.json()).order).toHaveLength(9);
+
+  // The boundary that used to 400, and the cap itself. Both must return
+  // every stop, ordered — a plan is not allowed to silently lose stops the
+  // visitor chose.
+  for (const n of [10, 20]) {
+    const res = await post(n);
+    expect(res.status(), `${n} stops must be accepted`).toBe(200);
+    const json = await res.json();
+    expect(json.order, `${n} stops must all be ordered`).toHaveLength(n);
+    // Ordering is a permutation: every stop appears exactly once.
+    expect([...json.order].sort((a: number, b: number) => a - b)).toEqual(
+      Array.from({ length: n }, (_, i) => i)
+    );
+    // Past the matrix limit the router declines and the handler orders the
+    // stops itself. It must say so rather than implying a routed result.
+    if (n > 9) expect(json.optimizedBy).toBe('local-estimate');
+  }
+
+  // Past the cap it is still refused — but with something a person can act
+  // on rather than "Invalid request".
+  const tooMany = await post(21);
+  expect(tooMany.status()).toBe(400);
+  const { error } = await tooMany.json();
+  expect(error).toMatch(/up to 20 stops/);
+  expect(error).not.toBe('Invalid request');
+});
