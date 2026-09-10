@@ -285,17 +285,24 @@ test('the panel never presents an unknown crowd as a calm one', async ({ page })
   const panel = page.getByRole('region', { name: /crowd right now/i });
   await expect(panel).toBeVisible();
 
-  const text = (await panel.textContent()) ?? '';
-
-  // Whatever state it is in, it must either name a reported level or say
-  // there are no reports — never imply a short queue from silence (§33).
-  const saysSomething =
-    /no recent reports/i.test(text) ||
-    /short|moving|heavy/i.test(text) ||
-    /temporarily unavailable/i.test(text);
-  expect(saysSomething, `panel said: ${text.slice(0, 200)}`).toBe(true);
+  /**
+   * Retried, not sampled once.
+   *
+   * The region renders before the crowd snapshot arrives, so reading
+   * textContent() the instant it became visible caught the loading state
+   * and failed — twice, on the mobile project, while the app was fine.
+   * A retrying assertion waits for the panel to settle into one of the
+   * states it is allowed to be in, which is what the test meant all along.
+   *
+   * Whatever state that is, it must either name a reported level or say
+   * there are no reports — never imply a short queue from silence (§33).
+   */
+  await expect(panel).toContainText(
+    /no recent reports|short|moving|heavy|temporarily unavailable/i
+  );
 
   // And it must never state a queue duration as fact.
+  const text = (await panel.textContent()) ?? '';
   expect(text).not.toMatch(/queue is \d+ minutes/i);
 });
 
