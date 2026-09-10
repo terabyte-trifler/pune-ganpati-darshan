@@ -727,17 +727,23 @@ test('Flow 16 — a long darshan still optimises instead of being rejected', asy
   expect(error).not.toBe('Invalid request');
 });
 
-test('Flow 17 — building and managing a darshan are one page', async ({ page }) => {
+test('Flow 17 — the builder stands alone and also lives in the plan', async ({ page }) => {
   /**
-   * They used to be /start and /plan, with a navigation between them, and
-   * the wizard's result and the planner showed the same route in two
-   * layouts with two sets of numbers.
+   * One builder, two places, and the difference between them is whether
+   * there is already a route on screen.
    *
-   * /start still exists because the home page, the routes index and the
-   * sitemap link to it, and because someone may have shared it. It carries
-   * ?build=1 so "Build my route" still means build for a visitor who
-   * already has stops saved, rather than dropping them on their existing
-   * plan.
+   * /start is the builder by itself: two questions and nothing else,
+   * because a plan header and a stop list would be answering a question
+   * nobody has asked yet. Building there writes the plan and moves to
+   * /plan, which is a handoff between two different jobs.
+   *
+   * /plan carries the same builder inline, which is right when a route IS
+   * on screen and you are replacing it. There, building must not navigate
+   * — the planner is already the page — and must drop ?build=1 so a
+   * refresh cannot reopen the builder over the route it just made.
+   *
+   * Neither has a confirmation step. Nobody builds a route in order to
+   * reject it.
    */
   await page.route('**/api/crowd*', (route) =>
     route.fulfill({
@@ -747,8 +753,24 @@ test('Flow 17 — building and managing a darshan are one page', async ({ page }
     })
   );
 
+  // /start is the builder on its own: the two questions and nothing else,
+  // because there is no route on screen yet to put them beside.
   await page.goto('/start');
-  await expect(page).toHaveURL(/\/plan\?build=1$/);
+  await expect(page).toHaveURL(/\/start$/);
+  await expect(page.getByRole('button', { name: '2 hours' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toHaveCount(0);
+  await expect(page.getByText(/Taking a new route replaces/)).toHaveCount(0);
+
+  // Building there hands over to the planner, which is where a route is
+  // looked at and reordered.
+  await page.getByRole('button', { name: '2 hours' }).click();
+  await page.getByRole('button', { name: /The famous ones/i }).click();
+  await page.getByRole('button', { name: /Build my route/i }).click();
+  await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
+
+  // And the same builder is reachable inline once a plan exists.
+  await page.goto('/plan?build=1');
   await expect(page.getByRole('button', { name: '2 hours' })).toBeVisible();
 
   // Exactly one h1. The wizard demotes its step headings when embedded, and
