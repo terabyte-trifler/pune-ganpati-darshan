@@ -4,28 +4,19 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Clock, ChevronLeft, Footprints, Bike, TrainFront, Sparkles, MapPin,
+  Clock, ChevronLeft, Footprints, Bike, TrainFront, Sparkles,
 } from 'lucide-react';
-import { MiniMap } from '@/features/map/MiniMapLoader';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { usePlan } from '@/hooks/useLocalCollection';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { buildItinerary, type DarshanPace, type Interest } from '@/services/itinerary';
 import { useCrowdState } from '@/features/crowd/useCrowd';
-import { CrowdDot, CROWD_COLOR } from '@/features/crowd/CrowdBadge';
 import type { CrowdLevel } from '@/types/crowd';
 
-/** The tracker's own words, so the plan and the tracker never disagree. */
-const CROWD_WORD: Record<CrowdLevel, string> = {
-  short: 'Short',
-  moving: 'Moving',
-  long: 'Heavy',
-};
-import { PUNE_CENTER, formatDuration, haversine, type LatLng } from '@/lib/geo';
+import { PUNE_CENTER, type LatLng } from '@/lib/geo';
 import { MetroStationPicker } from './MetroStationPicker';
-import { MetroJourneyCard } from './MetroJourneyCard';
-import { stationById, returnStation, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
+import { stationById, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -47,18 +38,6 @@ const BUDGETS = [
   { minutes: 360, label: '6 hours' },
 ];
 
-/**
- * Pace changes the plan a lot — it decides whether you queue at Dagdusheth or
- * look from the road — but asking about it up front was a poor question: it
- * is abstract, and you cannot judge the answer before seeing a plan. It now
- * lives on the result, phrased as the outcome rather than the intent, where
- * changing it visibly rewrites the route.
- */
-const PACES: Array<{ key: DarshanPace; label: string }> = [
-  { key: 'thorough', label: 'Queue at every stop' },
-  { key: 'balanced', label: 'A bit of both' },
-  { key: 'quick', label: 'Mostly from outside' },
-];
 
 const INTERESTS: Array<{ key: Interest; label: string; labelMr?: string }> = [
   { key: 'manache', label: 'मानाचे गणपती', labelMr: 'yes' },
@@ -93,8 +72,13 @@ export function StartWizard({
    * them on one page is a real problem for anyone navigating by heading.
    */
   embedded?: boolean;
-  /** Called instead of navigating once a route is taken. */
-  onDone?: () => void;
+  /**
+   * Called once the route has been written to the plan, with what the
+   * planner needs to explain the result — chiefly how many matching
+   * mandals did not fit, which is the one thing the old result screen
+   * said that the stop list itself cannot.
+   */
+  onDone?: (built: { skipped: number; budgetMinutes: number }) => void;
 }) {
   const router = useRouter();
   const { replace } = usePlan();
@@ -102,7 +86,13 @@ export function StartWizard({
 
   const [step, setStep] = useState(0);
   const [budget, setBudget] = useState<number | null>(null);
-  const [pace, setPace] = useState<DarshanPace>('balanced');
+  /**
+   * Fixed at the sensible middle while building. The planner owns pace now
+   * and lets you change it against the route you actually got, which is
+   * where the question can be answered — it was asked here, before there
+   * was anything to judge it against.
+   */
+  const pace: DarshanPace = 'balanced';
   const [interests, setInterests] = useState<Set<Interest>>(new Set());
   const [mode, setMode] = useState<TravelMode>('walk');
   /**
@@ -141,18 +131,6 @@ export function StartWizard({
     return out;
   }, [mandals, crowdState]);
 
-  const plan = useMemo(() => {
-    if (budget === null || step < 2) return null;
-    return buildItinerary({
-      budgetMinutes: budget,
-      interests: [...interests],
-      pace,
-      mode,
-      origin,
-      mandals,
-      crowdByMandalId,
-    });
-  }, [budget, interests, pace, mode, origin, mandals, step, crowdByMandalId]);
 
   const toggleInterest = (key: Interest) => {
     setInterests((prev) => {
@@ -163,23 +141,46 @@ export function StartWizard({
     });
   };
 
+  /**
+   * Build and take, in one action.
+   *
+   * There used to be a result screen with a "Use this route" button on it.
+   * Nobody builds a route in order to reject it, and confirming it a second
+   * time bought nothing — the route was already on screen, and the planner
+   * below shows the same stops with the same times in its own layout, so
+   * the step was asking people to choose between two views of one thing.
+   *
+   * The plan is written here and the planner takes over. Undo is the plan
+   * itself: every stop can be removed or reordered, and "Build a different
+   * route" is one tap away.
+   */
   const buildRoute = () => {
-    setStep(2);
-    trackEvent('plan_created', {
-      props: { source: 'wizard', budget: budget ?? 0, pace, interests: [...interests].join(',') },
+    const built = buildItinerary({
+      budgetMinutes: budget ?? 0,
+      interests: [...interests],
+      pace,
+      mode,
+      origin,
+      mandals,
+      crowdByMandalId,
     });
-  };
 
-  const useThisPlan = () => {
-    if (!plan) return;
-    replace(plan.stops.map((s) => s.ganpati.slug));
-    // Embedded, the planner is already on screen and re-renders from the
-    // same store this just wrote to — so there is nowhere to navigate.
-    if (onDone) onDone();
+    replace(built.stops.map((s) => s.ganpati.slug));
+    trackEvent('plan_created', {
+      props: {
+        source: 'wizard',
+        budget: budget ?? 0,
+        pace,
+        interests: [...interests].join(','),
+        stops: built.stops.length,
+      },
+    });
+
+    if (onDone) onDone({ skipped: built.skipped.length, budgetMinutes: budget ?? 0 });
     else router.push('/plan');
   };
 
-  const steps = ['Time', 'What to see', 'Your route'];
+  const steps = ['Time', 'What to see'];
 
   /**
    * The step heading. An <h1> on its own page, an <h2> inside the planner,
@@ -333,172 +334,6 @@ export function StartWizard({
         </section>
       )}
 
-      {/* ---------------- Step 3: result ---------------- */}
-      {step === 2 && plan && (
-        <section className="mt-6">
-          {/* "Your route", not "Your darshan". The planner's own heading is
-              "Your darshan" and its empty state is "Plan your darshan", so
-              on one page there were three headings whose names differed by
-              a prefix — ambiguous to anyone navigating by heading, and to
-              any test trying to name one. This also matches the step's own
-              label in the progress bar above. */}
-          <Heading className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
-            Your route
-          </Heading>
-
-          {plan.stops.length === 0 ? (
-            <div className="mt-4 surface rounded-[var(--radius-card)] border border-[var(--line)] p-5">
-              <p className="text-[15px] font-semibold text-[var(--chandan)]">
-                Nothing fits in {formatDuration((budget ?? 0) * 60)}
-              </p>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
-                With queuing counted, even one mandal needs more time than
-                that. Try a longer window, or a quicker pace.
-              </p>
-              <Button variant="secondary" size="sm" className="mt-4" onClick={() => setStep(0)}>
-                Change my answers
-              </Button>
-            </div>
-          ) : (
-            <>
-              <p className="mt-1 text-[14px] text-[var(--muted)]">
-                {plan.stops.length} mandals · about {formatDuration(plan.totalMinutes * 60)} of
-                your {formatDuration(plan.budgetMinutes * 60)}
-              </p>
-
-              <MiniMap
-                mandals={plan.stops.map((s) => s.ganpati)}
-                ordered
-                className="mt-4 h-56 w-full"
-              />
-
-              {/* The train is only worth describing once there is a route to
-                  catch it for, so it lives on the result rather than beside
-                  the mode chips. */}
-              {mode === 'metro' && plan.stops[0] && (
-                <div className="mt-4">
-                  <MetroJourneyCard
-                    alight={station}
-                    walkToFirstM={haversine(
-                      { lat: station.lat, lng: station.lng },
-                      {
-                        lat: plan.stops[0].ganpati.location.lat,
-                        lng: plan.stops[0].ganpati.location.lng,
-                      }
-                    )}
-                    firstStopName={plan.stops[0].ganpati.name}
-                    firstStop={{
-                      lat: plan.stops[0].ganpati.location.lat,
-                      lng: plan.stops[0].ganpati.location.lng,
-                    }}
-                    home={returnStation(plan.stops.map((s) => s.ganpati))}
-                  />
-                </div>
-              )}
-
-              <div className="mt-4 flex flex-wrap gap-2 text-[12px] text-[var(--faint)]">
-                <span className="rounded-full border border-[var(--line)] px-2.5 py-1">
-                  {formatDuration(plan.darshanMinutes * 60)} darshan
-                </span>
-                <span className="rounded-full border border-[var(--line)] px-2.5 py-1">
-                  {formatDuration(plan.travelMinutes * 60)} travel
-                </span>
-              </div>
-
-              {/* Said plainly, because otherwise the same budget quietly
-                  produces a different plan at different times of day and
-                  looks unreliable rather than current. */}
-              {plan.crowdAdjusted && (
-                <p className="mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
-                  Darshan times allow for what devotees are reporting right now.
-                  A mandal with a heavy queue takes more of your{' '}
-                  {formatDuration(plan.budgetMinutes * 60)}, so fewer fit.
-                </p>
-              )}
-
-              {/* Adjusting pace here rewrites the plan in place, so the
-                  trade-off is visible instead of hypothetical. */}
-              <fieldset className="mt-5">
-                <legend className="mb-2 text-[13px] text-[var(--muted)]">
-                  Want more mandals, or longer at each one?
-                </legend>
-                <div className="scroll-x flex gap-2">
-                  {PACES.map((p) => (
-                    <Chip
-                      key={p.key}
-                      selected={pace === p.key}
-                      onClick={() => setPace(p.key)}
-                      
-                    >
-                      {p.label}
-                    </Chip>
-                  ))}
-                </div>
-              </fieldset>
-
-              <ol className="mt-4 space-y-2">
-                {plan.stops.map((stop, i) => (
-                  <li
-                    key={stop.ganpati.id}
-                    className="flex items-center gap-3 surface rounded-[var(--radius-card)] border border-[var(--line)] p-3"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--shendur)] text-[13px] font-bold text-[#1a0e04]"
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <Link
-                        href={`/ganpati/${stop.ganpati.slug}`}
-                        className="block truncate text-[14px] font-semibold text-[var(--chandan)]"
-                      >
-                        {stop.ganpati.name}
-                      </Link>
-                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-[var(--faint)]">
-                        <MapPin size={11} aria-hidden="true" />
-                        {stop.ganpati.area.name}
-                        <span className="text-[var(--zendu)]">~{stop.darshanMinutes} min</span>
-                        {stop.crowd && (
-                          <span
-                            className="flex items-center gap-1"
-                            style={{ color: CROWD_COLOR[stop.crowd] }}
-                          >
-                            <CrowdDot level={stop.crowd} size={7} />
-                            {CROWD_WORD[stop.crowd]} now
-                          </span>
-                        )}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-
-              <Button onClick={useThisPlan} size="lg" full className="mt-5">
-                Use this route
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                full
-                className="mt-2"
-                onClick={() => setStep(0)}
-              >
-                Start over
-              </Button>
-
-              <p className="mt-4 text-[12px] leading-relaxed text-[var(--faint)]">
-                Times are estimates and queues vary a lot by time of day
-                {plan.hasUnknownDwell && ', and some mandals have no published queue estimate'}.
-                {plan.skipped.length > 0 && (
-                  <> {plan.skipped.length} more {plan.skipped.length === 1 ? 'mandal' : 'mandals'} matched
-                  what you picked but wouldn&rsquo;t fit — allow more time to include {plan.skipped.length === 1 ? 'it' : 'them'}.</>
-                )}
-              </p>
-            </>
-          )}
-        </section>
-      )}
     </div>
   );
 }

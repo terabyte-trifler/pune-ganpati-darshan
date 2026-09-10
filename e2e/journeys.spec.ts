@@ -195,16 +195,16 @@ test('Flow 6 — share copies a working link', async ({ page, context }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Kasba Ganpati');
 });
 
-test('Flow 9 — the wizard builds a route that fits the time budget', async ({ page }) => {
+test('Flow 9 — the builder produces a route that fits the time budget', async ({ page }) => {
   /**
    * Pinned to an empty tracker on purpose.
    *
-   * The wizard now spends the budget against live crowd, so with real
-   * reports the same two hours legitimately fits a different number of
-   * mandals depending on the queues that evening. That is the feature —
-   * but it makes this test a measurement of Pune's mood rather than of the
-   * budget arithmetic, and it would fail at 9pm on a busy Tuesday for
-   * entirely correct reasons.
+   * The builder spends the budget against live crowd, so with real reports
+   * the same two hours legitimately fits a different number of mandals
+   * depending on the queues that evening. That is the feature — but it
+   * makes this test a measurement of Pune's mood rather than of the budget
+   * arithmetic, and it would fail at 9pm on a busy Tuesday for entirely
+   * correct reasons.
    *
    * The crowd-adjusted path is covered deterministically by unit tests in
    * services/__tests__/itinerary.test.ts.
@@ -219,43 +219,36 @@ test('Flow 9 — the wizard builds a route that fits the time budget', async ({ 
 
   await page.goto('/plan?build=1');
 
-  // Two questions only: how long, and what to see.
+  // Two questions only: how long, and what to see. Building takes the route
+  // — there is no separate result screen to confirm from.
   await page.getByRole('button', { name: '2 hours' }).click();
   await page.getByRole('button', { name: /The famous ones/i }).click();
   await page.getByRole('button', { name: /Build my route/i }).click();
 
-  await expect(page.getByRole('heading', { name: 'Your route' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
 
   // The headline claim must hold: the plan fits inside the chosen budget.
-  const summary = await page.getByText(/of your 2 hr/).textContent();
+  const summary = await page.getByText(/walk \+ darshan/).first().textContent();
   expect(summary).toBeTruthy();
-  const match = summary!.match(/about (?:(\d+) hr ?)?(?:(\d+) min)?/);
+
+  const total = await page.getByText(/^\d+ hr( \d+ min)?$|^\d+ min$/).first().textContent();
+  const match = total!.match(/(?:(\d+) hr ?)?(?:(\d+) min)?/);
   const totalMinutes = Number(match?.[1] ?? 0) * 60 + Number(match?.[2] ?? 0);
   expect(totalMinutes).toBeGreaterThan(0);
   expect(totalMinutes, 'plan must fit the 2 hour budget').toBeLessThanOrEqual(120);
 
-  // Queue time must be shown separately — it is the part people underestimate.
-  await expect(page.getByText(/darshan$/).first()).toBeVisible();
-  await expect(page.getByText(/travel$/).first()).toBeVisible();
+  // Queue time must be shown separately — it is the part people
+  // underestimate, and it is why the plan is not just a walk.
+  await expect(page.getByText(/walk \+ darshan/).first()).toBeVisible();
 
-  // Pace is adjusted on the result, where its effect is visible. Queuing at
-  // every stop must fit fewer mandals than viewing mostly from the road —
-  // this also guards the dwell times actually reaching the planner, which
-  // they once did not.
-  const countStops = async () =>
-    Number((await page.getByText(/\d+ mandals · about/).first().textContent())
-      ?.match(/(\d+) mandals/)?.[1] ?? 0);
+  // Pace moved onto the plan, where it can be judged against a real route.
+  // It changes how long the stops take, not which stops they are.
+  const stopCount = async () =>
+    Number((await page.getByText(/\d+ stops? ·/).first().textContent())?.match(/(\d+) stop/)?.[1] ?? 0);
 
+  const before = await stopCount();
   await page.getByRole('button', { name: /^Queue at every stop$/ }).click();
-  const thorough = await countStops();
-  await page.getByRole('button', { name: /^Mostly from outside$/ }).click();
-  const quick = await countStops();
-  expect(quick).toBeGreaterThan(thorough);
-
-  // Taking the route hands it to the planner.
-  await page.getByRole('button', { name: /Use this route/i }).click();
-  await expect(page).toHaveURL(/\/plan/);
-  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+  expect(await stopCount(), 'pace must not add or drop stops').toBe(before);
 });
 
 test('Flow 10 — curated routes are browsable and reusable', async ({ page }) => {
@@ -523,7 +516,7 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
   // still produce a route from it.
   await page.getByRole('button', { name: /^Kasba Peth/ }).click();
   await page.getByRole('button', { name: /Build my route/i }).click();
-  await expect(page.getByRole('heading', { name: 'Your route' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
 });
 
 test('Flow 13 — the planner offers metro and starts the route from a station', async ({ page }) => {
@@ -764,14 +757,13 @@ test('Flow 17 — building and managing a darshan are one page', async ({ page }
 
   await page.getByRole('button', { name: '2 hours' }).click();
   await page.getByRole('button', { name: /The famous ones/i }).click();
+  // Building IS taking. There is no confirmation step: nobody builds a
+  // route in order to reject it, and the planner below showed the same
+  // stops in a second layout. It must also drop ?build=1, so a refresh
+  // does not reopen the builder over the route it just produced.
   await page.getByRole('button', { name: /Build my route/i }).click();
-  await expect(page.getByRole('heading', { name: 'Your route' })).toBeVisible();
-
-  // Taking the route must NOT navigate — that handoff is the thing being
-  // removed — and must drop ?build=1 so a refresh does not reopen the
-  // builder over the route it just produced.
-  await page.getByRole('button', { name: /Use this route/i }).click();
   await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByRole('button', { name: /^Use this route$/ })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
   await expect(page.locator('h1')).toHaveCount(1);
 

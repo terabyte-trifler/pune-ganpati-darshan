@@ -19,7 +19,7 @@ import { StartRouteButton } from './StartRouteButton';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdBadge } from '@/features/crowd/CrowdBadge';
 import { useCrowdState } from '@/features/crowd/useCrowd';
-import { dwellMinutes } from '@/services/itinerary';
+import { dwellMinutes, type DarshanPace } from '@/services/itinerary';
 import {
   PUNE_CENTER, haversine, formatDistance, formatDuration,
   estimateDurationSeconds, DETOUR_FACTOR, type LatLng,
@@ -46,6 +46,17 @@ import type { Ganpati, TravelMode } from '@/types/ganpati';
  * where Metro names the one that actually gets you in, and sets the
  * route's starting point rather than its speed.
  */
+/**
+ * Pace changes how long the stops take, not which stops they are — the
+ * plan is yours. It decides whether you queue at Dagdusheth or take
+ * darshan from the road, which is most of the difference in an evening.
+ */
+const PACES: Array<{ key: DarshanPace; label: string }> = [
+  { key: 'thorough', label: 'Queue at every stop' },
+  { key: 'balanced', label: 'A bit of both' },
+  { key: 'quick', label: 'Mostly from outside' },
+];
+
 const MODES: Array<{ key: TravelMode; label: string; icon: typeof Footprints }> = [
   { key: 'walk', label: 'Walk', icon: Footprints },
   { key: 'two_wheeler', label: 'Two-wheeler', icon: Bike },
@@ -104,6 +115,20 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
    * for someone who already has stops saved.
    */
   const [buildRequested, setBuildRequested] = useState(false);
+
+  /**
+   * How thoroughly you intend to do it.
+   *
+   * This lived on the wizard's result screen, where it decided how many
+   * mandals fitted the budget. Here it does the honest thing instead: the
+   * stops are yours and it does not add or drop any, it changes how long
+   * they are expected to take — queuing at Dagdusheth or looking from the
+   * road is most of the difference in an evening.
+   */
+  const [pace, setPace] = useState<DarshanPace>('balanced');
+
+  /** What the last build produced, so the planner can explain the result. */
+  const [buildNote, setBuildNote] = useState<{ skipped: number; budgetMinutes: number } | null>(null);
 
   const bySlug = useMemo(
     () => new Map(ganpatis.map((g) => [g.slug, g])),
@@ -198,10 +223,10 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     () =>
       stops.reduce(
         (sum, g) =>
-          sum + dwellMinutes(g, 'balanced', crowdState.byMandalId[g.id]?.status ?? null) * 60,
+          sum + dwellMinutes(g, pace, crowdState.byMandalId[g.id]?.status ?? null) * 60,
         0
       ),
-    [stops, crowdState]
+    [stops, crowdState, pace]
   );
 
   const optimize = async () => {
@@ -271,7 +296,11 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
 
         {/* The builder, not a dead end telling you to go somewhere else. */}
         <div className="mt-5">
-          <StartWizard mandals={ganpatis} embedded onDone={closeWizard} />
+          <StartWizard
+            mandals={ganpatis}
+            embedded
+            onDone={(built) => { setBuildNote(built); closeWizard(); }}
+          />
         </div>
       </div>
     );
@@ -338,7 +367,11 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
             Taking a new route replaces the {stops.length}{' '}
             {stops.length === 1 ? 'stop' : 'stops'} below.
           </p>
-          <StartWizard mandals={ganpatis} embedded onDone={closeWizard} />
+          <StartWizard
+            mandals={ganpatis}
+            embedded
+            onDone={(built) => { setBuildNote(built); closeWizard(); }}
+          />
         </section>
       ) : (
         !sharedSlugs && (
@@ -351,6 +384,37 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
             Build a different route
           </button>
         )
+      )}
+
+      {/* ---------------- What the last build left out ---------------- */}
+      {buildNote && buildNote.skipped > 0 && (
+        <p className="mt-4 rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3 py-2.5 text-[12px] leading-relaxed text-[var(--muted)]">
+          {buildNote.skipped} more {buildNote.skipped === 1 ? 'mandal' : 'mandals'} matched
+          what you picked but wouldn&rsquo;t fit in{' '}
+          {formatDuration(buildNote.budgetMinutes * 60)} — allow more time, or add
+          them yourself.
+        </p>
+      )}
+
+      {/* ---------------- Pace ---------------- */}
+      {!sharedSlugs && (
+        <div className="mt-4">
+          <h2 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            How you&rsquo;ll do it
+          </h2>
+          <div className="scroll-x flex gap-2">
+            {PACES.map((p) => (
+              <Chip
+                key={p.key}
+                selected={pace === p.key}
+                onClick={() => setPace(p.key)}
+                className="whitespace-nowrap"
+              >
+                {p.label}
+              </Chip>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ---------------- Travel mode ---------------- */}
