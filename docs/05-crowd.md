@@ -356,7 +356,8 @@ for.
 
 `admin_bootstrap_emails` makes the intended first admin explicit and auditable.
 An address listed there becomes an admin when that person signs in normally
-(Google OAuth or an email magic link — there are no passwords). No account is
+(an email magic link — there are no passwords, and sign-in is
+allowlisted to the site owner). No account is
 created on anyone's behalf. It is a bootstrap: once an admin exists, further
 admins should be granted by an admin.
 

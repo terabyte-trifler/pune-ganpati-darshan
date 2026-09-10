@@ -9,8 +9,13 @@ export const metadata: Metadata = { title: 'Sign in', robots: { index: false } }
 export const dynamic = 'force-dynamic';
 
 /**
- * Sign-in exists only for synced favourites, saved plans and admin.
- * Browsing, search, the map and planning never require it (§29).
+ * Sign-in exists only for admin now. Accounts are allowlisted to the
+ * owner in the database, so the favourites-sync and saved-plans reasons
+ * this page used to give are no longer reachable by anyone else, and
+ * offering them here would be a promise the trigger refuses.
+ *
+ * Browsing, search, the map, planning and crowd reports never require it
+ * (§29) — that part is unchanged and is the load-bearing half.
  */
 export default async function SignInPage() {
   const user = await getSessionUser();
@@ -21,9 +26,13 @@ export default async function SignInPage() {
         <h1 className="text-[24px] font-extrabold tracking-tight text-[var(--chandan)]">
           Sign in
         </h1>
+        {/* Says up front what the outcome will be. Sign-in is allowlisted
+            to the site admin now, so inviting a visitor to type an email
+            and then refusing it wastes their time and reads as a fault. */}
         <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--muted)]">
-          Only needed to sync saved mandals across devices, or to manage the
-          catalogue. Everything else works without an account.
+          Sign-in is for the site admin, to manage the catalogue. Everything
+          else — mandals, the map, routes and crowd reports — works without an
+          account, and always will.
         </p>
 
         {!features.supabase ? (
