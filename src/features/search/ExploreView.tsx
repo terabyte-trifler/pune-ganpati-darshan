@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, X, SlidersHorizontal, LocateFixed } from 'lucide-react';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { Chip } from '@/components/ui/Chip';
@@ -23,13 +23,19 @@ import type { Area, Ganpati, GanpatiCategory } from '@/types/ganpati';
 const DISTANCE_BANDS = [1000, 3000, 5000, 10_000] as const;
 
 export function ExploreView({
-  ganpatis, areas, categories, initialCategory, initialArea,
+  ganpatis, areas, categories, initialCategory, initialArea, autoFocus = false,
 }: {
   ganpatis: Ganpati[];
   areas: Area[];
   categories: Array<{ key: GanpatiCategory; name: string; nameMr: string | null }>;
   initialCategory?: GanpatiCategory;
   initialArea?: string;
+  /**
+   * Focus the search field on arrival. Set only when the visitor came here
+   * to search — a plain visit to /explore should not open a keyboard over
+   * the list of somebody who came to browse.
+   */
+  autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<Set<GanpatiCategory>>(
@@ -110,6 +116,24 @@ export function ExploreView({
     setSavedOnly(false);
   };
 
+  /**
+   * Focus the field when the visitor arrived here to search.
+   *
+   * The home page and the map both show something that looks exactly like
+   * a search box — rounded field, magnifier, placeholder — and is a link
+   * to this page. Tapping it used to land you here with nothing focused,
+   * so what looked like one tap was two taps and a page load, and on a
+   * phone the keyboard never came up.
+   *
+   * Only on ?q= or ?focus=1, never on a plain visit to /explore: stealing
+   * focus on arrival scrolls a sticky field into view and opens a keyboard
+   * over the list for someone who came to browse.
+   */
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (autoFocus) searchRef.current?.focus();
+  }, [autoFocus]);
+
   return (
     <div className="mx-auto max-w-5xl">
       {/* ---------------- Search ---------------- */}
@@ -125,6 +149,7 @@ export function ExploreView({
               className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--shendur)]"
             />
             <input
+              ref={searchRef}
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

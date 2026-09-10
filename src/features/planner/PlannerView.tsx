@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Reorder, useDragControls } from 'motion/react';
 import { usePlan } from '@/hooks/useLocalCollection';
-import { useGeolocation } from '@/hooks/useGeolocation';
+import { useGeolocation, useResolveLocation } from '@/hooks/useGeolocation';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
@@ -95,6 +95,17 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     return slugs.length > 0 ? slugs : null;
   }, [searchParams, ganpatis]);
   const { state: geo, request: requestLocation } = useGeolocation();
+  /**
+   * Use a permission already granted.
+   *
+   * The position lives in a module store that a fresh page load starts
+   * empty, and only the home page auto-resolves it. So opening /plan
+   * directly — a bookmark, a shared link, a reload — planned the route
+   * from "Pune city centre" while the browser had a fix all along, and
+   * silently ordered the stops from the wrong point. This never opens a
+   * dialog; it only picks up a permission the visitor has already given.
+   */
+  useResolveLocation();
   const [mode, setMode] = useState<TravelMode>('walk');
   const [result, setResult] = useState<RouteResult | null>(null);
   const [error, setError] = useState<string | null>(null);

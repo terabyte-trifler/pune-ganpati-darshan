@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { usePlan } from '@/hooks/useLocalCollection';
-import { useGeolocation } from '@/hooks/useGeolocation';
+import { useGeolocation, useResolveLocation } from '@/hooks/useGeolocation';
 import { buildItinerary, type DarshanPace, type Interest } from '@/services/itinerary';
 import { useCrowdState } from '@/features/crowd/useCrowd';
 import type { CrowdLevel } from '@/types/crowd';
@@ -83,6 +83,9 @@ export function StartWizard({
   const router = useRouter();
   const { replace } = usePlan();
   const { state: geo, request: requestLocation } = useGeolocation();
+  // Same reason as the planner: a cold open of /start otherwise builds
+  // the route from the city centre despite location being granted.
+  useResolveLocation();
 
   const [step, setStep] = useState(0);
   const [budget, setBudget] = useState<number | null>(null);

@@ -919,3 +919,64 @@ test('Flow 19 — the footer is on every page except the ones it would spoil', a
     expect(res.status(), `${href} is linked from the footer`).toBeLessThan(400);
   }
 });
+
+test.describe('arriving with location already granted', () => {
+  test.use({
+    permissions: ['geolocation'],
+    // Standing beside Dagdusheth, in Budhwar Peth.
+    geolocation: { latitude: 18.5155, longitude: 73.8562, accuracy: 20 },
+  });
+
+  test('Flow 20 — a cold open plans from where you are, not the city centre', async ({ page }) => {
+    /**
+     * The position lives in a module store that a fresh page load starts
+     * empty, and only the home page auto-resolved it. So opening /plan or
+     * /start directly — a bookmark, a shared link, a reload — planned the
+     * route from "Pune city centre" while the browser had a fix all along,
+     * and ordered the stops from the wrong point without saying so.
+     *
+     * Navigating from the home page hid it, because the store survives a
+     * client-side transition. Only a cold open showed it, which is why it
+     * lasted.
+     */
+    await page.addInitScript(() =>
+      window.localStorage.setItem(
+        'pg.plan',
+        JSON.stringify(['kasba-ganpati', 'tulshibaug-ganpati'])
+      )
+    );
+
+    await page.goto('/plan');
+    await expect(page.getByText(/from Your location/)).toBeVisible();
+    await expect(page.getByText(/Starting from Pune city centre/)).toHaveCount(0);
+
+    await page.goto('/start');
+    await page.getByRole('button', { name: '3 hours' }).click();
+    await expect(page.getByText(/Starting from Pune city centre/)).toHaveCount(0);
+
+    // And the metro card stops asking for something already granted.
+    await page.goto('/routes/manache-5-sakal-walk');
+    await expect(page.getByText(/^Board at /)).toBeVisible();
+  });
+});
+
+test('Flow 21 — the search affordance lands you in a focused field', async ({ page }) => {
+  /**
+   * The home page and the map both show something that looks exactly like
+   * a search box — rounded field, magnifier, placeholder text — and is a
+   * link to /explore. Tapping it landed you there with nothing focused, so
+   * what looked like one tap was two taps and a page load, and on a phone
+   * the keyboard never came up.
+   */
+  for (const from of ['/', '/map']) {
+    await page.goto(from);
+    await page.getByRole('link', { name: /Search/ }).first().click();
+    await expect(page).toHaveURL(/\/explore\?focus=1$/);
+    await expect(page.locator('input[type="search"]')).toBeFocused();
+  }
+
+  // A plain visit must NOT steal focus: opening a keyboard over the list
+  // for somebody who came to browse is the opposite mistake.
+  await page.goto('/explore');
+  await expect(page.locator('input[type="search"]')).not.toBeFocused();
+});

@@ -162,7 +162,7 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
         style={{ paddingTop: 'calc(var(--safe-top) + 10px)' }}
       >
         <Link
-          href="/explore"
+          href="/explore?focus=1"
           className="pointer-events-auto flex h-12 items-center gap-2.5 rounded-full border border-[var(--line-strong)] bg-[var(--raat)]/92 px-4 text-[14px] text-[var(--faint)] shadow-[var(--shadow-float)] backdrop-blur-xl"
         >
           <Search size={17} aria-hidden="true" className="text-[var(--shendur)]" />

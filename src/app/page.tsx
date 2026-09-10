@@ -86,7 +86,7 @@ export default async function HomePage() {
           </p>
 
           <Link
-            href="/explore"
+            href="/explore?focus=1"
             className="surface mt-4 flex min-h-12 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
           >
             <Search size={19} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
@@ -224,7 +224,7 @@ export default async function HomePage() {
 
       {/* ---------------- Iconic ---------------- */}
       <section className="mt-10">
-        <SectionHeader title="Pune's most iconic" titleMr="प्रसिद्ध गणपती" href="/explore" />
+        <SectionHeader title="Pune's most iconic" titleMr="प्रसिद्ध गणपती" href="/explore?focus=1" />
         <div className="scroll-x flex gap-3 px-4 pb-1">
           {iconic.map((g, i) => (
             <GanpatiCard key={g.id} ganpati={g} compact priority={i < 2} />

@@ -3,7 +3,7 @@
 import {
   TrainFront, LocateFixed, Loader2, Footprints, TriangleAlert, CornerUpLeft,
 } from 'lucide-react';
-import { useGeolocation } from '@/hooks/useGeolocation';
+import { useGeolocation, useResolveLocation } from '@/hooks/useGeolocation';
 import {
   planMetroJourney, journeySeconds, blockedNearerStation,
   LINE_COLOR, LINE_NAME, primaryLine,
@@ -102,6 +102,9 @@ export function MetroJourneyCard({
   home?: NearestStation | null;
 }) {
   const { state, request } = useGeolocation();
+  // Without this the card asks "Which train do I take?" of somebody who
+  // granted location two screens ago.
+  useResolveLocation();
   const here = state.status === 'ready' ? state.position : null;
   const journey = here ? planMetroJourney(here, alight) : null;
 
