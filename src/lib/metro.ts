@@ -104,21 +104,26 @@ export const LINE_NAME: Record<MetroLine, string> = {
  * ---------------------------------------------------------------------
  * How accurate these coordinates are, stated plainly.
  *
- * They are station-box centres placed from published station locations,
- * good to roughly a hundred metres — not surveyed entrance positions.
+ * The five darshan stations — PMC, Kasba Peth, Mandai, Sambhaji Udyan and
+ * Deccan Gymkhana — are EXACT, supplied by the site owner from the ground.
+ * They replaced approximations of mine that were wrong by 200 to 590
+ * metres, which is worth recording because those approximations had been
+ * described in this file as good to about a hundred metres. They were not,
+ * and the error was large enough to change which station the app sent
+ * people to: see PRIMARY_PREFERENCE_M, which exists because of what the
+ * corrected positions revealed.
  *
- * For the five darshan stations that matters less than it sounds, because
- * a station has several exits and choosing the wrong one costs more than
- * the error here does: Mandai's open on opposite sides of the market. So
- * each carries an exitNote, and the app never quotes a second-precision
- * walking time from a platform.
+ * The rest of the network is still approximate — station-box centres from
+ * published locations. That is tolerable there and nowhere else, because
+ * those stations are only ever used to answer "which station is nearest to
+ * you", and consecutive stations are roughly a kilometre apart, so a few
+ * hundred metres does not change the answer. They must not be used to
+ * quote a walking distance to anything.
  *
- * For the rest of the network it matters even less: they are used only to
- * answer "which station is nearest to you", and consecutive stations are
- * roughly a kilometre apart, so a hundred metres does not change the
- * answer. Where it could — two stations close together, like Deccan
- * Gymkhana and Sambhaji Udyan — both are in the same place going the same
- * way, so either answer gets you on the right train.
+ * Even for the exact five, the app does not quote a second-precision walk
+ * from a platform: a station has several exits and choosing the wrong one
+ * costs more than any of this: Mandai's open on opposite sides of the
+ * market. That is what exitNote is for.
  *
  * If a coordinate is wrong on the ground, fix it here. This is the only
  * place any of them appear.
@@ -147,8 +152,8 @@ export const METRO_STATIONS: MetroStation[] = [
     name: 'PMC',
     nameMr: 'पीएमसी',
     lines: ['aqua'],
-    lat: 18.5272,
-    lng: 73.8502,
+    lat: 18.522746839064048,
+    lng: 73.85325942858569,
     tier: 'primary',
     canAlight: true,
     exitNote:
@@ -160,23 +165,23 @@ export const METRO_STATIONS: MetroStation[] = [
     name: 'Kasba Peth',
     nameMr: 'कसबा पेठ',
     lines: ['purple'],
-    lat: 18.5186,
-    lng: 73.8562,
+    lat: 18.521395075715304,
+    lng: 73.85953413813881,
     tier: 'primary',
     canAlight: true,
     exitNote:
       'Comes up on Shivaji Road. Kasba Ganpati — the first of the Manache ' +
-      'Paach — is a few minutes away, so the ceremonial order starts here. ' +
-      'The nearest station you can actually arrive at for the Budhwar Peth ' +
-      'mandals, now that Mandai is exit-only.',
+      'Paach — is about 350 m away, so the ceremonial order starts here. ' +
+      'It is also the arrival station for the Budhwar Peth mandals now ' +
+      'that Mandai is exit-only, though Dagdusheth is a 770 m walk down.',
   },
   {
     id: 'mandai',
     name: 'Mandai',
     nameMr: 'मंडई',
     lines: ['purple'],
-    lat: 18.5113,
-    lng: 73.8563,
+    lat: 18.51270306154373,
+    lng: 73.85748863114874,
     // Still 'primary' — it is prominent, central, and the station most
     // people will head for. It is simply not one you can arrive at.
     tier: 'primary',
@@ -184,37 +189,40 @@ export const METRO_STATIONS: MetroStation[] = [
     alightNote:
       'Mandai runs one way during the festival: you can board here to go ' +
       'home, but trains do not let passengers off. Get off at Kasba Peth ' +
-      'and walk down instead — about fifteen minutes to Tulshibaug.',
+      'and walk down instead — Tulshibaug is about 900 m from there.',
     exitNote:
       'Mahatma Phule Mandai. Boarding only during the festival — this is ' +
-      'where you catch the train back, not where you arrive.',
+      'where you catch the train back, not where you arrive. Closest ' +
+      'station to the Mandai and Tulshibaug mandals, which is exactly why ' +
+      'its being one-way costs so much.',
   },
   {
     id: 'sambhaji-udyan',
     name: 'Sambhaji Udyan',
     nameMr: 'संभाजी उद्यान',
     lines: ['aqua'],
-    lat: 18.5213,
-    lng: 73.8437,
+    lat: 18.520226794497926,
+    lng: 73.84798920582429,
     tier: 'secondary',
     canAlight: true,
     exitNote:
-      'On Jangli Maharaj Road, across the river from the peths. About a ' +
-      '20-minute walk in over Sambhaji Bridge — worth it only if you are ' +
-      'already on the Aqua Line.',
+      'On Jangli Maharaj Road. Around a kilometre from the Budhwar Peth ' +
+      'mandals — worth it if you are already on the Aqua Line, though ' +
+      'Deccan Gymkhana is closer to the western peths.',
   },
   {
     id: 'deccan-gymkhana',
     name: 'Deccan Gymkhana',
     nameMr: 'डेक्कन जिमखाना',
     lines: ['aqua'],
-    lat: 18.5172,
-    lng: 73.8414,
+    lat: 18.516326,
+    lng: 73.844411,
     tier: 'secondary',
     canAlight: true,
     exitNote:
-      'Deccan. The furthest of these from the mandals — a good half hour on ' +
-      'foot to Kasba. Useful coming from the west, not as a starting point.',
+      'Deccan. A long way from Kasba and Dagdusheth, but the closest ' +
+      'station by some distance to the western peths — Garud, Mati, Hatti ' +
+      'and Rajaram are all within 600 m of here.',
   },
 
   /* ---------------- The interchange ---------------- */
@@ -340,6 +348,34 @@ export function stationById(id: string): MetroStation | null {
 export const ANCHOR_MAX_M = 2_500;
 
 /**
+ * How much further a primary station may be before a secondary one wins.
+ *
+ * The rule used to be absolute: a primary station beat a secondary one
+ * however much closer the secondary was. The stated reason was that
+ * straight-line distance flatters the Aqua Line stations because the crow
+ * does not cross the river on Sambhaji Bridge — and that reason was built
+ * on coordinates of mine that put Deccan Gymkhana and Sambhaji Udyan some
+ * 330–470 m west of where they actually are.
+ *
+ * With the real positions the absolute rule is indefensible. It would send
+ * someone to Garud Ganpati out at PMC, 1,290 m away, when Deccan Gymkhana
+ * is 318 m from the mandal. Measured across the catalogue it costs seven
+ * mandals between 400 m and 970 m of unnecessary walking — Garud, Hatti,
+ * Mati, Rajaram, Perugate, Kesariwada and Sarasbaug.
+ *
+ * So the preference survives but stops being absolute. Inside this margin
+ * the primary station still wins: the difference is within the error of
+ * using straight lines near a river, and a station in the peths is the
+ * better answer when the distances are comparable. Beyond it the secondary
+ * is genuinely closer by more than the method's own uncertainty, and
+ * pretending otherwise is just the old bug with better coordinates.
+ *
+ * This is a judgement, not a measurement. Raise it towards Infinity to get
+ * the old always-primary behaviour back.
+ */
+export const PRIMARY_PREFERENCE_M = 400;
+
+/**
  * How far someone will plausibly walk to a station they are boarding at.
  *
  * More generous than ANCHOR_MAX_M, and for a different reason: the walk to
@@ -377,19 +413,23 @@ function nearestIn(
  * all — it is one-way during the festival. Both would otherwise win on
  * distance, which is why this filters by role rather than sorting by it.
  *
- * Primary stations are preferred outright rather than by distance: from
- * most of Shaniwar Peth, Sambhaji Udyan is closer as the crow flies than
- * Kasba Peth is, but the crow does not cross the river on Sambhaji Bridge.
- * A secondary station is returned only when no primary one is in range.
+ * Primary stations are preferred, but no longer at any cost — a secondary
+ * one wins when it is closer by more than PRIMARY_PREFERENCE_M. See that
+ * constant for why the preference is not absolute any more; the short
+ * version is that it was calibrated against coordinates that turned out to
+ * be several hundred metres wrong.
  */
 export function nearestStation(
   point: LatLng,
   maxDistanceM = ANCHOR_MAX_M
 ): NearestStation | null {
-  return (
-    nearestIn(PRIMARY_STATIONS, point, maxDistanceM) ??
-    nearestIn(ARRIVAL_STATIONS, point, maxDistanceM)
-  );
+  const primary = nearestIn(PRIMARY_STATIONS, point, maxDistanceM);
+  const any = nearestIn(ARRIVAL_STATIONS, point, maxDistanceM);
+  if (!primary) return any;
+  if (!any) return primary;
+  // `any` includes the primaries, so this is only a real choice when the
+  // winner is a secondary station.
+  return any.distanceM + PRIMARY_PREFERENCE_M < primary.distanceM ? any : primary;
 }
 
 /**

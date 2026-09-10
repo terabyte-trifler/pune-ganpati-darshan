@@ -565,8 +565,8 @@ test.describe('which train to take', () => {
 
     // Where to get off never needed a location, so it is there immediately,
     // and it is never Mandai.
-    await expect(page.getByText(/Get off at (Kasba Peth|PMC)/)).toBeVisible();
-    await expect(page.getByText(/Get off at Mandai/)).toHaveCount(0);
+    await expect(page.getByText(/^Get off at (Kasba Peth|PMC)$/)).toBeVisible();
+    await expect(page.getByText(/^Get off at Mandai$/)).toHaveCount(0);
 
     // The train home leaves from a station you could not have arrived at,
     // and the card must say both halves of that.

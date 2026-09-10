@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   METRO_STATIONS, DARSHAN_STATIONS, ARRIVAL_STATIONS, EXIT_ONLY_STATIONS,
-  PRIMARY_STATIONS, LINE_ORDER, ANCHOR_MAX_M,
+  PRIMARY_STATIONS, LINE_ORDER, ANCHOR_MAX_M, PRIMARY_PREFERENCE_M,
   nearestStation, nearestBoardingStation, stationForRoute, stationById,
   planMetroJourney, primaryLine, blockedNearerStation, returnStation,
 } from '@/lib/metro';
@@ -18,9 +18,18 @@ import { toTravelMode } from '@/db/database.types';
  * somewhere they cannot walk.
  */
 
-/** Real positions from the catalogue, so the fixtures are not invented. */
-const DAGDUSHETH = { lat: 18.5163, lng: 73.8567 };
-const KASBA_GANPATI = { lat: 18.5196, lng: 73.8553 };
+/**
+ * Real positions from the catalogue, copied exactly.
+ *
+ * These were approximations until the station coordinates were corrected
+ * and every expectation built on them turned out to be measuring my own
+ * guesses rather than the product. Distances quoted in the tests below are
+ * the true ones, so a coordinate change breaks them loudly.
+ */
+const DAGDUSHETH = { lat: 18.51514, lng: 73.856379 };
+const KASBA_GANPATI = { lat: 18.51903, lng: 73.857241 };
+/** Out west by the river, where the Aqua Line genuinely wins. */
+const GARUD = { lat: 18.5137, lng: 73.8456 };
 const MORYA_GOSAVI = { lat: 18.6440, lng: 73.7960 };
 
 describe('travel mode coercion', () => {
@@ -56,9 +65,12 @@ describe('metro is an anchor, not a leg', () => {
 
 describe('nearestStation', () => {
   it('picks the station you would actually walk from', () => {
+    // Kasba Peth is 771 m from Dagdusheth; PMC is 908 m and the Aqua Line
+    // stations over a kilometre. Mandai is 295 m and excluded — it is
+    // boarding-only.
     const found = nearestStation(DAGDUSHETH);
     expect(found?.station.id).toBe('kasba-peth');
-    expect(found!.distanceM).toBeLessThan(600);
+    expect(found!.distanceM).toBeCloseTo(771, -2);
   });
 
   it('never sends anyone to get off at Mandai', () => {
@@ -73,14 +85,37 @@ describe('nearestStation', () => {
     expect(ARRIVAL_STATIONS.map((s) => s.id)).not.toContain('mandai');
   });
 
-  it('prefers a primary station over a closer one across the river', () => {
-    // A point on the west bank near Jangli Maharaj Road. Sambhaji Udyan is
-    // several times closer as the crow flies, but the crow does not cross
-    // on Sambhaji Bridge and the walk in is 20+ minutes.
-    const westBank = { lat: 18.5210, lng: 73.8460 };
-    const found = nearestStation(westBank);
-    expect(found?.station.tier).toBe('primary');
-    expect(found?.station.id).not.toBe('sambhaji-udyan');
+  it('keeps the primary station when the two are comparably far', () => {
+    // Tulshibaug: Kasba Peth 909 m, Sambhaji Udyan 1,017 m. Inside the
+    // margin, so the peth station wins even though it is not the nearest
+    // by a strict reading of the numbers.
+    const tulshibaug = { lat: 18.514268, lng: 73.855306 };
+    const found = nearestStation(tulshibaug)!;
+    expect(found.station.id).toBe('kasba-peth');
+    expect(found.station.tier).toBe('primary');
+  });
+
+  it('gives up the primary station when a secondary is clearly closer', () => {
+    // Garud Ganpati: Deccan Gymkhana 318 m, PMC 1,290 m. The old rule
+    // preferred a primary station at any distance and would have sent
+    // someone the best part of a kilometre out of their way; it was
+    // calibrated against station coordinates that were 330–470 m wrong.
+    const found = nearestStation(GARUD)!;
+    expect(found.station.id).toBe('deccan-gymkhana');
+    expect(found.distanceM).toBeCloseTo(318, -2);
+  });
+
+  it('draws the line at the stated margin, not at whichever is nearest', () => {
+    // The preference is deliberately not "nearest wins". A secondary has to
+    // beat the primary by more than PRIMARY_PREFERENCE_M to be chosen, so
+    // the behaviour is a documented judgement rather than an accident of
+    // straight-line arithmetic near a river.
+    expect(PRIMARY_PREFERENCE_M).toBeGreaterThan(0);
+
+    const tulshibaug = { lat: 18.514268, lng: 73.855306 };
+    const kept = nearestStation(tulshibaug)!;
+    const secondaryGap = 1017 - kept.distanceM;
+    expect(secondaryGap).toBeLessThan(PRIMARY_PREFERENCE_M);
   });
 
   it('still returns a secondary station when no primary is in range', () => {
@@ -89,18 +124,10 @@ describe('nearestStation', () => {
     // rather than relying on Pune's geography putting the peth stations far
     // enough away — the branch under test is "no primary in range", and it
     // should be exercised directly.
-    const atSambhajiUdyan = { lat: 18.5213, lng: 73.8437 };
+    const atSambhajiUdyan = { lat: 18.520226794497926, lng: 73.84798920582429 };
     const found = nearestStation(atSambhajiUdyan, 300);
     expect(found?.station.id).toBe('sambhaji-udyan');
     expect(found?.station.tier).toBe('secondary');
-  });
-
-  it('prefers a primary station even from the secondary\'s own doorstep', () => {
-    // The same point at the normal radius: the Aqua Line station is metres
-    // away and a primary one is over a kilometre off, and the primary still
-    // wins, because the kilometre is walkable and the river is the problem.
-    const atSambhajiUdyan = { lat: 18.5213, lng: 73.8437 };
-    expect(nearestStation(atSambhajiUdyan)?.station.tier).toBe('primary');
   });
 
   it('returns null rather than a station too far to walk from', () => {
@@ -112,13 +139,24 @@ describe('nearestStation', () => {
 
 describe('stationForRoute', () => {
   it('anchors to the first stop, not the average of them', () => {
-    // A route walked north to south: you get off where it begins.
+    // A route walked north to south: you get off where it begins. Kasba
+    // Ganpati is 357 m from Kasba Peth station; the later stops are much
+    // further from it, so a centroid would answer differently.
     const stops = [
       { location: KASBA_GANPATI },
       { location: DAGDUSHETH },
       { location: { lat: 18.5100, lng: 73.8555 } },
     ];
-    expect(stationForRoute(stops)?.station.id).toBe('kasba-peth');
+    const found = stationForRoute(stops)!;
+    expect(found.station.id).toBe('kasba-peth');
+    expect(found.distanceM).toBeCloseTo(357, -2);
+  });
+
+  it('would answer differently from the last stop, which is the point', () => {
+    // Guards the choice of the first stop over the centroid or the end.
+    const stops = [{ location: GARUD }, { location: KASBA_GANPATI }];
+    expect(stationForRoute(stops)?.station.id).toBe('deccan-gymkhana');
+    expect(stationForRoute([...stops].reverse())?.station.id).toBe('kasba-peth');
   });
 
   it('returns null for an empty route', () => {
