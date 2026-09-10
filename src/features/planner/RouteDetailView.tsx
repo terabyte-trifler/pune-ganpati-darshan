@@ -79,7 +79,6 @@ export function RouteDetailView({
           <MetroJourneyCard
             alight={anchor.station}
             walkToFirstM={anchor.distanceM}
-            firstStopName={mandals[0]?.name}
             firstStop={
               mandals[0]
                 ? { lat: mandals[0].location.lat, lng: mandals[0].location.lng }

@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  TrainFront, LocateFixed, Loader2, Footprints, TriangleAlert, CornerUpLeft,
-} from 'lucide-react';
+import { TrainFront, LocateFixed, Loader2, TriangleAlert } from 'lucide-react';
 import { useGeolocation, useResolveLocation } from '@/hooks/useGeolocation';
 import {
   planMetroJourney, journeySeconds, blockedNearerStation,
@@ -30,22 +28,14 @@ import { formatDistance, formatDuration, estimateDurationSeconds } from '@/lib/g
  * knows and the half that does not depend on where anyone is standing.
  */
 
-const DOT = 'h-3 w-3 shrink-0 rounded-full border-2 border-[var(--ink)]';
-
 /**
- * Below this the walk is not worth a number.
- *
- * "0 m from you" is what a distance formatter says when you are standing
- * on the platform, and it reads like a bug rather than like good news. It
- * is also the common case for anyone who opens the app on their way in.
+ * Below this the walk to the platform is not worth a number — "0 m from
+ * you" is what a distance formatter says when you are standing on it.
  */
 const AT_STATION_M = 150;
 
-function boardDistance(metres: number): string {
-  return metres < AT_STATION_M
-    ? 'you\u2019re right by it'
-    : `${formatDistance(metres)} from you`;
-}
+const DOT = 'h-3 w-3 shrink-0 rounded-full border-2 border-[var(--ink)]';
+
 
 function Connector({ color, label }: { color: string; label: string }) {
   return (
@@ -89,13 +79,12 @@ function Stop({
 }
 
 export function MetroJourneyCard({
-  alight, walkToFirstM, firstStopName, firstStop, home,
+  alight, walkToFirstM, firstStop, home,
 }: {
   /** Where the plan says to get off. */
   alight: MetroStation;
   /** Straight-line metres from that station to the first mandal. */
   walkToFirstM: number | null;
-  firstStopName?: string;
   /** The first mandal, used to explain a nearer station you cannot use. */
   firstStop?: { lat: number; lng: number };
   /** Where to catch the train back, and how far it is from the last stop. */
@@ -119,15 +108,21 @@ export function MetroJourneyCard({
    */
   const blocked = firstStop ? blockedNearerStation(firstStop, alight) : null;
 
+  /**
+   * The walk out, in as few words as it can be said in.
+   *
+   * This card had grown to 139 words and 530px — a paragraph about the
+   * station's exits, a paragraph about Mandai, and a sentence disclaiming
+   * the timetable — for a question with three answers: which train, where
+   * to change, where to get off. The long-form notes still exist where
+   * there is room to read them, on the station picker below.
+   */
   const walkOut =
-    walkToFirstM === null ? null : (
-      <>
-        {formatDistance(walkToFirstM)} on foot
-        {firstStopName && <> to {firstStopName.replace(/^(Shri|Shrimant)\s+/i, '')}</>}
-        {' · about '}
-        {formatDuration(estimateDurationSeconds(walkToFirstM, 'walk'))}
-      </>
-    );
+    walkToFirstM === null
+      ? null
+      : `${formatDistance(walkToFirstM)} walk · about ${formatDuration(
+          estimateDurationSeconds(walkToFirstM, 'walk')
+        )}`;
 
   return (
     <section className="rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
@@ -146,8 +141,9 @@ export function MetroJourneyCard({
               detail={
                 <>
                   {LINE_NAME[journey.legs[0].line]} towards {journey.legs[0].towards}
-                  {' · '}
-                  {boardDistance(journey.boardDistanceM)}
+                  {journey.boardDistanceM >= AT_STATION_M && (
+                    <> · {formatDistance(journey.boardDistanceM)} away</>
+                  )}
                 </>
               }
             />
@@ -185,9 +181,9 @@ export function MetroJourneyCard({
             )
           }
           detail={
-            journey || walkOut ? (
+            walkOut ? (
               <>
-                {!journey && <>{LINE_NAME[primaryLine(alight)]}. </>}
+                {!journey && <>{LINE_NAME[primaryLine(alight)]} · </>}
                 {walkOut}
               </>
             ) : (
@@ -195,62 +191,38 @@ export function MetroJourneyCard({
             )
           }
         />
-
-        {walkOut && (
-          <div className="mt-2 flex items-center gap-3">
-            <span className="flex w-3 justify-center">
-              <Footprints size={13} aria-hidden="true" className="text-[var(--faint)]" />
-            </span>
-            <p className="text-[12px] leading-relaxed text-[var(--muted)]">
-              {alight.exitNote}
-            </p>
-          </div>
-        )}
       </div>
 
       {/* ---------- Why not the station you were expecting ---------- */}
       {blocked && (
-        <p className="mt-3 flex gap-1.5 rounded-[var(--radius-field)] border border-[var(--zendu)]/30 bg-[var(--zendu)]/10 px-2.5 py-2 text-[12px] leading-relaxed text-[var(--muted)]">
+        <p className="mt-3 flex items-start gap-1.5 text-[12px] leading-relaxed text-[var(--muted)]">
           <TriangleAlert
             size={13}
             aria-hidden="true"
             className="mt-0.5 shrink-0 text-[var(--zendu)]"
           />
           <span>
-            <strong className="font-semibold text-[var(--chandan)]">
-              {blocked.station.name} is closer, but you can&rsquo;t get off there.
-            </strong>{' '}
-            {blocked.station.alightNote}
+            {blocked.station.name} is nearer, but you can&rsquo;t get off there —
+            it&rsquo;s exit-only during the festival.
           </span>
         </p>
       )}
 
-      {/* ---------- Getting home, which is a different station ---------- */}
-      {home && (
-        <div className="mt-3 flex items-start gap-3 border-t border-[var(--line)] pt-3">
-          <CornerUpLeft
-            size={13}
-            aria-hidden="true"
-            className="mt-0.5 shrink-0 text-[var(--faint)]"
-          />
-          <p className="text-[12px] leading-relaxed text-[var(--muted)]">
-            <strong className="font-semibold text-[var(--chandan)]">
-              Going back: {home.station.name}
-            </strong>
-            , {formatDistance(home.distanceM)} from your last stop.
-            {!home.station.canAlight && (
-              <> Boarding is fine here — it is only arrivals that are closed.</>
-            )}
-          </p>
-        </div>
-      )}
-
-      {/* ---------- Totals, deliberately coarse ---------- */}
-      {journey && journey.totalStops > 0 && (
-        <p className="mt-3 border-t border-[var(--line)] pt-2.5 text-[12px] text-[var(--faint)]">
-          About {formatDuration(journeySeconds(journey))} on the train
-          {journey.legs.length > 1 && ', including the change'}. No live
-          timetable behind this — it assumes a stop every couple of minutes.
+      {/* ---------- One line: the ride, and the way home ---------- */}
+      {(journey?.totalStops || home) && (
+        <p
+          className="mt-3 border-t border-[var(--line)] pt-2.5 text-[12px] text-[var(--faint)]"
+          title="Estimated at about two minutes a stop. There is no live timetable behind it."
+        >
+          {journey && journey.totalStops > 0 && (
+            <>About {formatDuration(journeySeconds(journey))} on the train</>
+          )}
+          {journey && journey.totalStops > 0 && home && ' · '}
+          {home && (
+            <>
+              Back from {home.station.name} ({formatDistance(home.distanceM)})
+            </>
+          )}
         </p>
       )}
 

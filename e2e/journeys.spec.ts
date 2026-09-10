@@ -581,10 +581,10 @@ test.describe('which train to take', () => {
     await expect(page.getByText(/^Get off at (Kasba Peth|PMC)$/)).toBeVisible();
     await expect(page.getByText(/^Get off at Mandai$/)).toHaveCount(0);
 
-    // The train home leaves from a station you could not have arrived at,
-    // and the card must say both halves of that.
-    await expect(page.getByText(/Going back: Mandai/)).toBeVisible();
-    await expect(page.getByText(/only arrivals that are closed/)).toBeVisible();
+    // The train home leaves from a station you could not have arrived at.
+    // Said in four words rather than a paragraph — this card is read while
+    // standing up.
+    await expect(page.getByText(/Back from Mandai/)).toBeVisible();
 
     // The boarding half arrives without a tap now: the card uses a
     // permission already granted rather than asking for one again. The
@@ -604,7 +604,8 @@ test.describe('which train to take', () => {
     await expect(page.getByText(/towards Swargate/)).toBeVisible();
 
     // The ride length is stated coarsely and must say so — there is no live
-    // timetable behind it.
+    // timetable behind it. The full caveat is on the element's title now
+    // rather than taking a line of its own.
     await expect(page.getByText(/About .* on the train/)).toBeVisible();
   });
 });

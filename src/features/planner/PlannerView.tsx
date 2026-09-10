@@ -459,7 +459,6 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
                   )
                 : null
             }
-            firstStopName={stops[0]?.name}
             firstStop={
               stops[0]
                 ? { lat: stops[0].location.lat, lng: stops[0].location.lng }
