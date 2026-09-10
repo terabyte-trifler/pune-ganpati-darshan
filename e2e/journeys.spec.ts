@@ -1001,3 +1001,63 @@ test('Flow 21 — the search affordance lands you in a focused field', async ({ 
   await page.goto('/explore');
   await expect(page.locator('input[type="search"]')).not.toBeFocused();
 });
+
+test('Flow 22 — the page does not jump while the crowd data lands', async ({ page }) => {
+  /**
+   * The tracker's loading state was two short bars, 112px against the
+   * ~340px the loaded section occupies. When the readings arrived the
+   * block grew and shoved the whole page down — most of a 0.23 layout
+   * shift on the busiest screen in the app, landing at about 200ms, which
+   * is exactly when someone is reaching for what they can see.
+   *
+   * Held to a slow response on purpose: a fast one never renders the
+   * skeleton, so on a quick connection this would pass without testing
+   * anything.
+   */
+  await page.addInitScript(() => {
+    (window as unknown as { __cls: number }).__cls = 0;
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries()) {
+        const shift = e as PerformanceEntry & { value: number; hadRecentInput: boolean };
+        if (!shift.hadRecentInput) (window as unknown as { __cls: number }).__cls += shift.value;
+      }
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
+
+  await page.route('**/api/crowd*', async (route) => {
+    await new Promise((r) => setTimeout(r, 800));
+    await route.continue();
+  });
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(3500);
+
+  const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
+  // 0.1 is the "good" threshold; this was 0.23-0.46 before the skeleton
+  // was given the shape of the thing it stands in for.
+  expect(cls, `home page shifted by ${cls.toFixed(3)}`).toBeLessThan(0.1);
+});
+
+test('Flow 23 — a mandal page does not load the map before it is needed', async ({ page }) => {
+  /**
+   * MiniMapLoader defers MapLibre until the map approaches the viewport,
+   * and its 400px root margin quietly defeated that: on a 390x844 phone
+   * "Where it is" sits at 1241px and the threshold was 844 + 400 = 1244,
+   * so the observer fired on first paint — three pixels inside its own
+   * margin. 466KB and roughly 730ms of blocked main thread landed while
+   * the visitor was still reading the top of the page.
+   */
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/ganpati/dagdusheth-halwai-ganpati');
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(1500);
+
+  // Nothing map-shaped yet, only the placeholder holding its space.
+  await expect(page.locator('canvas.maplibregl-canvas')).toHaveCount(0);
+
+  // And it still arrives once the visitor heads that way.
+  await page
+    .getByRole('heading', { name: /where it is/i })
+    .scrollIntoViewIfNeeded();
+  await expect(page.locator('[data-minimap-ready="true"]')).toBeVisible({ timeout: 20000 });
+});

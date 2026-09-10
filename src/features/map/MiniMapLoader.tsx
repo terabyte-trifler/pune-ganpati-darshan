@@ -30,8 +30,20 @@ function Placeholder() {
   );
 }
 
-/** Starts loading this far before the map scrolls into view. */
-const ROOT_MARGIN = '400px';
+/**
+ * Starts loading this far before the map scrolls into view.
+ *
+ * 400px looked harmless and was not. On a 390x844 phone a mandal page puts
+ * "Where it is" at 1241px, and 844 + 400 = 1244 — so the observer fired on
+ * first paint, three pixels inside its own margin, and the deferral this
+ * whole file exists for did nothing. 466KB of MapLibre and ~730ms of
+ * blocked main thread landed while the visitor was still reading the top.
+ *
+ * 200px is enough warning to have the map drawn by the time it is reached
+ * at a normal scroll speed, and far enough from a full viewport that a
+ * page of ordinary length cannot trip it by accident.
+ */
+const ROOT_MARGIN = '200px';
 /**
  * Fallback for the one case IntersectionObserver cannot cover: a hidden or
  * background tab, where it never fires. In a visible tab the observer is
@@ -54,13 +66,31 @@ export function MiniMap(props: MiniMapProps) {
       return;
     }
 
-    const observer = new IntersectionObserver(
+    /**
+     * Armed once the browser is idle, not during the first render.
+     *
+     * Even at the right margin, observing immediately means that on a short
+     * page the chunk starts downloading while the content above is still
+     * painting, and competes with it for the main thread. Waiting for idle
+     * costs nothing when the map is far away and a few frames when it is
+     * near, and it keeps the map off the critical path either way.
+     */
+    let observer: IntersectionObserver | undefined;
+    let idle: number | undefined;
+
+    const arm = () => {
+      observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) setVisible(true);
       },
-      { rootMargin: ROOT_MARGIN }
-    );
-    observer.observe(node);
+        { rootMargin: ROOT_MARGIN }
+      );
+      observer.observe(node);
+    };
+
+    const ric = window.requestIdleCallback;
+    if (typeof ric === 'function') idle = ric(arm, { timeout: 1200 });
+    else idle = window.setTimeout(arm, 300);
 
     // Only arm the timer when the observer genuinely cannot fire.
     const timer =
@@ -69,7 +99,11 @@ export function MiniMap(props: MiniMapProps) {
         : undefined;
 
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
+      if (idle !== undefined) {
+        if (typeof window.cancelIdleCallback === 'function') window.cancelIdleCallback(idle);
+        else clearTimeout(idle);
+      }
       if (timer) clearTimeout(timer);
     };
   }, [visible]);

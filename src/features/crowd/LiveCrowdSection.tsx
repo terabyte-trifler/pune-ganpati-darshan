@@ -198,12 +198,44 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
   /* ---------------- First load ---------------- */
 
   if (loading && rows.length === 0 && heavyCount === 0) {
+    /**
+     * A skeleton the same shape and height as the loaded section.
+     *
+     * This used to be two short bars, 112px against the 341px the live
+     * section occupies — so when the readings arrived the block grew by
+     * 229px and shoved the whole page down. That single jump was most of a
+     * 0.23 CLS on the busiest screen in the app, and it landed at ~200ms,
+     * exactly when someone is reaching for what they can see.
+     *
+     * Reserving the space is the fix; making it the right shape is what
+     * stops it looking like a bug while it waits.
+     */
     return (
       <Shell>
         <Heading />
-        <div className="mt-3 space-y-2" aria-hidden="true">
-          <div className="h-5 w-2/3 animate-pulse rounded bg-[var(--line-strong)]" />
-          <div className="h-5 w-1/2 animate-pulse rounded bg-[var(--line-strong)]" />
+        <div className="mt-2.5" aria-hidden="true">
+          <div className="h-4 w-28 animate-pulse rounded bg-[var(--line-strong)]" />
+          <ul className="mt-1.5 divide-y divide-[var(--line)]">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="flex items-center gap-2.5 py-[13px]">
+                <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-[var(--line-strong)]" />
+                <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span
+                    className="h-3.5 animate-pulse rounded bg-[var(--line-strong)]"
+                    style={{ width: `${72 - i * 12}%` }}
+                  />
+                  <span className="h-3 w-24 animate-pulse rounded bg-[var(--line)]" />
+                </span>
+                <span className="h-3.5 w-12 shrink-0 animate-pulse rounded bg-[var(--line)]" />
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2.5 h-4 w-44 animate-pulse rounded bg-[var(--line)]" />
+          <div className="mt-3 h-11 w-52 animate-pulse rounded bg-[var(--line)]" />
+          <div className="mt-3 border-t border-[var(--line)] pt-3">
+            <div className="h-4 w-full animate-pulse rounded bg-[var(--line)]" />
+            <div className="mt-2 h-9 w-full animate-pulse rounded bg-[var(--line)]" />
+          </div>
         </div>
       </Shell>
     );
