@@ -24,6 +24,7 @@ import {
   estimateDurationSeconds, DETOUR_FACTOR, type LatLng,
 } from '@/lib/geo';
 import { MetroStationPicker } from './MetroStationPicker';
+import { MetroJourneyCard } from './MetroJourneyCard';
 import { stationForRoute, stationById, PRIMARY_STATIONS } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -316,7 +317,19 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
 
       {/* ---------------- Origin ---------------- */}
       {mode === 'metro' && (
-        <div className="mt-4">
+        <div className="mt-4 flex flex-col gap-4">
+          <MetroJourneyCard
+            alight={station}
+            walkToFirstM={
+              stops[0]
+                ? haversine(
+                    { lat: station.lat, lng: station.lng },
+                    { lat: stops[0].location.lat, lng: stops[0].location.lng }
+                  )
+                : null
+            }
+            firstStopName={stops[0]?.name}
+          />
           <MetroStationPicker
             value={station}
             onChange={(s) => { setStationId(s.id); setResult(null); }}

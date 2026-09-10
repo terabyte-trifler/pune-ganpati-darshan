@@ -22,8 +22,9 @@ const CROWD_WORD: Record<CrowdLevel, string> = {
   moving: 'Moving',
   long: 'Heavy',
 };
-import { PUNE_CENTER, formatDuration, type LatLng } from '@/lib/geo';
+import { PUNE_CENTER, formatDuration, haversine, type LatLng } from '@/lib/geo';
 import { MetroStationPicker } from './MetroStationPicker';
+import { MetroJourneyCard } from './MetroJourneyCard';
 import { stationById, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -333,6 +334,25 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                 ordered
                 className="mt-4 h-56 w-full"
               />
+
+              {/* The train is only worth describing once there is a route to
+                  catch it for, so it lives on the result rather than beside
+                  the mode chips. */}
+              {mode === 'metro' && plan.stops[0] && (
+                <div className="mt-4">
+                  <MetroJourneyCard
+                    alight={station}
+                    walkToFirstM={haversine(
+                      { lat: station.lat, lng: station.lng },
+                      {
+                        lat: plan.stops[0].ganpati.location.lat,
+                        lng: plan.stops[0].ganpati.location.lng,
+                      }
+                    )}
+                    firstStopName={plan.stops[0].ganpati.name}
+                  />
+                </div>
+              )}
 
               <div className="mt-4 flex flex-wrap gap-2 text-[12px] text-[var(--faint)]">
                 <span className="rounded-full border border-[var(--line)] px-2.5 py-1">

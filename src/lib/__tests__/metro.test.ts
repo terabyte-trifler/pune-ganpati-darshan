@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  METRO_STATIONS, PRIMARY_STATIONS, ANCHOR_MAX_M,
-  nearestStation, stationForRoute, stationById,
+  METRO_STATIONS, DARSHAN_STATIONS, PRIMARY_STATIONS, LINE_ORDER, ANCHOR_MAX_M,
+  nearestStation, nearestBoardingStation, stationForRoute, stationById,
+  planMetroJourney, primaryLine,
 } from '@/lib/metro';
 import { MODE_SPEED_MPS } from '@/lib/geo';
 import { toTravelMode } from '@/db/database.types';
@@ -122,21 +123,134 @@ describe('station data', () => {
       ['kasba-peth', 'mandai', 'pmc']
     );
     expect(
-      METRO_STATIONS.filter((s) => s.tier === 'secondary').map((s) => s.id).sort()
+      DARSHAN_STATIONS.filter((s) => s.tier === 'secondary').map((s) => s.id).sort()
     ).toEqual(['deccan-gymkhana', 'sambhaji-udyan']);
   });
 
-  it('places every station inside the anchor radius of the peth core', () => {
+  it('keeps every darshan station inside the anchor radius of the peth core', () => {
     // Not a coordinate check — those are approximate by design — but a
-    // guard against a typo putting a station in another district.
-    for (const s of METRO_STATIONS) {
+    // guard against a typo putting one of the five in another district.
+    // Network stations are excluded on purpose: Ramwadi is nowhere near
+    // the peths, which is exactly why you do not get off there.
+    for (const s of DARSHAN_STATIONS) {
       const d = nearestStation({ lat: s.lat, lng: s.lng }, ANCHOR_MAX_M);
       expect(d, `${s.id} is unreachable from itself`).not.toBeNull();
     }
   });
 
+  it('never offers a network station as somewhere to get off', () => {
+    // Standing on the Shivajinagar platform, one stop from Civil Court.
+    // It is by far the nearest station, and it is still the wrong answer:
+    // you do not get off at Shivajinagar for Dagdusheth.
+    const atShivajinagar = { lat: 18.5310, lng: 73.8480 };
+    expect(nearestStation(atShivajinagar)?.station.tier).not.toBe('network');
+  });
+
+  it('lists every station in exactly the lines it claims', () => {
+    for (const s of METRO_STATIONS) {
+      expect(s.lines.length, `${s.id} has no line`).toBeGreaterThan(0);
+      for (const line of s.lines) {
+        expect(
+          LINE_ORDER[line].includes(s.id),
+          `${s.id} claims the ${line} line but is not in its order`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('has no station in a line order that is missing from the catalogue', () => {
+    for (const [line, ids] of Object.entries(LINE_ORDER)) {
+      for (const id of ids) {
+        expect(stationById(id), `${line} lists unknown station ${id}`).not.toBeNull();
+      }
+    }
+  });
+
   it('resolves stations by id and rejects unknown ones', () => {
     expect(stationById('mandai')?.name).toBe('Mandai');
-    expect(stationById('swargate')).toBeNull();
+    // Swargate used to stand in for "unknown" here and is now a real
+    // station on the Purple Line, which is the point of the whole network
+    // addition — use something genuinely not on either line.
+    expect(stationById('shaniwar-wada')).toBeNull();
+  });
+});
+
+describe('planMetroJourney', () => {
+  const MANDAI = stationById('mandai')!;
+  const KASBA = stationById('kasba-peth')!;
+  const PMC = stationById('pmc')!;
+
+  it('rides one line when the traveller is already on it', () => {
+    // Swargate is one stop south of Mandai on the Purple Line.
+    const atSwargate = { lat: 18.5010, lng: 73.8580 };
+    const j = planMetroJourney(atSwargate, MANDAI)!;
+
+    expect(j.board.id).toBe('swargate');
+    expect(j.legs).toHaveLength(1);
+    expect(j.legs[0].line).toBe('purple');
+    expect(j.legs[0].stops).toBe(1);
+    expect(j.interchange).toBeNull();
+  });
+
+  it('names the terminus so the platform is unambiguous', () => {
+    // Northbound and southbound on the same line must not read the same.
+    const atPcmc = { lat: 18.6285, lng: 73.8000 };
+    const fromNorth = planMetroJourney(atPcmc, MANDAI)!;
+    expect(fromNorth.legs[0].towards).toBe('Swargate');
+
+    const atSwargate = { lat: 18.5010, lng: 73.8580 };
+    const fromSouth = planMetroJourney(atSwargate, KASBA)!;
+    expect(fromSouth.legs[0].towards).toBe('PCMC');
+  });
+
+  it('changes at Civil Court when the lines differ', () => {
+    // Kalyani Nagar is on the Aqua Line; Mandai is on the Purple. The only
+    // place they meet is Civil Court.
+    const atKalyaniNagar = { lat: 18.5480, lng: 73.9010 };
+    const j = planMetroJourney(atKalyaniNagar, MANDAI)!;
+
+    expect(j.board.id).toBe('kalyani-nagar');
+    expect(j.legs).toHaveLength(2);
+    expect(j.interchange?.id).toBe('civil-court');
+    expect(j.legs[0].line).toBe('aqua');
+    expect(j.legs[1].line).toBe('purple');
+    expect(j.legs[1].towards).toBe('Swargate');
+    expect(j.totalStops).toBe(j.legs[0].stops + j.legs[1].stops);
+  });
+
+  it('does not invent a change when both stations are on the Aqua Line', () => {
+    // PMC is on the Aqua Line, so someone from Vanaz rides straight there.
+    const atVanaz = { lat: 18.5075, lng: 73.8065 };
+    const j = planMetroJourney(atVanaz, PMC)!;
+
+    expect(j.legs).toHaveLength(1);
+    expect(j.interchange).toBeNull();
+    expect(j.legs[0].towards).toBe('Ramwadi');
+  });
+
+  it('says you are already there rather than printing a zero-stop ride', () => {
+    const atMandai = { lat: MANDAI.lat, lng: MANDAI.lng };
+    const j = planMetroJourney(atMandai, MANDAI)!;
+
+    expect(j.alreadyThere).toBe(true);
+    expect(j.legs).toHaveLength(0);
+    expect(j.totalStops).toBe(0);
+  });
+
+  it('returns null when no station is within walking distance', () => {
+    // Lonavala, 60 km west. The network is two lines and most of the
+    // district is on neither.
+    expect(planMetroJourney({ lat: 18.7546, lng: 73.4062 }, MANDAI)).toBeNull();
+  });
+
+  it('boards wherever you are, including at a network station', () => {
+    // Unlike alighting, boarding has no tier preference — you get on where
+    // you stand.
+    const atRubyHall = { lat: 18.5340, lng: 73.8790 };
+    expect(nearestBoardingStation(atRubyHall)?.station.id).toBe('ruby-hall-clinic');
+  });
+
+  it('colours the interchange by the line that reaches the peths', () => {
+    expect(primaryLine(stationById('civil-court')!)).toBe('purple');
   });
 });

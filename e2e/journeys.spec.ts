@@ -490,9 +490,9 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
   await expect(page.getByRole('button', { name: /^Car$/ })).toHaveCount(0);
 
   // The station picker appears only once metro is the chosen mode.
-  await expect(page.getByRole('heading', { name: 'Start from' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Get off at' })).toHaveCount(0);
   await page.getByRole('button', { name: /^Metro$/ }).click();
-  await expect(page.getByRole('heading', { name: 'Start from' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Get off at' })).toBeVisible();
 
   // The three peth stations are offered as equals.
   for (const station of ['Mandai', 'Kasba Peth', 'PMC']) {
@@ -537,5 +537,43 @@ test('Flow 13 — the planner offers metro and starts the route from a station',
   // The origin label must name the station, not "Pune city centre" — the
   // whole point of metro mode is that the route begins at a platform.
   await expect(page.getByText(/from .* metro/)).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Start from' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Get off at' })).toBeVisible();
+});
+
+test.describe('which train to take', () => {
+  // Kalyani Nagar: on the Aqua Line, on the far side of the city from the
+  // peths, and therefore a journey that must involve a change. Granting the
+  // permission here rather than in the test body means the page can resolve
+  // a position on first load, which is when the card asks for one.
+  test.use({
+    geolocation: { latitude: 18.5480, longitude: 73.9010 },
+    permissions: ['geolocation'],
+  });
+
+  test('Flow 14 — names the station to board, the change, and where to get off', async ({ page }) => {
+    await page.goto('/routes/dagdusheth-and-around');
+
+    // Where to get off never needed a location, so it is there immediately.
+    await expect(page.getByText(/Get off at (Mandai|Kasba Peth|PMC)/)).toBeVisible();
+
+    // The boarding half is behind an explicit tap. The app does not quietly
+    // read a position to answer a question nobody asked — see the card's
+    // own note about what the permission is spent on.
+    await page.getByRole('button', { name: /Which train do I take/ }).click();
+
+    // Boarding is derived from where the visitor is, not from the route.
+    await expect(page.getByText(/Board at Kalyani Nagar/)).toBeVisible();
+
+    // The two lines meet in exactly one place, so a cross-line journey must
+    // name it. Getting this wrong sends someone to the wrong platform.
+    await expect(page.getByText(/Change at Civil Court/)).toBeVisible();
+
+    // Direction matters as much as the line — the platform is chosen by the
+    // name on the front of the train.
+    await expect(page.getByText(/towards Swargate/)).toBeVisible();
+
+    // The ride length is stated coarsely and must say so — there is no live
+    // timetable behind it.
+    await expect(page.getByText(/About .* on the train/)).toBeVisible();
+  });
 });

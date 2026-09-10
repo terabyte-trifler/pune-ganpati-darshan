@@ -3,18 +3,20 @@
 import { useState } from 'react';
 import { TrainFront, ChevronDown } from 'lucide-react';
 import {
-  METRO_STATIONS, PRIMARY_STATIONS, LINE_COLOR, LINE_NAME,
+  DARSHAN_STATIONS, PRIMARY_STATIONS, LINE_COLOR, LINE_NAME, primaryLine,
   type MetroStation,
 } from '@/lib/metro';
 import { haversine, formatDistance, type LatLng } from '@/lib/geo';
 import { cn } from '@/lib/utils';
 
 /**
- * Which station you are starting from.
+ * Which station you get off at.
  *
  * Shown only in metro mode, where it is the single decision that changes
  * the route — the plan is walked either way, so the station is the origin
- * and nothing else about it varies.
+ * and nothing else about it varies. The station you get ON at is not a
+ * choice and is not offered: it is wherever you happen to be, which the
+ * journey card works out from your location.
  *
  * The three primary stations are laid out as equals. The two Aqua Line ones
  * are behind a disclosure, because they are the rare answer rather than a
@@ -48,14 +50,14 @@ function StationButton({
         <span
           aria-hidden="true"
           className="h-2 w-2 shrink-0 rounded-full"
-          style={{ background: LINE_COLOR[station.line] }}
+          style={{ background: LINE_COLOR[primaryLine(station)] }}
         />
         <span className="text-[14px] font-semibold text-[var(--chandan)]">
           {station.name}
         </span>
       </span>
       <span className="text-[12px] text-[var(--faint)]">
-        {LINE_NAME[station.line]}
+        {LINE_NAME[primaryLine(station)]}
         {distanceM !== null && ` · ${formatDistance(distanceM)} away`}
       </span>
     </button>
@@ -70,7 +72,7 @@ export function MetroStationPicker({
   /** Used only to show how far each station is. Never leaves the device. */
   userLocation: LatLng | null;
 }) {
-  const secondary = METRO_STATIONS.filter((s) => s.tier === 'secondary');
+  const secondary = DARSHAN_STATIONS.filter((s) => s.tier === 'secondary');
   // Open if the current choice is in there, so the selection is never hidden.
   const [showRare, setShowRare] = useState(value.tier === 'secondary');
 
@@ -81,7 +83,7 @@ export function MetroStationPicker({
     <div>
       <h2 className="mb-2 flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-wide text-[var(--faint)]">
         <TrainFront size={13} aria-hidden="true" />
-        Start from
+        Get off at
       </h2>
 
       <div className="flex flex-col gap-2 sm:flex-row">

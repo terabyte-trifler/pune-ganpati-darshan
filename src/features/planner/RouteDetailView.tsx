@@ -2,15 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, ListPlus, Eye, DoorOpen, Clock, TrainFront } from 'lucide-react';
+import { ChevronRight, ListPlus, Eye, DoorOpen, Clock } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdBadge } from '@/features/crowd/CrowdBadge';
 import { StartRouteButton } from './StartRouteButton';
 import { Button } from '@/components/ui/Button';
 import { CategoryBadge } from '@/components/ui/Badge';
 import { usePlan } from '@/hooks/useLocalCollection';
-import { formatDuration, formatDistance } from '@/lib/geo';
-import { stationForRoute, LINE_COLOR, LINE_NAME } from '@/lib/metro';
+import { formatDuration } from '@/lib/geo';
+import { stationForRoute } from '@/lib/metro';
+import { MetroJourneyCard } from './MetroJourneyCard';
 import { useLiveRouteTime } from '@/features/crowd/useLiveRouteTime';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -70,27 +71,13 @@ export function RouteDetailView({
 
       {/* ---------------- Where to get off ---------------- */}
       {anchor && (
-        <section className="mt-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3">
-          <h2 className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
-            <TrainFront size={13} aria-hidden="true" />
-            {route.mode === 'metro' ? 'Start from' : 'Nearest metro'}
-          </h2>
-          <p className="mt-1.5 flex items-center gap-1.5 text-[15px] font-semibold text-[var(--chandan)]">
-            <span
-              aria-hidden="true"
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ background: LINE_COLOR[anchor.station.line] }}
-            />
-            {anchor.station.name}
-            <span className="text-[12px] font-normal text-[var(--faint)]">
-              {LINE_NAME[anchor.station.line]} · {formatDistance(anchor.distanceM)} to
-              stop 1
-            </span>
-          </p>
-          <p className="mt-1 text-[12px] leading-relaxed text-[var(--muted)]">
-            {anchor.station.exitNote}
-          </p>
-        </section>
+        <div className="mt-4">
+          <MetroJourneyCard
+            alight={anchor.station}
+            walkToFirstM={anchor.distanceM}
+            firstStopName={mandals[0]?.name}
+          />
+        </div>
       )}
 
       {/* ---------------- Navigate ---------------- */}

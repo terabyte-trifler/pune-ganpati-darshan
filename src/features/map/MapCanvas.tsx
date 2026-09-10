@@ -15,7 +15,7 @@ import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
 import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
-import { METRO_STATIONS, LINE_COLOR } from '@/lib/metro';
+import { DARSHAN_STATIONS, LINE_COLOR, primaryLine } from '@/lib/metro';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
@@ -55,12 +55,12 @@ const METRO_MIN_ZOOM = { primary: 11.5, secondary: 13.5 } as const;
 function metroFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
-    features: METRO_STATIONS.map((s) => ({
+    features: DARSHAN_STATIONS.map((s) => ({
       type: 'Feature',
       properties: {
         name: s.name,
         tier: s.tier,
-        color: LINE_COLOR[s.line],
+        color: LINE_COLOR[primaryLine(s)],
       },
       geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
     })),
