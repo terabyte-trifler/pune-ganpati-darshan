@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, Phone } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'How to use',
@@ -335,16 +335,17 @@ const STEPS: Step[] = [
   {
     n: 8,
     id: 'about',
-    title: 'Who made this, and what it keeps',
-    short: 'About & data',
-    marathi: 'आमच्याबद्दल',
+    title: 'Something wrong, or an idea? Tell the developer',
+    short: 'Contact',
+    marathi: 'संपर्क',
     lede:
-      'Scroll to the bottom of any page. The footer has every part of the app in one place, and About has the person behind it, the terms, and exactly what is stored on your phone.',
+      'One person built this and there is no support desk — which means the email and the phone number at the bottom of every page reach him directly, and something you point out today can be fixed tonight.',
     dos: [
-      'About says why this exists, with a phone number and an email that reach a real person.',
-      'Your data lists everything kept on your device — and clears any of it with one tap.',
-      'Data & licences credits OpenStreetMap and everyone else whose work this is built on.',
-      'It is free and non-commercial. No ads, no fees, nothing sold, not affiliated with any mandal or trust.',
+      'A mandal missing, a pin in the wrong lane, a name spelt wrong, timings that are not right — say so and it gets corrected.',
+      'Ideas are just as welcome as problems. Much of what is here came from someone asking for it.',
+      'Write to singhgurnoor080@gmail.com or call +91 62830 31102. Both are on the About page.',
+      'If it is a mistake in the app, mention which mandal or which screen — that is usually enough to find it.',
+      'Your data, in the footer, lists everything kept on your phone and clears any of it with one tap.',
     ],
     shots: [
       {
@@ -362,7 +363,12 @@ const STEPS: Step[] = [
         h: 844,
       },
     ],
-    cta: { href: '/about', label: 'Read about the app' },
+    note: {
+      heading: 'Free, and not a business',
+      body:
+        'No ads, no fees, no account, nothing sold to anyone. An independent project run at one person’s own cost, not affiliated with any mandal, trust or festival committee — so there is nobody to complain to but him, and he reads all of it.',
+    },
+    cta: { href: '/about#contact', label: 'Contact details' },
   },
 ];
 
@@ -532,16 +538,34 @@ export default function HowToUsePage() {
 
         <div className="mt-12 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
           <h2 className="font-display text-[18px] font-bold text-[var(--chandan)]">
-            Still stuck?
+            Stuck, or spotted something wrong?
           </h2>
           <p className="prose-measure mt-1.5 text-[14px] leading-relaxed text-[var(--muted)]">
-            There is a real person behind this and no support queue. Write or
-            call and you will get an answer — the details are on{' '}
-            <Link href="/about#contact" className="text-[var(--shendur)] underline">
-              the About page
-            </Link>
-            .
+            Suggestions and corrections go to the same place — one person, who
+            answers. Tell him what you saw and where.
           </p>
+          <div className="mt-3.5 flex flex-wrap gap-2">
+            <a
+              href="mailto:singhgurnoor080@gmail.com"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-chip)] border border-[var(--line-strong)] px-4 text-[14px] font-semibold text-[var(--chandan)]"
+            >
+              <Mail size={15} aria-hidden="true" className="text-[var(--shendur)]" />
+              Email
+            </a>
+            <a
+              href="tel:+916283031102"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-chip)] border border-[var(--line-strong)] px-4 text-[14px] font-semibold text-[var(--chandan)]"
+            >
+              <Phone size={15} aria-hidden="true" className="text-[var(--shendur)]" />
+              Call
+            </a>
+            <Link
+              href="/about#contact"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-chip)] border border-[var(--line-strong)] px-4 text-[14px] text-[var(--muted)]"
+            >
+              More ways
+            </Link>
+          </div>
         </div>
       </div>
     </main>
