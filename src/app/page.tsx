@@ -11,7 +11,6 @@ import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
 import { LiveCrowdSection } from '@/features/crowd/LiveCrowdSection';
 import { Button } from '@/components/ui/Button';
-import { SiteFooter } from '@/components/SiteFooter';
 
 /**
  * Homepage.
@@ -269,7 +268,6 @@ export default async function HomePage() {
           </Button>
         </div>
       </section>
-      <SiteFooter className="mx-auto mt-10 max-w-2xl px-4" />
     </main>
   );
 }

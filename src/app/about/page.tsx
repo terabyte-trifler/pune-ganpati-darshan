@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Mail, Phone, ArrowLeft, ExternalLink } from 'lucide-react';
-import { SiteFooter } from '@/components/SiteFooter';
 import { StoredData } from '@/features/settings/StoredData';
 import { AuthorAvatar } from '@/features/settings/AuthorAvatar';
 
@@ -349,8 +348,6 @@ export default function AboutPage() {
             </p>
           </div>
         </section>
-
-        <SiteFooter className="mt-10" />
       </div>
     </main>
   );

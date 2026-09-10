@@ -5,7 +5,6 @@ import { getRoutes, computeRouteTotals, routesForNow } from '@/services/routes';
 import { formatDistance, formatDuration } from '@/lib/geo';
 import { Button } from '@/components/ui/Button';
 import type { CuratedRoute } from '@/types/ganpati';
-import { SiteFooter } from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Curated darshan routes',
@@ -143,7 +142,6 @@ export default async function RoutesPage() {
           </div>
         </section>
       </div>
-      <SiteFooter className="mx-auto mt-10 max-w-2xl px-4" />
     </main>
   );
 }

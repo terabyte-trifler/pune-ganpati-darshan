@@ -878,3 +878,44 @@ test('Flow 18 — the app says who made it, and can be reached', async ({ page }
   await page.getByRole('link', { name: /Data & licences/ }).click();
   await expect(page).toHaveURL(/\/licences$/);
 });
+
+test('Flow 19 — the footer is on every page except the ones it would spoil', async ({ page }) => {
+  /**
+   * It used to be pasted onto four pages by hand, which is a rule nobody
+   * can keep: a page added later silently loses it, and with it the only
+   * route to the licences page and to a way of reaching the maker.
+   *
+   * It renders from the root layout now and hides itself in three places.
+   * The map is a full-bleed canvas with a sheet over it and has no bottom;
+   * /offline is what the service worker serves when there is no network,
+   * where a wall of links that cannot load is a bad joke; and /admin is a
+   * private tool, not part of the public site.
+   */
+  const shown = [
+    '/', '/explore', '/routes', '/routes/manache-5-sakal-walk', '/plan',
+    '/start', '/saved', '/ganpati/kasba-ganpati', '/area/kasba-peth',
+    '/about', '/licences', '/signin',
+  ];
+  for (const path of shown) {
+    await page.goto(path);
+    await expect(page.locator('footer'), `footer missing on ${path}`).toHaveCount(1);
+  }
+
+  for (const path of ['/map', '/offline']) {
+    await page.goto(path);
+    await expect(page.locator('footer'), `footer should not render on ${path}`).toHaveCount(0);
+  }
+
+  // It is a nav, and every link in it must go somewhere real.
+  await page.goto('/about');
+  const footer = page.locator('footer');
+  const hrefs = await footer.getByRole('link').evaluateAll((els) =>
+    els.map((e) => (e as HTMLAnchorElement).getAttribute('href') ?? '')
+  );
+  expect(hrefs.length).toBeGreaterThan(8);
+  for (const href of hrefs) {
+    if (!href.startsWith('/')) continue;
+    const res = await page.request.get(href.split('#')[0]);
+    expect(res.status(), `${href} is linked from the footer`).toBeLessThan(400);
+  }
+});

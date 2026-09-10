@@ -6,6 +6,7 @@ import { OfflineBanner } from '@/components/OfflineBanner';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { env } from '@/lib/env';
 import './globals.css';
+import { SiteFooter } from '@/components/SiteFooter';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -107,6 +108,7 @@ export default function RootLayout({
         <GanpatiGlyphSprite />
         <OfflineBanner />
         {children}
+        <SiteFooter />
         <BottomNav />
         <ServiceWorkerRegistration />
       </body>
