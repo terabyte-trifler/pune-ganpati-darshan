@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Map as MapLibreMap,
   Marker,
@@ -16,7 +16,9 @@ import { isWebglAvailable } from '@/lib/maps/webgl';
 import { boundsOf } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { nearestStation } from '@/lib/metro';
-import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
+import { useCrowdState } from '@/features/crowd/useCrowd';
+import type { Ganpati } from '@/types/ganpati';
+import type { CrowdLevel } from '@/types/crowd';
 
 /**
  * Embedded map for content pages — a mandal's location, a route's shape, the
@@ -31,7 +33,12 @@ import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
  * same way as the stop list beside it.
  */
 
-const CATEGORIES: GanpatiCategory[] = ['maanache', 'famous', 'historic', 'local'];
+/**
+ * Pins here are coloured by the queue, exactly as on the full map — the
+ * tracker's colour on every map in the app, updating as reports land.
+ */
+const CROWD_KEYS = ['none', 'short', 'moving', 'long'] as const;
+type CrowdKey = (typeof CROWD_KEYS)[number];
 
 export interface MiniMapProps {
   mandals: Ganpati[];
@@ -59,10 +66,14 @@ function collapseAttribution(container: HTMLElement) {
     ?.classList.remove('maplibregl-compact-show');
 }
 
-async function registerPin(map: MapLibreMap, category: GanpatiCategory) {
-  const id = `mini-${category}`;
+async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
+  const id = `mini-${crowd}`;
   if (map.hasImage(id)) return;
-  const { url, size } = buildMarkerSvg(category, false);
+  const { url, size } = buildMarkerSvg(
+    'local',
+    false,
+    crowd === 'none' ? null : (crowd as CrowdLevel)
+  );
   // 3x raster: see MapCanvas. These maps are small, so a soft pin is the
   // most conspicuous thing on them.
   const image = new Image(size * 3, size * 3);
@@ -90,6 +101,25 @@ export function MiniMap({
 
   const onSelectRef = useRef(onSelect);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+
+  /**
+   * Live crowd, from the same shared store every other surface reads. No
+   * extra request: the poller is already running for the rest of the app,
+   * so a map costs nothing to colour.
+   */
+  const crowdState = useCrowdState();
+  const crowdByMandalId = useMemo(() => {
+    const out: Record<string, CrowdLevel> = {};
+    for (const [id, status] of Object.entries(crowdState.byMandalId)) {
+      if (status.status) out[id] = status.status;
+    }
+    return out;
+  }, [crowdState]);
+
+  // Read inside the map-setup effect, which deliberately runs once; the
+  // effects below keep the drawn pins in step as readings change.
+  const crowdRef = useRef(crowdByMandalId);
+  useEffect(() => { crowdRef.current = crowdByMandalId; }, [crowdByMandalId]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || mandals.length === 0) return;
@@ -152,7 +182,7 @@ export function MiniMap({
     }
     map.on('load', async () => {
       collapseAttribution(map.getContainer());
-      await Promise.all(CATEGORIES.map((c) => registerPin(map, c)));
+      await Promise.all(CROWD_KEYS.map((c) => registerPin(map, c)));
 
       map.addSource('route', {
         type: 'geojson',
@@ -188,7 +218,10 @@ export function MiniMap({
             features: mandals.map((m) => ({
               type: 'Feature',
               geometry: { type: 'Point', coordinates: [m.location.lng, m.location.lat] },
-              properties: { slug: m.slug, category: m.category },
+              properties: {
+                slug: m.slug,
+                crowd: crowdRef.current[m.id] ?? 'none',
+              },
             })),
           },
         });
@@ -197,7 +230,7 @@ export function MiniMap({
           type: 'symbol',
           source: 'mandals',
           layout: {
-            'icon-image': ['concat', 'mini-', ['get', 'category']],
+            'icon-image': ['concat', 'mini-', ['get', 'crowd']],
             // Near full size: these maps are framed on one mandal or a small
             // cluster of them, so there is room for the mark to read.
             'icon-size': 0.95,
@@ -259,7 +292,7 @@ export function MiniMap({
     numberedRef.current.forEach((m) => m.remove());
     numberedRef.current = mandals.map((mandal, i) => {
       const active = mandal.slug === selectedSlug;
-      const { url, size } = buildRouteStopSvg(active);
+      const { url, size } = buildRouteStopSvg(active, crowdByMandalId[mandal.id] ?? null);
       const badge = Math.round(size * 0.44);
 
       const el = document.createElement('button');
@@ -302,6 +335,9 @@ export function MiniMap({
         'display:grid;place-items:center;border-radius:9999px',
         `font:700 ${Math.round(badge * 0.62)}px/1 ui-sans-serif,system-ui,sans-serif`,
         'background:#14100c;color:#f6efe3',
+        // Stays vermilion whatever the queue is doing: the badge marks the
+        // stop's position in the route, and tinting it with the crowd would
+        // make two different things the same colour.
         `border:1.5px solid ${active ? '#f2a93b' : '#e2621b'}`,
       ].join(';');
       el.appendChild(order);
@@ -312,7 +348,25 @@ export function MiniMap({
         .setLngLat([mandal.location.lng, mandal.location.lat])
         .addTo(map);
     });
-  }, [mandals, ordered, selectedSlug, ready]);
+  }, [mandals, ordered, selectedSlug, ready, crowdByMandalId]);
+
+  /* ---------------- Crowd colour ----------------
+     The pins are drawn from a GeoJSON source built once during setup, so a
+     new reading has to be pushed in. Ordered maps use DOM markers and are
+     handled by the effect above instead. */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || ordered) return;
+    const source = map.getSource('mandals') as GeoJSONSource | undefined;
+    source?.setData({
+      type: 'FeatureCollection',
+      features: mandals.map((m) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [m.location.lng, m.location.lat] },
+        properties: { slug: m.slug, crowd: crowdByMandalId[m.id] ?? 'none' },
+      })),
+    });
+  }, [crowdByMandalId, mandals, ordered, ready]);
 
   /* ---------------- Route line ---------------- */
   useEffect(() => {

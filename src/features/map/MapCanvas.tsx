@@ -15,7 +15,7 @@ import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
-import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
+import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
 /**
@@ -32,7 +32,6 @@ import type { CrowdLevel } from '@/types/crowd';
  */
 
 const SOURCE = 'mandals';
-const CATEGORIES: GanpatiCategory[] = ['maanache', 'famous', 'historic', 'local'];
 
 export type MapFailure = 'webgl' | 'init' | 'tiles';
 
@@ -94,11 +93,35 @@ function toFeatureCollection(
  */
 const PIN_RASTER = 3;
 
-async function registerPin(map: MapLibreMap, category: GanpatiCategory, selected: boolean) {
-  const id = `pin-${category}${selected ? '-sel' : ''}`;
+/**
+ * Pin images are keyed by what now decides their colour: the queue.
+ *
+ * Category no longer tints a pin (see lib/maps/markers), so the only
+ * category that still varies the artwork is the Manache Paach, which keep
+ * a heavier ring. That leaves four crowd states x manache-or-not x
+ * selected-or-not, which is sixteen small images registered once — where
+ * keying on category as well would have been sixty-four.
+ */
+const CROWD_KEYS = ['none', 'short', 'moving', 'long'] as const;
+
+function pinId(crowd: string, manache: boolean, selected: boolean) {
+  return `pin-${crowd}${manache ? '-m' : ''}${selected ? '-sel' : ''}`;
+}
+
+async function registerPin(
+  map: MapLibreMap,
+  crowd: (typeof CROWD_KEYS)[number],
+  manache: boolean,
+  selected: boolean
+) {
+  const id = pinId(crowd, manache, selected);
   if (map.hasImage(id)) return;
 
-  const { url, size } = buildMarkerSvg(category, selected);
+  const { url, size } = buildMarkerSvg(
+    manache ? 'maanache' : 'local',
+    selected,
+    crowd === 'none' ? null : (crowd as CrowdLevel)
+  );
   const image = new Image(size * PIN_RASTER, size * PIN_RASTER);
   await new Promise<void>((resolve) => {
     image.onload = () => resolve();
@@ -119,38 +142,6 @@ async function registerClusterPin(map: MapLibreMap) {
     image.src = url;
   });
   if (!map.hasImage('cluster-pin')) map.addImage('cluster-pin', image, { pixelRatio: PIN_RASTER });
-}
-
-/**
- * Small status dot drawn beside a pin.
- *
- * A separate layer rather than baking crowd into the pin artwork: the pin
- * already varies by category and selection, and folding in four crowd
- * states would mean 32 registered images to keep in step. One dot per
- * level is three.
- */
-const CROWD_DOT: Record<CrowdLevel, string> = {
-  short: '#5fb872',
-  moving: '#f2a93b',
-  long: '#e5544b',
-};
-
-async function registerCrowdDot(map: MapLibreMap, level: CrowdLevel) {
-  const id = `crowd-${level}`;
-  if (map.hasImage(id)) return;
-
-  const color = CROWD_DOT[level];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
-    <circle cx="9" cy="9" r="7" fill="${color}" stroke="#14100c" stroke-width="2.5"/>
-  </svg>`;
-
-  const image = new Image(18 * PIN_RASTER, 18 * PIN_RASTER);
-  await new Promise<void>((resolve) => {
-    image.onload = () => resolve();
-    image.onerror = () => resolve();
-    image.src = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-  });
-  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: PIN_RASTER });
 }
 
 export function MapCanvas({
@@ -210,13 +201,12 @@ export function MapCanvas({
     map.on('load', async () => {
       collapseAttribution(map.getContainer());
       await Promise.all(
-        CATEGORIES.flatMap((c) => [registerPin(map, c, false), registerPin(map, c, true)])
-          .concat(registerClusterPin(map))
-          .concat(
-            (['short', 'moving', 'long'] as CrowdLevel[]).map((l) =>
-              registerCrowdDot(map, l)
-            )
-          )
+        CROWD_KEYS.flatMap((c) => [
+          registerPin(map, c, false, false),
+          registerPin(map, c, false, true),
+          registerPin(map, c, true, false),
+          registerPin(map, c, true, true),
+        ]).concat(registerClusterPin(map))
       );
 
       map.addSource(SOURCE, {
@@ -300,7 +290,14 @@ export function MapCanvas({
         source: SOURCE,
         filter: ['!', ['has', 'point_count']],
         layout: {
-          'icon-image': ['concat', 'pin-', ['get', 'category']],
+          // Colour is the queue. 'none' when nobody has reported, which is
+          // a neutral pin rather than a calm-looking one.
+          'icon-image': [
+            'concat',
+            'pin-',
+            ['case', ['has', 'crowd'], ['get', 'crowd'], 'none'],
+            ['case', ['>', ['get', 'manacheRank'], 0], '-m', ''],
+          ],
           // Was a flat 0.5, which drew the 34px artwork at 17px — small
           // enough that the Ganpati collapsed into an anonymous dot, so the
           // map marked mandals with something you could not tell was one.
@@ -310,23 +307,6 @@ export function MapCanvas({
           'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.68, 14, 0.88, 16, 1.05],
           'icon-allow-overlap': true,
           'symbol-sort-key': ['-', 0, ['get', 'manacheRank']],
-        },
-      });
-
-      map.addLayer({
-        id: 'crowd-dots',
-        type: 'symbol',
-        source: SOURCE,
-        // Only mandals that actually have a reading. No property, no dot.
-        filter: ['all', ['!', ['has', 'point_count']], ['has', 'crowd']],
-        layout: {
-          'icon-image': ['concat', 'crowd-', ['get', 'crowd']],
-          'icon-size': 0.75,
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-          // Sits on the pin's upper-right shoulder. Offset is in units of
-          // the icon's own size, so it tracks the pin as it scales.
-          'icon-offset': [9, -11],
         },
       });
 
@@ -412,11 +392,20 @@ export function MapCanvas({
     if (!ready || !map || !map.getLayer('mandals')) return;
 
     // Only the selected pin uses the larger artwork.
+    // Must stay in step with the layer's own icon-image above: this
+    // overwrites it, so a key added there and forgotten here silently asks
+    // the map for an image that was never registered — every pin vanishes
+    // and the console fills with "could not be loaded".
+    //
+    // The sentinel is '' rather than a literal NUL byte, which is what used
+    // to sit here. Both work — a slug is [a-z0-9-]+ and can be neither —
+    // but one of them is readable and survives a copy/paste.
     map.setLayoutProperty('mandals', 'icon-image', [
       'concat',
       'pin-',
-      ['get', 'category'],
-      ['case', ['==', ['get', 'slug'], selectedSlug ?? ' '], '-sel', ''],
+      ['case', ['has', 'crowd'], ['get', 'crowd'], 'none'],
+      ['case', ['>', ['get', 'manacheRank'], 0], '-m', ''],
+      ['case', ['==', ['get', 'slug'], selectedSlug ?? ''], '-sel', ''],
     ]);
 
     if (!selectedSlug) return;

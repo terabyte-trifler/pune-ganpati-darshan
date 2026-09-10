@@ -1,6 +1,7 @@
 'use client';
 
 import type { GanpatiCategory } from '@/types/ganpati';
+import type { CrowdLevel } from '@/types/crowd';
 
 /**
  * Marker rendering.
@@ -9,8 +10,28 @@ import type { GanpatiCategory } from '@/types/ganpati';
  * tinted per category and resized on selection, and a data URI avoids a
  * network round-trip per marker on a cold, congested connection.
  *
- * Category is encoded by BOTH colour and ring weight so the map is not
- * relying on colour alone (§37).
+ * ---------------------------------------------------------------------
+ * Colour on a pin means the queue, not the category.
+ *
+ * The whole pin takes the tracker's colour — green, amber or red — and it
+ * follows the live store, so a map recolours as reports come in.
+ *
+ * That forced category colour off the map, and the reason is the app's own
+ * rule that an unknown crowd is never presented as a calm one. Three of the
+ * four category colours were crowd-like: 'historic' marigold is the exact
+ * same hex as a moving queue, and 'famous' vermilion sits next to a heavy
+ * one. Leaving them would mean a historic mandal nobody has reported
+ * looking identical to one with an amber queue — a reading the app would be
+ * inventing.
+ *
+ * So an unreported mandal draws in a neutral stone that no crowd level
+ * uses. Grey says "nobody has reported this yet", which is true, and is
+ * itself an invitation to report.
+ *
+ * The Manache Paach keep their heavier ring, so the one category that most
+ * needs to be findable still is, and the list beside every map carries the
+ * category badge as before.
+ * ---------------------------------------------------------------------
  */
 
 const CATEGORY_COLOR: Record<GanpatiCategory, string> = {
@@ -19,6 +40,25 @@ const CATEGORY_COLOR: Record<GanpatiCategory, string> = {
   historic: '#f2a93b', // marigold
   local: '#8a7f6d',    // muted stone
 };
+
+/**
+ * The tracker's colours, and they must stay identical to --crowd-* in
+ * globals.css. A map that disagrees with the badge beside it is worse than
+ * a map with no colour at all.
+ */
+export const CROWD_PIN_COLOR: Record<CrowdLevel, string> = {
+  short: '#5fb872',
+  moving: '#f2a93b',
+  long: '#e5544b',
+};
+
+/** No reading. Deliberately a colour no crowd level uses. */
+export const UNREPORTED_COLOR = '#8a7f6d';
+
+/** The pin body colour: the queue if we know it, neutral if we do not. */
+export function pinColor(crowd: CrowdLevel | null | undefined): string {
+  return crowd ? CROWD_PIN_COLOR[crowd] : UNREPORTED_COLOR;
+}
 
 /**
  * Compact Ganpati silhouette for map pins, matching GanpatiGlyph.
@@ -56,9 +96,10 @@ export interface MarkerVisual {
 
 export function buildMarkerSvg(
   category: GanpatiCategory,
-  selected: boolean
+  selected: boolean,
+  crowd?: CrowdLevel | null
 ): MarkerVisual {
-  const color = CATEGORY_COLOR[category];
+  const color = pinColor(crowd);
   const size = selected ? 46 : 34;
   // Manache Paach get a heavier ring so they are distinguishable in
   // greyscale and to colour-blind users.
@@ -86,8 +127,14 @@ export function buildMarkerSvg(
  * this artwork, so it renders in the page's own font at the device's real
  * pixel density rather than being rasterised into a data URI.
  */
-export function buildRouteStopSvg(selected: boolean): MarkerVisual {
-  const color = selected ? '#f2a93b' : '#e2621b';
+export function buildRouteStopSvg(
+  selected: boolean,
+  crowd?: CrowdLevel | null
+): MarkerVisual {
+  // A route stop reads the queue like every other pin. Selection is carried
+  // by size and the halo rather than by colour, so choosing a stop can no
+  // longer be mistaken for its queue changing.
+  const color = pinColor(crowd);
   // 40px, up from the old 32px disc: a Ganpati silhouette needs the room to
   // read, and the larger target is worth having where stops overlap.
   const size = selected ? 48 : 40;
