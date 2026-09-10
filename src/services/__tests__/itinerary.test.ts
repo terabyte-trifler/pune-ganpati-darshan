@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildItinerary, dwellMinutes, type Interest } from '../itinerary';
+import {
+  buildItinerary,
+  dwellMinutes,
+  type DarshanPace,
+  type Interest,
+} from '../itinerary';
 import { localGanpatis } from '@/services/catalogue';
 import { PUNE_CENTER } from '@/lib/geo';
 
@@ -86,5 +91,62 @@ describe('dwell time', () => {
   it('falls back to a short look when no estimate exists', () => {
     const unknown = { ...dagdusheth, darshanMinutes: null, peakDarshanMinutes: null };
     expect(dwellMinutes(unknown, 'balanced')).toBe(5);
+  });
+});
+
+describe('crowd-aware budgets', () => {
+  /**
+   * The point of feeding the tracker into the planner: a heavy mandal eats
+   * more of a fixed budget, so an honest plan fits fewer stops into it.
+   * Without this the wizard promised a six-mandal evening that a real queue
+   * would have destroyed by the second stop.
+   */
+  const base = {
+    interests: ['famous'] as Interest[],
+    pace: 'balanced' as DarshanPace,
+    mode: 'walk' as const,
+    origin: PUNE_CENTER,
+    mandals: localGanpatis,
+  };
+
+  it('fits fewer mandals into the same budget when queues are heavy', () => {
+    const calm = buildItinerary({ ...base, budgetMinutes: 180 });
+
+    const heavy = buildItinerary({
+      ...base,
+      budgetMinutes: 180,
+      crowdByMandalId: Object.fromEntries(
+        base.mandals.map((g) => [g.id, 'long' as const])
+      ),
+    });
+
+    expect(heavy.stops.length).toBeLessThanOrEqual(calm.stops.length);
+    expect(heavy.crowdAdjusted).toBe(true);
+    expect(calm.crowdAdjusted).toBe(false);
+  });
+
+  it('never exceeds the budget it was given, crowded or not', () => {
+    for (const level of ['short', 'moving', 'long'] as const) {
+      const plan = buildItinerary({
+        ...base,
+        budgetMinutes: 360,
+        crowdByMandalId: Object.fromEntries(base.mandals.map((g) => [g.id, level])),
+      });
+      expect(plan.totalMinutes, level).toBeLessThanOrEqual(360);
+    }
+  });
+
+  it('leaves the estimate alone when nobody has reported', () => {
+    // No reports is not good news. A plan that assumed short queues
+    // wherever it was ignorant would be wrong in the expensive direction.
+    const silent = buildItinerary({
+      ...base,
+      budgetMinutes: 180,
+      crowdByMandalId: Object.fromEntries(base.mandals.map((g) => [g.id, null])),
+    });
+    const none = buildItinerary({ ...base, budgetMinutes: 180 });
+
+    expect(silent.totalMinutes).toBe(none.totalMinutes);
+    expect(silent.crowdAdjusted).toBe(false);
   });
 });

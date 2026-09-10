@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { CategoryBadge } from '@/components/ui/Badge';
 import { usePlan } from '@/hooks/useLocalCollection';
 import { formatDuration } from '@/lib/geo';
+import { useLiveRouteTime } from '@/features/crowd/useLiveRouteTime';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { CuratedRoute } from '@/types/ganpati';
@@ -31,6 +32,11 @@ export function RouteDetailView({
   const { replace } = usePlan();
 
   const mandals = route.stops.map((s) => s.ganpati);
+
+  // One source for this number: the headline stat on this page uses the
+  // same hook, and computing it twice is how they end up disagreeing.
+  const live = useLiveRouteTime(mandals, totals.darshanS);
+  const darshanS = live.darshanS;
 
   const useThisRoute = () => {
     replace(mandals.map((m) => m.slug));
@@ -165,10 +171,11 @@ export function RouteDetailView({
       </ol>
 
       <p className="mt-5 text-[12px] leading-relaxed text-[var(--faint)]">
-        Times are estimates: {formatDuration(totals.darshanS)} queuing and
+        Times are estimates: {formatDuration(darshanS)} queuing and
         darshan, plus about {formatDuration(totals.travelS)} walking between
         stops. Queues vary a lot by time of day
         {totals.partialDarshan && ', and some stops have no published estimate'}.
+        {live.adjusted && ' Queuing reflects what devotees are reporting right now.'}
       </p>
     </>
   );

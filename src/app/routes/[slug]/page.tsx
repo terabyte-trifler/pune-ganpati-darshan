@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, Footprints, MapPin } from 'lucide-react';
 import { getRoutes, getRouteBySlug, computeRouteTotals } from '@/services/routes';
+import { RouteTotalStat } from '@/features/planner/RouteTotalStat';
 import { RouteDetailView } from '@/features/planner/RouteDetailView';
 import { ShareButton } from '@/features/discovery/ShareButton';
 import { formatDistance, formatDuration } from '@/lib/geo';
@@ -115,7 +116,19 @@ export default async function RoutePage({
           {[
             { icon: MapPin, label: 'stops', value: String(totals.stopCount) },
             { icon: Footprints, label: 'walking', value: formatDistance(totals.distanceM) },
-            { icon: Clock, label: 'in total', value: formatDuration(totals.totalS) },
+            {
+              icon: Clock,
+              label: 'in total',
+              // A client island: the published estimate renders on the
+              // server, then follows the tracker once it has an opinion.
+              value: (
+                <RouteTotalStat
+                  mandals={route.stops.map((s) => s.ganpati)}
+                  darshanS={totals.darshanS}
+                  travelS={totals.travelS}
+                />
+              ),
+            },
           ].map(({ icon: Icon, label, value }) => (
             <div
               key={label}

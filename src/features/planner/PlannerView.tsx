@@ -17,6 +17,8 @@ import { SavePlanShare } from './SavePlanShare';
 import { StartRouteButton } from './StartRouteButton';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdBadge } from '@/features/crowd/CrowdBadge';
+import { useCrowdState } from '@/features/crowd/useCrowd';
+import { dwellMinutes } from '@/services/itinerary';
 import {
   PUNE_CENTER, haversine, formatDistance, formatDuration,
   estimateDurationSeconds, DETOUR_FACTOR,
@@ -113,6 +115,29 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     };
   }, [stops, origin, mode]);
 
+  /**
+   * Queuing time, which this view did not count at all.
+   *
+   * It showed travel only, so a five-mandal plan reported the walk and
+   * nothing else — thirty-five minutes for an evening that realistically
+   * takes three hours. Curated routes have always counted queuing; a plan
+   * someone built themselves did not, which is the plan they are most
+   * likely to trust.
+   *
+   * Live crowd decides which end of each mandal's own estimate applies, so
+   * the number moves with the tracker instead of being fixed at build time.
+   */
+  const crowdState = useCrowdState();
+  const darshanS = useMemo(
+    () =>
+      stops.reduce(
+        (sum, g) =>
+          sum + dwellMinutes(g, 'balanced', crowdState.byMandalId[g.id]?.status ?? null) * 60,
+        0
+      ),
+    [stops, crowdState]
+  );
+
   const optimize = async () => {
     if (stops.length < 2) return;
     setBusy(true);
@@ -198,8 +223,10 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
   }
 
   const totalDistance = result?.distanceM ?? estimate?.distanceM ?? null;
-  const totalDuration = result?.durationS ?? estimate?.durationS ?? null;
+  const travelS = result?.durationS ?? estimate?.durationS ?? null;
+  const totalDuration = travelS === null ? null : travelS + darshanS;
   const isEstimate = !result || result.estimated;
+  const crowdAdjusted = stops.some((g) => crowdState.byMandalId[g.id]?.status);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -292,12 +319,25 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
               {totalDuration !== null ? formatDuration(totalDuration) : '—'}
             </p>
             <p className="mt-1 text-[12px] text-[var(--faint)]">
+              walk + darshan
+            </p>
+            {/* The provenance label stays exactly one of three known values.
+                It is the page's statement about where this number came
+                from, and appending anything to it makes that claim fuzzy —
+                which is also why a test asserts on it anchored. The crowd
+                note is a separate line. */}
+            <p className="mt-0.5 text-[11px] text-[var(--faint)]">
               {isEstimate
                 ? 'estimated'
                 : result?.durationSource === 'provider'
                   ? `routed · ${result.provider === 'ors' ? 'OpenRouteService' : 'OSRM'}`
                   : 'from routed distance'}
             </p>
+            {crowdAdjusted && (
+              <p className="mt-0.5 text-[11px] text-[var(--zendu)]">
+                queues from live reports
+              </p>
+            )}
           </div>
         </div>
 

@@ -12,6 +12,16 @@ import { Chip } from '@/components/ui/Chip';
 import { usePlan } from '@/hooks/useLocalCollection';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { buildItinerary, type DarshanPace, type Interest } from '@/services/itinerary';
+import { useCrowdState } from '@/features/crowd/useCrowd';
+import { CrowdDot, CROWD_COLOR } from '@/features/crowd/CrowdBadge';
+import type { CrowdLevel } from '@/types/crowd';
+
+/** The tracker's own words, so the plan and the tracker never disagree. */
+const CROWD_WORD: Record<CrowdLevel, string> = {
+  short: 'Short',
+  moving: 'Moving',
+  long: 'Heavy',
+};
 import { PUNE_CENTER, formatDuration } from '@/lib/geo';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -75,6 +85,17 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
 
   const origin = geo.status === 'ready' ? geo.position : PUNE_CENTER;
 
+  /**
+   * Live crowd, from the same shared store the tracker reads. No extra
+   * request: the poller is already running for the rest of the app.
+   */
+  const crowdState = useCrowdState();
+  const crowdByMandalId = useMemo(() => {
+    const out: Record<string, CrowdLevel | null> = {};
+    for (const g of mandals) out[g.id] = crowdState.byMandalId[g.id]?.status ?? null;
+    return out;
+  }, [mandals, crowdState]);
+
   const plan = useMemo(() => {
     if (budget === null || step < 2) return null;
     return buildItinerary({
@@ -84,8 +105,9 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       mode,
       origin,
       mandals,
+      crowdByMandalId,
     });
-  }, [budget, interests, pace, mode, origin, mandals, step]);
+  }, [budget, interests, pace, mode, origin, mandals, step, crowdByMandalId]);
 
   const toggleInterest = (key: Interest) => {
     setInterests((prev) => {
@@ -283,6 +305,17 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                 </span>
               </div>
 
+              {/* Said plainly, because otherwise the same budget quietly
+                  produces a different plan at different times of day and
+                  looks unreliable rather than current. */}
+              {plan.crowdAdjusted && (
+                <p className="mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
+                  Darshan times allow for what devotees are reporting right now.
+                  A mandal with a heavy queue takes more of your{' '}
+                  {formatDuration(plan.budgetMinutes * 60)}, so fewer fit.
+                </p>
+              )}
+
               {/* Adjusting pace here rewrites the plan in place, so the
                   trade-off is visible instead of hypothetical. */}
               <fieldset className="mt-5">
@@ -322,10 +355,19 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                       >
                         {stop.ganpati.name}
                       </Link>
-                      <span className="flex items-center gap-2 text-[12px] text-[var(--faint)]">
+                      <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-[var(--faint)]">
                         <MapPin size={11} aria-hidden="true" />
                         {stop.ganpati.area.name}
                         <span className="text-[var(--zendu)]">~{stop.darshanMinutes} min</span>
+                        {stop.crowd && (
+                          <span
+                            className="flex items-center gap-1"
+                            style={{ color: CROWD_COLOR[stop.crowd] }}
+                          >
+                            <CrowdDot level={stop.crowd} size={7} />
+                            {CROWD_WORD[stop.crowd]} now
+                          </span>
+                        )}
                       </span>
                     </span>
                   </li>

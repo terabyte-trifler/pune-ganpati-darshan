@@ -6,6 +6,7 @@ import {
 } from '@/lib/geo';
 import { optimizeLocally } from '@/services/route-optimizer';
 import type { Ganpati } from '@/types/ganpati';
+import type { CrowdLevel } from '@/types/crowd';
 
 /**
  * Builds a darshan itinerary that actually fits a time budget.
@@ -36,12 +37,19 @@ export interface ItineraryRequest {
   mode: TravelMode;
   origin: LatLng;
   mandals: Ganpati[];
+  /**
+   * Live crowd level per mandal id, from the tracker. Absent or null for a
+   * mandal simply means nobody has reported it recently.
+   */
+  crowdByMandalId?: Record<string, CrowdLevel | null>;
 }
 
 export interface ItineraryStop {
   ganpati: Ganpati;
   darshanMinutes: number;
   travelMinutesFromPrevious: number;
+  /** What the tracker said when this plan was built, for the UI to show. */
+  crowd: CrowdLevel | null;
 }
 
 export interface Itinerary {
@@ -54,6 +62,8 @@ export interface Itinerary {
   skipped: Ganpati[];
   /** True when some chosen mandal has no dwell estimate at all. */
   hasUnknownDwell: boolean;
+  /** True when at least one stop's timing was adjusted by a live report. */
+  crowdAdjusted: boolean;
 }
 
 /**
@@ -63,7 +73,39 @@ export interface Itinerary {
  * where we have one. 'quick' assumes viewing from the road wherever that is
  * possible, which is genuinely how most people do a long trail.
  */
-export function dwellMinutes(g: Ganpati, pace: DarshanPace): number {
+/**
+ * How live crowd stretches or shrinks a dwell estimate.
+ *
+ * This does not invent a queue time. The catalogue already carries two
+ * numbers for every mandal — a typical dwell and a peak one — and the peak
+ * fallback in this same file is `typical x 1.6`. All the tracker does is
+ * say which end of that existing range applies right now, which is exactly
+ * the question a static estimate cannot answer.
+ *
+ * `null` means nobody has reported recently, and that leaves the estimate
+ * untouched. No information is not the same as good news, and a plan that
+ * quietly assumed short queues wherever it was ignorant would be wrong in
+ * the most expensive direction — someone standing in a forty-minute line
+ * with a schedule that budgeted twelve.
+ */
+const CROWD_DWELL_FACTOR: Record<CrowdLevel, number> = {
+  short: 0.7,
+  moving: 1,
+  long: 1.6,
+};
+
+export function dwellMinutes(
+  g: Ganpati,
+  pace: DarshanPace,
+  crowd?: CrowdLevel | null
+): number {
+  const base = baseDwellMinutes(g, pace);
+  if (!crowd) return base;
+  // At least a minute: a green mandal is still a stop, not a drive-by.
+  return Math.max(1, Math.round(base * CROWD_DWELL_FACTOR[crowd]));
+}
+
+function baseDwellMinutes(g: Ganpati, pace: DarshanPace): number {
   const typical = g.darshanMinutes;
   // No estimate: assume a short roadside look rather than skewing the whole
   // plan with a guess. Surfaced via `hasUnknownDwell`.
@@ -112,7 +154,8 @@ function costOf(
   ordered: Ganpati[],
   origin: LatLng,
   mode: TravelMode,
-  pace: DarshanPace
+  pace: DarshanPace,
+  crowd: Record<string, CrowdLevel | null>
 ): { travel: number; darshan: number; total: number } {
   let travelSeconds = 0;
   let previous = origin;
@@ -123,7 +166,10 @@ function costOf(
   }
 
   const travel = Math.round(travelSeconds / 60);
-  const darshan = ordered.reduce((sum, g) => sum + dwellMinutes(g, pace), 0);
+  const darshan = ordered.reduce(
+    (sum, g) => sum + dwellMinutes(g, pace, crowd[g.id]),
+    0
+  );
   return { travel, darshan, total: travel + darshan };
 }
 
@@ -147,7 +193,10 @@ function order(mandals: Ganpati[], origin: LatLng, mode: TravelMode): Ganpati[] 
  * would miss that.
  */
 export function buildItinerary(request: ItineraryRequest): Itinerary {
-  const { budgetMinutes, interests, pace, mode, origin, mandals } = request;
+  const {
+    budgetMinutes, interests, pace, mode, origin, mandals,
+    crowdByMandalId = {},
+  } = request;
 
   const candidates = mandals
     .map((g) => ({ g, score: interestScore(g, interests) }))
@@ -159,7 +208,7 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
 
   for (const { g } of candidates) {
     const trial = order([...chosen, g], origin, mode);
-    const cost = costOf(trial, origin, mode, pace);
+    const cost = costOf(trial, origin, mode, pace, crowdByMandalId);
 
     if (cost.total <= budgetMinutes) {
       chosen.splice(0, chosen.length, ...trial);
@@ -169,7 +218,7 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
   }
 
   const finalOrder = order(chosen, origin, mode);
-  const cost = costOf(finalOrder, origin, mode, pace);
+  const cost = costOf(finalOrder, origin, mode, pace, crowdByMandalId);
 
   // Per-stop breakdown, so the UI can show where the time goes.
   const stops: ItineraryStop[] = [];
@@ -178,10 +227,13 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
     const point = { lat: g.location.lat, lng: g.location.lng };
     stops.push({
       ganpati: g,
-      darshanMinutes: dwellMinutes(g, pace),
+      // Same call the budget was spent against, so the per-stop numbers add
+      // up to the total the user was shown rather than drifting from it.
+      darshanMinutes: dwellMinutes(g, pace, crowdByMandalId[g.id]),
       travelMinutesFromPrevious: Math.round(
         estimateDurationSeconds(haversine(previous, point), mode) / 60
       ),
+      crowd: crowdByMandalId[g.id] ?? null,
     });
     previous = point;
   }
@@ -194,5 +246,6 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
     budgetMinutes,
     skipped,
     hasUnknownDwell: finalOrder.some((g) => g.darshanMinutes == null),
+    crowdAdjusted: finalOrder.some((g) => crowdByMandalId[g.id] != null),
   };
 }

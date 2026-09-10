@@ -196,6 +196,27 @@ test('Flow 6 — share copies a working link', async ({ page, context }) => {
 });
 
 test('Flow 9 — the wizard builds a route that fits the time budget', async ({ page }) => {
+  /**
+   * Pinned to an empty tracker on purpose.
+   *
+   * The wizard now spends the budget against live crowd, so with real
+   * reports the same two hours legitimately fits a different number of
+   * mandals depending on the queues that evening. That is the feature —
+   * but it makes this test a measurement of Pune's mood rather than of the
+   * budget arithmetic, and it would fail at 9pm on a busy Tuesday for
+   * entirely correct reasons.
+   *
+   * The crowd-adjusted path is covered deterministically by unit tests in
+   * services/__tests__/itinerary.test.ts.
+   */
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ statuses: [], computedAt: new Date().toISOString(), stale: false }),
+    })
+  );
+
   await page.goto('/start');
 
   // Two questions only: how long, and what to see.
