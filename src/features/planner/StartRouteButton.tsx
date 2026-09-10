@@ -58,10 +58,10 @@ function mapsUrl(origin: LatLng | null, stops: Ganpati[], mode: TravelMode) {
     );
   }
 
-  url.searchParams.set(
-    'travelmode',
-    mode === 'walk' ? 'walking' : mode === 'transit' ? 'transit' : 'driving'
-  );
+  // Metro routes are walked between stops — the train got you to the
+  // station, and Google's transit directions between two mandals 400 m
+  // apart would offer a bus nobody takes.
+  url.searchParams.set('travelmode', mode === 'two_wheeler' ? 'driving' : 'walking');
   return url.toString();
 }
 

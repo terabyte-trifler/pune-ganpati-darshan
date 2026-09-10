@@ -46,7 +46,7 @@ export default async function LicencesPage() {
               The dark styling is this project&rsquo;s own.
             </p>
             <p>
-              Walking and driving routes are computed by{' '}
+              Walking routes are computed by{' '}
               <a href="https://project-osrm.org" target="_blank" rel="noopener noreferrer"
                  className="text-[var(--shendur)] underline">OSRM</a>, also over
               OpenStreetMap data.

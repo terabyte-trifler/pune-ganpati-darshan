@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Clock, ChevronLeft, Footprints, Bike, Car, Sparkles, MapPin,
+  Clock, ChevronLeft, Footprints, Bike, TrainFront, Sparkles, MapPin,
 } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +22,9 @@ const CROWD_WORD: Record<CrowdLevel, string> = {
   moving: 'Moving',
   long: 'Heavy',
 };
-import { PUNE_CENTER, formatDuration } from '@/lib/geo';
+import { PUNE_CENTER, formatDuration, type LatLng } from '@/lib/geo';
+import { MetroStationPicker } from './MetroStationPicker';
+import { stationById, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -66,10 +68,16 @@ const INTERESTS: Array<{ key: Interest; label: string; labelMr?: string }> = [
   { key: 'surprise', label: 'Surprise me' },
 ];
 
+/**
+ * Car is gone: the peths are closed to vehicles through the festival, so a
+ * driving plan ends at a barricade with every stop still ahead of it. Metro
+ * takes its place — and unlike car, it changes where the route STARTS
+ * rather than how fast it moves, which is why picking it reveals a station.
+ */
 const MODES: Array<{ key: TravelMode; label: string; icon: typeof Footprints }> = [
   { key: 'walk', label: 'Walking', icon: Footprints },
   { key: 'two_wheeler', label: 'Two-wheeler', icon: Bike },
-  { key: 'drive', label: 'Car', icon: Car },
+  { key: 'metro', label: 'Metro', icon: TrainFront },
 ];
 
 export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
@@ -82,8 +90,28 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
   const [pace, setPace] = useState<DarshanPace>('balanced');
   const [interests, setInterests] = useState<Set<Interest>>(new Set());
   const [mode, setMode] = useState<TravelMode>('walk');
+  /**
+   * Mandai by default — it is the station with the most mandals inside a
+   * ten-minute walk, so it is the right guess when we know nothing else.
+   */
+  const [station, setStation] = useState<MetroStation>(
+    () => stationById('mandai') ?? PRIMARY_STATIONS[0]
+  );
 
-  const origin = geo.status === 'ready' ? geo.position : PUNE_CENTER;
+  /**
+   * In metro mode the route begins where the train leaves you, not where
+   * you are standing now — you are probably reading this before you set
+   * out. Location still matters, but only to show which station is nearest.
+   */
+  const origin: LatLng = useMemo(
+    () =>
+      mode === 'metro'
+        ? { lat: station.lat, lng: station.lng }
+        : geo.status === 'ready'
+          ? geo.position
+          : PUNE_CENTER,
+    [mode, station, geo]
+  );
 
   /**
    * Live crowd, from the same shared store the tracker reads. No extra
@@ -245,7 +273,17 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
             ))}
           </div>
 
-          {geo.status !== 'ready' && (
+          {mode === 'metro' && (
+            <div className="mt-5">
+              <MetroStationPicker
+                value={station}
+                onChange={setStation}
+                userLocation={geo.status === 'ready' ? geo.position : null}
+              />
+            </div>
+          )}
+
+          {mode !== 'metro' && geo.status !== 'ready' && (
             <button
               type="button"
               onClick={requestLocation}

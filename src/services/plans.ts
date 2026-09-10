@@ -2,6 +2,7 @@ import 'server-only';
 
 import { getSupabasePublicClient } from '@/lib/supabase/server';
 import { toGanpati } from '@/services/catalogue';
+import { toTravelMode } from '@/db/database.types';
 import type { DarshanPlan } from '@/types/ganpati';
 
 /**
@@ -71,7 +72,7 @@ export async function getPlanByShareId(shareId: string): Promise<DarshanPlan | n
     id: data.id,
     shareId: data.share_id,
     title: data.title,
-    mode: data.mode,
+    mode: toTravelMode(data.mode),
     origin: data.origin_lat !== null && data.origin_lng !== null
       ? { lat: data.origin_lat, lng: data.origin_lng, label: data.origin_label }
       : null,

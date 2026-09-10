@@ -4,6 +4,7 @@ import { getSupabasePublicClient } from '@/lib/supabase/server';
 import { localRoutes, getLocalRoute, toGanpati } from '@/services/catalogue';
 import { getAllGanpatis } from '@/services/ganpati';
 import { estimateDurationSeconds, haversine, type TravelMode } from '@/lib/geo';
+import { toTravelMode } from '@/db/database.types';
 import type { CuratedRoute, TimeOfDay } from '@/types/ganpati';
 
 /**
@@ -61,7 +62,7 @@ function mapRoute(row: any): CuratedRoute {
     titleMr: row.title_mr,
     summary: row.summary,
     description: row.description,
-    mode: row.mode,
+    mode: toTravelMode(row.mode),
     timeOfDay: (row.time_of_day ?? 'any') as TimeOfDay,
     themes: row.themes ?? [],
     totalDarshanS: row.total_darshan_s,
@@ -120,7 +121,7 @@ export interface RouteTotals {
 }
 
 export function computeRouteTotals(route: CuratedRoute): RouteTotals {
-  const mode: TravelMode = route.mode === 'transit' ? 'walk' : route.mode;
+  const mode: TravelMode = route.mode;
 
   let distanceM = 0;
   let travelS = 0;

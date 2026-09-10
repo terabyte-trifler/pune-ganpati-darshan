@@ -461,3 +461,81 @@ test('every seeded mandal page resolves', async ({ request }) => {
     expect(response.status(), `${url} did not resolve`).toBe(200);
   }
 });
+
+test('Flow 12 — metro replaces the car, and picking it chooses a station', async ({ page }) => {
+  /**
+   * Two claims, both of which a screenshot would not settle.
+   *
+   * The peth core is closed to vehicles through Ganeshotsav, so offering a
+   * driving route means routing someone to a barricade. Car is gone from
+   * every mode picker; the test asserts its absence rather than trusting
+   * that the constant was edited in both of them.
+   *
+   * And metro is not a faster walk — it decides where the route BEGINS.
+   * Choosing it must therefore reveal a station, and the route must be
+   * built from that station rather than from the city centre.
+   */
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ statuses: [], computedAt: new Date().toISOString(), stale: false }),
+    })
+  );
+
+  await page.goto('/start');
+  await page.getByRole('button', { name: '2 hours' }).click();
+
+  // Car is gone from the wizard.
+  await expect(page.getByRole('button', { name: /^Car$/ })).toHaveCount(0);
+
+  // The station picker appears only once metro is the chosen mode.
+  await expect(page.getByRole('heading', { name: 'Start from' })).toHaveCount(0);
+  await page.getByRole('button', { name: /^Metro$/ }).click();
+  await expect(page.getByRole('heading', { name: 'Start from' })).toBeVisible();
+
+  // The three peth stations are offered as equals.
+  for (const station of ['Mandai', 'Kasba Peth', 'PMC']) {
+    await expect(
+      page.getByRole('button', { name: new RegExp(`^${station}`) })
+    ).toBeVisible();
+  }
+
+  // The two Aqua Line ones are the rare answer, so they start collapsed.
+  await expect(
+    page.getByRole('button', { name: /^Deccan Gymkhana/ })
+  ).toHaveCount(0);
+  await page.getByRole('button', { name: /Coming from Deccan or JM Road/ }).click();
+  await expect(page.getByRole('button', { name: /^Deccan Gymkhana/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Sambhaji Udyan/ })).toBeVisible();
+
+  // Choosing a station changes the plan's starting point, so the wizard must
+  // still produce a route from it.
+  await page.getByRole('button', { name: /^Kasba Peth/ }).click();
+  await page.getByRole('button', { name: /Build my route/i }).click();
+  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+});
+
+test('Flow 13 — the planner offers metro and starts the route from a station', async ({ page }) => {
+  // The visitor's OWN plan, not a shared link. A shared plan is read-only
+  // and deliberately hides the origin line — someone opening a friend's
+  // route is not being asked where they are starting from — so testing the
+  // origin through ?stops= would assert against a view that never shows it.
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      'pg.plan',
+      JSON.stringify(['kasba-ganpati', 'tambdi-jogeshwari'])
+    );
+  });
+  await page.goto('/plan');
+
+  await expect(page.getByRole('button', { name: /^Car$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Transit$/ })).toHaveCount(0);
+
+  await page.getByRole('button', { name: /^Metro$/ }).click();
+
+  // The origin label must name the station, not "Pune city centre" — the
+  // whole point of metro mode is that the route begins at a platform.
+  await expect(page.getByText(/from .* metro/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Start from' })).toBeVisible();
+});

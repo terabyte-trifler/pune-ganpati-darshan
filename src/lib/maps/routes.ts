@@ -45,19 +45,24 @@ const ORS_URL = 'https://api.openrouteservice.org/v2/directions';
 const OSRM_PROFILE: Record<TravelMode, string> = {
   walk: 'foot',
   two_wheeler: 'driving',   // OSRM's demo has no motorcycle profile
-  drive: 'driving',
-  transit: 'foot',          // OSRM has no transit; walking is the honest floor
+  metro: 'foot',            // The route between stations is walked
 };
 
 const ORS_PROFILE: Record<TravelMode, string> = {
   walk: 'foot-walking',
   two_wheeler: 'cycling-road',
-  drive: 'driving-car',
-  transit: 'foot-walking',
+  metro: 'foot-walking',
 };
 
-/** Modes no router models properly; the UI must not imply otherwise. */
-export const APPROXIMATED_MODES: TravelMode[] = ['transit'];
+/**
+ * Modes no router models properly; the UI must not imply otherwise.
+ *
+ * Empty now. This used to hold 'transit', because no free router models
+ * bus and train timetables — but metro mode does not ask one to. It is a
+ * walking route with a station at each end, and the routers do model
+ * walking, so nothing here is an approximation any more.
+ */
+export const APPROXIMATED_MODES: TravelMode[] = [];
 
 export interface RouteLeg {
   distanceM: number;
@@ -187,7 +192,9 @@ async function computeRouteOsrm(
   if (json.code !== 'Ok' || !route) return { ok: false, reason: 'no-route' };
 
   // Trust the provider's timing only when it genuinely models this mode.
-  const trustDuration = OSRM_HAS_PROFILES || mode === 'drive';
+  // Nothing we offer is a car mode any more, so on a demo deployment that
+  // serves only the car profile there is no mode whose duration is usable.
+  const trustDuration = OSRM_HAS_PROFILES;
   const speed = MODE_SPEED_MPS[mode];
   const timeFor = (metres: number, provided: number | undefined) =>
     trustDuration ? Math.round(provided ?? 0) : Math.round(metres / speed);
@@ -285,7 +292,7 @@ export async function computeRouteMatrix(
   // Request distances too: when the deployment has no real profile for this
   // mode its durations are car times, and ordering stops by car time gives a
   // different (wrong) walking route.
-  const annotations = OSRM_HAS_PROFILES || mode === 'drive' ? 'duration' : 'duration,distance';
+  const annotations = OSRM_HAS_PROFILES ? 'duration' : 'duration,distance';
   const url = `${OSRM_URL}/table/v1/${OSRM_PROFILE[mode]}/${coords}?annotations=${annotations}`;
 
   let response: Response;
@@ -310,7 +317,7 @@ export async function computeRouteMatrix(
 
   // A null entry means the pair is unreachable. Infinity makes the solver
   // treat it as impassable rather than silently costing it zero.
-  const trustDuration = OSRM_HAS_PROFILES || mode === 'drive';
+  const trustDuration = OSRM_HAS_PROFILES;
   const speed = MODE_SPEED_MPS[mode];
   const source = trustDuration ? json.durations : (json.distances ?? json.durations);
 

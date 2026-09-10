@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  Footprints, Bike, Car, TrainFront, X, GripVertical,
+  Footprints, Bike, TrainFront, X, GripVertical,
   Sparkles, Trash2, Loader2,
 } from 'lucide-react';
 import { Reorder, useDragControls } from 'motion/react';
@@ -21,8 +21,10 @@ import { useCrowdState } from '@/features/crowd/useCrowd';
 import { dwellMinutes } from '@/services/itinerary';
 import {
   PUNE_CENTER, haversine, formatDistance, formatDuration,
-  estimateDurationSeconds, DETOUR_FACTOR,
+  estimateDurationSeconds, DETOUR_FACTOR, type LatLng,
 } from '@/lib/geo';
+import { MetroStationPicker } from './MetroStationPicker';
+import { stationForRoute, stationById, PRIMARY_STATIONS } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
 
@@ -36,11 +38,16 @@ import type { Ganpati, TravelMode } from '@/types/ganpati';
  * passed off as a routed time (§61).
  */
 
+/**
+ * Car and the vaguer "Transit" both went. The peths are shut to vehicles
+ * through Ganeshotsav, and "Transit" named a thing no free router models —
+ * where Metro names the one that actually gets you in, and sets the
+ * route's starting point rather than its speed.
+ */
 const MODES: Array<{ key: TravelMode; label: string; icon: typeof Footprints }> = [
   { key: 'walk', label: 'Walk', icon: Footprints },
   { key: 'two_wheeler', label: 'Two-wheeler', icon: Bike },
-  { key: 'drive', label: 'Car', icon: Car },
-  { key: 'transit', label: 'Transit', icon: TrainFront },
+  { key: 'metro', label: 'Metro', icon: TrainFront },
 ];
 
 interface RouteResult {
@@ -93,8 +100,36 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     [activeSlugs, bySlug]
   );
 
-  const origin = geo.status === 'ready' ? geo.position : PUNE_CENTER;
-  const originLabel = geo.status === 'ready' ? 'Your location' : 'Pune city centre';
+  /**
+   * The station to start from in metro mode.
+   *
+   * Defaults to whichever station is nearest the first stop rather than to
+   * a fixed one: a plan that begins in Shaniwar Peth should open on PMC,
+   * not on Mandai two kilometres south. Falls back to Mandai when the plan
+   * is empty or nowhere near the line.
+   */
+  const suggestedStation = useMemo(
+    () => stationForRoute(stops)?.station ?? stationById('mandai') ?? PRIMARY_STATIONS[0],
+    [stops]
+  );
+  const [stationId, setStationId] = useState<string | null>(null);
+  const station = (stationId ? stationById(stationId) : null) ?? suggestedStation;
+
+  const origin: LatLng = useMemo(
+    () =>
+      mode === 'metro'
+        ? { lat: station.lat, lng: station.lng }
+        : geo.status === 'ready'
+          ? geo.position
+          : PUNE_CENTER,
+    [mode, station, geo]
+  );
+  const originLabel =
+    mode === 'metro'
+      ? `${station.name} metro`
+      : geo.status === 'ready'
+        ? 'Your location'
+        : 'Pune city centre';
 
   /**
    * Local estimate shown before (and instead of) any API call. Clearly an
@@ -280,7 +315,17 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       </div>
 
       {/* ---------------- Origin ---------------- */}
-      {geo.status !== 'ready' && (
+      {mode === 'metro' && (
+        <div className="mt-4">
+          <MetroStationPicker
+            value={station}
+            onChange={(s) => { setStationId(s.id); setResult(null); }}
+            userLocation={geo.status === 'ready' ? geo.position : null}
+          />
+        </div>
+      )}
+
+      {mode !== 'metro' && geo.status !== 'ready' && (
         <button
           type="button"
           onClick={requestLocation}

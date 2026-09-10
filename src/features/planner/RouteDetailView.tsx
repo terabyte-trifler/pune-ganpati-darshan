@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChevronRight, ListPlus, Eye, DoorOpen, Clock } from 'lucide-react';
+import { ChevronRight, ListPlus, Eye, DoorOpen, Clock, TrainFront } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdBadge } from '@/features/crowd/CrowdBadge';
 import { StartRouteButton } from './StartRouteButton';
 import { Button } from '@/components/ui/Button';
 import { CategoryBadge } from '@/components/ui/Badge';
 import { usePlan } from '@/hooks/useLocalCollection';
-import { formatDuration } from '@/lib/geo';
+import { formatDuration, formatDistance } from '@/lib/geo';
+import { stationForRoute, LINE_COLOR, LINE_NAME } from '@/lib/metro';
 import { useLiveRouteTime } from '@/features/crowd/useLiveRouteTime';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,17 @@ export function RouteDetailView({
 
   const mandals = route.stops.map((s) => s.ganpati);
 
+  /**
+   * Where to get off.
+   *
+   * Shown for every route, not only metro ones: on a walking route this is
+   * how you reach the start, and on a metro route it is the start. Returns
+   * null past 2.5 km, so the Chinchwad trip — twenty kilometres from the
+   * nearest of these stations — shows nothing rather than a station it
+   * would be absurd to walk from.
+   */
+  const anchor = stationForRoute(mandals);
+
   // One source for this number: the headline stat on this page uses the
   // same hook, and computing it twice is how they end up disagreeing.
   const live = useLiveRouteTime(mandals, totals.darshanS);
@@ -55,6 +67,31 @@ export function RouteDetailView({
       <p className="mt-1.5 text-[12px] text-[var(--faint)]">
         Stops are shown in walking order. Tap a number to see which mandal it is.
       </p>
+
+      {/* ---------------- Where to get off ---------------- */}
+      {anchor && (
+        <section className="mt-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3">
+          <h2 className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            <TrainFront size={13} aria-hidden="true" />
+            {route.mode === 'metro' ? 'Start from' : 'Nearest metro'}
+          </h2>
+          <p className="mt-1.5 flex items-center gap-1.5 text-[15px] font-semibold text-[var(--chandan)]">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ background: LINE_COLOR[anchor.station.line] }}
+            />
+            {anchor.station.name}
+            <span className="text-[12px] font-normal text-[var(--faint)]">
+              {LINE_NAME[anchor.station.line]} · {formatDistance(anchor.distanceM)} to
+              stop 1
+            </span>
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-[var(--muted)]">
+            {anchor.station.exitNote}
+          </p>
+        </section>
+      )}
 
       {/* ---------------- Navigate ---------------- */}
       <StartRouteButton stops={mandals} mode={route.mode} source={`route:${route.slug}`} />

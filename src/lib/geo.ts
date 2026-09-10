@@ -46,12 +46,19 @@ export function haversine(a: LatLng, b: LatLng): number {
  */
 export const DETOUR_FACTOR = 1.71;
 
-/** Metres per second by mode, tuned for festival-period congestion. */
+/**
+ * Metres per second by mode, tuned for festival-period congestion.
+ *
+ * `metro` is walking speed on purpose, and that is not an oversight. The
+ * metro sets where a route begins and ends; the stops in between are
+ * closer to each other than the stations are, so every metre the planner
+ * measures in metro mode is a metre walked. Giving it a train's speed
+ * would quote a ten-minute crossing of the peths that takes fifty.
+ */
 export const MODE_SPEED_MPS = {
   walk: 1.1,
   two_wheeler: 3.6,
-  drive: 3.1,
-  transit: 3.0,
+  metro: 1.1,
 } as const;
 
 export type TravelMode = keyof typeof MODE_SPEED_MPS;

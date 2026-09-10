@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { features } from '@/lib/env';
 import { rateLimit, sharedRateLimit } from '@/lib/rate-limit';
+import { toTravelMode } from '@/db/database.types';
 
 /**
  * Persists a darshan plan and returns a short share id.
@@ -18,7 +19,13 @@ export const runtime = 'nodejs';
 
 const bodySchema = z.object({
   title: z.string().min(1).max(120).default('My Darshan'),
-  mode: z.enum(['walk', 'two_wheeler', 'drive', 'transit']).default('walk'),
+  // Retired values are accepted and translated rather than rejected: a tab
+  // opened before the change, or a shared plan built last week, can still
+  // post 'drive'. See db/database.types#toTravelMode.
+  mode: z
+    .enum(['walk', 'two_wheeler', 'metro', 'drive', 'transit'])
+    .default('walk')
+    .transform(toTravelMode),
   slugs: z.array(z.string().regex(/^[a-z0-9-]+$/)).min(1).max(20),
   origin: z.object({
     lat: z.number().min(-90).max(90),

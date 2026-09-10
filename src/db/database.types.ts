@@ -1,3 +1,5 @@
+import type { TravelMode } from '@/types/ganpati';
+
 /**
  * Database bindings, kept in step with supabase/migrations/*.sql.
  *
@@ -8,7 +10,21 @@
 
 export type GanpatiCategoryEnum = 'maanache' | 'famous' | 'historic' | 'local';
 export type DataConfidenceEnum = 'verified' | 'community' | 'demo';
-export type TravelModeEnum = 'walk' | 'two_wheeler' | 'drive' | 'transit';
+/**
+ * What the `travel_mode` Postgres enum can return.
+ *
+ * Wider than the app's own TravelMode on purpose. Postgres cannot drop a
+ * value from an enum without recreating the type, so 'drive' and 'transit'
+ * remain legal in the database after being retired from the product. Rows
+ * written before the change can still carry them, so the read boundary
+ * translates rather than trusting the column — see toTravelMode().
+ */
+export type TravelModeEnum =
+  | 'walk'
+  | 'two_wheeler'
+  | 'metro'
+  | 'drive'
+  | 'transit';
 export type DarshanStyleEnum = 'inside' | 'outside' | 'either';
 export type CrowdLevelEnum = 'short' | 'moving' | 'long';
 
@@ -364,4 +380,35 @@ export type Database = {
     };
     CompositeTypes: Record<never, never>;
   };
+}
+
+/**
+ * Narrows a stored travel mode to the three the product now offers.
+ *
+ * Retired values are translated, not dropped, and each translation is a
+ * judgement worth stating:
+ *
+ *   'drive'   → 'metro'  Driving was retired because the peths are closed
+ *                        to vehicles during the festival. Anyone who chose
+ *                        it wanted to arrive from outside the core, and the
+ *                        metro is now how that is done. Falling back to
+ *                        'walk' would be worse — it would silently claim a
+ *                        cross-city drive is a walk.
+ *   'transit' → 'metro'  The same thing under its old, vaguer name.
+ *
+ * Unknown values fall back to 'walk', which is the only mode that is always
+ * possible and never overstates how fast you will get there.
+ */
+export function toTravelMode(stored: TravelModeEnum | string | null): TravelMode {
+  switch (stored) {
+    case 'walk':
+    case 'two_wheeler':
+    case 'metro':
+      return stored;
+    case 'drive':
+    case 'transit':
+      return 'metro';
+    default:
+      return 'walk';
+  }
 }

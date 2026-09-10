@@ -1,0 +1,33 @@
+-- =====================================================================
+-- Add 'metro' to the travel_mode enum.
+--
+-- Car was removed from the product: the peth core is closed to vehicles
+-- through Ganeshotsav, so a driving route ends at a barricade with every
+-- stop still ahead of it. The metro replaces it — the Purple Line's
+-- underground stations at Kasba Peth and Mandai come up inside the peths,
+-- and the closures do not touch it.
+--
+-- ---------------------------------------------------------------------
+-- Why this migration adds and does not remove.
+--
+-- Postgres cannot drop a value from an enum without recreating the type,
+-- which means dropping every dependent column's default, rewriting two
+-- tables and re-granting. That is a lot of moving parts to run against a
+-- live database four days before the festival opens, in exchange for
+-- tidiness nobody can see.
+--
+-- So 'drive' and 'transit' stay legal in the database and are retired in
+-- the application instead: db/database.types.ts#toTravelMode translates
+-- them on read, and nothing writes them any more. A row that still carries
+-- one is displayed as metro rather than trusted.
+--
+-- ---------------------------------------------------------------------
+-- This file deliberately does nothing else.
+--
+-- ALTER TYPE ... ADD VALUE cannot be used by the same transaction that
+-- adds it. The data change that depends on 'metro' existing is therefore
+-- a separate migration (20260910180000), which is also why this one looks
+-- too small to be worth a file.
+-- =====================================================================
+
+alter type travel_mode add value if not exists 'metro';

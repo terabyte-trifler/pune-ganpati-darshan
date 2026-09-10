@@ -4,6 +4,7 @@ import { computeRoute, computeRouteMatrix, MAX_MATRIX_POINTS } from '@/lib/maps/
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { rateLimit } from '@/lib/rate-limit';
+import { toTravelMode } from '@/db/database.types';
 
 /**
  * Route computation proxy.
@@ -24,7 +25,12 @@ const pointSchema = z.object({
 const bodySchema = z.object({
   origin: pointSchema,
   stops: z.array(pointSchema).min(1).max(MAX_MATRIX_POINTS - 1),
-  mode: z.enum(['walk', 'two_wheeler', 'drive', 'transit']),
+  // Retired values are accepted and translated rather than rejected: an
+  // older tab or a saved plan can still post 'drive'. Rejecting those
+  // would 400 a request the app itself produced last week.
+  mode: z
+    .enum(['walk', 'two_wheeler', 'metro', 'drive', 'transit'])
+    .transform(toTravelMode),
   optimize: z.boolean().default(true),
 });
 

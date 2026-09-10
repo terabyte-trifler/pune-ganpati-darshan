@@ -12,7 +12,19 @@ export type GanpatiCategory = 'maanache' | 'famous' | 'historic' | 'local';
  */
 export type DataConfidence = 'verified' | 'community' | 'demo';
 
-export type TravelMode = 'walk' | 'two_wheeler' | 'drive' | 'transit';
+/**
+ * How you get around during the festival.
+ *
+ * Car was removed: the peth core is closed to vehicles for Ganeshotsav, so
+ * a driving route ends at a barricade some distance from every stop on it.
+ * Metro replaces it — the Purple Line's underground stations come up inside
+ * the peths, and the closures do not touch it.
+ *
+ * 'metro' describes how you ARRIVE, not how you travel between stops. The
+ * stations are further apart than the mandals are, so a metro route is
+ * walked once you are there; see lib/metro.
+ */
+export type TravelMode = 'walk' | 'two_wheeler' | 'metro';
 
 /** Whether you queue to go in, or take darshan from the road. */
 export type DarshanStyle = 'inside' | 'outside' | 'either';

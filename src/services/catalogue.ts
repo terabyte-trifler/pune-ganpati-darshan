@@ -1,4 +1,5 @@
 import catalogue from '@/content/catalogue.json';
+import { toTravelMode } from '@/db/database.types';
 import type {
   Area,
   Category,
@@ -10,7 +11,6 @@ import type {
   GanpatiImage,
   CuratedRoute,
   TimeOfDay,
-  TravelMode,
 } from '@/types/ganpati';
 
 /**
@@ -99,7 +99,7 @@ interface RawCatalogue {
 interface RawRoute {
   id: string; slug: string; title: string; title_mr: string | null;
   summary: string | null; description: string | null;
-  mode: TravelMode; time_of_day: string | null; themes: string[];
+  mode: string; time_of_day: string | null; themes: string[];
   total_distance_m: number | null; total_walk_s: number | null;
   total_darshan_s: number | null;
   featured: boolean; published: boolean; sort_order: number;
@@ -221,7 +221,7 @@ export const localRoutes: CuratedRoute[] = (raw.routes ?? []).map((r) => ({
   titleMr: r.title_mr,
   summary: r.summary,
   description: r.description,
-  mode: r.mode,
+  mode: toTravelMode(r.mode),
   timeOfDay: (r.time_of_day ?? 'any') as TimeOfDay,
   themes: r.themes,
   totalDarshanS: r.total_darshan_s,

@@ -1,1993 +1,1970 @@
 {
-    "areas": [
-        {
-            "id": "cb60c75f-2a4d-4f35-b38b-d2c42759b68b",
-            "city": "Pune",
-            "name": "Kasba Peth",
-            "slug": "kasba-peth",
-            "is_core": true,
-            "name_mr": "कसबा पेठ",
-            "sort_order": 1,
-            "centroid_lat": 18.518915,
-            "centroid_lng": 73.857171
-        },
-        {
-            "id": "735ea4bf-b240-4b4f-be5c-1f3034269b0e",
-            "city": "Pune",
-            "name": "Budhwar Peth",
-            "slug": "budhwar-peth",
-            "is_core": true,
-            "name_mr": "बुधवार पेठ",
-            "sort_order": 2,
-            "centroid_lat": 18.515633,
-            "centroid_lng": 73.855441
-        },
-        {
-            "id": "9ea20aa9-4446-4e7e-894d-afeb3c1e4fd6",
-            "city": "Pune",
-            "name": "Shukrawar Peth",
-            "slug": "shukrawar-peth",
-            "is_core": true,
-            "name_mr": "शुक्रवार पेठ",
-            "sort_order": 3,
-            "centroid_lat": 18.511257,
-            "centroid_lng": 73.855524
-        },
-        {
-            "id": "05b4225f-cc04-4f2d-8dd0-6614306ba57a",
-            "city": "Pune",
-            "name": "Sadashiv Peth",
-            "slug": "sadashiv-peth",
-            "is_core": true,
-            "name_mr": "सदाशिव पेठ",
-            "sort_order": 4,
-            "centroid_lat": 18.509709,
-            "centroid_lng": 73.851811
-        },
-        {
-            "id": "b63092c1-21aa-4633-982d-8ed5d96de884",
-            "city": "Pune",
-            "name": "Narayan Peth",
-            "slug": "narayan-peth",
-            "is_core": true,
-            "name_mr": "नारायण पेठ",
-            "sort_order": 5,
-            "centroid_lat": 18.51227,
-            "centroid_lng": 73.848102
-        },
-        {
-            "id": "58e6b71e-8c06-4573-b633-272dedc20a68",
-            "city": "Pune",
-            "name": "Ganesh Peth",
-            "slug": "ganesh-peth",
-            "is_core": true,
-            "name_mr": "गणेश पेठ",
-            "sort_order": 6,
-            "centroid_lat": 18.5217,
-            "centroid_lng": 73.8619
-        },
-        {
-            "id": "a9bc0d26-eb85-45e7-957b-b80b4765ff58",
-            "city": "Pune",
-            "name": "Shaniwar Peth",
-            "slug": "shaniwar-peth",
-            "is_core": true,
-            "name_mr": "शनिवार पेठ",
-            "sort_order": 7,
-            "centroid_lat": 18.5148,
-            "centroid_lng": 73.8462
-        },
-        {
-            "id": "b659e62e-0aba-49e8-9c45-d032d4ccf9dc",
-            "city": "Pune",
-            "name": "Chinchwad",
-            "slug": "chinchwad",
-            "is_core": false,
-            "name_mr": "चिंचवड",
-            "sort_order": 8,
-            "centroid_lat": 18.626316,
-            "centroid_lng": 73.778442
-        }
-    ],
-    "routes": [
-        {
-            "id": "11501637-e9ee-4a57-ad72-fe6dd55156ac",
-            "mode": "walk",
-            "slug": "manache-5-sakal-walk",
-            "stops": [
-                {
-                    "note": "Start here — the city's gramdaivat and first of the five.",
-                    "position": 0,
-                    "ganpati_slug": "kasba-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": "A short walk down from Kasba.",
-                    "position": 1,
-                    "ganpati_slug": "tambdi-jogeshwari",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": "On Laxmi Road; approach on foot.",
-                    "position": 2,
-                    "ganpati_slug": "guruji-talim",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "The market around it thickens from late morning.",
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": "The wada courtyard is a calm place to finish.",
-                    "position": 4,
-                    "ganpati_slug": "kesariwada-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                }
-            ],
-            "title": "Manache 5 Sakal Walk",
-            "themes": [
-                "manache",
-                "heritage",
-                "essential"
-            ],
-            "summary": "All five Manache Paach in ceremonial order, on foot, before the peths fill up.",
-            "featured": true,
-            "title_mr": "मानाचे पाच — सकाळ दर्शन",
-            "published": true,
-            "sort_order": 1,
-            "description": "The five mandals with ceremonial precedence, walked in the order the procession follows. Starting early matters more here than anywhere else: the same walk after 10am takes roughly twice as long.",
-            "time_of_day": "morning",
-            "total_walk_s": null,
-            "total_darshan_s": 4200,
-            "total_distance_m": null
-        },
-        {
-            "id": "21e73e2d-073d-4460-8342-62002207b39e",
-            "mode": "walk",
-            "slug": "dagdusheth-and-around",
-            "stops": [
-                {
-                    "note": "Quick first stop before the queue.",
-                    "position": 0,
-                    "ganpati_slug": "bhau-rangari-ganpati",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "The long one. Early morning is materially faster.",
-                    "position": 1,
-                    "ganpati_slug": "dagdusheth-halwai-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 45
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "tambdi-jogeshwari",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": "On the Laxmi Road stretch back.",
-                    "position": 4,
-                    "ganpati_slug": "nimbalkar-talim-mandal",
-                    "darshan_style": "either",
-                    "darshan_minutes": 6
-                }
-            ],
-            "title": "Dagdusheth & the Budhwar Peth core",
-            "themes": [
-                "famous",
-                "essential"
-            ],
-            "summary": "Pune's best-known Ganpati plus the mandals within a few minutes' walk of it.",
-            "featured": true,
-            "title_mr": "दगडूशेठ आणि बुधवार पेठ",
-            "published": true,
-            "sort_order": 2,
-            "description": "Built around the longest queue in the city. Dagdusheth alone can take the better part of an hour at peak, so the surrounding stops are deliberately short ones you can fold in either side of it.",
-            "time_of_day": "morning",
-            "total_walk_s": null,
-            "total_darshan_s": 5460,
-            "total_distance_m": null
-        },
-        {
-            "id": "dd703168-6a16-4f58-a19b-f27506637c6c",
-            "mode": "walk",
-            "slug": "evening-dekhava-trail",
-            "stops": [
-                {
-                    "note": "The stage set is rebuilt every year.",
-                    "position": 0,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": "Best once the lighting is fully on.",
-                    "position": 1,
-                    "ganpati_slug": "chhatrapati-rajaram-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": "Large themed installation, changes yearly.",
-                    "position": 2,
-                    "ganpati_slug": "hutatma-babu-genu-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": "Often paired with Shanipar on evening walks.",
-                    "position": 4,
-                    "ganpati_slug": "natu-baug-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                }
-            ],
-            "title": "Evening dekhava trail",
-            "themes": [
-                "dekhava",
-                "lights",
-                "night"
-            ],
-            "summary": "The mandals whose decorated sets are the point — best after dark.",
-            "featured": true,
-            "title_mr": "संध्याकाळचा देखावा",
-            "published": true,
-            "sort_order": 3,
-            "description": "These mandals are experienced from the road rather than in a queue, so the route moves quickly. Everything here reads better once the lighting is fully on.",
-            "time_of_day": "evening",
-            "total_walk_s": null,
-            "total_darshan_s": 2580,
-            "total_distance_m": null
-        },
-        {
-            "id": "6a267cb6-2ebf-48de-9ba7-9e327b974208",
-            "mode": "walk",
-            "slug": "peth-express-90",
-            "stops": [
-                {
-                    "note": null,
-                    "position": 0,
-                    "ganpati_slug": "kasba-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "tambdi-jogeshwari",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "guruji-talim",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "Skip the queue here if you are tight on time.",
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                }
-            ],
-            "title": "90-minute peth express",
-            "themes": [
-                "essential",
-                "quick"
-            ],
-            "summary": "The most ground you can genuinely cover in an hour and a half on foot.",
-            "featured": true,
-            "title_mr": "दीड तासात पेठ दर्शन",
-            "published": true,
-            "sort_order": 4,
-            "description": "Deliberately skips the heaviest queues. This is the route for someone passing through Pune with a narrow window rather than a full day.",
-            "time_of_day": "any",
-            "total_walk_s": null,
-            "total_darshan_s": 3300,
-            "total_distance_m": null
-        },
-        {
-            "id": "65f92f84-b85a-4a74-89a7-fd2e6328df90",
-            "mode": "walk",
-            "slug": "historic-peth-stroll",
-            "stops": [
-                {
-                    "note": "Among the earliest sarvajanik mandals in Pune.",
-                    "position": 0,
-                    "ganpati_slug": "bhau-rangari-ganpati",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "Founded in a talim; an early symbol of shared celebration.",
-                    "position": 1,
-                    "ganpati_slug": "guruji-talim",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "nimbalkar-talim-mandal",
-                    "darshan_style": "either",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": "Tilak's residence and the Kesari office.",
-                    "position": 3,
-                    "ganpati_slug": "kesariwada-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": null,
-                    "position": 4,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                }
-            ],
-            "title": "Historic peth stroll",
-            "themes": [
-                "historic",
-                "heritage"
-            ],
-            "summary": "The oldest sarvajanik mandals, and the wadas and talims they grew out of.",
-            "featured": false,
-            "title_mr": "ऐतिहासिक पेठ फेरी",
-            "published": true,
-            "sort_order": 5,
-            "description": "Follows the festival's own history: Bhau Rangari's early idol, the talim mandals, and Kesari Wada where Tilak ran the newspaper that helped make Ganeshotsav public.",
-            "time_of_day": "any",
-            "total_walk_s": null,
-            "total_darshan_s": 2580,
-            "total_distance_m": null
-        },
-        {
-            "id": "2b8e4589-a63a-4ca1-a86e-95014b5c9307",
-            "mode": "walk",
-            "slug": "great-peth-circuit",
-            "stops": [
-                {
-                    "note": "Start at the gramdaivat, before the lanes fill.",
-                    "position": 0,
-                    "ganpati_slug": "kasba-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "jilbya-maruti-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                },
-                {
-                    "note": "Large themed set, changes each year.",
-                    "position": 2,
-                    "ganpati_slug": "hutatma-babu-genu-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "tambdi-jogeshwari",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": "The long queue. Go now rather than later.",
-                    "position": 4,
-                    "ganpati_slug": "dagdusheth-halwai-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 45
-                },
-                {
-                    "note": "One of the earliest sarvajanik mandals.",
-                    "position": 5,
-                    "ganpati_slug": "bhau-rangari-ganpati",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "On Laxmi Road — closed to vehicles for much of the festival.",
-                    "position": 6,
-                    "ganpati_slug": "guruji-talim",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": null,
-                    "position": 7,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": null,
-                    "position": 8,
-                    "ganpati_slug": "nimbalkar-talim-mandal",
-                    "darshan_style": "either",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": "Beside Mahatma Phule Mandai.",
-                    "position": 9,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 10,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": "Finish in the wada courtyard.",
-                    "position": 11,
-                    "ganpati_slug": "kesariwada-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                }
-            ],
-            "title": "The Great Peth Circuit",
-            "themes": [
-                "essential",
-                "manache",
-                "heritage",
-                "dekhava"
-            ],
-            "summary": "Every major mandal in the old peths, walked end to end. A full day.",
-            "featured": true,
-            "title_mr": "संपूर्ण पेठ फेरी",
-            "published": true,
-            "sort_order": 6,
-            "description": "The complete walk: twelve mandals from Kasba in the north down to Kesari Wada, taking in the Manache Paach, Dagdusheth and the big dekhava mandals on the way. Budget a whole day — the queue at Dagdusheth alone can swallow an hour, and this route is as much about the peth lanes between the stops as the stops themselves.",
-            "time_of_day": "morning",
-            "total_walk_s": null,
-            "total_darshan_s": 9720,
-            "total_distance_m": null
-        },
-        {
-            "id": "e11ccac5-861f-414a-9b50-f73eb92b5ab4",
-            "mode": "walk",
-            "slug": "manache-and-landmarks",
-            "stops": [
-                {
-                    "note": "First of the Manache Paach.",
-                    "position": 0,
-                    "ganpati_slug": "kasba-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "tambdi-jogeshwari",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": "Not one of the five, but older than most of them.",
-                    "position": 2,
-                    "ganpati_slug": "bhau-rangari-ganpati",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "guruji-talim",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "The second talim mandal on this walk.",
-                    "position": 4,
-                    "ganpati_slug": "nimbalkar-talim-mandal",
-                    "darshan_style": "either",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": null,
-                    "position": 5,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": null,
-                    "position": 6,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": "Tilak's residence and the Kesari office.",
-                    "position": 7,
-                    "ganpati_slug": "kesariwada-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                }
-            ],
-            "title": "Manache Paach & the old landmarks",
-            "themes": [
-                "manache",
-                "historic",
-                "heritage"
-            ],
-            "summary": "The five ceremonial mandals, plus the historic ones that grew up around them.",
-            "featured": true,
-            "title_mr": "मानाचे पाच आणि ऐतिहासिक स्थळे",
-            "published": true,
-            "sort_order": 7,
-            "description": "Follows the Manache Paach in order, but folds in Bhau Rangari's early idol and the talim mandals that sit between them. A good route if you want the ceremony and the history in one walk rather than choosing.",
-            "time_of_day": "morning",
-            "total_walk_s": null,
-            "total_darshan_s": 5400,
-            "total_distance_m": null
-        },
-        {
-            "id": "59afa823-65db-4bdc-b223-9493bc9b87cd",
-            "mode": "walk",
-            "slug": "mandai-to-the-river",
-            "stops": [
-                {
-                    "note": "Start at the market.",
-                    "position": 0,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "natu-baug-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": null,
-                    "position": 4,
-                    "ganpati_slug": "nimbalkar-talim-mandal",
-                    "darshan_style": "either",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": null,
-                    "position": 5,
-                    "ganpati_slug": "bhau-rangari-ganpati",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": "Near Bhide Pul, at the river end.",
-                    "position": 6,
-                    "ganpati_slug": "garud-ganpati-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                }
-            ],
-            "title": "Mandai to the river",
-            "themes": [
-                "essential",
-                "dekhava"
-            ],
-            "summary": "South to north across the peths, from the market to the Shaniwar Peth riverside.",
-            "featured": false,
-            "title_mr": "मंडईपासून नदीपर्यंत",
-            "published": true,
-            "sort_order": 8,
-            "description": "A directional walk rather than a loop: start at the Mandai market end and finish near Bhide Pul. Useful if you are heading that way anyway, and it strings together mandals that a circular route tends to miss.",
-            "time_of_day": "afternoon",
-            "total_walk_s": null,
-            "total_darshan_s": 3720,
-            "total_distance_m": null
-        },
-        {
-            "id": "c9e6effc-ea92-48e9-ac87-dc6fa30fa64e",
-            "mode": "walk",
-            "slug": "sadashiv-after-dark",
-            "stops": [
-                {
-                    "note": null,
-                    "position": 0,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": "On the Bajirao Road stretch.",
-                    "position": 1,
-                    "ganpati_slug": "natu-baug-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                },
-                {
-                    "note": "Wait until the lighting is fully on.",
-                    "position": 2,
-                    "ganpati_slug": "chhatrapati-rajaram-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": "The stage set reads best after dark.",
-                    "position": 3,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 4,
-                    "ganpati_slug": "hatti-ganpati-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                }
-            ],
-            "title": "Sadashiv Peth after dark",
-            "themes": [
-                "dekhava",
-                "lights",
-                "night"
-            ],
-            "summary": "The Sadashiv Peth stretch, where the decoration is the draw.",
-            "featured": false,
-            "title_mr": "सदाशिव पेठ — रात्रीचे दर्शन",
-            "published": true,
-            "sort_order": 9,
-            "description": "These mandals are viewed from the road rather than queued for, so the walk moves quickly and works well late. The lighting and the stage sets are the reason to come.",
-            "time_of_day": "night",
-            "total_walk_s": null,
-            "total_darshan_s": 2280,
-            "total_distance_m": null
-        },
-        {
-            "id": "ad815552-d5d8-4da2-8cd0-20a370aafde5",
-            "mode": "walk",
-            "slug": "two-peths-on-foot",
-            "stops": [
-                {
-                    "note": null,
-                    "position": 0,
-                    "ganpati_slug": "kesariwada-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": "Named for the elephants at its entrance.",
-                    "position": 1,
-                    "ganpati_slug": "hatti-ganpati-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "nimbalkar-talim-mandal",
-                    "darshan_style": "either",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": null,
-                    "position": 4,
-                    "ganpati_slug": "guruji-talim",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                },
-                {
-                    "note": null,
-                    "position": 5,
-                    "ganpati_slug": "bhau-rangari-ganpati",
-                    "darshan_style": "either",
-                    "darshan_minutes": 8
-                }
-            ],
-            "title": "Narayan & Budhwar on foot",
-            "themes": [
-                "heritage",
-                "historic"
-            ],
-            "summary": "Two neighbouring peths, six mandals, one unhurried walk.",
-            "featured": false,
-            "title_mr": "नारायण आणि बुधवार पेठ",
-            "published": true,
-            "sort_order": 10,
-            "description": "Stays inside a small area, so there is very little walking between stops. A sensible choice when you have a couple of hours and would rather see a few mandals properly than rush across the city.",
-            "time_of_day": "any",
-            "total_walk_s": null,
-            "total_darshan_s": 3720,
-            "total_distance_m": null
-        },
-        {
-            "id": "5fd60c81-e520-4b1b-8fbe-3fc9d416de4e",
-            "mode": "walk",
-            "slug": "mandai-hour",
-            "stops": [
-                {
-                    "note": null,
-                    "position": 0,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "natu-baug-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                },
-                {
-                    "note": "Darshan from outside here — the queue alone would break the hour.",
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                }
-            ],
-            "title": "One hour from Mandai",
-            "themes": [
-                "quick",
-                "essential"
-            ],
-            "summary": "Four mandals within a short walk of Mandai, in about an hour.",
-            "featured": true,
-            "title_mr": "मंडईतून एक तास",
-            "published": true,
-            "sort_order": 11,
-            "description": "Built for a genuinely narrow window. It deliberately avoids Dagdusheth, because a single queue there would consume the whole hour and leave nothing for the rest.",
-            "time_of_day": "any",
-            "total_walk_s": null,
-            "total_darshan_s": 1980,
-            "total_distance_m": null
-        },
-        {
-            "id": "ea2d9c1f-94f4-4485-9099-06c4f6e4d6c5",
-            "mode": "walk",
-            "slug": "narayan-peth-wadas",
-            "stops": [
-                {
-                    "note": "The reason for this route.",
-                    "position": 0,
-                    "ganpati_slug": "kesariwada-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 15
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "hatti-ganpati-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "chhatrapati-rajaram-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                }
-            ],
-            "title": "Narayan Peth: wadas and sets",
-            "themes": [
-                "historic",
-                "heritage"
-            ],
-            "summary": "Kesari Wada and the Narayan Peth mandals around it.",
-            "featured": false,
-            "title_mr": "नारायण पेठ — वाडे आणि देखावे",
-            "published": true,
-            "sort_order": 12,
-            "description": "Centred on Kesari Wada, where Tilak ran the newspaper that helped turn Ganeshotsav into a public festival. Short, and heavier on history than spectacle.",
-            "time_of_day": "afternoon",
-            "total_walk_s": null,
-            "total_darshan_s": 2160,
-            "total_distance_m": null
-        },
-        {
-            "id": "41ef9de7-8f33-4637-8ef3-933c626ab95d",
-            "mode": "walk",
-            "slug": "easy-with-children",
-            "stops": [
-                {
-                    "note": "Open lawns and room to sit — the easiest stop with children.",
-                    "position": 0,
-                    "ganpati_slug": "sarasbaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 25
-                },
-                {
-                    "note": "Seen from the road, so no queue.",
-                    "position": 1,
-                    "ganpati_slug": "chhatrapati-rajaram-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "shanipar-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 6
-                },
-                {
-                    "note": null,
-                    "position": 3,
-                    "ganpati_slug": "natu-baug-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 5
-                }
-            ],
-            "title": "Easy darshan with children",
-            "themes": [
-                "family",
-                "temple",
-                "quick"
-            ],
-            "summary": "Open spaces, short queues and somewhere to sit.",
-            "featured": true,
-            "title_mr": "मुलांसोबत सोपे दर्शन",
-            "published": true,
-            "sort_order": 13,
-            "description": "Chosen for practicality rather than prestige: Sarasbaug has lawns and room to move, and the other stops are quick roadside darshan rather than long queues in a crowded lane. Deliberately avoids the heaviest crowds.",
-            "time_of_day": "morning",
-            "total_walk_s": null,
-            "total_darshan_s": 2760,
-            "total_distance_m": null
-        },
-        {
-            "id": "fed394c3-0f45-4b44-84d3-8152b08256e9",
-            "mode": "walk",
-            "slug": "late-night-short-queues",
-            "stops": [
-                {
-                    "note": null,
-                    "position": 0,
-                    "ganpati_slug": "chhatrapati-rajaram-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "hutatma-babu-genu-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 10
-                },
-                {
-                    "note": "Queue is far shorter at this hour than at midday.",
-                    "position": 3,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": "Still the longest wait here, but a fraction of the daytime queue.",
-                    "position": 4,
-                    "ganpati_slug": "dagdusheth-halwai-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 25
-                }
-            ],
-            "title": "Late night, short queues",
-            "themes": [
-                "night",
-                "lights",
-                "quick"
-            ],
-            "summary": "The same mandals, without the wait — if you can stay up.",
-            "featured": false,
-            "title_mr": "रात्री उशिरा — कमी गर्दी",
-            "published": true,
-            "sort_order": 14,
-            "description": "Queues thin considerably late at night while the lighting stays on. This route favours mandals worth seeing after dark and is ordered so the longest queue comes when it is shortest.",
-            "time_of_day": "night",
-            "total_walk_s": null,
-            "total_darshan_s": 4140,
-            "total_distance_m": null
-        },
-        {
-            "id": "72a193c6-39c5-4958-90a4-6e0f8fea90de",
-            "mode": "walk",
-            "slug": "first-evening-in-pune",
-            "stops": [
-                {
-                    "note": "The one most people mean by 'Pune Ganpati'.",
-                    "position": 0,
-                    "ganpati_slug": "dagdusheth-halwai-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 45
-                },
-                {
-                    "note": null,
-                    "position": 1,
-                    "ganpati_slug": "tambdi-jogeshwari",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 12
-                },
-                {
-                    "note": null,
-                    "position": 2,
-                    "ganpati_slug": "tulshibaug-ganpati",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                },
-                {
-                    "note": "Finish on the dekhava, after dark.",
-                    "position": 3,
-                    "ganpati_slug": "akhil-mandai-mandal",
-                    "darshan_style": "outside",
-                    "darshan_minutes": 12
-                }
-            ],
-            "title": "Your first evening in Pune",
-            "themes": [
-                "essential",
-                "famous",
-                "dekhava"
-            ],
-            "summary": "If you only get one evening, these are the ones.",
-            "featured": true,
-            "title_mr": "पहिली संध्याकाळ",
-            "published": true,
-            "sort_order": 15,
-            "description": "A short list for a first visit: the mandal everyone means when they say Pune Ganpati, two of the Manache Paach nearby, and one big dekhava to finish on.",
-            "time_of_day": "evening",
-            "total_walk_s": null,
-            "total_darshan_s": 5340,
-            "total_distance_m": null
-        },
-        {
-            "id": "c2656de4-bef6-40d9-8280-2553ab993782",
-            "mode": "drive",
-            "slug": "chinchwad-morya-gosavi",
-            "stops": [
-                {
-                    "note": "About 15 km from the peths — plan this as its own trip.",
-                    "position": 0,
-                    "ganpati_slug": "shri-morya-gosavi",
-                    "darshan_style": "inside",
-                    "darshan_minutes": 20
-                }
-            ],
-            "title": "Chinchwad: Morya Gosavi",
-            "themes": [
-                "temple",
-                "famous",
-                "pcmc"
-            ],
-            "summary": "The Chinchwad temple, as its own trip rather than a peth stop.",
-            "featured": false,
-            "title_mr": "चिंचवड — मोरया गोसावी",
-            "published": true,
-            "sort_order": 16,
-            "description": "Morya Gosavi sits about 15 km north-west of the peths, so it does not belong on a walking route and this is listed separately and honestly. Treat it as a half-day of its own; it is the centre of the Morya Gosavi tradition and the main draw in Pimpri-Chinchwad.",
-            "time_of_day": "any",
-            "total_walk_s": null,
-            "total_darshan_s": 1200,
-            "total_distance_m": null
-        }
-    ],
-    "festival": {
-        "year": 2026,
-        "tagline": "Ten days across Pune's peths",
-        "end_date": "2026-09-25",
-        "is_active": true,
-        "start_date": "2026-09-14",
-        "greeting_en": "Ganpati Bappa Morya",
-        "greeting_mr": "गणपती बाप्पा मोरया",
-        "visarjan_date": "2026-09-25"
+  "areas": [
+    {
+      "id": "cb60c75f-2a4d-4f35-b38b-d2c42759b68b",
+      "city": "Pune",
+      "name": "Kasba Peth",
+      "slug": "kasba-peth",
+      "is_core": true,
+      "name_mr": "कसबा पेठ",
+      "sort_order": 1,
+      "centroid_lat": 18.518915,
+      "centroid_lng": 73.857171
     },
-    "ganpatis": [
+    {
+      "id": "735ea4bf-b240-4b4f-be5c-1f3034269b0e",
+      "city": "Pune",
+      "name": "Budhwar Peth",
+      "slug": "budhwar-peth",
+      "is_core": true,
+      "name_mr": "बुधवार पेठ",
+      "sort_order": 2,
+      "centroid_lat": 18.515633,
+      "centroid_lng": 73.855441
+    },
+    {
+      "id": "9ea20aa9-4446-4e7e-894d-afeb3c1e4fd6",
+      "city": "Pune",
+      "name": "Shukrawar Peth",
+      "slug": "shukrawar-peth",
+      "is_core": true,
+      "name_mr": "शुक्रवार पेठ",
+      "sort_order": 3,
+      "centroid_lat": 18.511257,
+      "centroid_lng": 73.855524
+    },
+    {
+      "id": "05b4225f-cc04-4f2d-8dd0-6614306ba57a",
+      "city": "Pune",
+      "name": "Sadashiv Peth",
+      "slug": "sadashiv-peth",
+      "is_core": true,
+      "name_mr": "सदाशिव पेठ",
+      "sort_order": 4,
+      "centroid_lat": 18.509709,
+      "centroid_lng": 73.851811
+    },
+    {
+      "id": "b63092c1-21aa-4633-982d-8ed5d96de884",
+      "city": "Pune",
+      "name": "Narayan Peth",
+      "slug": "narayan-peth",
+      "is_core": true,
+      "name_mr": "नारायण पेठ",
+      "sort_order": 5,
+      "centroid_lat": 18.51227,
+      "centroid_lng": 73.848102
+    },
+    {
+      "id": "58e6b71e-8c06-4573-b633-272dedc20a68",
+      "city": "Pune",
+      "name": "Ganesh Peth",
+      "slug": "ganesh-peth",
+      "is_core": true,
+      "name_mr": "गणेश पेठ",
+      "sort_order": 6,
+      "centroid_lat": 18.5217,
+      "centroid_lng": 73.8619
+    },
+    {
+      "id": "a9bc0d26-eb85-45e7-957b-b80b4765ff58",
+      "city": "Pune",
+      "name": "Shaniwar Peth",
+      "slug": "shaniwar-peth",
+      "is_core": true,
+      "name_mr": "शनिवार पेठ",
+      "sort_order": 7,
+      "centroid_lat": 18.5148,
+      "centroid_lng": 73.8462
+    },
+    {
+      "id": "b659e62e-0aba-49e8-9c45-d032d4ccf9dc",
+      "city": "Pune",
+      "name": "Chinchwad",
+      "slug": "chinchwad",
+      "is_core": false,
+      "name_mr": "चिंचवड",
+      "sort_order": 8,
+      "centroid_lat": 18.626316,
+      "centroid_lng": 73.778442
+    }
+  ],
+  "routes": [
+    {
+      "id": "11501637-e9ee-4a57-ad72-fe6dd55156ac",
+      "mode": "walk",
+      "slug": "manache-5-sakal-walk",
+      "stops": [
         {
-            "id": "1de437d8-6369-41e5-beef-50fffaf735ac",
-            "name": "Shrimant Dagdusheth Halwai Ganpati",
-            "slug": "dagdusheth-halwai-ganpati",
-            "tags": [
-                "famous",
-                "temple",
-                "aarti"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "श्रीमंत दगडूशेठ हलवाई गणपती",
-            "category": "famous",
-            "featured": true,
-            "latitude": 18.515140,
-            "verified": true,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
-            "longitude": 73.856379,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 1000,
-            "description": "Pune's best-known Ganpati and a year-round temple, drawing the heaviest darshan queues of the festival.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Expect the longest queue of any mandal in the city; early morning is materially faster.",
-            "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 45,
-            "google_place_id": null,
-            "established_year": 1893,
-            "coordinate_source": "admin",
-            "peak_darshan_minutes": 150,
-            "crowd_reporting_enabled": true
+          "note": "Start here — the city's gramdaivat and first of the five.",
+          "position": 0,
+          "ganpati_slug": "kasba-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
         },
         {
-            "id": "fb0eace1-c0ca-4124-b0de-0cf5b5a1e7ec",
-            "name": "Shri Kasba Ganpati",
-            "slug": "kasba-ganpati",
-            "tags": [
-                "manache",
-                "gramdaivat",
-                "heritage"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/2289294092",
-            "address": null,
-            "name_mr": "श्री कसबा गणपती",
-            "category": "maanache",
-            "featured": true,
-            "latitude": 18.51903,
-            "verified": true,
-            "area_name": "Kasba Peth",
-            "area_slug": "kasba-peth",
-            "longitude": 73.857241,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 980,
-            "description": "Pune's gramdaivat and the first of the Manache Paach. Visarjan across the city begins only after this mandal's procession sets out.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Quietest in the first hour after opening; the lane narrows sharply by mid-morning.",
-            "area_is_core": true,
-            "area_name_mr": "कसबा पेठ",
-            "manache_rank": 1,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 15,
-            "google_place_id": null,
-            "established_year": 1893,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 40,
-            "crowd_reporting_enabled": true
+          "note": "A short walk down from Kasba.",
+          "position": 1,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
         },
         {
-            "id": "26b8d1a9-3c00-4fec-b184-30c71ea099d8",
-            "name": "Tambdi Jogeshwari Ganpati",
-            "slug": "tambdi-jogeshwari",
-            "tags": [
-                "manache",
-                "heritage"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "तांबडी जोगेश्वरी गणपती",
-            "category": "maanache",
-            "featured": true,
-            "latitude": 18.51662,
-            "verified": true,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
-            "longitude": 73.854894,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 910,
-            "description": "Second of the Manache Paach, set beside the Jogeshwari temple in Budhwar Peth.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "A short walk from Kasba Ganpati — the natural second stop on a morning route.",
-            "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
-            "manache_rank": 2,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 12,
-            "google_place_id": null,
-            "established_year": 1893,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 30,
-            "crowd_reporting_enabled": true
+          "note": "On Laxmi Road; approach on foot.",
+          "position": 2,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
         },
         {
-            "id": "821d5e0a-8664-4523-b921-c7312034476f",
-            "name": "Tulshibaug Ganpati",
-            "slug": "tulshibaug-ganpati",
-            "tags": [
-                "manache",
-                "silver-idol",
-                "market"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "तुळशीबाग गणपती",
-            "category": "maanache",
-            "featured": true,
-            "latitude": 18.514268,
-            "verified": true,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
-            "longitude": 73.855306,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 890,
-            "description": "Fourth of the Manache Paach, known for its tall silver idol.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "The surrounding market is dense from late morning onward.",
-            "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
-            "manache_rank": 4,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 20,
-            "google_place_id": null,
-            "established_year": 1901,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 45,
-            "crowd_reporting_enabled": true
+          "note": "The market around it thickens from late morning.",
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
         },
         {
-            "id": "2a3c6427-3483-40c8-b1f4-c31bbbab0772",
-            "name": "Guruji Talim Ganpati",
-            "slug": "guruji-talim",
-            "tags": [
-                "manache",
-                "talim",
-                "heritage"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/5832579354",
-            "address": null,
-            "name_mr": "गुरुजी तालीम गणपती",
-            "category": "maanache",
-            "featured": true,
-            "latitude": 18.515047,
-            "verified": true,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
-            "longitude": 73.85466,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 870,
-            "description": "Third of the Manache Paach, founded in a talim and long associated with Hindu-Muslim collaboration in the festival's early years.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Sits on Laxmi Road, so approach on foot — the road is closed to vehicles for much of the festival.",
-            "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
-            "manache_rank": 3,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": 8,
-            "google_place_id": null,
-            "established_year": 1887,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 20,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "2e6b15c1-1dd7-442a-a992-ad790056f0ef",
-            "name": "Kesariwada Ganpati",
-            "slug": "kesariwada-ganpati",
-            "tags": [
-                "manache",
-                "tilak",
-                "heritage"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "केसरीवाडा गणपती",
-            "category": "maanache",
-            "featured": true,
-            "latitude": 18.515811,
-            "verified": true,
-            "area_name": "Narayan Peth",
-            "area_slug": "narayan-peth",
-            "longitude": 73.849008,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 840,
-            "description": "Fifth of the Manache Paach, held at Kesari Wada — Lokmanya Tilak's residence and the office of the newspaper Kesari.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "The wada courtyard is calmer than the peth mandals — a good closing stop.",
-            "area_is_core": true,
-            "area_name_mr": "नारायण पेठ",
-            "manache_rank": 5,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 15,
-            "google_place_id": null,
-            "established_year": 1894,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 30,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "22e48a9b-e960-4209-ac51-b38b772c0243",
-            "name": "Akhil Mandai Mandal",
-            "slug": "akhil-mandai-mandal",
-            "tags": [
-                "famous",
-                "dekhava",
-                "night"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "अखिल मंडई मंडळ",
-            "category": "famous",
-            "featured": true,
-            "latitude": 18.511852,
-            "verified": true,
-            "area_name": "Shukrawar Peth",
-            "area_slug": "shukrawar-peth",
-            "longitude": 73.856135,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 820,
-            "description": "Set beside Mahatma Phule Mandai, known for an elaborate stage set built afresh each year.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "The decoration reads best after dark.",
-            "area_is_core": true,
-            "area_name_mr": "शुक्रवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 12,
-            "google_place_id": null,
-            "established_year": 1893,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 30,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "fce6f633-0aab-42c5-9a9d-886353d06947",
-            "name": "Chhatrapati Rajaram Mandal",
-            "slug": "chhatrapati-rajaram-mandal",
-            "tags": [
-                "famous",
-                "decoration",
-                "night"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "छत्रपती राजाराम मंडळ",
-            "category": "famous",
-            "featured": false,
-            "latitude": 18.512444,
-            "verified": false,
-            "area_name": "Sadashiv Peth",
-            "area_slug": "sadashiv-peth",
-            "longitude": 73.847482,
-            "published": true,
-            "confidence": "community",
-            "prominence": 760,
-            "description": "Repeatedly recognised for its decoration; a common final stop on evening routes.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Best seen at night, when the lighting is fully on.",
-            "area_is_core": true,
-            "area_name_mr": "सदाशिव पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 10,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 25,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "033244a1-b00a-4818-add2-c8481ea2ea9c",
-            "name": "Shrimant Bhausaheb Rangari Ganpati",
-            "slug": "bhau-rangari-ganpati",
-            "tags": [
-                "historic",
-                "heritage",
-                "early-mandal"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "श्रीमंत भाऊसाहेब रंगारी गणपती",
-            "category": "historic",
-            "featured": true,
-            "latitude": 18.517583,
-            "verified": true,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
-            "longitude": 73.855362,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 720,
-            "description": "Among the earliest sarvajanik mandals in Pune, known for its distinctive early idol.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Small and quick — easy to fold into a Manache 5 walk.",
-            "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": 8,
-            "google_place_id": null,
-            "established_year": 1892,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 20,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "729f82fb-e06f-42a2-b397-286776e466ea",
-            "name": "Shri Siddhivinayak, Sarasbaug",
-            "slug": "sarasbaug-ganpati",
-            "tags": [
-                "famous",
-                "temple",
-                "park",
-                "family"
-            ],
-            "images": [
-            ],
-            "osm_id": "way/207899908",
-            "address": null,
-            "name_mr": "श्री सिद्धिविनायक, सारसबाग",
-            "category": "famous",
-            "featured": true,
-            "latitude": 18.500881,
-            "verified": true,
-            "area_name": "Sadashiv Peth",
-            "area_slug": "sadashiv-peth",
-            "longitude": 73.85295,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 700,
-            "description": "The Talyatla Ganpati temple on its island in Sarasbaug — a calmer alternative to the peth mandals.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Open lawns around the temple make this the easiest stop with children.",
-            "area_is_core": true,
-            "area_name_mr": "सदाशिव पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 25,
-            "google_place_id": null,
-            "established_year": 1784,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 60,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "7aef4bad-792d-464f-a3ad-e3a1c2a88427",
-            "name": "Shri Morya Gosavi Ganpati Mandir",
-            "slug": "shri-morya-gosavi",
-            "tags": [
-                "famous",
-                "temple",
-                "pcmc"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/11700182023",
-            "address": null,
-            "name_mr": "श्री मोरया गोसावी गणपती मंदिर",
-            "category": "famous",
-            "featured": false,
-            "latitude": 18.626316,
-            "verified": true,
-            "area_name": "Chinchwad",
-            "area_slug": "chinchwad",
-            "longitude": 73.778442,
-            "published": true,
-            "confidence": "verified",
-            "prominence": 680,
-            "description": "The Chinchwad temple at the centre of the Morya Gosavi tradition — the main draw in Pimpri-Chinchwad.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Far outside the walkable peth core — plan this as a separate trip.",
-            "area_is_core": false,
-            "area_name_mr": "चिंचवड",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "inside",
-            "darshan_minutes": 20,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 50,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "fe2f36fc-1fd9-4864-a45d-2693287be66d",
-            "name": "Hutatma Babu Genu Mandal",
-            "slug": "hutatma-babu-genu-mandal",
-            "tags": [
-                "historic",
-                "dekhava"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "हुतात्मा बाबू गेनू मंडळ",
-            "category": "historic",
-            "featured": false,
-            "latitude": 18.51389,
-            "verified": false,
-            "area_name": "Budhwar Peth",
-            "area_slug": "budhwar-peth",
-            "longitude": 73.856342,
-            "published": true,
-            "confidence": "community",
-            "prominence": 640,
-            "description": "Named for Babu Genu Said, and known for large themed installations.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": "Themed dekhava changes each year; evenings draw the crowd.",
-            "area_is_core": true,
-            "area_name_mr": "बुधवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 10,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 25,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "8476de50-fa23-4033-92aa-f832c1e8f111",
-            "name": "Shanipar Mandal",
-            "slug": "shanipar-mandal",
-            "tags": [
-                "historic"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "शनिपार मंडळ",
-            "category": "historic",
-            "featured": false,
-            "latitude": 18.512619,
-            "verified": false,
-            "area_name": "Sadashiv Peth",
-            "area_slug": "sadashiv-peth",
-            "longitude": 73.852601,
-            "published": true,
-            "confidence": "community",
-            "prominence": 560,
-            "description": "A long-standing mandal at Shanipar Chowk on the Sadashiv Peth stretch.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "सदाशिव पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 6,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 15,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "b6fa131d-ea0d-47f9-84f0-2425833a53b9",
-            "name": "Nimbalkar Talim Mandal",
-            "slug": "nimbalkar-talim-mandal",
-            "tags": [
-                "historic",
-                "talim"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/12176170904",
-            "address": null,
-            "name_mr": "निंबाळकर तालीम मंडळ",
-            "category": "historic",
-            "featured": false,
-            "latitude": 18.5119,
-            "verified": false,
-            "area_name": "Sadashiv Peth",
-            "area_slug": "sadashiv-peth",
-            "longitude": 73.8522,
-            "published": true,
-            "confidence": "community",
-            "prominence": 540,
-            "description": "A talim mandal on the Laxmi Road corridor between Tulshibaug and Shanipar.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "सदाशिव पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": 6,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 15,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "e1af0677-2eea-462c-bdbb-db20bcfa1791",
-            "name": "Shree Trishund Ganpati Mandir",
-            "slug": "trishund-ganpati-mandir",
-            "tags": [
-                "historic",
-                "heritage",
-                "temple"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/11846700223",
-            "address": null,
-            "name_mr": "श्री त्रिशुंड गणपती मंदिर",
-            "category": "historic",
-            "featured": false,
-            "latitude": 18.5217,
-            "verified": false,
-            "area_name": "Ganesh Peth",
-            "area_slug": "ganesh-peth",
-            "longitude": 73.8619,
-            "published": true,
-            "confidence": "community",
-            "prominence": 480,
-            "description": "An eighteenth-century stone temple in Nana Peth, known for its carved facade and the unusual three-trunked idol it is named for.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "गणेश पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": null,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": null,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "7c863e37-de61-4e39-8b95-4af1a9821c9b",
-            "name": "Jilbya Maruti Mandal",
-            "slug": "jilbya-maruti-mandal",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "जिलब्या मारुती मंडळ",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.513319,
-            "verified": false,
-            "area_name": "Shukrawar Peth",
-            "area_slug": "shukrawar-peth",
-            "longitude": 73.854938,
-            "published": true,
-            "confidence": "community",
-            "prominence": 420,
-            "description": "A Ganesh Peth mandal on the lane between the peth core and the eastern city.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "शुक्रवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 5,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 12,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "0fd3249f-b594-4483-a9cc-7bdaf19222e9",
-            "name": "Natu Baug Mandal",
-            "slug": "natu-baug-mandal",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": null,
-            "address": null,
-            "name_mr": "नातू बाग मंडळ",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.510703,
-            "verified": false,
-            "area_name": "Sadashiv Peth",
-            "area_slug": "sadashiv-peth",
-            "longitude": 73.853821,
-            "published": true,
-            "confidence": "community",
-            "prominence": 400,
-            "description": "A Bajirao Road mandal, often paired with Shanipar on evening walks.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "सदाशिव पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 5,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": 12,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "4085bb48-3bd1-496c-8726-2ad250fc9017",
-            "name": "Garud Ganpati Mandal",
-            "slug": "garud-ganpati-mandal",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/2517303170",
-            "address": null,
-            "name_mr": "गरुड गणपती मंडळ",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.5137,
-            "verified": false,
-            "area_name": "Shaniwar Peth",
-            "area_slug": "shaniwar-peth",
-            "longitude": 73.8456,
-            "published": true,
-            "confidence": "community",
-            "prominence": 380,
-            "description": "A Shaniwar Peth mandal near Bhide Pul, close to the river end of the peth walk.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "शनिवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 5,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 12,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "e3e16e0b-16ca-413b-801d-0b639f60d495",
-            "name": "Chinchechi Talim Ganpati",
-            "slug": "chinchechi-talim-ganpati",
-            "tags": [
-                "historic",
-                "talim"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/5832547676",
-            "address": null,
-            "name_mr": "चिंचेची तालीम गणपती",
-            "category": "historic",
-            "featured": false,
-            "latitude": 18.5086,
-            "verified": false,
-            "area_name": "Shukrawar Peth",
-            "area_slug": "shukrawar-peth",
-            "longitude": 73.8555,
-            "published": true,
-            "confidence": "community",
-            "prominence": 380,
-            "description": "A talim mandal in the Shukrawar Peth lanes, part of the wrestling-gymnasium tradition that produced several of Pune's early mandals.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "शुक्रवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": null,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": null,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "b79d32bf-8d6b-4ec6-a468-1a2b136614cb",
-            "name": "Hatti Ganpati Mandal",
-            "slug": "hatti-ganpati-mandal",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/2536024948",
-            "address": null,
-            "name_mr": "हत्ती गणपती मंडळ",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.511223,
-            "verified": false,
-            "area_name": "Narayan Peth",
-            "area_slug": "narayan-peth",
-            "longitude": 73.845858,
-            "published": true,
-            "confidence": "community",
-            "prominence": 360,
-            "description": "A Narayan Peth mandal named for the elephant figures at its entrance.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "नारायण पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "outside",
-            "darshan_minutes": 5,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": 12,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "92be5aec-daeb-44e5-af97-3ee8cf68ea28",
-            "name": "Perugate Bhave Mitra Mandal",
-            "slug": "perugate-bhave-mandal",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": "way/217773614",
-            "address": null,
-            "name_mr": "पेरूगेट भावे मित्र मंडळ",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.509777,
-            "verified": false,
-            "area_name": "Narayan Peth",
-            "area_slug": "narayan-peth",
-            "longitude": 73.84944,
-            "published": true,
-            "confidence": "community",
-            "prominence": 340,
-            "description": "A Narayan Peth mandal at Perugate, named for the Bhave school it stands beside.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "नारायण पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": null,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "cross-checked",
-            "peak_darshan_minutes": null,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "66d726d0-9bd7-44bd-9b20-0b8320c72b8e",
-            "name": "Mati Ganpati",
-            "slug": "mati-ganpati",
-            "tags": [
-                "local"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/2870389543",
-            "address": null,
-            "name_mr": "माती गणपती",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.5159,
-            "verified": false,
-            "area_name": "Shaniwar Peth",
-            "area_slug": "shaniwar-peth",
-            "longitude": 73.8468,
-            "published": true,
-            "confidence": "community",
-            "prominence": 320,
-            "description": "A Shaniwar Peth mandal on the western side of the peth core.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "शनिवार पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": null,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": null,
-            "crowd_reporting_enabled": true
-        },
-        {
-            "id": "154489b4-6c62-4d0b-b700-72596d98092d",
-            "name": "Phani Ali Ganesh Mandir",
-            "slug": "phani-ali-ganesh-mandir",
-            "tags": [
-                "local",
-                "temple"
-            ],
-            "images": [
-            ],
-            "osm_id": "node/6241949025",
-            "address": null,
-            "name_mr": "फणी आळी गणेश मंदिर",
-            "category": "local",
-            "featured": false,
-            "latitude": 18.5188,
-            "verified": false,
-            "area_name": "Kasba Peth",
-            "area_slug": "kasba-peth",
-            "longitude": 73.8571,
-            "published": true,
-            "confidence": "community",
-            "prominence": 300,
-            "description": "A lane temple in the Kasba Peth quarter, a short walk from the gramdaivat.",
-            "timing_note": null,
-            "timing_open": null,
-            "visitor_tip": null,
-            "area_is_core": true,
-            "area_name_mr": "कसबा पेठ",
-            "manache_rank": null,
-            "timing_close": null,
-            "darshan_style": "either",
-            "darshan_minutes": null,
-            "google_place_id": null,
-            "established_year": null,
-            "coordinate_source": "openstreetmap",
-            "peak_darshan_minutes": null,
-            "crowd_reporting_enabled": true
+          "note": "The wada courtyard is a calm place to finish.",
+          "position": 4,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
         }
-    ],
-    "categories": [
+      ],
+      "title": "Manache 5 Sakal Walk",
+      "themes": [
+        "manache",
+        "heritage",
+        "essential"
+      ],
+      "summary": "All five Manache Paach in ceremonial order, on foot, before the peths fill up.",
+      "featured": true,
+      "title_mr": "मानाचे पाच — सकाळ दर्शन",
+      "published": true,
+      "sort_order": 1,
+      "description": "The five mandals with ceremonial precedence, walked in the order the procession follows. Starting early matters more here than anywhere else: the same walk after 10am takes roughly twice as long.",
+      "time_of_day": "morning",
+      "total_walk_s": null,
+      "total_darshan_s": 4200,
+      "total_distance_m": null
+    },
+    {
+      "id": "21e73e2d-073d-4460-8342-62002207b39e",
+      "mode": "walk",
+      "slug": "dagdusheth-and-around",
+      "stops": [
         {
-            "id": "5c28a37b-a4ec-40e3-895a-a7e070a75921",
-            "key": "maanache",
-            "name": "Manache Paach",
-            "name_mr": "मानाचे पाच",
-            "sort_order": 1,
-            "description": "The five mandals with ceremonial precedence in Pune's Ganeshotsav procession."
+          "note": "Quick first stop before the queue.",
+          "position": 0,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
         },
         {
-            "id": "3db94f5b-78a1-4fd4-a538-5a15d257ba68",
-            "key": "famous",
-            "name": "Famous",
-            "name_mr": "प्रसिद्ध",
-            "sort_order": 2,
-            "description": "The best-known mandals, drawing the heaviest darshan queues."
+          "note": "The long one. Early morning is materially faster.",
+          "position": 1,
+          "ganpati_slug": "dagdusheth-halwai-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 45
         },
         {
-            "id": "24109a97-3b60-47e0-998c-258f8f0e3128",
-            "key": "historic",
-            "name": "Historic",
-            "name_mr": "ऐतिहासिक",
-            "sort_order": 3,
-            "description": "Mandals of long standing, several dating to the festival's earliest decades."
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
         },
         {
-            "id": "cc8b24c0-361d-4c89-8549-00a869be8874",
-            "key": "local",
-            "name": "Neighbourhood",
-            "name_mr": "स्थानिक",
-            "sort_order": 4,
-            "description": "Peth mandals worth folding into a walk between the larger stops."
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": "On the Laxmi Road stretch back.",
+          "position": 4,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
         }
-    ],
-    "generatedAt": "2026-09-08T22:32:07.127677+00:00"
+      ],
+      "title": "Dagdusheth & the Budhwar Peth core",
+      "themes": [
+        "famous",
+        "essential"
+      ],
+      "summary": "Pune's best-known Ganpati plus the mandals within a few minutes' walk of it.",
+      "featured": true,
+      "title_mr": "दगडूशेठ आणि बुधवार पेठ",
+      "published": true,
+      "sort_order": 2,
+      "description": "Built around the longest queue in the city. Dagdusheth alone can take the better part of an hour at peak, so the surrounding stops are deliberately short ones you can fold in either side of it.",
+      "time_of_day": "morning",
+      "total_walk_s": null,
+      "total_darshan_s": 5460,
+      "total_distance_m": null
+    },
+    {
+      "id": "dd703168-6a16-4f58-a19b-f27506637c6c",
+      "mode": "walk",
+      "slug": "evening-dekhava-trail",
+      "stops": [
+        {
+          "note": "The stage set is rebuilt every year.",
+          "position": 0,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": "Best once the lighting is fully on.",
+          "position": 1,
+          "ganpati_slug": "chhatrapati-rajaram-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": "Large themed installation, changes yearly.",
+          "position": 2,
+          "ganpati_slug": "hutatma-babu-genu-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Often paired with Shanipar on evening walks.",
+          "position": 4,
+          "ganpati_slug": "natu-baug-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        }
+      ],
+      "title": "Evening dekhava trail",
+      "themes": [
+        "dekhava",
+        "lights",
+        "night"
+      ],
+      "summary": "The mandals whose decorated sets are the point — best after dark.",
+      "featured": true,
+      "title_mr": "संध्याकाळचा देखावा",
+      "published": true,
+      "sort_order": 3,
+      "description": "These mandals are experienced from the road rather than in a queue, so the route moves quickly. Everything here reads better once the lighting is fully on.",
+      "time_of_day": "evening",
+      "total_walk_s": null,
+      "total_darshan_s": 2580,
+      "total_distance_m": null
+    },
+    {
+      "id": "6a267cb6-2ebf-48de-9ba7-9e327b974208",
+      "mode": "walk",
+      "slug": "peth-express-90",
+      "stops": [
+        {
+          "note": null,
+          "position": 0,
+          "ganpati_slug": "kasba-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": "Skip the queue here if you are tight on time.",
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        }
+      ],
+      "title": "90-minute peth express",
+      "themes": [
+        "essential",
+        "quick"
+      ],
+      "summary": "The most ground you can genuinely cover in an hour and a half on foot.",
+      "featured": true,
+      "title_mr": "दीड तासात पेठ दर्शन",
+      "published": true,
+      "sort_order": 4,
+      "description": "Deliberately skips the heaviest queues. This is the route for someone passing through Pune with a narrow window rather than a full day.",
+      "time_of_day": "any",
+      "total_walk_s": null,
+      "total_darshan_s": 3300,
+      "total_distance_m": null
+    },
+    {
+      "id": "65f92f84-b85a-4a74-89a7-fd2e6328df90",
+      "mode": "walk",
+      "slug": "historic-peth-stroll",
+      "stops": [
+        {
+          "note": "Among the earliest sarvajanik mandals in Pune.",
+          "position": 0,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": "Founded in a talim; an early symbol of shared celebration.",
+          "position": 1,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Tilak's residence and the Kesari office.",
+          "position": 3,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 4,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        }
+      ],
+      "title": "Historic peth stroll",
+      "themes": [
+        "historic",
+        "heritage"
+      ],
+      "summary": "The oldest sarvajanik mandals, and the wadas and talims they grew out of.",
+      "featured": false,
+      "title_mr": "ऐतिहासिक पेठ फेरी",
+      "published": true,
+      "sort_order": 5,
+      "description": "Follows the festival's own history: Bhau Rangari's early idol, the talim mandals, and Kesari Wada where Tilak ran the newspaper that helped make Ganeshotsav public.",
+      "time_of_day": "any",
+      "total_walk_s": null,
+      "total_darshan_s": 2580,
+      "total_distance_m": null
+    },
+    {
+      "id": "2b8e4589-a63a-4ca1-a86e-95014b5c9307",
+      "mode": "walk",
+      "slug": "great-peth-circuit",
+      "stops": [
+        {
+          "note": "Start at the gramdaivat, before the lanes fill.",
+          "position": 0,
+          "ganpati_slug": "kasba-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "jilbya-maruti-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": "Large themed set, changes each year.",
+          "position": 2,
+          "ganpati_slug": "hutatma-babu-genu-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": "The long queue. Go now rather than later.",
+          "position": 4,
+          "ganpati_slug": "dagdusheth-halwai-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 45
+        },
+        {
+          "note": "One of the earliest sarvajanik mandals.",
+          "position": 5,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": "On Laxmi Road — closed to vehicles for much of the festival.",
+          "position": 6,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": null,
+          "position": 7,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": null,
+          "position": 8,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Beside Mahatma Phule Mandai.",
+          "position": 9,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 10,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Finish in the wada courtyard.",
+          "position": 11,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        }
+      ],
+      "title": "The Great Peth Circuit",
+      "themes": [
+        "essential",
+        "manache",
+        "heritage",
+        "dekhava"
+      ],
+      "summary": "Every major mandal in the old peths, walked end to end. A full day.",
+      "featured": true,
+      "title_mr": "संपूर्ण पेठ फेरी",
+      "published": true,
+      "sort_order": 6,
+      "description": "The complete walk: twelve mandals from Kasba in the north down to Kesari Wada, taking in the Manache Paach, Dagdusheth and the big dekhava mandals on the way. Budget a whole day — the queue at Dagdusheth alone can swallow an hour, and this route is as much about the peth lanes between the stops as the stops themselves.",
+      "time_of_day": "morning",
+      "total_walk_s": null,
+      "total_darshan_s": 9720,
+      "total_distance_m": null
+    },
+    {
+      "id": "e11ccac5-861f-414a-9b50-f73eb92b5ab4",
+      "mode": "walk",
+      "slug": "manache-and-landmarks",
+      "stops": [
+        {
+          "note": "First of the Manache Paach.",
+          "position": 0,
+          "ganpati_slug": "kasba-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": "Not one of the five, but older than most of them.",
+          "position": 2,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": "The second talim mandal on this walk.",
+          "position": 4,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 5,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": null,
+          "position": 6,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Tilak's residence and the Kesari office.",
+          "position": 7,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        }
+      ],
+      "title": "Manache Paach & the old landmarks",
+      "themes": [
+        "manache",
+        "historic",
+        "heritage"
+      ],
+      "summary": "The five ceremonial mandals, plus the historic ones that grew up around them.",
+      "featured": true,
+      "title_mr": "मानाचे पाच आणि ऐतिहासिक स्थळे",
+      "published": true,
+      "sort_order": 7,
+      "description": "Follows the Manache Paach in order, but folds in Bhau Rangari's early idol and the talim mandals that sit between them. A good route if you want the ceremony and the history in one walk rather than choosing.",
+      "time_of_day": "morning",
+      "total_walk_s": null,
+      "total_darshan_s": 5400,
+      "total_distance_m": null
+    },
+    {
+      "id": "59afa823-65db-4bdc-b223-9493bc9b87cd",
+      "mode": "walk",
+      "slug": "mandai-to-the-river",
+      "stops": [
+        {
+          "note": "Start at the market.",
+          "position": 0,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "natu-baug-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": null,
+          "position": 4,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 5,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": "Near Bhide Pul, at the river end.",
+          "position": 6,
+          "ganpati_slug": "garud-ganpati-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        }
+      ],
+      "title": "Mandai to the river",
+      "themes": [
+        "essential",
+        "dekhava"
+      ],
+      "summary": "South to north across the peths, from the market to the Shaniwar Peth riverside.",
+      "featured": false,
+      "title_mr": "मंडईपासून नदीपर्यंत",
+      "published": true,
+      "sort_order": 8,
+      "description": "A directional walk rather than a loop: start at the Mandai market end and finish near Bhide Pul. Useful if you are heading that way anyway, and it strings together mandals that a circular route tends to miss.",
+      "time_of_day": "afternoon",
+      "total_walk_s": null,
+      "total_darshan_s": 3720,
+      "total_distance_m": null
+    },
+    {
+      "id": "c9e6effc-ea92-48e9-ac87-dc6fa30fa64e",
+      "mode": "walk",
+      "slug": "sadashiv-after-dark",
+      "stops": [
+        {
+          "note": null,
+          "position": 0,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "On the Bajirao Road stretch.",
+          "position": 1,
+          "ganpati_slug": "natu-baug-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": "Wait until the lighting is fully on.",
+          "position": 2,
+          "ganpati_slug": "chhatrapati-rajaram-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": "The stage set reads best after dark.",
+          "position": 3,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 4,
+          "ganpati_slug": "hatti-ganpati-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        }
+      ],
+      "title": "Sadashiv Peth after dark",
+      "themes": [
+        "dekhava",
+        "lights",
+        "night"
+      ],
+      "summary": "The Sadashiv Peth stretch, where the decoration is the draw.",
+      "featured": false,
+      "title_mr": "सदाशिव पेठ — रात्रीचे दर्शन",
+      "published": true,
+      "sort_order": 9,
+      "description": "These mandals are viewed from the road rather than queued for, so the walk moves quickly and works well late. The lighting and the stage sets are the reason to come.",
+      "time_of_day": "night",
+      "total_walk_s": null,
+      "total_darshan_s": 2280,
+      "total_distance_m": null
+    },
+    {
+      "id": "ad815552-d5d8-4da2-8cd0-20a370aafde5",
+      "mode": "walk",
+      "slug": "two-peths-on-foot",
+      "stops": [
+        {
+          "note": null,
+          "position": 0,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": "Named for the elephants at its entrance.",
+          "position": 1,
+          "ganpati_slug": "hatti-ganpati-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": null,
+          "position": 4,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": null,
+          "position": 5,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        }
+      ],
+      "title": "Narayan & Budhwar on foot",
+      "themes": [
+        "heritage",
+        "historic"
+      ],
+      "summary": "Two neighbouring peths, six mandals, one unhurried walk.",
+      "featured": false,
+      "title_mr": "नारायण आणि बुधवार पेठ",
+      "published": true,
+      "sort_order": 10,
+      "description": "Stays inside a small area, so there is very little walking between stops. A sensible choice when you have a couple of hours and would rather see a few mandals properly than rush across the city.",
+      "time_of_day": "any",
+      "total_walk_s": null,
+      "total_darshan_s": 3720,
+      "total_distance_m": null
+    },
+    {
+      "id": "5fd60c81-e520-4b1b-8fbe-3fc9d416de4e",
+      "mode": "walk",
+      "slug": "mandai-hour",
+      "stops": [
+        {
+          "note": null,
+          "position": 0,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "natu-baug-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": "Darshan from outside here — the queue alone would break the hour.",
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        }
+      ],
+      "title": "One hour from Mandai",
+      "themes": [
+        "quick",
+        "essential"
+      ],
+      "summary": "Four mandals within a short walk of Mandai, in about an hour.",
+      "featured": true,
+      "title_mr": "मंडईतून एक तास",
+      "published": true,
+      "sort_order": 11,
+      "description": "Built for a genuinely narrow window. It deliberately avoids Dagdusheth, because a single queue there would consume the whole hour and leave nothing for the rest.",
+      "time_of_day": "any",
+      "total_walk_s": null,
+      "total_darshan_s": 1980,
+      "total_distance_m": null
+    },
+    {
+      "id": "ea2d9c1f-94f4-4485-9099-06c4f6e4d6c5",
+      "mode": "walk",
+      "slug": "narayan-peth-wadas",
+      "stops": [
+        {
+          "note": "The reason for this route.",
+          "position": 0,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "hatti-ganpati-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "chhatrapati-rajaram-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        }
+      ],
+      "title": "Narayan Peth: wadas and sets",
+      "themes": [
+        "historic",
+        "heritage"
+      ],
+      "summary": "Kesari Wada and the Narayan Peth mandals around it.",
+      "featured": false,
+      "title_mr": "नारायण पेठ — वाडे आणि देखावे",
+      "published": true,
+      "sort_order": 12,
+      "description": "Centred on Kesari Wada, where Tilak ran the newspaper that helped turn Ganeshotsav into a public festival. Short, and heavier on history than spectacle.",
+      "time_of_day": "afternoon",
+      "total_walk_s": null,
+      "total_darshan_s": 2160,
+      "total_distance_m": null
+    },
+    {
+      "id": "41ef9de7-8f33-4637-8ef3-933c626ab95d",
+      "mode": "walk",
+      "slug": "easy-with-children",
+      "stops": [
+        {
+          "note": "Open lawns and room to sit — the easiest stop with children.",
+          "position": 0,
+          "ganpati_slug": "sarasbaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 25
+        },
+        {
+          "note": "Seen from the road, so no queue.",
+          "position": 1,
+          "ganpati_slug": "chhatrapati-rajaram-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "natu-baug-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        }
+      ],
+      "title": "Easy darshan with children",
+      "themes": [
+        "family",
+        "temple",
+        "quick"
+      ],
+      "summary": "Open spaces, short queues and somewhere to sit.",
+      "featured": true,
+      "title_mr": "मुलांसोबत सोपे दर्शन",
+      "published": true,
+      "sort_order": 13,
+      "description": "Chosen for practicality rather than prestige: Sarasbaug has lawns and room to move, and the other stops are quick roadside darshan rather than long queues in a crowded lane. Deliberately avoids the heaviest crowds.",
+      "time_of_day": "morning",
+      "total_walk_s": null,
+      "total_darshan_s": 2760,
+      "total_distance_m": null
+    },
+    {
+      "id": "fed394c3-0f45-4b44-84d3-8152b08256e9",
+      "mode": "walk",
+      "slug": "late-night-short-queues",
+      "stops": [
+        {
+          "note": null,
+          "position": 0,
+          "ganpati_slug": "chhatrapati-rajaram-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "hutatma-babu-genu-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": "Queue is far shorter at this hour than at midday.",
+          "position": 3,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": "Still the longest wait here, but a fraction of the daytime queue.",
+          "position": 4,
+          "ganpati_slug": "dagdusheth-halwai-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 25
+        }
+      ],
+      "title": "Late night, short queues",
+      "themes": [
+        "night",
+        "lights",
+        "quick"
+      ],
+      "summary": "The same mandals, without the wait — if you can stay up.",
+      "featured": false,
+      "title_mr": "रात्री उशिरा — कमी गर्दी",
+      "published": true,
+      "sort_order": 14,
+      "description": "Queues thin considerably late at night while the lighting stays on. This route favours mandals worth seeing after dark and is ordered so the longest queue comes when it is shortest.",
+      "time_of_day": "night",
+      "total_walk_s": null,
+      "total_darshan_s": 4140,
+      "total_distance_m": null
+    },
+    {
+      "id": "72a193c6-39c5-4958-90a4-6e0f8fea90de",
+      "mode": "walk",
+      "slug": "first-evening-in-pune",
+      "stops": [
+        {
+          "note": "The one most people mean by 'Pune Ganpati'.",
+          "position": 0,
+          "ganpati_slug": "dagdusheth-halwai-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 45
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 2,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": "Finish on the dekhava, after dark.",
+          "position": 3,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        }
+      ],
+      "title": "Your first evening in Pune",
+      "themes": [
+        "essential",
+        "famous",
+        "dekhava"
+      ],
+      "summary": "If you only get one evening, these are the ones.",
+      "featured": true,
+      "title_mr": "पहिली संध्याकाळ",
+      "published": true,
+      "sort_order": 15,
+      "description": "A short list for a first visit: the mandal everyone means when they say Pune Ganpati, two of the Manache Paach nearby, and one big dekhava to finish on.",
+      "time_of_day": "evening",
+      "total_walk_s": null,
+      "total_darshan_s": 5340,
+      "total_distance_m": null
+    },
+    {
+      "id": "c2656de4-bef6-40d9-8280-2553ab993782",
+      "mode": "metro",
+      "slug": "chinchwad-morya-gosavi",
+      "stops": [
+        {
+          "note": "About 15 km from the peths — plan this as its own trip.",
+          "position": 0,
+          "ganpati_slug": "shri-morya-gosavi",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        }
+      ],
+      "title": "Chinchwad: Morya Gosavi",
+      "themes": [
+        "temple",
+        "famous",
+        "pcmc"
+      ],
+      "summary": "The Chinchwad temple, as its own trip rather than a peth stop.",
+      "featured": false,
+      "title_mr": "चिंचवड — मोरया गोसावी",
+      "published": true,
+      "sort_order": 16,
+      "description": "Morya Gosavi sits about 15 km north-west of the peths, so it does not belong on a walking route and this is listed separately and honestly. Treat it as a half-day of its own; it is the centre of the Morya Gosavi tradition and the main draw in Pimpri-Chinchwad.",
+      "time_of_day": "any",
+      "total_walk_s": null,
+      "total_darshan_s": 1200,
+      "total_distance_m": null
+    }
+  ],
+  "festival": {
+    "year": 2026,
+    "tagline": "Ten days across Pune's peths",
+    "end_date": "2026-09-25",
+    "is_active": true,
+    "start_date": "2026-09-14",
+    "greeting_en": "Ganpati Bappa Morya",
+    "greeting_mr": "गणपती बाप्पा मोरया",
+    "visarjan_date": "2026-09-25"
+  },
+  "ganpatis": [
+    {
+      "id": "1de437d8-6369-41e5-beef-50fffaf735ac",
+      "name": "Shrimant Dagdusheth Halwai Ganpati",
+      "slug": "dagdusheth-halwai-ganpati",
+      "tags": [
+        "famous",
+        "temple",
+        "aarti"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "श्रीमंत दगडूशेठ हलवाई गणपती",
+      "category": "famous",
+      "featured": true,
+      "latitude": 18.51514,
+      "verified": true,
+      "area_name": "Budhwar Peth",
+      "area_slug": "budhwar-peth",
+      "longitude": 73.856379,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 1000,
+      "description": "Pune's best-known Ganpati and a year-round temple, drawing the heaviest darshan queues of the festival.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Expect the longest queue of any mandal in the city; early morning is materially faster.",
+      "area_is_core": true,
+      "area_name_mr": "बुधवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 45,
+      "google_place_id": null,
+      "established_year": 1893,
+      "coordinate_source": "admin",
+      "peak_darshan_minutes": 150,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "fb0eace1-c0ca-4124-b0de-0cf5b5a1e7ec",
+      "name": "Shri Kasba Ganpati",
+      "slug": "kasba-ganpati",
+      "tags": [
+        "manache",
+        "gramdaivat",
+        "heritage"
+      ],
+      "images": [],
+      "osm_id": "node/2289294092",
+      "address": null,
+      "name_mr": "श्री कसबा गणपती",
+      "category": "maanache",
+      "featured": true,
+      "latitude": 18.51903,
+      "verified": true,
+      "area_name": "Kasba Peth",
+      "area_slug": "kasba-peth",
+      "longitude": 73.857241,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 980,
+      "description": "Pune's gramdaivat and the first of the Manache Paach. Visarjan across the city begins only after this mandal's procession sets out.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Quietest in the first hour after opening; the lane narrows sharply by mid-morning.",
+      "area_is_core": true,
+      "area_name_mr": "कसबा पेठ",
+      "manache_rank": 1,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 15,
+      "google_place_id": null,
+      "established_year": 1893,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 40,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "26b8d1a9-3c00-4fec-b184-30c71ea099d8",
+      "name": "Tambdi Jogeshwari Ganpati",
+      "slug": "tambdi-jogeshwari",
+      "tags": [
+        "manache",
+        "heritage"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "तांबडी जोगेश्वरी गणपती",
+      "category": "maanache",
+      "featured": true,
+      "latitude": 18.51662,
+      "verified": true,
+      "area_name": "Budhwar Peth",
+      "area_slug": "budhwar-peth",
+      "longitude": 73.854894,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 910,
+      "description": "Second of the Manache Paach, set beside the Jogeshwari temple in Budhwar Peth.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "A short walk from Kasba Ganpati — the natural second stop on a morning route.",
+      "area_is_core": true,
+      "area_name_mr": "बुधवार पेठ",
+      "manache_rank": 2,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 12,
+      "google_place_id": null,
+      "established_year": 1893,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 30,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "821d5e0a-8664-4523-b921-c7312034476f",
+      "name": "Tulshibaug Ganpati",
+      "slug": "tulshibaug-ganpati",
+      "tags": [
+        "manache",
+        "silver-idol",
+        "market"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "तुळशीबाग गणपती",
+      "category": "maanache",
+      "featured": true,
+      "latitude": 18.514268,
+      "verified": true,
+      "area_name": "Budhwar Peth",
+      "area_slug": "budhwar-peth",
+      "longitude": 73.855306,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 890,
+      "description": "Fourth of the Manache Paach, known for its tall silver idol.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "The surrounding market is dense from late morning onward.",
+      "area_is_core": true,
+      "area_name_mr": "बुधवार पेठ",
+      "manache_rank": 4,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 20,
+      "google_place_id": null,
+      "established_year": 1901,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 45,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "2a3c6427-3483-40c8-b1f4-c31bbbab0772",
+      "name": "Guruji Talim Ganpati",
+      "slug": "guruji-talim",
+      "tags": [
+        "manache",
+        "talim",
+        "heritage"
+      ],
+      "images": [],
+      "osm_id": "node/5832579354",
+      "address": null,
+      "name_mr": "गुरुजी तालीम गणपती",
+      "category": "maanache",
+      "featured": true,
+      "latitude": 18.515047,
+      "verified": true,
+      "area_name": "Budhwar Peth",
+      "area_slug": "budhwar-peth",
+      "longitude": 73.85466,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 870,
+      "description": "Third of the Manache Paach, founded in a talim and long associated with Hindu-Muslim collaboration in the festival's early years.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Sits on Laxmi Road, so approach on foot — the road is closed to vehicles for much of the festival.",
+      "area_is_core": true,
+      "area_name_mr": "बुधवार पेठ",
+      "manache_rank": 3,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": 8,
+      "google_place_id": null,
+      "established_year": 1887,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 20,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "2e6b15c1-1dd7-442a-a992-ad790056f0ef",
+      "name": "Kesariwada Ganpati",
+      "slug": "kesariwada-ganpati",
+      "tags": [
+        "manache",
+        "tilak",
+        "heritage"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "केसरीवाडा गणपती",
+      "category": "maanache",
+      "featured": true,
+      "latitude": 18.515811,
+      "verified": true,
+      "area_name": "Narayan Peth",
+      "area_slug": "narayan-peth",
+      "longitude": 73.849008,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 840,
+      "description": "Fifth of the Manache Paach, held at Kesari Wada — Lokmanya Tilak's residence and the office of the newspaper Kesari.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "The wada courtyard is calmer than the peth mandals — a good closing stop.",
+      "area_is_core": true,
+      "area_name_mr": "नारायण पेठ",
+      "manache_rank": 5,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 15,
+      "google_place_id": null,
+      "established_year": 1894,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 30,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "22e48a9b-e960-4209-ac51-b38b772c0243",
+      "name": "Akhil Mandai Mandal",
+      "slug": "akhil-mandai-mandal",
+      "tags": [
+        "famous",
+        "dekhava",
+        "night"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "अखिल मंडई मंडळ",
+      "category": "famous",
+      "featured": true,
+      "latitude": 18.511852,
+      "verified": true,
+      "area_name": "Shukrawar Peth",
+      "area_slug": "shukrawar-peth",
+      "longitude": 73.856135,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 820,
+      "description": "Set beside Mahatma Phule Mandai, known for an elaborate stage set built afresh each year.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "The decoration reads best after dark.",
+      "area_is_core": true,
+      "area_name_mr": "शुक्रवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 12,
+      "google_place_id": null,
+      "established_year": 1893,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 30,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "fce6f633-0aab-42c5-9a9d-886353d06947",
+      "name": "Chhatrapati Rajaram Mandal",
+      "slug": "chhatrapati-rajaram-mandal",
+      "tags": [
+        "famous",
+        "decoration",
+        "night"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "छत्रपती राजाराम मंडळ",
+      "category": "famous",
+      "featured": false,
+      "latitude": 18.512444,
+      "verified": false,
+      "area_name": "Sadashiv Peth",
+      "area_slug": "sadashiv-peth",
+      "longitude": 73.847482,
+      "published": true,
+      "confidence": "community",
+      "prominence": 760,
+      "description": "Repeatedly recognised for its decoration; a common final stop on evening routes.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Best seen at night, when the lighting is fully on.",
+      "area_is_core": true,
+      "area_name_mr": "सदाशिव पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 10,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 25,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "033244a1-b00a-4818-add2-c8481ea2ea9c",
+      "name": "Shrimant Bhausaheb Rangari Ganpati",
+      "slug": "bhau-rangari-ganpati",
+      "tags": [
+        "historic",
+        "heritage",
+        "early-mandal"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "श्रीमंत भाऊसाहेब रंगारी गणपती",
+      "category": "historic",
+      "featured": true,
+      "latitude": 18.517583,
+      "verified": true,
+      "area_name": "Budhwar Peth",
+      "area_slug": "budhwar-peth",
+      "longitude": 73.855362,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 720,
+      "description": "Among the earliest sarvajanik mandals in Pune, known for its distinctive early idol.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Small and quick — easy to fold into a Manache 5 walk.",
+      "area_is_core": true,
+      "area_name_mr": "बुधवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": 8,
+      "google_place_id": null,
+      "established_year": 1892,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 20,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "729f82fb-e06f-42a2-b397-286776e466ea",
+      "name": "Shri Siddhivinayak, Sarasbaug",
+      "slug": "sarasbaug-ganpati",
+      "tags": [
+        "famous",
+        "temple",
+        "park",
+        "family"
+      ],
+      "images": [],
+      "osm_id": "way/207899908",
+      "address": null,
+      "name_mr": "श्री सिद्धिविनायक, सारसबाग",
+      "category": "famous",
+      "featured": true,
+      "latitude": 18.500881,
+      "verified": true,
+      "area_name": "Sadashiv Peth",
+      "area_slug": "sadashiv-peth",
+      "longitude": 73.85295,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 700,
+      "description": "The Talyatla Ganpati temple on its island in Sarasbaug — a calmer alternative to the peth mandals.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Open lawns around the temple make this the easiest stop with children.",
+      "area_is_core": true,
+      "area_name_mr": "सदाशिव पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 25,
+      "google_place_id": null,
+      "established_year": 1784,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 60,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "7aef4bad-792d-464f-a3ad-e3a1c2a88427",
+      "name": "Shri Morya Gosavi Ganpati Mandir",
+      "slug": "shri-morya-gosavi",
+      "tags": [
+        "famous",
+        "temple",
+        "pcmc"
+      ],
+      "images": [],
+      "osm_id": "node/11700182023",
+      "address": null,
+      "name_mr": "श्री मोरया गोसावी गणपती मंदिर",
+      "category": "famous",
+      "featured": false,
+      "latitude": 18.626316,
+      "verified": true,
+      "area_name": "Chinchwad",
+      "area_slug": "chinchwad",
+      "longitude": 73.778442,
+      "published": true,
+      "confidence": "verified",
+      "prominence": 680,
+      "description": "The Chinchwad temple at the centre of the Morya Gosavi tradition — the main draw in Pimpri-Chinchwad.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Far outside the walkable peth core — plan this as a separate trip.",
+      "area_is_core": false,
+      "area_name_mr": "चिंचवड",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "inside",
+      "darshan_minutes": 20,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 50,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "fe2f36fc-1fd9-4864-a45d-2693287be66d",
+      "name": "Hutatma Babu Genu Mandal",
+      "slug": "hutatma-babu-genu-mandal",
+      "tags": [
+        "historic",
+        "dekhava"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "हुतात्मा बाबू गेनू मंडळ",
+      "category": "historic",
+      "featured": false,
+      "latitude": 18.51389,
+      "verified": false,
+      "area_name": "Budhwar Peth",
+      "area_slug": "budhwar-peth",
+      "longitude": 73.856342,
+      "published": true,
+      "confidence": "community",
+      "prominence": 640,
+      "description": "Named for Babu Genu Said, and known for large themed installations.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": "Themed dekhava changes each year; evenings draw the crowd.",
+      "area_is_core": true,
+      "area_name_mr": "बुधवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 10,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 25,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "8476de50-fa23-4033-92aa-f832c1e8f111",
+      "name": "Shanipar Mandal",
+      "slug": "shanipar-mandal",
+      "tags": [
+        "historic"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "शनिपार मंडळ",
+      "category": "historic",
+      "featured": false,
+      "latitude": 18.512619,
+      "verified": false,
+      "area_name": "Sadashiv Peth",
+      "area_slug": "sadashiv-peth",
+      "longitude": 73.852601,
+      "published": true,
+      "confidence": "community",
+      "prominence": 560,
+      "description": "A long-standing mandal at Shanipar Chowk on the Sadashiv Peth stretch.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "सदाशिव पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 6,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 15,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "b6fa131d-ea0d-47f9-84f0-2425833a53b9",
+      "name": "Nimbalkar Talim Mandal",
+      "slug": "nimbalkar-talim-mandal",
+      "tags": [
+        "historic",
+        "talim"
+      ],
+      "images": [],
+      "osm_id": "node/12176170904",
+      "address": null,
+      "name_mr": "निंबाळकर तालीम मंडळ",
+      "category": "historic",
+      "featured": false,
+      "latitude": 18.5119,
+      "verified": false,
+      "area_name": "Sadashiv Peth",
+      "area_slug": "sadashiv-peth",
+      "longitude": 73.8522,
+      "published": true,
+      "confidence": "community",
+      "prominence": 540,
+      "description": "A talim mandal on the Laxmi Road corridor between Tulshibaug and Shanipar.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "सदाशिव पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": 6,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 15,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "e1af0677-2eea-462c-bdbb-db20bcfa1791",
+      "name": "Shree Trishund Ganpati Mandir",
+      "slug": "trishund-ganpati-mandir",
+      "tags": [
+        "historic",
+        "heritage",
+        "temple"
+      ],
+      "images": [],
+      "osm_id": "node/11846700223",
+      "address": null,
+      "name_mr": "श्री त्रिशुंड गणपती मंदिर",
+      "category": "historic",
+      "featured": false,
+      "latitude": 18.5217,
+      "verified": false,
+      "area_name": "Ganesh Peth",
+      "area_slug": "ganesh-peth",
+      "longitude": 73.8619,
+      "published": true,
+      "confidence": "community",
+      "prominence": 480,
+      "description": "An eighteenth-century stone temple in Nana Peth, known for its carved facade and the unusual three-trunked idol it is named for.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "गणेश पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": null,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": null,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "7c863e37-de61-4e39-8b95-4af1a9821c9b",
+      "name": "Jilbya Maruti Mandal",
+      "slug": "jilbya-maruti-mandal",
+      "tags": [
+        "local"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "जिलब्या मारुती मंडळ",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.513319,
+      "verified": false,
+      "area_name": "Shukrawar Peth",
+      "area_slug": "shukrawar-peth",
+      "longitude": 73.854938,
+      "published": true,
+      "confidence": "community",
+      "prominence": 420,
+      "description": "A Ganesh Peth mandal on the lane between the peth core and the eastern city.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "शुक्रवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 5,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 12,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "0fd3249f-b594-4483-a9cc-7bdaf19222e9",
+      "name": "Natu Baug Mandal",
+      "slug": "natu-baug-mandal",
+      "tags": [
+        "local"
+      ],
+      "images": [],
+      "osm_id": null,
+      "address": null,
+      "name_mr": "नातू बाग मंडळ",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.510703,
+      "verified": false,
+      "area_name": "Sadashiv Peth",
+      "area_slug": "sadashiv-peth",
+      "longitude": 73.853821,
+      "published": true,
+      "confidence": "community",
+      "prominence": 400,
+      "description": "A Bajirao Road mandal, often paired with Shanipar on evening walks.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "सदाशिव पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 5,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": 12,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "4085bb48-3bd1-496c-8726-2ad250fc9017",
+      "name": "Garud Ganpati Mandal",
+      "slug": "garud-ganpati-mandal",
+      "tags": [
+        "local"
+      ],
+      "images": [],
+      "osm_id": "node/2517303170",
+      "address": null,
+      "name_mr": "गरुड गणपती मंडळ",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.5137,
+      "verified": false,
+      "area_name": "Shaniwar Peth",
+      "area_slug": "shaniwar-peth",
+      "longitude": 73.8456,
+      "published": true,
+      "confidence": "community",
+      "prominence": 380,
+      "description": "A Shaniwar Peth mandal near Bhide Pul, close to the river end of the peth walk.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "शनिवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 5,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 12,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "e3e16e0b-16ca-413b-801d-0b639f60d495",
+      "name": "Chinchechi Talim Ganpati",
+      "slug": "chinchechi-talim-ganpati",
+      "tags": [
+        "historic",
+        "talim"
+      ],
+      "images": [],
+      "osm_id": "node/5832547676",
+      "address": null,
+      "name_mr": "चिंचेची तालीम गणपती",
+      "category": "historic",
+      "featured": false,
+      "latitude": 18.5086,
+      "verified": false,
+      "area_name": "Shukrawar Peth",
+      "area_slug": "shukrawar-peth",
+      "longitude": 73.8555,
+      "published": true,
+      "confidence": "community",
+      "prominence": 380,
+      "description": "A talim mandal in the Shukrawar Peth lanes, part of the wrestling-gymnasium tradition that produced several of Pune's early mandals.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "शुक्रवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": null,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": null,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "b79d32bf-8d6b-4ec6-a468-1a2b136614cb",
+      "name": "Hatti Ganpati Mandal",
+      "slug": "hatti-ganpati-mandal",
+      "tags": [
+        "local"
+      ],
+      "images": [],
+      "osm_id": "node/2536024948",
+      "address": null,
+      "name_mr": "हत्ती गणपती मंडळ",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.511223,
+      "verified": false,
+      "area_name": "Narayan Peth",
+      "area_slug": "narayan-peth",
+      "longitude": 73.845858,
+      "published": true,
+      "confidence": "community",
+      "prominence": 360,
+      "description": "A Narayan Peth mandal named for the elephant figures at its entrance.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "नारायण पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "outside",
+      "darshan_minutes": 5,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": 12,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "92be5aec-daeb-44e5-af97-3ee8cf68ea28",
+      "name": "Perugate Bhave Mitra Mandal",
+      "slug": "perugate-bhave-mandal",
+      "tags": [
+        "local"
+      ],
+      "images": [],
+      "osm_id": "way/217773614",
+      "address": null,
+      "name_mr": "पेरूगेट भावे मित्र मंडळ",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.509777,
+      "verified": false,
+      "area_name": "Narayan Peth",
+      "area_slug": "narayan-peth",
+      "longitude": 73.84944,
+      "published": true,
+      "confidence": "community",
+      "prominence": 340,
+      "description": "A Narayan Peth mandal at Perugate, named for the Bhave school it stands beside.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "नारायण पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": null,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "cross-checked",
+      "peak_darshan_minutes": null,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "66d726d0-9bd7-44bd-9b20-0b8320c72b8e",
+      "name": "Mati Ganpati",
+      "slug": "mati-ganpati",
+      "tags": [
+        "local"
+      ],
+      "images": [],
+      "osm_id": "node/2870389543",
+      "address": null,
+      "name_mr": "माती गणपती",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.5159,
+      "verified": false,
+      "area_name": "Shaniwar Peth",
+      "area_slug": "shaniwar-peth",
+      "longitude": 73.8468,
+      "published": true,
+      "confidence": "community",
+      "prominence": 320,
+      "description": "A Shaniwar Peth mandal on the western side of the peth core.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "शनिवार पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": null,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": null,
+      "crowd_reporting_enabled": true
+    },
+    {
+      "id": "154489b4-6c62-4d0b-b700-72596d98092d",
+      "name": "Phani Ali Ganesh Mandir",
+      "slug": "phani-ali-ganesh-mandir",
+      "tags": [
+        "local",
+        "temple"
+      ],
+      "images": [],
+      "osm_id": "node/6241949025",
+      "address": null,
+      "name_mr": "फणी आळी गणेश मंदिर",
+      "category": "local",
+      "featured": false,
+      "latitude": 18.5188,
+      "verified": false,
+      "area_name": "Kasba Peth",
+      "area_slug": "kasba-peth",
+      "longitude": 73.8571,
+      "published": true,
+      "confidence": "community",
+      "prominence": 300,
+      "description": "A lane temple in the Kasba Peth quarter, a short walk from the gramdaivat.",
+      "timing_note": null,
+      "timing_open": null,
+      "visitor_tip": null,
+      "area_is_core": true,
+      "area_name_mr": "कसबा पेठ",
+      "manache_rank": null,
+      "timing_close": null,
+      "darshan_style": "either",
+      "darshan_minutes": null,
+      "google_place_id": null,
+      "established_year": null,
+      "coordinate_source": "openstreetmap",
+      "peak_darshan_minutes": null,
+      "crowd_reporting_enabled": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "5c28a37b-a4ec-40e3-895a-a7e070a75921",
+      "key": "maanache",
+      "name": "Manache Paach",
+      "name_mr": "मानाचे पाच",
+      "sort_order": 1,
+      "description": "The five mandals with ceremonial precedence in Pune's Ganeshotsav procession."
+    },
+    {
+      "id": "3db94f5b-78a1-4fd4-a538-5a15d257ba68",
+      "key": "famous",
+      "name": "Famous",
+      "name_mr": "प्रसिद्ध",
+      "sort_order": 2,
+      "description": "The best-known mandals, drawing the heaviest darshan queues."
+    },
+    {
+      "id": "24109a97-3b60-47e0-998c-258f8f0e3128",
+      "key": "historic",
+      "name": "Historic",
+      "name_mr": "ऐतिहासिक",
+      "sort_order": 3,
+      "description": "Mandals of long standing, several dating to the festival's earliest decades."
+    },
+    {
+      "id": "cc8b24c0-361d-4c89-8549-00a869be8874",
+      "key": "local",
+      "name": "Neighbourhood",
+      "name_mr": "स्थानिक",
+      "sort_order": 4,
+      "description": "Peth mandals worth folding into a walk between the larger stops."
+    }
+  ],
+  "generatedAt": "2026-09-08T22:32:07.127677+00:00"
 }
