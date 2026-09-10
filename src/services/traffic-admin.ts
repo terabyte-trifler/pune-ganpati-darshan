@@ -25,6 +25,18 @@ export interface CityRow {
   sessions: number;
 }
 
+export interface PethInterest {
+  peth: string;
+  sessions: number;
+  views: number;
+}
+
+export interface PethPresence {
+  peth: string;
+  reports: number;
+  devices: number;
+}
+
 export interface TrafficOverview {
   since: string;
   totalEvents: number;
@@ -32,6 +44,12 @@ export interface TrafficOverview {
   cities: CityRow[];
   countries: { country: string; sessions: number }[];
   referrers: { source: string; sessions: number }[];
+  /** Which peths people look at. Interest, not location. */
+  pethInterest: PethInterest[];
+  /** Which peths people were standing in when they reported. */
+  pethPresence: PethPresence[];
+  /** Percentage of reports made on site, or null when there are none. */
+  onsiteShare: number | null;
   daily: { day: string; sessions: number }[];
 }
 
@@ -42,6 +60,9 @@ const EMPTY: TrafficOverview = {
   cities: [],
   countries: [],
   referrers: [],
+  pethInterest: [],
+  pethPresence: [],
+  onsiteShare: null,
   daily: [],
 };
 

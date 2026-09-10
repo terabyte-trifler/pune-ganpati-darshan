@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowLeft, Globe, MapPin, Share2 } from 'lucide-react';
+import { ArrowLeft, Globe, MapPin, Share2, Landmark, Footprints } from 'lucide-react';
 import { getSessionUser } from '@/services/auth';
 import { getTrafficOverview } from '@/services/traffic-admin';
 
@@ -22,6 +22,14 @@ export const dynamic = 'force-dynamic';
  * arrive on every request from Vercel and are deliberately discarded at
  * ingest — see the traffic_origin migration for where that line is drawn
  * and why.
+ *
+ * "Which part of Pune" is answered by the two peth panels rather than by
+ * geography, because IP geolocation genuinely cannot answer it: the city
+ * header says "Pune" and no more, and Indian mobile carriers route
+ * through regional gateways that make it worse still. The two panels
+ * measure different things and are kept apart on purpose — one is what
+ * people look at, the other is where they physically stood. Averaging
+ * them would produce a number that describes neither.
  */
 
 const WINDOW_DAYS = 7;
@@ -148,6 +156,32 @@ export default async function AdminTrafficPage() {
               />
 
               <Panel
+                title="Peths by interest"
+                icon={Landmark}
+                empty="No mandal views recorded in this window."
+                rows={overview.pethInterest.map((p) => ({
+                  label: p.peth,
+                  sub: `${p.views.toLocaleString('en-IN')} views`,
+                  value: p.sessions,
+                }))}
+              />
+
+              <Panel
+                title={
+                  overview.onsiteShare === null
+                    ? 'Peths by on-site reports'
+                    : `Peths by on-site reports · ${overview.onsiteShare}% of reports were on site`
+                }
+                icon={Footprints}
+                empty="No on-site reports in this window. Only reports submitted within ~100m of a mandal count here, so this fills in once people report while they are actually out."
+                rows={overview.pethPresence.map((p) => ({
+                  label: p.peth,
+                  sub: `${p.devices.toLocaleString('en-IN')} devices`,
+                  value: p.reports,
+                }))}
+              />
+
+              <Panel
                 title="Arrived from"
                 icon={Share2}
                 empty="No referrers recorded yet."
@@ -188,6 +222,18 @@ export default async function AdminTrafficPage() {
             </div>
 
             <p className="mt-5 text-[12px] leading-relaxed text-[var(--faint)]">
+              <strong className="text-[var(--muted)]">Which part of Pune:</strong>{' '}
+              geolocation cannot tell you — the city header says
+              &ldquo;Pune&rdquo; and no more, and Indian mobile carriers route
+              through regional gateways that blur it further. So the two peth
+              panels answer it instead, from data already collected:{' '}
+              <em>interest</em> is which mandals people opened,{' '}
+              <em>on-site reports</em> is where they were physically standing
+              when they reported, within about 100m. The second is the stronger
+              signal but covers only people who reported. The visitor&rsquo;s GPS
+              position is never used for either — that permission was granted to
+              show what is nearby, not to be counted.
+              <br /><br />
               Counted by sessions, not events, so one person browsing a lot does
               not read as a city. Origin is resolved by Vercel from the
               requester&rsquo;s IP before the request reaches the app; city is the
