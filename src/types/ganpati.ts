@@ -111,6 +111,24 @@ export interface Ganpati {
   images: GanpatiImage[];
   tags: string[];
 
+  /**
+   * A year-round temple rather than a festival pandal.
+   *
+   * The catalogue holds both, and conflating them misdescribes the entry
+   * and the visit. A pandal is put up for Ganeshotsav by a mandal — a
+   * neighbourhood association — and comes down after; the dekhava, the
+   * mandap and the ten-day queue are the whole of it. A temple is open
+   * all year and has no mandal behind it.
+   *
+   * An explicit field rather than the 'temple' tag, because that tag does
+   * not mean this: Dagdusheth carries it and is emphatically a mandal —
+   * it has a permanent temple AND a festival pandal, and during the
+   * festival the pandal is the thing. Kasba Ganpati is the same, and is
+   * additionally the first of the Manache Paach. Only an entry that has
+   * no festival pandal at all belongs here.
+   */
+  isTemple: boolean;
+
   confidence: DataConfidence;
   featured: boolean;
   verified: boolean;

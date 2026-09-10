@@ -46,6 +46,37 @@ export function CategoryBadge({
 }
 
 /**
+ * Marks a year-round temple rather than a festival pandal.
+ *
+ * Worth a badge because the difference changes what someone is going to
+ * see. A pandal is put up by a mandal for the ten days — the mandap, the
+ * dekhava, the lights — and Sarasbaug and Trishund have none of that; they
+ * are temples that are open every day of the year and happen to be
+ * Ganpati temples. Listing them beside the pandals without saying so
+ * misdescribes the visit.
+ *
+ * Deliberately quiet: an outline in the muted ink rather than one of the
+ * accents. It is a note about what the place is, not a recommendation
+ * against it — Sarasbaug is one of the busiest Ganpati destinations in
+ * Pune during the festival.
+ */
+export function TempleBadge({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5',
+        'text-[12px] font-semibold leading-5 backdrop-blur-sm',
+        'border-[var(--line-strong)] bg-[var(--raat)]/93 text-[var(--muted)]',
+        className
+      )}
+      title="A year-round temple, not a festival pandal"
+    >
+      Temple
+    </span>
+  );
+}
+
+/**
  * Data provenance. Shown so a visitor knows which claims are checked before
  * crossing the city on them (§41).
  */

@@ -133,6 +133,29 @@ const INTEREST_TAGS: Record<Interest, string[]> = {
   surprise: [],
 };
 
+/**
+ * Whether a year-round temple may be put in a built route.
+ *
+ * Only when the visitor asked for temples. Someone who picked "the famous
+ * ones" or "dekhava & light shows" is planning a pandal crawl — the mandap,
+ * the lights, the ten-day queue — and a permanent temple is a different
+ * kind of outing that happens to have a Ganpati in it. Sarasbaug and
+ * Trishund were being folded into those routes because they carry 'famous'
+ * and 'historic' categories, so the plan quietly swapped a pandal for a
+ * temple and spent the budget walking there.
+ *
+ * 'surprise' does not qualify. It means "anything from the festival", and
+ * it is the one option where the visitor has expressed no preference at all
+ * — so it should not spend their time on the category they did not ask for.
+ *
+ * Temples are not hidden anywhere else: they stay in the catalogue, on the
+ * map, in search and in the planner if someone adds one by hand. This is
+ * about what the route BUILDER reaches for unprompted.
+ */
+function allowsTemples(interests: Interest[]): boolean {
+  return interests.includes('temple');
+}
+
 /** 0–1 relevance of a mandal to the chosen interests. */
 function interestScore(g: Ganpati, interests: Interest[]): number {
   if (interests.length === 0 || interests.includes('surprise')) return 0.5;
@@ -198,7 +221,10 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
     crowdByMandalId = {},
   } = request;
 
+  const templesWanted = allowsTemples(interests);
+
   const candidates = mandals
+    .filter((g) => !g.isTemple || templesWanted)
     .map((g) => ({ g, score: interestScore(g, interests) }))
     .filter((c) => c.score > 0)
     .sort((a, b) => b.score - a.score || b.g.prominence - a.g.prominence);

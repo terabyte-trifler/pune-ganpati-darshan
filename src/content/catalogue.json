@@ -1089,7 +1089,8 @@
       "established_year": 1893,
       "coordinate_source": "admin",
       "peak_darshan_minutes": 150,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "fb0eace1-c0ca-4124-b0de-0cf5b5a1e7ec",
@@ -1128,7 +1129,8 @@
       "established_year": 1893,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 40,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "26b8d1a9-3c00-4fec-b184-30c71ea099d8",
@@ -1166,7 +1168,8 @@
       "established_year": 1893,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 30,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "821d5e0a-8664-4523-b921-c7312034476f",
@@ -1205,7 +1208,8 @@
       "established_year": 1901,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 45,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "2a3c6427-3483-40c8-b1f4-c31bbbab0772",
@@ -1244,7 +1248,8 @@
       "established_year": 1887,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 20,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "2e6b15c1-1dd7-442a-a992-ad790056f0ef",
@@ -1283,7 +1288,8 @@
       "established_year": 1894,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 30,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "22e48a9b-e960-4209-ac51-b38b772c0243",
@@ -1322,7 +1328,8 @@
       "established_year": 1893,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 30,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "fce6f633-0aab-42c5-9a9d-886353d06947",
@@ -1361,7 +1368,8 @@
       "established_year": null,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 25,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "033244a1-b00a-4818-add2-c8481ea2ea9c",
@@ -1400,7 +1408,8 @@
       "established_year": 1892,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 20,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "729f82fb-e06f-42a2-b397-286776e466ea",
@@ -1440,7 +1449,8 @@
       "established_year": 1784,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 60,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": true
     },
     {
       "id": "7aef4bad-792d-464f-a3ad-e3a1c2a88427",
@@ -1479,7 +1489,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 50,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": true
     },
     {
       "id": "fe2f36fc-1fd9-4864-a45d-2693287be66d",
@@ -1517,7 +1528,8 @@
       "established_year": null,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 25,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "8476de50-fa23-4033-92aa-f832c1e8f111",
@@ -1554,7 +1566,8 @@
       "established_year": null,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 15,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "b6fa131d-ea0d-47f9-84f0-2425833a53b9",
@@ -1592,7 +1605,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 15,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "e1af0677-2eea-462c-bdbb-db20bcfa1791",
@@ -1631,7 +1645,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": null,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": true
     },
     {
       "id": "7c863e37-de61-4e39-8b95-4af1a9821c9b",
@@ -1668,7 +1683,8 @@
       "established_year": null,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 12,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "0fd3249f-b594-4483-a9cc-7bdaf19222e9",
@@ -1705,7 +1721,8 @@
       "established_year": null,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": 12,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "4085bb48-3bd1-496c-8726-2ad250fc9017",
@@ -1742,7 +1759,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 12,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "e3e16e0b-16ca-413b-801d-0b639f60d495",
@@ -1780,7 +1798,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": null,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "b79d32bf-8d6b-4ec6-a468-1a2b136614cb",
@@ -1817,7 +1836,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": 12,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "92be5aec-daeb-44e5-af97-3ee8cf68ea28",
@@ -1854,7 +1874,8 @@
       "established_year": null,
       "coordinate_source": "cross-checked",
       "peak_darshan_minutes": null,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "66d726d0-9bd7-44bd-9b20-0b8320c72b8e",
@@ -1891,7 +1912,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": null,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     },
     {
       "id": "154489b4-6c62-4d0b-b700-72596d98092d",
@@ -1929,7 +1951,8 @@
       "established_year": null,
       "coordinate_source": "openstreetmap",
       "peak_darshan_minutes": null,
-      "crowd_reporting_enabled": true
+      "crowd_reporting_enabled": true,
+      "is_temple": false
     }
   ],
   "categories": [

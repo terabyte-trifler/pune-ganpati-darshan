@@ -150,3 +150,61 @@ describe('crowd-aware budgets', () => {
     expect(silent.crowdAdjusted).toBe(false);
   });
 });
+
+describe('temples are not pandals', () => {
+  const TEMPLES = localGanpatis.filter((g) => g.isTemple);
+  const templeSlugs = new Set(TEMPLES.map((g) => g.slug));
+  const slugsOf = (interests: Interest[], budgetMinutes = 360) =>
+    buildItinerary({ ...base, budgetMinutes, interests }).stops.map((s) => s.ganpati.slug);
+
+  it('has temples in the catalogue to exclude', () => {
+    // Without this the rest of the block passes vacuously.
+    expect(TEMPLES.map((g) => g.slug).sort()).toEqual([
+      'sarasbaug-ganpati',
+      'shri-morya-gosavi',
+      'trishund-ganpati-mandir',
+    ]);
+  });
+
+  it.each<Interest[]>([
+    ['famous'],
+    ['historic'],
+    ['dekhava'],
+    ['manache'],
+    ['surprise'],
+    ['famous', 'historic', 'dekhava'],
+  ])('keeps temples out of a %s route', (...interests) => {
+    // Sarasbaug is category 'famous' and Trishund is 'historic', so both
+    // scored well on a pandal crawl and were being folded into it. The
+    // visitor asked for mandaps, lights and the ten-day queue; a year-round
+    // temple is a different outing that happens to have a Ganpati in it.
+    const chosen = slugsOf(interests.flat());
+    const temples = chosen.filter((s) => templeSlugs.has(s));
+    expect(temples, `temples leaked into [${interests.flat().join(', ')}]`).toEqual([]);
+  });
+
+  it('includes them when the visitor asks for calm temples', () => {
+    const chosen = slugsOf(['temple']);
+    expect(chosen.some((s) => templeSlugs.has(s))).toBe(true);
+  });
+
+  it('still allows temples alongside other interests once temples are asked for', () => {
+    // The gate is "did they ask", not "did they ask for ONLY this".
+    const chosen = slugsOf(['famous', 'temple']);
+    expect(chosen.some((s) => templeSlugs.has(s))).toBe(true);
+  });
+
+  it('leaves mandals that merely have a permanent temple alone', () => {
+    // The trap this rule has to avoid. Dagdusheth and Kasba Ganpati both
+    // carry the 'temple' tag and both have real year-round temples, but
+    // during Ganeshotsav the pandal is the thing people queue for — and
+    // Kasba is the first of the Manache Paach. Deriving isTemple from the
+    // tag would have dropped both from every pandal route.
+    for (const slug of ['dagdusheth-halwai-ganpati', 'kasba-ganpati']) {
+      const g = localGanpatis.find((m) => m.slug === slug);
+      expect(g, `${slug} missing from the catalogue`).toBeDefined();
+      expect(g!.isTemple, `${slug} must not be a temple`).toBe(false);
+    }
+    expect(slugsOf(['manache'])).toContain('kasba-ganpati');
+  });
+});

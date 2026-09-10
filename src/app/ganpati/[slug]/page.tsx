@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, CalendarDays } from 'lucide-react';
 import { getAllGanpatis, getGanpatiBySlug } from '@/services/ganpati';
-import { CategoryBadge, ConfidenceBadge, CATEGORY_LABEL } from '@/components/ui/Badge';
+import { CategoryBadge, TempleBadge, ConfidenceBadge, CATEGORY_LABEL } from '@/components/ui/Badge';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { SaveButton } from '@/features/favorites/SaveButton';
 import { ShareButton } from '@/features/discovery/ShareButton';
@@ -139,6 +139,7 @@ export default async function GanpatiPage({
             context or the image container paints over it. */}
         <div className="relative z-10 -mt-6 flex flex-wrap items-center gap-2">
           <CategoryBadge category={g.category} rank={g.manacheRank} />
+          {g.isTemple && <TempleBadge />}
           <span className="rounded-full border border-[var(--line-strong)] bg-[var(--dhoop)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
             {g.area.name}
           </span>

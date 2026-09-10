@@ -55,6 +55,7 @@ interface RawGanpati {
   osm_id: string | null;
   /** Optional: snapshots generated before the crowd feature lack it. */
   crowd_reporting_enabled?: boolean;
+  is_temple?: boolean;
   area_slug: string;
   area_name: string;
   area_name_mr: string | null;
@@ -168,6 +169,9 @@ export function toGanpati(r: RawGanpati): Ganpati {
     coordinateSource: r.coordinate_source ?? null,
     osmId: r.osm_id ?? null,
     crowdReportingEnabled: r.crowd_reporting_enabled ?? true,
+    // Absent means pandal: the catalogue is overwhelmingly mandals, and a
+    // missing flag must not silently reclassify one as a temple.
+    isTemple: r.is_temple ?? false,
     createdAt: '',
     updatedAt: '',
   };

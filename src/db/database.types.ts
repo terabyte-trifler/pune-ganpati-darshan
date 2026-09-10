@@ -86,6 +86,8 @@ export type GanpatiRow = {
   osm_id: string | null;
   /** Admin kill switch for crowd reporting on this mandal. */
   crowd_reporting_enabled: boolean;
+  /** A year-round temple, not a festival pandal. See Ganpati#isTemple. */
+  is_temple: boolean;
   created_at: string;
   updated_at: string;
 }
