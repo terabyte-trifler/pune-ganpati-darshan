@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, ArrowRight, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mail, MapPin, Phone } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'How to use',
@@ -105,7 +105,7 @@ const STEPS: Step[] = [
     lede:
       'This is the part that keeps the app alive. If you are standing in the lane, three seconds of your evening tells everyone else in Pune whether to come.',
     dos: [
-      'Allow location once. It never leaves your phone — the app only sends which mandal, never where you are.',
+      'Allow location when the browser asks — every time. Your coordinates never leave your phone; the app sends only which mandal.',
       'Walk up to a mandal and a “You’re here” card appears on the home screen with the three buttons.',
       'Or open any mandal’s page and use “How’s the crowd?” — you can report from up to 1.5 km away.',
       'Tap Short, Moving, or 30+ min. That is the whole thing. No account, no sign-in.',
@@ -372,6 +372,40 @@ const STEPS: Step[] = [
   },
 ];
 
+/**
+ * The location ask, before step one.
+ *
+ * Worded as "every time" deliberately. A browser that was told "allow once"
+ * asks again on the next visit, and someone who read "allow it once" here
+ * reads the second prompt as the app being pushy rather than as the same
+ * question. Saying it up front costs a line and saves the report.
+ */
+const LOCATION_POINTS = [
+  'It is what makes “near you” work — the shortest queues around you, and how far each mandal is from where you are standing.',
+  'It is also what lets you report a queue at all. Without it the three buttons never appear.',
+  'Your coordinates never leave your phone. The app works out on the device whether you are close enough, and sends only which mandal and which colour.',
+  'No account, no name, no phone number, nothing kept and nothing sold.',
+];
+
+const LOCATION_SHOTS: Shot[] = [
+  {
+    src: '/guide/location-prompt.webp',
+    alt: 'A mandal page with “Turn on location to report the queue” where the report buttons would be',
+    caption:
+      'Location off. Tap this and the browser asks — say Allow and the three buttons take its place.',
+    w: 358,
+    h: 268,
+  },
+  {
+    src: '/guide/location-on.webp',
+    alt: 'The Ganpati near you row on the home screen, each card showing its distance and queue',
+    caption:
+      'Location on. “Ganpati near you”, with the distance and the live queue on every card.',
+    w: 390,
+    h: 311,
+  },
+];
+
 /** The three colours, stated once and reused by every screen in the app. */
 const KEY = [
   { color: 'var(--crowd-short)', label: 'Short', meaning: 'Walk straight in' },
@@ -422,9 +456,63 @@ export default function HowToUsePage() {
 
         <p className="prose-measure mt-4 text-[17px] leading-[1.65] text-[var(--chandan)]">
           Eight steps, each with a picture of the real screen. You do not need
-          an account, you do not need to pay, and nothing here needs setting up
-          — the only thing worth allowing is location, once.
+          an account and you do not need to pay. There is one thing to say yes
+          to, and it is the first thing below.
         </p>
+
+        {/* Before anything else: location.
+            Half of what this guide describes — what is near you, how far,
+            and the ability to report a queue at all — is dark without it,
+            and a first-time visitor meets that browser prompt within two
+            seconds of arriving. Answering it before they hit step one is
+            worth more than any screen further down the page. */}
+        <section
+          id="location"
+          className="mt-5 scroll-mt-6 rounded-[var(--radius-card)] border border-[var(--shendur)]/35 bg-[var(--dhoop)] p-4"
+        >
+          <h2 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.09em] text-[var(--shendur)]">
+            <MapPin size={13} aria-hidden="true" />
+            First: allow location
+          </h2>
+
+          <p className="prose-measure mt-2.5 text-[16px] leading-[1.65] text-[var(--chandan)]">
+            Your browser will ask for your location the moment you open the
+            app. <strong className="font-semibold">Tap Allow, every time it
+            asks.</strong> Nothing about your location is stored — not on the
+            server, not by us, not ever.
+          </p>
+
+          <ul className="mt-3 flex flex-col gap-2">
+            {LOCATION_POINTS.map((l) => (
+              <li key={l} className="prose-measure flex gap-2.5 text-[14px] leading-[1.6] text-[var(--muted)]">
+                <span
+                  aria-hidden="true"
+                  className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-[var(--shendur)]"
+                />
+                <span>{l}</span>
+              </li>
+            ))}
+          </ul>
+
+          {/* No negative margin here, unlike the step tracks: this one sits
+              inside a bordered card, and bleeding to the edge would run the
+              images across that border. */}
+          <div className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1">
+            {LOCATION_SHOTS.map((shot) => (
+              <Figure key={shot.src} shot={shot} />
+            ))}
+          </div>
+
+          <p className="prose-measure mt-3.5 rounded-[var(--radius-field)] border border-[var(--line)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
+            <strong className="font-semibold text-[var(--chandan)]">
+              Blocked it by mistake?
+            </strong>{' '}
+            Tap the padlock or ⓘ next to the web address, set Location to
+            Allow, and reload the page. The app also works without it — you can
+            still browse, use the map and follow routes. You only lose
+            &ldquo;near you&rdquo; and the ability to report a queue.
+          </p>
+        </section>
 
         {/* The colour key, up front. Everything after this leans on it. */}
         <div className="mt-5 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
@@ -452,6 +540,13 @@ export default function HowToUsePage() {
         {/* Chips rather than a block of underlined links: eight of those in
             a row reads as a warning, not a table of contents. */}
         <nav aria-label="Steps" className="mt-5 flex flex-wrap gap-1.5">
+          <a
+            href="#location"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[var(--shendur)]/40 px-3 py-1.5 text-[13px] text-[var(--chandan)]"
+          >
+            <MapPin size={12} aria-hidden="true" className="text-[var(--shendur)]" />
+            Start here
+          </a>
           {STEPS.map((s) => (
             <a
               key={s.id}
