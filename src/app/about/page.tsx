@@ -41,7 +41,7 @@ const DOES = [
   'Routes built around the time you actually have, counting the queue as well as the walk',
   'Live queue reports from devotees, on the map, expiring after ninety minutes',
   'Metro-aware — which station to board, where to change, where to get off',
-  'Works offline once loaded, with no account and no ads',
+  'No account, no ads, and nothing you do here is tied to your name',
 ];
 
 const LINKS = [
