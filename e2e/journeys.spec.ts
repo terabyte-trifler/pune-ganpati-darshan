@@ -801,3 +801,48 @@ test('Flow 17 — the builder stands alone and also lives in the plan', async ({
   await expect(page.getByRole('button', { name: '3 hours' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
 });
+
+test('Flow 18 — the app says who made it, and can be reached', async ({ page }) => {
+  /**
+   * There was no way to reach the maker and no route to the licences page
+   * except from a single mandal page — so the OpenStreetMap credit the data
+   * licence asks for was effectively unreachable, and so was any way to
+   * report that a mandal is in the wrong place. The sitemap had been
+   * listing /about for a while; the page did not exist.
+   */
+  await page.goto('/');
+
+  // Reachable from the home page rather than by typing the URL.
+  const footer = page.locator('footer');
+  await expect(footer).toBeVisible();
+  await footer.getByRole('link', { name: 'About' }).first().click();
+  await expect(page).toHaveURL(/\/about$/);
+
+  await expect(page.getByRole('heading', { name: 'About', level: 1 })).toBeVisible();
+  await expect(page.locator('h1')).toHaveCount(1);
+  await expect(page.getByText(/Gurnoor Singh/).first()).toBeVisible();
+  await expect(page.getByText(/Terabyte Trifler/)).toBeVisible();
+
+  // Contact details must be actionable on a phone, not just printed.
+  await expect(page.locator('a[href="mailto:singhgurnoor080@gmail.com"]')).toBeVisible();
+  await expect(page.locator('a[href="tel:+916283031102"]')).toBeVisible();
+  await expect(page.locator('a[href="https://x.com/singhgurnoor080"]')).toBeVisible();
+  await expect(
+    page.locator('a[href="https://www.instagram.com/terabyte_trifler/"]')
+  ).toBeVisible();
+  await expect(page.locator('a[href="https://fennrstudio.com"]').first()).toBeVisible();
+
+  // Every outbound link opens away from the app and cannot reach back into
+  // it through window.opener.
+  for (const link of await page.locator('a[target="_blank"]').all()) {
+    expect(await link.getAttribute('rel')).toContain('noopener');
+  }
+
+  // The independence disclaimer is the one claim on this page that protects
+  // both the mandals and the app.
+  await expect(page.getByText(/[Nn]ot affiliated with any mandal/).first()).toBeVisible();
+
+  // And the licences page is now reachable from here.
+  await page.getByRole('link', { name: /Data & licences/ }).click();
+  await expect(page).toHaveURL(/\/licences$/);
+});

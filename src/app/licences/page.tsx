@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllGanpatis } from '@/services/ganpati';
+import { SiteFooter } from '@/components/SiteFooter';
 
 export const metadata: Metadata = {
   title: 'Data sources and licences',
@@ -114,6 +115,7 @@ export default async function LicencesPage() {
           </p>
         </section>
       </div>
+      <SiteFooter className="mx-auto mt-10 max-w-2xl px-4" />
     </main>
   );
 }
