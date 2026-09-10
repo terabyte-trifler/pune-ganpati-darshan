@@ -494,12 +494,22 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
   await page.getByRole('button', { name: /^Metro$/ }).click();
   await expect(page.getByRole('heading', { name: 'Get off at' })).toBeVisible();
 
-  // The three peth stations are offered as equals.
-  for (const station of ['Mandai', 'Kasba Peth', 'PMC']) {
+  // The two peth stations you can arrive at are offered as equals.
+  for (const station of ['Kasba Peth', 'PMC']) {
     await expect(
       page.getByRole('button', { name: new RegExp(`^${station}`) })
     ).toBeVisible();
   }
+
+  // Mandai is not among them. It is the nearest station to most of the
+  // southern peths and runs one way during the festival, so offering it
+  // would send people to a platform where the doors do not open — the one
+  // failure here that puts someone on the wrong train.
+  await expect(page.getByRole('button', { name: /^Mandai/ })).toHaveCount(0);
+
+  // And its absence is explained rather than left to be noticed.
+  await expect(page.getByText(/No getting off at Mandai/)).toBeVisible();
+  await expect(page.getByText(/board here to go home/)).toBeVisible();
 
   // The two Aqua Line ones are the rare answer, so they start collapsed.
   await expect(
@@ -553,8 +563,15 @@ test.describe('which train to take', () => {
   test('Flow 14 — names the station to board, the change, and where to get off', async ({ page }) => {
     await page.goto('/routes/dagdusheth-and-around');
 
-    // Where to get off never needed a location, so it is there immediately.
-    await expect(page.getByText(/Get off at (Mandai|Kasba Peth|PMC)/)).toBeVisible();
+    // Where to get off never needed a location, so it is there immediately,
+    // and it is never Mandai.
+    await expect(page.getByText(/Get off at (Kasba Peth|PMC)/)).toBeVisible();
+    await expect(page.getByText(/Get off at Mandai/)).toHaveCount(0);
+
+    // The train home leaves from a station you could not have arrived at,
+    // and the card must say both halves of that.
+    await expect(page.getByText(/Going back: Mandai/)).toBeVisible();
+    await expect(page.getByText(/only arrivals that are closed/)).toBeVisible();
 
     // The boarding half is behind an explicit tap. The app does not quietly
     // read a position to answer a question nobody asked — see the card's

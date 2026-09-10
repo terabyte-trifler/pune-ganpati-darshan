@@ -25,7 +25,7 @@ const CROWD_WORD: Record<CrowdLevel, string> = {
 import { PUNE_CENTER, formatDuration, haversine, type LatLng } from '@/lib/geo';
 import { MetroStationPicker } from './MetroStationPicker';
 import { MetroJourneyCard } from './MetroJourneyCard';
-import { stationById, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
+import { stationById, returnStation, PRIMARY_STATIONS, type MetroStation } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -92,11 +92,13 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
   const [interests, setInterests] = useState<Set<Interest>>(new Set());
   const [mode, setMode] = useState<TravelMode>('walk');
   /**
-   * Mandai by default — it is the station with the most mandals inside a
-   * ten-minute walk, so it is the right guess when we know nothing else.
+   * Kasba Peth by default. Mandai has more mandals inside a ten-minute
+   * walk and would otherwise be the obvious guess, but it is boarding-only
+   * during the festival — so the best station you can actually arrive at
+   * is the one above it on the Purple Line.
    */
   const [station, setStation] = useState<MetroStation>(
-    () => stationById('mandai') ?? PRIMARY_STATIONS[0]
+    () => stationById('kasba-peth') ?? PRIMARY_STATIONS[0]
   );
 
   /**
@@ -350,6 +352,11 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
                       }
                     )}
                     firstStopName={plan.stops[0].ganpati.name}
+                    firstStop={{
+                      lat: plan.stops[0].ganpati.location.lat,
+                      lng: plan.stops[0].ganpati.location.lng,
+                    }}
+                    home={returnStation(plan.stops.map((s) => s.ganpati))}
                   />
                 </div>
               )}

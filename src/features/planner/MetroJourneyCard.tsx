@@ -1,10 +1,13 @@
 'use client';
 
-import { TrainFront, LocateFixed, Loader2, Footprints } from 'lucide-react';
+import {
+  TrainFront, LocateFixed, Loader2, Footprints, TriangleAlert, CornerUpLeft,
+} from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import {
-  planMetroJourney, journeySeconds, LINE_COLOR, LINE_NAME, primaryLine,
-  type MetroStation,
+  planMetroJourney, journeySeconds, blockedNearerStation,
+  LINE_COLOR, LINE_NAME, primaryLine,
+  type MetroStation, type NearestStation,
 } from '@/lib/metro';
 import { formatDistance, formatDuration, estimateDurationSeconds } from '@/lib/geo';
 
@@ -86,17 +89,32 @@ function Stop({
 }
 
 export function MetroJourneyCard({
-  alight, walkToFirstM, firstStopName,
+  alight, walkToFirstM, firstStopName, firstStop, home,
 }: {
   /** Where the plan says to get off. */
   alight: MetroStation;
   /** Straight-line metres from that station to the first mandal. */
   walkToFirstM: number | null;
   firstStopName?: string;
+  /** The first mandal, used to explain a nearer station you cannot use. */
+  firstStop?: { lat: number; lng: number };
+  /** Where to catch the train back, and how far it is from the last stop. */
+  home?: NearestStation | null;
 }) {
   const { state, request } = useGeolocation();
   const here = state.status === 'ready' ? state.position : null;
   const journey = here ? planMetroJourney(here, alight) : null;
+
+  /**
+   * A closer station that is shut to arrivals.
+   *
+   * Mandai is the nearest station to most of the southern peths and
+   * one-way during the festival. Sending someone to Kasba Peth without a
+   * word looks like the app cannot read a map; saying why turns it into
+   * information they need anyway, because it is also where they will catch
+   * the train home.
+   */
+  const blocked = firstStop ? blockedNearerStation(firstStop, alight) : null;
 
   const walkOut =
     walkToFirstM === null ? null : (
@@ -186,6 +204,43 @@ export function MetroJourneyCard({
           </div>
         )}
       </div>
+
+      {/* ---------- Why not the station you were expecting ---------- */}
+      {blocked && (
+        <p className="mt-3 flex gap-1.5 rounded-[var(--radius-field)] border border-[var(--zendu)]/30 bg-[var(--zendu)]/10 px-2.5 py-2 text-[12px] leading-relaxed text-[var(--muted)]">
+          <TriangleAlert
+            size={13}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--zendu)]"
+          />
+          <span>
+            <strong className="font-semibold text-[var(--chandan)]">
+              {blocked.station.name} is closer, but you can&rsquo;t get off there.
+            </strong>{' '}
+            {blocked.station.alightNote}
+          </span>
+        </p>
+      )}
+
+      {/* ---------- Getting home, which is a different station ---------- */}
+      {home && (
+        <div className="mt-3 flex items-start gap-3 border-t border-[var(--line)] pt-3">
+          <CornerUpLeft
+            size={13}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--faint)]"
+          />
+          <p className="text-[12px] leading-relaxed text-[var(--muted)]">
+            <strong className="font-semibold text-[var(--chandan)]">
+              Going back: {home.station.name}
+            </strong>
+            , {formatDistance(home.distanceM)} from your last stop.
+            {!home.station.canAlight && (
+              <> Boarding is fine here — it is only arrivals that are closed.</>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* ---------- Totals, deliberately coarse ---------- */}
       {journey && journey.totalStops > 0 && (

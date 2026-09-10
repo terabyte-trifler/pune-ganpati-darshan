@@ -40,7 +40,7 @@ export type MetroLine = 'purple' | 'aqua';
 /**
  * How much of the peth darshan a station is actually good for.
  *
- * 'primary'   — inside or at the edge of the peths. Real places to get off.
+ * 'primary'   — inside or at the edge of the peths. The default answers.
  * 'secondary' — on the far side of the river on Jangli Maharaj Road. Usable,
  *               but the walk in is 1.5–2 km, so they are the rare choice
  *               rather than a default, and the map treats them that way.
@@ -49,6 +49,9 @@ export type MetroLine = 'purple' | 'aqua';
  *               in Kalyani Nagar boards at Kalyani Nagar. These are carried
  *               so the app can name the train to take, and are deliberately
  *               kept out of the map and the alighting search.
+ *
+ * Tier ranks a station for ARRIVING. Whether you may arrive there at all is
+ * a separate question — see `canAlight`.
  */
 export type StationTier = 'primary' | 'secondary' | 'network';
 
@@ -62,11 +65,28 @@ export interface MetroStation {
   lng: number;
   tier: StationTier;
   /**
-   * What to do at street level. Only the five darshan stations carry one;
-   * for the rest it is the empty string, because we have nothing useful to
-   * say about an exit nobody is taking towards a mandal.
+   * What to do at street level. Only the darshan stations carry one; for
+   * the rest it is the empty string, because we have nothing useful to say
+   * about an exit nobody is taking towards a mandal.
    */
   exitNote: string;
+  /**
+   * Whether you may get OFF here to walk to the mandals.
+   *
+   * Separate from tier because it is an operational rule rather than a
+   * judgement about walking distance, and it can be false for a station
+   * that is otherwise the obvious choice. Mandai is exactly that: it is the
+   * nearest station to thirteen of the twenty-three mandals — Tulshibaug,
+   * Akhil Mandai, Hutatma Babu Genu and the rest of the southern peths —
+   * and you cannot arrive at it.
+   *
+   * Boarding is never restricted — see `nearestBoardingStation`. A station
+   * you cannot arrive at is still a station you can leave from, which is
+   * the whole point of Mandai during the festival.
+   */
+  canAlight: boolean;
+  /** Why you cannot arrive here. Shown to the visitor, so it must read plainly. */
+  alightNote?: string;
 }
 
 /** Line colours and names, matching Pune Metro's own signage. */
@@ -130,6 +150,7 @@ export const METRO_STATIONS: MetroStation[] = [
     lat: 18.5272,
     lng: 73.8502,
     tier: 'primary',
+    canAlight: true,
     exitNote:
       'Pune Municipal Corporation, at the top of the peths. Walk south over ' +
       'Shivaji Road for Shaniwar Wada and the Shaniwar Peth mandals.',
@@ -142,9 +163,12 @@ export const METRO_STATIONS: MetroStation[] = [
     lat: 18.5186,
     lng: 73.8562,
     tier: 'primary',
+    canAlight: true,
     exitNote:
       'Comes up on Shivaji Road. Kasba Ganpati — the first of the Manache ' +
-      'Paach — is a few minutes away, so the ceremonial order starts here.',
+      'Paach — is a few minutes away, so the ceremonial order starts here. ' +
+      'The nearest station you can actually arrive at for the Budhwar Peth ' +
+      'mandals, now that Mandai is exit-only.',
   },
   {
     id: 'mandai',
@@ -153,10 +177,17 @@ export const METRO_STATIONS: MetroStation[] = [
     lines: ['purple'],
     lat: 18.5113,
     lng: 73.8563,
+    // Still 'primary' — it is prominent, central, and the station most
+    // people will head for. It is simply not one you can arrive at.
     tier: 'primary',
+    canAlight: false,
+    alightNote:
+      'Mandai runs one way during the festival: you can board here to go ' +
+      'home, but trains do not let passengers off. Get off at Kasba Peth ' +
+      'and walk down instead — about fifteen minutes to Tulshibaug.',
     exitNote:
-      'Mahatma Phule Mandai. The densest stretch of the festival is on foot ' +
-      'from here — Dagdusheth, Tulshibaug and Tambdi Jogeshwari are all close.',
+      'Mahatma Phule Mandai. Boarding only during the festival — this is ' +
+      'where you catch the train back, not where you arrive.',
   },
   {
     id: 'sambhaji-udyan',
@@ -166,6 +197,7 @@ export const METRO_STATIONS: MetroStation[] = [
     lat: 18.5213,
     lng: 73.8437,
     tier: 'secondary',
+    canAlight: true,
     exitNote:
       'On Jangli Maharaj Road, across the river from the peths. About a ' +
       '20-minute walk in over Sambhaji Bridge — worth it only if you are ' +
@@ -179,6 +211,7 @@ export const METRO_STATIONS: MetroStation[] = [
     lat: 18.5172,
     lng: 73.8414,
     tier: 'secondary',
+    canAlight: true,
     exitNote:
       'Deccan. The furthest of these from the mandals — a good half hour on ' +
       'foot to Kasba. Useful coming from the west, not as a starting point.',
@@ -193,39 +226,40 @@ export const METRO_STATIONS: MetroStation[] = [
     lat: 18.5295,
     lng: 73.8535,
     tier: 'network',
+    canAlight: false,
     exitNote: '',
   },
 
   /* ---------------- Purple Line, north of Civil Court ---------------- */
-  { id: 'pcmc', name: 'PCMC', nameMr: 'पिंपरी चिंचवड', lines: ['purple'], lat: 18.6285, lng: 73.8000, tier: 'network', exitNote: '' },
-  { id: 'sant-tukaram-nagar', name: 'Sant Tukaram Nagar', nameMr: 'संत तुकाराम नगर', lines: ['purple'], lat: 18.6220, lng: 73.8100, tier: 'network', exitNote: '' },
-  { id: 'bhosari', name: 'Bhosari', nameMr: 'भोसरी', lines: ['purple'], lat: 18.6145, lng: 73.8190, tier: 'network', exitNote: '' },
-  { id: 'kasarwadi', name: 'Kasarwadi', nameMr: 'कासारवाडी', lines: ['purple'], lat: 18.6035, lng: 73.8250, tier: 'network', exitNote: '' },
-  { id: 'phugewadi', name: 'Phugewadi', nameMr: 'फुगेवाडी', lines: ['purple'], lat: 18.5940, lng: 73.8290, tier: 'network', exitNote: '' },
-  { id: 'dapodi', name: 'Dapodi', nameMr: 'दापोडी', lines: ['purple'], lat: 18.5800, lng: 73.8330, tier: 'network', exitNote: '' },
-  { id: 'bopodi', name: 'Bopodi', nameMr: 'बोपोडी', lines: ['purple'], lat: 18.5695, lng: 73.8360, tier: 'network', exitNote: '' },
-  { id: 'khadki', name: 'Khadki', nameMr: 'खडकी', lines: ['purple'], lat: 18.5620, lng: 73.8400, tier: 'network', exitNote: '' },
-  { id: 'range-hills', name: 'Range Hills', nameMr: 'रेंज हिल्स', lines: ['purple'], lat: 18.5545, lng: 73.8420, tier: 'network', exitNote: '' },
-  { id: 'shivajinagar', name: 'Shivajinagar', nameMr: 'शिवाजीनगर', lines: ['purple'], lat: 18.5310, lng: 73.8480, tier: 'network', exitNote: '' },
+  { id: 'pcmc', name: 'PCMC', nameMr: 'पिंपरी चिंचवड', lines: ['purple'], lat: 18.6285, lng: 73.8000, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'sant-tukaram-nagar', name: 'Sant Tukaram Nagar', nameMr: 'संत तुकाराम नगर', lines: ['purple'], lat: 18.6220, lng: 73.8100, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'bhosari', name: 'Bhosari', nameMr: 'भोसरी', lines: ['purple'], lat: 18.6145, lng: 73.8190, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'kasarwadi', name: 'Kasarwadi', nameMr: 'कासारवाडी', lines: ['purple'], lat: 18.6035, lng: 73.8250, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'phugewadi', name: 'Phugewadi', nameMr: 'फुगेवाडी', lines: ['purple'], lat: 18.5940, lng: 73.8290, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'dapodi', name: 'Dapodi', nameMr: 'दापोडी', lines: ['purple'], lat: 18.5800, lng: 73.8330, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'bopodi', name: 'Bopodi', nameMr: 'बोपोडी', lines: ['purple'], lat: 18.5695, lng: 73.8360, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'khadki', name: 'Khadki', nameMr: 'खडकी', lines: ['purple'], lat: 18.5620, lng: 73.8400, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'range-hills', name: 'Range Hills', nameMr: 'रेंज हिल्स', lines: ['purple'], lat: 18.5545, lng: 73.8420, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'shivajinagar', name: 'Shivajinagar', nameMr: 'शिवाजीनगर', lines: ['purple'], lat: 18.5310, lng: 73.8480, tier: 'network', canAlight: false, exitNote: '' },
 
   /* ---------------- Purple Line, south of Mandai ---------------- */
-  { id: 'swargate', name: 'Swargate', nameMr: 'स्वारगेट', lines: ['purple'], lat: 18.5010, lng: 73.8580, tier: 'network', exitNote: '' },
+  { id: 'swargate', name: 'Swargate', nameMr: 'स्वारगेट', lines: ['purple'], lat: 18.5010, lng: 73.8580, tier: 'network', canAlight: false, exitNote: '' },
 
   /* ---------------- Aqua Line, west of Deccan ---------------- */
-  { id: 'vanaz', name: 'Vanaz', nameMr: 'वनाझ', lines: ['aqua'], lat: 18.5075, lng: 73.8065, tier: 'network', exitNote: '' },
-  { id: 'anand-nagar', name: 'Anand Nagar', nameMr: 'आनंद नगर', lines: ['aqua'], lat: 18.5090, lng: 73.8125, tier: 'network', exitNote: '' },
-  { id: 'ideal-colony', name: 'Ideal Colony', nameMr: 'आयडियल कॉलनी', lines: ['aqua'], lat: 18.5105, lng: 73.8195, tier: 'network', exitNote: '' },
-  { id: 'nal-stop', name: 'Nal Stop', nameMr: 'नळ स्टॉप', lines: ['aqua'], lat: 18.5115, lng: 73.8280, tier: 'network', exitNote: '' },
-  { id: 'garware-college', name: 'Garware College', nameMr: 'गरवारे कॉलेज', lines: ['aqua'], lat: 18.5135, lng: 73.8345, tier: 'network', exitNote: '' },
+  { id: 'vanaz', name: 'Vanaz', nameMr: 'वनाझ', lines: ['aqua'], lat: 18.5075, lng: 73.8065, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'anand-nagar', name: 'Anand Nagar', nameMr: 'आनंद नगर', lines: ['aqua'], lat: 18.5090, lng: 73.8125, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'ideal-colony', name: 'Ideal Colony', nameMr: 'आयडियल कॉलनी', lines: ['aqua'], lat: 18.5105, lng: 73.8195, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'nal-stop', name: 'Nal Stop', nameMr: 'नळ स्टॉप', lines: ['aqua'], lat: 18.5115, lng: 73.8280, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'garware-college', name: 'Garware College', nameMr: 'गरवारे कॉलेज', lines: ['aqua'], lat: 18.5135, lng: 73.8345, tier: 'network', canAlight: false, exitNote: '' },
 
   /* ---------------- Aqua Line, east of Civil Court ---------------- */
-  { id: 'mangalwar-peth', name: 'Mangalwar Peth', nameMr: 'मंगळवार पेठ', lines: ['aqua'], lat: 18.5290, lng: 73.8620, tier: 'network', exitNote: '' },
-  { id: 'pune-railway-station', name: 'Pune Railway Station', nameMr: 'पुणे रेल्वे स्टेशन', lines: ['aqua'], lat: 18.5285, lng: 73.8740, tier: 'network', exitNote: '' },
-  { id: 'ruby-hall-clinic', name: 'Ruby Hall Clinic', nameMr: 'रुबी हॉल क्लिनिक', lines: ['aqua'], lat: 18.5340, lng: 73.8790, tier: 'network', exitNote: '' },
-  { id: 'bund-garden', name: 'Bund Garden', nameMr: 'बंड गार्डन', lines: ['aqua'], lat: 18.5375, lng: 73.8830, tier: 'network', exitNote: '' },
-  { id: 'yerawada', name: 'Yerawada', nameMr: 'येरवडा', lines: ['aqua'], lat: 18.5480, lng: 73.8830, tier: 'network', exitNote: '' },
-  { id: 'kalyani-nagar', name: 'Kalyani Nagar', nameMr: 'कल्याणी नगर', lines: ['aqua'], lat: 18.5480, lng: 73.9010, tier: 'network', exitNote: '' },
-  { id: 'ramwadi', name: 'Ramwadi', nameMr: 'रामवाडी', lines: ['aqua'], lat: 18.5510, lng: 73.9130, tier: 'network', exitNote: '' },
+  { id: 'mangalwar-peth', name: 'Mangalwar Peth', nameMr: 'मंगळवार पेठ', lines: ['aqua'], lat: 18.5290, lng: 73.8620, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'pune-railway-station', name: 'Pune Railway Station', nameMr: 'पुणे रेल्वे स्टेशन', lines: ['aqua'], lat: 18.5285, lng: 73.8740, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'ruby-hall-clinic', name: 'Ruby Hall Clinic', nameMr: 'रुबी हॉल क्लिनिक', lines: ['aqua'], lat: 18.5340, lng: 73.8790, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'bund-garden', name: 'Bund Garden', nameMr: 'बंड गार्डन', lines: ['aqua'], lat: 18.5375, lng: 73.8830, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'yerawada', name: 'Yerawada', nameMr: 'येरवडा', lines: ['aqua'], lat: 18.5480, lng: 73.8830, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'kalyani-nagar', name: 'Kalyani Nagar', nameMr: 'कल्याणी नगर', lines: ['aqua'], lat: 18.5480, lng: 73.9010, tier: 'network', canAlight: false, exitNote: '' },
+  { id: 'ramwadi', name: 'Ramwadi', nameMr: 'रामवाडी', lines: ['aqua'], lat: 18.5510, lng: 73.9130, tier: 'network', canAlight: false, exitNote: '' },
 ];
 
 /**
@@ -251,9 +285,35 @@ export const LINE_ORDER: Record<MetroLine, string[]> = {
 /** The only interchange between the two lines. */
 export const INTERCHANGE_ID = 'civil-court';
 
-/** The five you get off at. The map and the picker show only these. */
+/** The peth stations. The map shows these; the picker shows the arrivals. */
 export const DARSHAN_STATIONS = METRO_STATIONS.filter((s) => s.tier !== 'network');
-export const PRIMARY_STATIONS = METRO_STATIONS.filter((s) => s.tier === 'primary');
+
+/**
+ * Where you may actually get off to walk to the mandals.
+ *
+ * Four of them: Kasba Peth and PMC in the peths, Deccan Gymkhana and
+ * Sambhaji Udyan across the river. Mandai is deliberately absent — it runs
+ * one way during the festival, so a route that ends there is a route
+ * nobody can take.
+ *
+ * Its absence costs more than the list suggests. Mandai is the nearest
+ * station to thirteen of the twenty-three mandals in the catalogue, so for
+ * most of the southern peths the app is now sending people to their second
+ * choice. That is the right answer and it needs saying out loud, which is
+ * what blockedNearerStation is for.
+ */
+export const ARRIVAL_STATIONS = DARSHAN_STATIONS.filter((s) => s.canAlight);
+
+/** The default answers: in the peths, and you can get off. */
+export const PRIMARY_STATIONS = ARRIVAL_STATIONS.filter((s) => s.tier === 'primary');
+
+/**
+ * Stations you can reach but not leave the train at.
+ *
+ * Kept as a list rather than a special case for Mandai, because if a second
+ * station goes one-way mid-festival the app should absorb it as data.
+ */
+export const EXIT_ONLY_STATIONS = DARSHAN_STATIONS.filter((s) => !s.canAlight);
 
 /**
  * The one line to colour a station by. Every station has exactly one
@@ -311,13 +371,16 @@ function nearestIn(
 /**
  * The station someone would actually get off at for a point.
  *
- * Considers only the five darshan stations — getting off at Shivajinagar
- * for Dagdusheth is not an answer, even on the days it is nearest.
+ * Considers only stations you may ARRIVE at. Two exclusions, for different
+ * reasons: getting off at Shivajinagar for Dagdusheth is not an answer even
+ * on the days it is nearest, and getting off at Mandai is not possible at
+ * all — it is one-way during the festival. Both would otherwise win on
+ * distance, which is why this filters by role rather than sorting by it.
  *
  * Primary stations are preferred outright rather than by distance: from
  * most of Shaniwar Peth, Sambhaji Udyan is closer as the crow flies than
- * Mandai is, but the crow does not cross the river on Sambhaji Bridge. A
- * secondary station is returned only when no primary one is in range.
+ * Kasba Peth is, but the crow does not cross the river on Sambhaji Bridge.
+ * A secondary station is returned only when no primary one is in range.
  */
 export function nearestStation(
   point: LatLng,
@@ -325,7 +388,49 @@ export function nearestStation(
 ): NearestStation | null {
   return (
     nearestIn(PRIMARY_STATIONS, point, maxDistanceM) ??
-    nearestIn(DARSHAN_STATIONS, point, maxDistanceM)
+    nearestIn(ARRIVAL_STATIONS, point, maxDistanceM)
+  );
+}
+
+/**
+ * The station that is closest but cannot be used, when there is one.
+ *
+ * Exists so the app can explain itself. Someone standing at Tulshibaug
+ * knows Mandai is the near one, and being routed to Kasba Peth without a
+ * word looks like the app is wrong rather than like the station is shut to
+ * arrivals. Returns null when the nearest station is one you can use, so
+ * the explanation only appears where it is needed — which, given Mandai is
+ * nearest for thirteen of twenty-three mandals, is often.
+ */
+export function blockedNearerStation(
+  point: LatLng,
+  chosen: MetroStation,
+  maxDistanceM = ANCHOR_MAX_M
+): NearestStation | null {
+  const chosenDistance = haversine(point, { lat: chosen.lat, lng: chosen.lng });
+  const blocked = nearestIn(EXIT_ONLY_STATIONS, point, maxDistanceM);
+  if (!blocked || blocked.distanceM >= chosenDistance) return null;
+  return blocked;
+}
+
+/**
+ * Where to catch the train home, once the darshan is done.
+ *
+ * Boarding is never restricted, so this searches every station and quite
+ * often lands on the one you could not arrive at. That asymmetry is the
+ * point: Mandai is a perfectly good way to leave the peths and no way at
+ * all to enter them, and a visitor who is told only the first half of that
+ * ends up walking back to Kasba Peth for no reason.
+ */
+export function returnStation(
+  stops: Array<{ location: { lat: number; lng: number } }>,
+  maxDistanceM = ANCHOR_MAX_M
+): NearestStation | null {
+  const last = stops[stops.length - 1];
+  if (!last) return null;
+  return nearestBoardingStation(
+    { lat: last.location.lat, lng: last.location.lng },
+    maxDistanceM
   );
 }
 

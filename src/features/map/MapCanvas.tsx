@@ -61,6 +61,11 @@ function metroFeatureCollection(): GeoJSON.FeatureCollection {
         name: s.name,
         tier: s.tier,
         color: LINE_COLOR[primaryLine(s)],
+        // Drawn hollow. A station you cannot get off at is not the same
+        // kind of thing as one you can, and colouring them identically
+        // would send people to the platform the app is steering them away
+        // from — Mandai is the closest station to Dagdusheth.
+        canAlight: s.canAlight,
       },
       geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
     })),
@@ -300,7 +305,14 @@ export function MapCanvas({
           filter,
           paint: {
             'circle-color': ['get', 'color'],
-            'circle-opacity': tier === 'primary' ? 0.14 : 0.09,
+            'circle-opacity': [
+              'case',
+              ['get', 'canAlight'],
+              tier === 'primary' ? 0.14 : 0.09,
+              // Barely there: the halo reads as "you can arrive around
+              // here", which is the one thing this station is not.
+              0.04,
+            ],
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 6, 16, 22],
           },
         });
@@ -312,9 +324,14 @@ export function MapCanvas({
           minzoom,
           filter,
           paint: {
-            'circle-color': ['get', 'color'],
+            // Filled where you can get off, hollow where you cannot: the
+            // ring is drawn by giving the circle the map's own ground
+            // colour and moving the line colour into the stroke.
+            'circle-color': [
+              'case', ['get', 'canAlight'], ['get', 'color'], '#14100C',
+            ],
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 6],
-            'circle-stroke-color': '#14100C',
+            'circle-stroke-color': ['get', 'color'],
             'circle-stroke-width': 1.5,
             'circle-opacity': tier === 'primary' ? 1 : 0.75,
           },
@@ -330,7 +347,14 @@ export function MapCanvas({
           minzoom: minzoom + 1,
           filter,
           layout: {
-            'text-field': ['get', 'name'],
+            // Exit-only stations say so on the map. "Mandai" alone reads
+            // as somewhere to head for.
+            'text-field': [
+              'case',
+              ['get', 'canAlight'],
+              ['get', 'name'],
+              ['concat', ['get', 'name'], ' (exit only)'],
+            ],
             'text-font': ['Noto Sans Bold'],
             'text-size': 10,
             'text-offset': [0, 1.1],

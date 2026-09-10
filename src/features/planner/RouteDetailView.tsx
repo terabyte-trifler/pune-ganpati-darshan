@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { CategoryBadge } from '@/components/ui/Badge';
 import { usePlan } from '@/hooks/useLocalCollection';
 import { formatDuration } from '@/lib/geo';
-import { stationForRoute } from '@/lib/metro';
+import { stationForRoute, returnStation } from '@/lib/metro';
 import { MetroJourneyCard } from './MetroJourneyCard';
 import { useLiveRouteTime } from '@/features/crowd/useLiveRouteTime';
 import { trackEvent } from '@/services/analytics';
@@ -45,6 +45,10 @@ export function RouteDetailView({
    * would be absurd to walk from.
    */
   const anchor = stationForRoute(mandals);
+  // Where the train home leaves from. Usually a different station from the
+  // one you arrived at, and during the festival often one you could not
+  // have arrived at.
+  const home = returnStation(mandals);
 
   // One source for this number: the headline stat on this page uses the
   // same hook, and computing it twice is how they end up disagreeing.
@@ -76,6 +80,12 @@ export function RouteDetailView({
             alight={anchor.station}
             walkToFirstM={anchor.distanceM}
             firstStopName={mandals[0]?.name}
+            firstStop={
+              mandals[0]
+                ? { lat: mandals[0].location.lat, lng: mandals[0].location.lng }
+                : undefined
+            }
+            home={home}
           />
         </div>
       )}

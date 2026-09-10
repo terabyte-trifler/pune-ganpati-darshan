@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  METRO_STATIONS, DARSHAN_STATIONS, PRIMARY_STATIONS, LINE_ORDER, ANCHOR_MAX_M,
+  METRO_STATIONS, DARSHAN_STATIONS, ARRIVAL_STATIONS, EXIT_ONLY_STATIONS,
+  PRIMARY_STATIONS, LINE_ORDER, ANCHOR_MAX_M,
   nearestStation, nearestBoardingStation, stationForRoute, stationById,
-  planMetroJourney, primaryLine,
+  planMetroJourney, primaryLine, blockedNearerStation, returnStation,
 } from '@/lib/metro';
 import { MODE_SPEED_MPS } from '@/lib/geo';
 import { toTravelMode } from '@/db/database.types';
@@ -58,6 +59,18 @@ describe('nearestStation', () => {
     const found = nearestStation(DAGDUSHETH);
     expect(found?.station.id).toBe('kasba-peth');
     expect(found!.distanceM).toBeLessThan(600);
+  });
+
+  it('never sends anyone to get off at Mandai', () => {
+    // The whole reason this rule exists. Mandai is the nearest station to
+    // thirteen of the twenty-three mandals and runs one-way during the
+    // festival, so it wins on distance and is still the wrong answer. The
+    // fixture is Akhil Mandai Mandal, 64 m from the platform — if the
+    // filter ever fails, it fails here first.
+    const near = { lat: 18.511852, lng: 73.856135 };
+    expect(nearestStation(near)?.station.id).not.toBe('mandai');
+    expect(nearestStation(DAGDUSHETH)?.station.id).not.toBe('mandai');
+    expect(ARRIVAL_STATIONS.map((s) => s.id)).not.toContain('mandai');
   });
 
   it('prefers a primary station over a closer one across the river', () => {
@@ -118,21 +131,25 @@ describe('stationForRoute', () => {
 });
 
 describe('station data', () => {
-  it('has the three peth stations as primary and the two Aqua ones as rare', () => {
-    expect(PRIMARY_STATIONS.map((s) => s.id).sort()).toEqual(
-      ['kasba-peth', 'mandai', 'pmc']
+  it('offers the four arrival stations, ranked, and Mandai in none of them', () => {
+    expect(ARRIVAL_STATIONS.map((s) => s.id).sort()).toEqual(
+      ['deccan-gymkhana', 'kasba-peth', 'pmc', 'sambhaji-udyan']
     );
+    expect(PRIMARY_STATIONS.map((s) => s.id).sort()).toEqual(
+      ['kasba-peth', 'pmc']
+    );
+    expect(EXIT_ONLY_STATIONS.map((s) => s.id)).toEqual(['mandai']);
     expect(
       DARSHAN_STATIONS.filter((s) => s.tier === 'secondary').map((s) => s.id).sort()
     ).toEqual(['deccan-gymkhana', 'sambhaji-udyan']);
   });
 
-  it('keeps every darshan station inside the anchor radius of the peth core', () => {
+  it('keeps every arrival station inside the anchor radius of the peth core', () => {
     // Not a coordinate check — those are approximate by design — but a
     // guard against a typo putting one of the five in another district.
     // Network stations are excluded on purpose: Ramwadi is nowhere near
     // the peths, which is exactly why you do not get off there.
-    for (const s of DARSHAN_STATIONS) {
+    for (const s of ARRIVAL_STATIONS) {
       const d = nearestStation({ lat: s.lat, lng: s.lng }, ANCHOR_MAX_M);
       expect(d, `${s.id} is unreachable from itself`).not.toBeNull();
     }
@@ -252,5 +269,61 @@ describe('planMetroJourney', () => {
 
   it('colours the interchange by the line that reaches the peths', () => {
     expect(primaryLine(stationById('civil-court')!)).toBe('purple');
+  });
+});
+
+describe('Mandai is one-way during the festival', () => {
+  const MANDAI = stationById('mandai')!;
+  /**
+   * Tulshibaug, from the catalogue. Chosen over Dagdusheth deliberately:
+   * Mandai is genuinely the nearest station to Tulshibaug (346 m against
+   * Kasba Peth's 491 m), whereas Dagdusheth is a near tie that falls the
+   * other way by about forty metres. Thirteen of the twenty-three mandals
+   * are nearest to Mandai, which is what makes the one-way rule matter.
+   */
+  const TULSHIBAUG = { lat: 18.514268, lng: 73.855306 };
+
+  it('is still where you board to go home', () => {
+    // The asymmetry is the point. Boarding is never restricted, so the
+    // station you could not arrive at is very often the one you leave from
+    // — and a visitor told only half of that walks back to Kasba Peth for
+    // no reason.
+    const home = returnStation([{ location: TULSHIBAUG }]);
+    expect(home?.station.id).toBe('mandai');
+    expect(home!.station.canAlight).toBe(false);
+  });
+
+  it('is named as the closer station you cannot use, so the app explains itself', () => {
+    const alight = nearestStation(TULSHIBAUG)!.station;
+    const blocked = blockedNearerStation(TULSHIBAUG, alight)!;
+
+    expect(blocked.station.id).toBe('mandai');
+    expect(blocked.distanceM).toBeLessThan(
+      nearestStation(TULSHIBAUG)!.distanceM
+    );
+    expect(blocked.station.alightNote).toBeTruthy();
+  });
+
+  it('says nothing when the chosen station is already the nearest', () => {
+    // No explanation where none is needed: from PMC's doorstep there is no
+    // closer blocked station, so the note must not appear.
+    const atPmc = { lat: 18.5272, lng: 73.8502 };
+    expect(blockedNearerStation(atPmc, stationById('pmc')!)).toBeNull();
+  });
+
+  it('can still be ridden through without stopping', () => {
+    // Swargate is south of Mandai on the Purple Line, so a journey north
+    // passes through it. Passing through is not alighting, and the leg
+    // must still be planned.
+    const atSwargate = { lat: 18.5010, lng: 73.8580 };
+    const j = planMetroJourney(atSwargate, stationById('kasba-peth')!)!;
+    expect(j.legs[0].stops).toBe(2);
+    expect(j.alight.id).toBe('kasba-peth');
+  });
+
+  it('carries a note that names the alternative', () => {
+    // The message is user-facing, and "you cannot get off here" without
+    // "get off at Kasba Peth instead" leaves someone stuck on a train.
+    expect(MANDAI.alightNote).toMatch(/Kasba Peth/);
   });
 });

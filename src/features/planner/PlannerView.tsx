@@ -25,7 +25,7 @@ import {
 } from '@/lib/geo';
 import { MetroStationPicker } from './MetroStationPicker';
 import { MetroJourneyCard } from './MetroJourneyCard';
-import { stationForRoute, stationById, PRIMARY_STATIONS } from '@/lib/metro';
+import { stationForRoute, returnStation, stationById, PRIMARY_STATIONS } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
 
@@ -106,11 +106,13 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
    *
    * Defaults to whichever station is nearest the first stop rather than to
    * a fixed one: a plan that begins in Shaniwar Peth should open on PMC,
-   * not on Mandai two kilometres south. Falls back to Mandai when the plan
-   * is empty or nowhere near the line.
+   * not on Kasba Peth a kilometre south. Falls back to Kasba Peth when the
+   * plan is empty or nowhere near the line — it is the nearest arrival
+   * station to the densest part of the festival now that Mandai is
+   * boarding-only.
    */
   const suggestedStation = useMemo(
-    () => stationForRoute(stops)?.station ?? stationById('mandai') ?? PRIMARY_STATIONS[0],
+    () => stationForRoute(stops)?.station ?? stationById('kasba-peth') ?? PRIMARY_STATIONS[0],
     [stops]
   );
   const [stationId, setStationId] = useState<string | null>(null);
@@ -329,6 +331,12 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
                 : null
             }
             firstStopName={stops[0]?.name}
+            firstStop={
+              stops[0]
+                ? { lat: stops[0].location.lat, lng: stops[0].location.lng }
+                : undefined
+            }
+            home={returnStation(stops)}
           />
           <MetroStationPicker
             value={station}

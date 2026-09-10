@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { TrainFront, ChevronDown } from 'lucide-react';
+import { TrainFront, ChevronDown, TriangleAlert } from 'lucide-react';
 import {
-  DARSHAN_STATIONS, PRIMARY_STATIONS, LINE_COLOR, LINE_NAME, primaryLine,
+  ARRIVAL_STATIONS, EXIT_ONLY_STATIONS, PRIMARY_STATIONS,
+  LINE_COLOR, LINE_NAME, primaryLine,
   type MetroStation,
 } from '@/lib/metro';
 import { haversine, formatDistance, type LatLng } from '@/lib/geo';
@@ -18,12 +19,18 @@ import { cn } from '@/lib/utils';
  * choice and is not offered: it is wherever you happen to be, which the
  * journey card works out from your location.
  *
- * The three primary stations are laid out as equals. The two Aqua Line ones
- * are behind a disclosure, because they are the rare answer rather than a
- * fourth and fifth option: both are across the river and 20–30 minutes'
- * walk from the nearest mandal, so putting them in the same row would
- * present a bad choice as an equal one. Hiding them entirely would be
- * worse — someone coming from Kothrud genuinely arrives that way.
+ * Only stations you can ARRIVE at are offered. Mandai is not one of them
+ * during the festival, and its absence is explained rather than left to be
+ * noticed: it is the nearest station to most of the southern peths, so a
+ * visitor who knows the network will assume the app has a bug unless it
+ * says otherwise.
+ *
+ * The two peth stations are laid out as equals. The two Aqua Line ones are
+ * behind a disclosure, because they are the rare answer rather than a third
+ * and fourth option: both are across the river and 20–30 minutes' walk from
+ * the nearest mandal, so putting them in the same row would present a bad
+ * choice as an equal one. Hiding them entirely would be worse — someone
+ * coming from Kothrud genuinely arrives that way.
  */
 
 function StationButton({
@@ -72,7 +79,7 @@ export function MetroStationPicker({
   /** Used only to show how far each station is. Never leaves the device. */
   userLocation: LatLng | null;
 }) {
-  const secondary = DARSHAN_STATIONS.filter((s) => s.tier === 'secondary');
+  const secondary = ARRIVAL_STATIONS.filter((s) => s.tier === 'secondary');
   // Open if the current choice is in there, so the selection is never hidden.
   const [showRare, setShowRare] = useState(value.tier === 'secondary');
 
@@ -137,6 +144,27 @@ export function MetroStationPicker({
       <p className="mt-2.5 text-[12px] leading-relaxed text-[var(--muted)]">
         {value.exitNote}
       </p>
+
+      {/* Says why the obvious station is missing. Without this the list
+          looks incomplete to anyone who knows the line. */}
+      {EXIT_ONLY_STATIONS.map((s) => (
+        <p
+          key={s.id}
+          className="mt-2 flex gap-1.5 rounded-[var(--radius-field)] border border-[var(--zendu)]/30 bg-[var(--zendu)]/10 px-2.5 py-2 text-[12px] leading-relaxed text-[var(--muted)]"
+        >
+          <TriangleAlert
+            size={13}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--zendu)]"
+          />
+          <span>
+            <strong className="font-semibold text-[var(--chandan)]">
+              No getting off at {s.name}.
+            </strong>{' '}
+            {s.alightNote}
+          </span>
+        </p>
+      ))}
     </div>
   );
 }
