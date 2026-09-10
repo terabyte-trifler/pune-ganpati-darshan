@@ -594,3 +594,67 @@ test.describe('which train to take', () => {
     await expect(page.getByText(/About .* on the train/)).toBeVisible();
   });
 });
+
+test('Flow 15 — route pins sit where the map projects them', async ({ page }) => {
+  /**
+   * Guards a bug that made every ordered map wrong for months without
+   * looking broken.
+   *
+   * MapLibre positions a custom marker by writing a transform onto the
+   * element and relies on its own class for `position: absolute`. The
+   * marker's inline style declared `position: relative` — to give the
+   * order badge a containing block — and inline beats a stylesheet, so
+   * every pin stayed in normal document flow. The transform then offset
+   * each one from wherever the flow had put it, so the pins laid out
+   * inline in stop order and drifted further with each one; stop 4 was
+   * 117px from where it belonged.
+   *
+   * The route line is drawn from a GeoJSON source and was always correct,
+   * so the visible symptom was a line that missed its own pins. That is
+   * why this asserts geometry rather than screenshots: the pins were
+   * always present and always rendered, just in the wrong place.
+   */
+  await page.goto('/routes/mandai-hour');
+  await page.waitForSelector('[data-minimap-ready="true"]');
+  await page.waitForSelector('.maplibregl-marker');
+
+  const pins = await page.$$eval('.maplibregl-marker', (els) =>
+    els.map((el) => {
+      const parsed = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(
+        (el as HTMLElement).style.transform
+      );
+      const map = el.closest('.maplibregl-map')!.getBoundingClientRect();
+      const own = el.getBoundingClientRect();
+      return {
+        label: el.getAttribute('aria-label') ?? '',
+        position: getComputedStyle(el).position,
+        // Where MapLibre says the pin belongs, relative to the map.
+        wantX: parsed ? Number(parsed[1]) : null,
+        wantY: parsed ? Number(parsed[2]) : null,
+        // Where it actually landed.
+        gotX: own.x + own.width / 2 - map.x,
+        gotY: own.y + own.height / 2 - map.y,
+      };
+    })
+  );
+
+  expect(pins.length).toBeGreaterThan(1);
+
+  for (const pin of pins) {
+    // The inline style must not take the element out of flow-independent
+    // positioning, or the transform stops meaning what MapLibre intends.
+    expect(pin.position, `${pin.label} is not absolutely positioned`).toBe('absolute');
+
+    expect(pin.wantX, `${pin.label} has no transform`).not.toBeNull();
+    // 2px covers the rounding of translate(-50%, -50%) on an odd-sized
+    // element. The bug this guards was off by up to 117px.
+    expect(
+      Math.abs(pin.gotX - pin.wantX!),
+      `${pin.label} is ${Math.round(Math.abs(pin.gotX - pin.wantX!))}px off horizontally`
+    ).toBeLessThanOrEqual(2);
+    expect(
+      Math.abs(pin.gotY - pin.wantY!),
+      `${pin.label} is ${Math.round(Math.abs(pin.gotY - pin.wantY!))}px off vertically`
+    ).toBeLessThanOrEqual(2);
+  }
+});

@@ -238,9 +238,28 @@ export function MiniMap({
       const el = document.createElement('button');
       el.type = 'button';
       el.setAttribute('aria-label', `Stop ${i + 1}: ${mandal.name}`);
+      /**
+       * `position:absolute`, and it must stay that way.
+       *
+       * MapLibre positions a custom marker element by writing a transform
+       * onto it and relies on its own `.maplibregl-marker` class for
+       * `position: absolute`. This used to declare `position: relative`
+       * here — to give the order badge a containing block — and an inline
+       * style beats a stylesheet, so every marker stayed in normal
+       * document flow. The transform then offset each pin from wherever
+       * the flow had put it rather than from the map's origin, so the pins
+       * laid out inline in stop order and drifted further with each one.
+       *
+       * The route line was drawn from the GeoJSON source and was always
+       * correct, which is why the symptom read as the line and the pins
+       * disagreeing rather than as the pins being wrong.
+       *
+       * `absolute` is a containing block too, so the badge still works.
+       */
       el.style.cssText = [
         `width:${size}px;height:${size}px`,
-        'position:relative;padding:0;border:0;background:transparent;cursor:pointer',
+        'position:absolute;top:0;left:0',
+        'padding:0;border:0;background:transparent;cursor:pointer',
         `background-image:url("${url}")`,
         'background-size:contain;background-repeat:no-repeat;background-position:center',
       ].join(';');
