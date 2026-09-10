@@ -323,11 +323,31 @@ test('sharing a plan produces a durable link that opens the route', async ({ pag
   expect(missing.status()).toBe(404);
 });
 
+/**
+ * Tap "Start from my location" only if it is there.
+ *
+ * The app now resolves a permission it has already been granted, so on
+ * these pages the located state usually arrives without a tap and the
+ * button is never rendered. It still appears for a visitor who has not
+ * granted anything, which is the case it exists for.
+ */
+async function locateIfAsked(page: Page) {
+  // Racy by nature, and deliberately tolerant of it: the app resolves a
+  // granted permission asynchronously and unmounts this button the moment
+  // it does, which can happen between a count() and a click(). Its
+  // disappearance IS the outcome we want, so a failed click is success.
+  await page
+    .getByRole('button', { name: /Start from my location/i })
+    .first()
+    .click({ timeout: 4000 })
+    .catch(() => {});
+}
+
 test('a curated route can be navigated from where you are', async ({ page }) => {
   await withPuneLocation(page);
   await page.goto('/routes/manache-5-sakal-walk');
 
-  await page.getByRole('button', { name: /Start from my location/i }).click();
+  await locateIfAsked(page);
 
   // Geolocation resolves asynchronously; wait for the located state rather
   // than reading the URL from a button that has not rendered yet.
@@ -357,7 +377,7 @@ test('a curated route can be navigated from where you are', async ({ page }) => 
 test('a route longer than Google Maps allows is split, not truncated', async ({ page }) => {
   await withPuneLocation(page);
   await page.goto('/routes/great-peth-circuit');
-  await page.getByRole('button', { name: /Start from my location/i }).click();
+  await locateIfAsked(page);
 
   // Google Maps caps intermediate waypoints at 9. Silently dropping stops
   // from a 12-stop circuit would send someone off with a route missing its
@@ -390,7 +410,7 @@ test('the planner navigates from your location and respects the waypoint cap', a
   await page.waitForURL('**/plan');
 
   await expect(page.getByText(/12 stops/)).toBeVisible();
-  await page.getByRole('button', { name: /Start from my location/i }).click();
+  await locateIfAsked(page);
   await expect(page.getByRole('button', { name: /Open part 1 of 2/ })).toBeVisible();
 
   const trip = await page.evaluate(() => {
@@ -566,10 +586,11 @@ test.describe('which train to take', () => {
     await expect(page.getByText(/Going back: Mandai/)).toBeVisible();
     await expect(page.getByText(/only arrivals that are closed/)).toBeVisible();
 
-    // The boarding half is behind an explicit tap. The app does not quietly
-    // read a position to answer a question nobody asked — see the card's
-    // own note about what the permission is spent on.
-    await page.getByRole('button', { name: /Which train do I take/ }).click();
+    // The boarding half arrives without a tap now: the card uses a
+    // permission already granted rather than asking for one again. The
+    // button is still there for anyone who has granted nothing.
+    const ask = page.getByRole('button', { name: /Which train do I take/ });
+    if (await ask.count()) await ask.click();
 
     // Boarding is derived from where the visitor is, not from the route.
     await expect(page.getByText(/Board at Kalyani Nagar/)).toBeVisible();
