@@ -14,6 +14,8 @@ import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
 import { buildMarkerSvg, buildRouteStopSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { boundsOf } from '@/lib/geo';
+import { addMetroLayers } from '@/lib/maps/metro-layer';
+import { nearestStation } from '@/lib/metro';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
 
 /**
@@ -95,7 +97,27 @@ export function MiniMap({
     if (!webglSupported) return;
 
     const points = mandals.map((m) => ({ lat: m.location.lat, lng: m.location.lng }));
-    const b = boundsOf(points, mandals.length === 1 ? 0.004 : 0.0025);
+
+    /**
+     * A single-mandal map is framed to include the station you would arrive
+     * at, not just the mandal.
+     *
+     * At the fixed zoom this used to use, the view spans about 900 m and
+     * every station falls outside it — so the stations were drawn and never
+     * seen on the app's most-visited page, which answers "where is this"
+     * and left "how do I get there" to another screen.
+     *
+     * Skipped when nothing is in range: Morya Gosavi is 13 km from the
+     * nearest station, and fitting both would zoom out until the mandal
+     * itself was a dot in an empty map.
+     */
+    const anchor =
+      mandals.length === 1 ? nearestStation(points[0]) : null;
+    const framed = anchor
+      ? [...points, { lat: anchor.station.lat, lng: anchor.station.lng }]
+      : points;
+
+    const b = boundsOf(framed, mandals.length === 1 && !anchor ? 0.004 : 0.0025);
 
     let map: MapLibreMap;
     try {
@@ -136,6 +158,11 @@ export function MiniMap({
         type: 'geojson',
         data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
       });
+      // Every map in the app shows the way in. A route map that draws the
+      // peths with no stations on it answers "which mandals" and leaves
+      // "how do I get to them" to a different screen.
+      addMetroLayers(map);
+
       map.addLayer({
         id: 'route-line',
         type: 'line',
@@ -185,7 +212,7 @@ export function MiniMap({
         map.on('mouseleave', 'mandal-pins', () => { map.getCanvas().style.cursor = ''; });
       }
 
-      if (mandals.length > 1) {
+      if (framed.length > 1) {
         map.fitBounds([[b.west, b.south], [b.east, b.north]], {
           padding: 44, duration: 0, maxZoom: 16,
         });

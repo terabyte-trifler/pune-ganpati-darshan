@@ -8,14 +8,13 @@ import {
   type GeoJSONSource,
   type MapMouseEvent,
   type ErrorEvent,
-  type FilterSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
 import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
-import { DARSHAN_STATIONS, LINE_COLOR, primaryLine } from '@/lib/metro';
+import { addMetroLayers } from '@/lib/maps/metro-layer';
 import type { Ganpati, GanpatiCategory } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
@@ -33,44 +32,6 @@ import type { CrowdLevel } from '@/types/crowd';
  */
 
 const SOURCE = 'mandals';
-const METRO_SOURCE = 'metro-stations';
-
-/**
- * Metro stations, drawn under the mandals.
- *
- * They are context, not destinations: the question the map answers is
- * "which Ganpati next", and a station that competed with the pins for
- * attention would get in the way of it. So they sit below the mandal
- * layers, use the line's own colour rather than the app's vermilion, and
- * never take a tap.
- *
- * The two Aqua Line stations across the river appear two zoom levels later
- * than the three in the peths. That is the "rare" in the brief expressed as
- * geometry rather than as a caption — at the zoom where you are choosing a
- * mandal they are simply not part of the decision, and they fade in only
- * once you have pulled back far enough to be thinking about getting there.
- */
-const METRO_MIN_ZOOM = { primary: 11.5, secondary: 13.5 } as const;
-
-function metroFeatureCollection(): GeoJSON.FeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: DARSHAN_STATIONS.map((s) => ({
-      type: 'Feature',
-      properties: {
-        name: s.name,
-        tier: s.tier,
-        color: LINE_COLOR[primaryLine(s)],
-        // Drawn hollow. A station you cannot get off at is not the same
-        // kind of thing as one you can, and colouring them identically
-        // would send people to the platform the app is steering them away
-        // from — Mandai is the closest station to Dagdusheth.
-        canAlight: s.canAlight,
-      },
-      geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
-    })),
-  };
-}
 const CATEGORIES: GanpatiCategory[] = ['maanache', 'famous', 'historic', 'local'];
 
 export type MapFailure = 'webgl' | 'init' | 'tiles';
@@ -288,94 +249,8 @@ export function MapCanvas({
         paint: { 'line-color': '#E2621B', 'line-width': 4, 'line-opacity': 0.9 },
       });
 
-      map.addSource(METRO_SOURCE, { type: 'geojson', data: metroFeatureCollection() });
-
-      for (const tier of ['primary', 'secondary'] as const) {
-        const minzoom = METRO_MIN_ZOOM[tier];
-        const filter: FilterSpecification = ['==', ['get', 'tier'], tier];
-
-        // A soft ring reading as "the station is somewhere in here" — which
-        // is honest, because these coordinates are station boxes and the
-        // exits are up to a couple of hundred metres apart.
-        map.addLayer({
-          id: `metro-halo-${tier}`,
-          type: 'circle',
-          source: METRO_SOURCE,
-          minzoom,
-          filter,
-          paint: {
-            'circle-color': ['get', 'color'],
-            'circle-opacity': [
-              'case',
-              ['get', 'canAlight'],
-              tier === 'primary' ? 0.14 : 0.09,
-              // Barely there: the halo reads as "you can arrive around
-              // here", which is the one thing this station is not.
-              0.04,
-            ],
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 6, 16, 22],
-          },
-        });
-
-        map.addLayer({
-          id: `metro-dot-${tier}`,
-          type: 'circle',
-          source: METRO_SOURCE,
-          minzoom,
-          filter,
-          paint: {
-            // Filled where you can get off, hollow where you cannot: the
-            // ring is drawn by giving the circle the map's own ground
-            // colour and moving the line colour into the stroke.
-            'circle-color': [
-              'case', ['get', 'canAlight'], ['get', 'color'], '#14100C',
-            ],
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 3, 16, 6],
-            'circle-stroke-color': ['get', 'color'],
-            'circle-stroke-width': 1.5,
-            'circle-opacity': tier === 'primary' ? 1 : 0.75,
-          },
-        });
-
-        map.addLayer({
-          id: `metro-label-${tier}`,
-          type: 'symbol',
-          source: METRO_SOURCE,
-          // Labels one level later than the dot: the dot is orientation and
-          // costs nothing, the name is only worth the clutter once you are
-          // close enough to walk from it.
-          minzoom: minzoom + 1,
-          filter,
-          layout: {
-            // Exit-only stations say so on the map. "Mandai" alone reads
-            // as somewhere to head for.
-            'text-field': [
-              'case',
-              ['get', 'canAlight'],
-              ['get', 'name'],
-              ['concat', ['get', 'name'], ' (exit only)'],
-            ],
-            'text-font': ['Noto Sans Bold'],
-            'text-size': 10,
-            'text-offset': [0, 1.1],
-            'text-anchor': 'top',
-            // The three peth stations keep their names whatever else wants
-            // the space. Left to collision they lost to OpenStreetMap's own
-            // place labels — "PUNE", "SHANIWAR PETH" — and the map showed
-            // three anonymous coloured dots, which answers nothing. The two
-            // Aqua Line ones stay collision-managed: they are the rare
-            // choice, and not worth crowding the peths for.
-            'text-allow-overlap': tier === 'primary',
-            'text-padding': 3,
-          },
-          paint: {
-            'text-color': ['get', 'color'],
-            'text-halo-color': '#14100C',
-            'text-halo-width': 1.6,
-            'text-opacity': tier === 'primary' ? 0.95 : 0.7,
-          },
-        });
-      }
+      // Stations first, so the mandal pins draw on top of them.
+      addMetroLayers(map);
 
       // A cluster is several mandals, so it is drawn as a Ganpati too —
       // brass rather than vermilion, and larger the more it holds. It was a
