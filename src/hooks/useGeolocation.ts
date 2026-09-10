@@ -267,6 +267,41 @@ export function useAutoLocate() {
   }, []);
 }
 
+/**
+ * Use a permission already granted, but never ask for one.
+ *
+ * The distinction useAutoLocate's note is really drawing is about firing a
+ * dialog at someone who followed a link straight to one mandal — not about
+ * using a permission they have already given. This does the second half
+ * only: if the browser says 'granted' it resolves a position silently, and
+ * otherwise it leaves the state alone so the caller can offer a button.
+ *
+ * Mounted by the report controls, which are refused beyond 1.5 km and so
+ * need a position to decide anything. Without this, someone who granted
+ * location on the home page and then opened a mandal would be asked to
+ * turn on something already on.
+ */
+export function useResolveLocation() {
+  useEffect(() => {
+    if (state.status !== 'idle') return;
+    const permissions =
+      typeof navigator === 'undefined' ? undefined : navigator.permissions;
+    if (!permissions?.query) return;
+
+    let cancelled = false;
+    void permissions
+      .query({ name: 'geolocation' as PermissionName })
+      .then((result) => {
+        if (cancelled || state.status !== 'idle') return;
+        if (result.state === 'granted') requestLocation();
+        else if (result.state === 'denied') setState({ status: 'denied' });
+        // 'prompt' is deliberately left alone: the caller shows a button.
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+}
+
 export function useGeolocation() {
   const current = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return { state: current, request: requestLocation };

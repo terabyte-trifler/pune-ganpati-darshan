@@ -5,6 +5,7 @@ import { MapPin } from 'lucide-react';
 import { useAutoLocate, useGeolocation } from '@/hooks/useGeolocation';
 import { haversine, formatDistance } from '@/lib/geo';
 import { CrowdReportButtons } from './CrowdReportButtons';
+import { REPORT_MAX_DISTANCE_M } from './report-eligibility';
 import { cn } from '@/lib/utils';
 import type { Ganpati } from '@/types/ganpati';
 
@@ -40,8 +41,12 @@ const AT_RADIUS_M = 120;
 /**
  * Beyond this the shortlist stops being "things you might have walked
  * past" and starts being a list of mandals across town.
+ *
+ * The same radius the report controls themselves enforce, taken from the
+ * one place that defines it — a shortlist offering a mandal whose buttons
+ * then refuse to appear would be the worst of both.
  */
-const NEAR_RADIUS_M = 1500;
+const NEAR_RADIUS_M = REPORT_MAX_DISTANCE_M;
 
 /**
  * A fix coarser than this cannot tell two peth mandals apart, and naming

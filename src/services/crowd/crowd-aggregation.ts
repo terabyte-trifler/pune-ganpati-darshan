@@ -57,6 +57,12 @@ export const FRESHNESS_HALF_LIFE_MINUTES = 30;
  * minutes old, and a mandal whose only reports are off-site should still
  * show something rather than nothing. Two people at the gate outweigh
  * three who are not, which is the intended shape.
+ *
+ * "Off-site" now means between about 100 m and 1.5 km, not anywhere at
+ * all: the controls are no longer offered outside that radius, so this
+ * weight separates someone at the gate from someone who walked past ten
+ * minutes ago — not from someone across the city, who can no longer
+ * report at all. See features/crowd/report-eligibility.
  */
 export const OFFSITE_WEIGHT = 0.5;
 

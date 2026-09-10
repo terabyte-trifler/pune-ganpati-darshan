@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Loader2, RotateCcw, Check } from 'lucide-react';
+import { Loader2, RotateCcw, Check, MapPin } from 'lucide-react';
 import { getDeviceId, newRequestId, resetDeviceId } from './device';
 import { applyCrowdStatus, refreshCrowd } from './crowd-store';
 import {
@@ -11,8 +11,9 @@ import {
   subscribeToCooldowns,
 } from './cooldown-store';
 import { useClockMs } from './useCrowd';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { haversine, type LatLng } from '@/lib/geo';
+import { useGeolocation, useResolveLocation } from '@/hooks/useGeolocation';
+import { formatDistance, type LatLng } from '@/lib/geo';
+import { reportEligibility, REPORT_MAX_DISTANCE_M } from './report-eligibility';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -53,18 +54,6 @@ const OPTIONS: { level: CrowdLevel; label: string; hint: string }[] = [
 /** How long the thank-you holds the row before the cooldown state takes over. */
 const CONFIRM_MS = 5_000;
 
-/**
- * Inside this, a report counts as made AT the mandal and the aggregator
- * gives it full weight; outside it, half (see OFFSITE_WEIGHT).
- *
- * The accuracy bound matters as much as the distance. A fix good to 400m
- * cannot support "within 100m" — claiming it anyway would hand full weight
- * to a guess. So both must hold, and when the device does not know where it
- * is the report is simply submitted as off-site rather than blocked: a
- * remote report is still worth having, just worth less.
- */
-const AT_MANDAL_RADIUS_M = 100;
-const AT_MANDAL_MAX_ACCURACY_M = 100;
 
 /**
  * A short, single buzz on tap.
@@ -113,20 +102,25 @@ export function CrowdReportButtons({
   compact?: boolean;
   onReported?: () => void;
 }) {
-  const { state: geo } = useGeolocation();
+  const { state: geo, request: requestLocation } = useGeolocation();
+  // Picks up a permission already granted; never opens a dialog by itself.
+  useResolveLocation();
 
   /**
-   * Client-asserted, and the server treats it as a hint rather than a fact —
-   * anyone can POST it. The cost of lying is capped by the rules behind it:
-   * one report per device per mandal per hour means a liar buys one extra
-   * unit of weight on one mandal, and someone willing to forge this could
-   * mint device ids just as easily.
+   * Whether this person may report at all, and with how much weight.
+   *
+   * One rule, shared by every surface that offers the controls — the
+   * mandal page, the map sheet and the home prompt — so they cannot drift
+   * into disagreeing about who is close enough.
+   *
+   * `atMandal` is still client-asserted, and the server treats it as a
+   * hint rather than a fact: anyone can POST it. The cost of lying is
+   * capped by the rules behind it — one report per device per mandal per
+   * hour means a liar buys one extra unit of weight on one mandal, and
+   * someone willing to forge this could mint device ids just as easily.
    */
-  const atMandal =
-    location !== undefined &&
-    geo.status === 'ready' &&
-    geo.accuracyM <= AT_MANDAL_MAX_ACCURACY_M &&
-    haversine(geo.position, location) <= AT_MANDAL_RADIUS_M;
+  const eligibility = reportEligibility(geo, location);
+  const atMandal = eligibility.kind === 'allowed' && eligibility.atMandal;
 
   const [submitting, setSubmitting] = useState<CrowdLevel | null>(null);
   /** The level this device just reported, kept so the row can show it back. */
@@ -277,6 +271,49 @@ export function CrowdReportButtons({
   /* ---------------- The row ---------------- */
 
   const rowDisabled = submitting !== null || blocked;
+
+  /**
+   * Not close enough, or we cannot tell. The controls are not rendered.
+   *
+   * Each case says something different and is worth saying: a refusal
+   * without a reason reads as the app being broken, and "turn on location"
+   * is only useful advice in one of them.
+   */
+  if (eligibility.kind !== 'allowed') {
+    const message = (() => {
+      switch (eligibility.kind) {
+        case 'locating':
+          return 'Finding you…';
+        case 'needs-location':
+          return null; // rendered as an action below, not a sentence
+        case 'no-location':
+          return eligibility.reason === 'denied'
+            ? 'Location is off, so we can’t tell how far away you are. Reports come from people near the mandal.'
+            : 'We couldn’t get your location, so we can’t tell how far away you are.';
+        case 'too-far':
+          return `You’re ${formatDistance(eligibility.distanceM)} away. Reports come from people within ${formatDistance(REPORT_MAX_DISTANCE_M)} — the queue is only worth reporting if you can see it.`;
+        case 'unknown-mandal':
+          return 'We don’t have a position for this mandal, so reports can’t be placed.';
+      }
+    })();
+
+    return (
+      <div className={compact ? '' : 'mt-2.5'}>
+        {eligibility.kind === 'needs-location' ? (
+          <button
+            type="button"
+            onClick={() => { trackEvent('location_enabled'); requestLocation(); }}
+            className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold text-[var(--shendur)]"
+          >
+            <MapPin size={14} aria-hidden="true" />
+            Turn on location to report the queue
+          </button>
+        ) : (
+          <p className="text-[12px] leading-relaxed text-[var(--muted)]">{message}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>

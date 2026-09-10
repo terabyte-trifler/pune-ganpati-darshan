@@ -61,10 +61,32 @@ async function withFreshDevice(page: Page, id = deviceId()) {
   return id;
 }
 
+/**
+ * Stand the browser at a mandal.
+ *
+ * Reporting is now refused beyond 1.5 km, so a test that submits one has
+ * to be somewhere plausible — an ungeolocated browser sees an explanation
+ * instead of buttons, which is the feature working rather than a failure.
+ *
+ * Done per test with setGeolocation rather than a file-level test.use,
+ * because these tests report on different mandals and one fixed position
+ * cannot be near all of them: Sarasbaug is 1.9 km from Dagdusheth and
+ * Morya Gosavi is fifteen.
+ */
+async function standAt(page: Page, mandal: { latitude: number; longitude: number }) {
+  await page.context().grantPermissions(['geolocation']);
+  await page.context().setGeolocation({
+    latitude: mandal.latitude,
+    longitude: mandal.longitude,
+    accuracy: 20,
+  });
+}
+
 const SLUG = catalogue.ganpatis[0].slug;
 
 test('the crowd panel appears on a mandal page and offers all three levels', async ({ page }) => {
   await withFreshDevice(page);
+  await standAt(page, catalogue.ganpatis[0]);
   await page.goto(`/ganpati/${SLUG}`);
 
   const panel = page.getByRole('region', { name: /crowd right now/i });
@@ -77,6 +99,7 @@ test('the crowd panel appears on a mandal page and offers all three levels', asy
 
 test('submitting a report is acknowledged and starts the cooldown', async ({ page }) => {
   await withFreshDevice(page);
+  await standAt(page, catalogue.ganpatis[0]);
   await page.goto(`/ganpati/${SLUG}`);
 
   const panel = page.getByRole('region', { name: /crowd right now/i });
@@ -255,6 +278,7 @@ test('device-specific responses are never cached by a shared cache', async ({ re
 });
 
 test('the panel never presents an unknown crowd as a calm one', async ({ page }) => {
+  await standAt(page, catalogue.ganpatis[0]);
   await withFreshDevice(page);
   await page.goto(`/ganpati/${SLUG}`);
 
@@ -304,6 +328,8 @@ test('the metrics endpoint is invisible without its token', async ({ request }) 
 test('a reported mandal still shows its cooldown after a reload', async ({ page, request }) => {
   const id = deviceId();
   const mandal = catalogue.ganpatis[4];
+  // The cooldown row is only rendered for someone close enough to report.
+  await standAt(page, mandal);
 
   // Report through the API, then arrive on the page as a returning visitor.
   const submitted = await request.post(`/api/crowd/${mandal.id}/report`, {
@@ -357,6 +383,7 @@ test('the cooldown endpoint is device-scoped and never cached', async ({ request
 });
 
 test('the map lets you see and report crowd without leaving it', async ({ page }) => {
+  await standAt(page, catalogue.ganpatis[0]);
   await withFreshDevice(page);
   await page.goto('/map');
 
@@ -444,6 +471,32 @@ test.describe('nowhere near Pune', () => {
 
     await expect(page.locator(AT_PROMPT)).toHaveCount(0);
     await expect(page.locator(NEAR_PROMPT)).toHaveCount(0);
+  });
+
+  test('will not let you report a mandal you are nowhere near', async ({ page }) => {
+    /**
+     * The rule the whole tracker rests on: a report is worth something
+     * only if the person making it can see the queue.
+     *
+     * The mandal page used to offer all three buttons to anyone, anywhere,
+     * and counted the report at half weight. Half of a guess is still a
+     * guess, and enough of them outvote the people at the gate — so
+     * outside 1.5 km the controls are not offered at all.
+     *
+     * This browser is standing in Mumbai.
+     */
+    await withFreshDevice(page);
+    await page.goto(`/ganpati/${SLUG}`);
+
+    const panel = page.getByRole('region', { name: /crowd right now/i });
+    await expect(panel).toBeVisible();
+
+    // Reading the queue is unaffected — anyone may look.
+    await expect(panel.getByRole('button', { name: /Report .* crowd/ })).toHaveCount(0);
+
+    // And it says why, with the distance, rather than just withholding the
+    // controls: a refusal without a reason reads as the app being broken.
+    await expect(panel.getByText(/away\. Reports come from people within/)).toBeVisible();
   });
 });
 
