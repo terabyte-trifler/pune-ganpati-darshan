@@ -104,7 +104,8 @@ export const LINE_NAME: Record<MetroLine, string> = {
  * ---------------------------------------------------------------------
  * How accurate these coordinates are, stated plainly.
  *
- * The five darshan stations — PMC, Kasba Peth, Mandai, Sambhaji Udyan and
+ * The five darshan stations — PMC, Kasba Peth, Mandai, Chhatrapati
+ * Sambhaji Udyan and
  * Deccan Gymkhana — are EXACT, supplied by the site owner from the ground.
  * They replaced approximations of mine that were wrong by 200 to 590
  * metres, which is worth recording because those approximations had been
@@ -198,8 +199,8 @@ export const METRO_STATIONS: MetroStation[] = [
   },
   {
     id: 'sambhaji-udyan',
-    name: 'Sambhaji Udyan',
-    nameMr: 'संभाजी उद्यान',
+    name: 'Chhatrapati Sambhaji Udyan',
+    nameMr: 'छत्रपती संभाजी उद्यान',
     lines: ['aqua'],
     lat: 18.520226794497926,
     lng: 73.84798920582429,
@@ -300,7 +301,8 @@ export const DARSHAN_STATIONS = METRO_STATIONS.filter((s) => s.tier !== 'network
  * Where you may actually get off to walk to the mandals.
  *
  * Four of them: Kasba Peth and PMC in the peths, Deccan Gymkhana and
- * Sambhaji Udyan across the river. Mandai is deliberately absent — it runs
+ * Chhatrapati Sambhaji Udyan across the river. Mandai is deliberately
+ * absent — it runs
  * one way during the festival, so a route that ends there is a route
  * nobody can take.
  *
@@ -354,7 +356,8 @@ export const ANCHOR_MAX_M = 2_500;
  * however much closer the secondary was. The stated reason was that
  * straight-line distance flatters the Aqua Line stations because the crow
  * does not cross the river on Sambhaji Bridge — and that reason was built
- * on coordinates of mine that put Deccan Gymkhana and Sambhaji Udyan some
+ * on coordinates of mine that put Deccan Gymkhana and Chhatrapati
+ * Sambhaji Udyan some
  * 330–470 m west of where they actually are.
  *
  * With the real positions the absolute rule is indefensible. It would send

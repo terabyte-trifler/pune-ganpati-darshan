@@ -86,7 +86,8 @@ describe('nearestStation', () => {
   });
 
   it('keeps the primary station when the two are comparably far', () => {
-    // Tulshibaug: Kasba Peth 909 m, Sambhaji Udyan 1,017 m. Inside the
+    // Tulshibaug: Kasba Peth 909 m, Chhatrapati Sambhaji Udyan 1,017 m.
+    // Inside the
     // margin, so the peth station wins even though it is not the nearest
     // by a strict reading of the numbers.
     const tulshibaug = { lat: 18.514268, lng: 73.855306 };
@@ -119,7 +120,8 @@ describe('nearestStation', () => {
   });
 
   it('still returns a secondary station when no primary is in range', () => {
-    // Standing on the Sambhaji Udyan platform, with the search tightened so
+    // Standing on the Chhatrapati Sambhaji Udyan platform, with the search
+    // tightened so
     // that no primary station qualifies. The radius is pinned in the test
     // rather than relying on Pune's geography putting the peth stations far
     // enough away — the branch under test is "no primary in range", and it

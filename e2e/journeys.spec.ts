@@ -530,7 +530,9 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
   ).toHaveCount(0);
   await page.getByRole('button', { name: /Coming from Deccan or JM Road/ }).click();
   await expect(page.getByRole('button', { name: /^Deccan Gymkhana/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /^Sambhaji Udyan/ })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /^Chhatrapati Sambhaji Udyan/ })
+  ).toBeVisible();
 
   // Choosing a station changes the plan's starting point, so the wizard must
   // still produce a route from it.
