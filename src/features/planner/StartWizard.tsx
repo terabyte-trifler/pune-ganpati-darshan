@@ -81,7 +81,21 @@ const MODES: Array<{ key: TravelMode; label: string; icon: typeof Footprints }> 
   { key: 'metro', label: 'Metro', icon: TrainFront },
 ];
 
-export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
+export function StartWizard({
+  mandals, embedded = false, onDone,
+}: {
+  mandals: Ganpati[];
+  /**
+   * Rendered inside the planner rather than on a page of its own.
+   *
+   * Drops the outer page padding, which the host already provides, and
+   * demotes the step headings to h2 — the planner owns the h1, and two of
+   * them on one page is a real problem for anyone navigating by heading.
+   */
+  embedded?: boolean;
+  /** Called instead of navigating once a route is taken. */
+  onDone?: () => void;
+}) {
   const router = useRouter();
   const { replace } = usePlan();
   const { state: geo, request: requestLocation } = useGeolocation();
@@ -159,13 +173,28 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
   const useThisPlan = () => {
     if (!plan) return;
     replace(plan.stops.map((s) => s.ganpati.slug));
-    router.push('/plan');
+    // Embedded, the planner is already on screen and re-renders from the
+    // same store this just wrote to — so there is nowhere to navigate.
+    if (onDone) onDone();
+    else router.push('/plan');
   };
 
   const steps = ['Time', 'What to see', 'Your route'];
 
+  /**
+   * The step heading. An <h1> on its own page, an <h2> inside the planner,
+   * which already has one.
+   */
+  const Heading = embedded ? 'h2' : 'h1';
+
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-nav pt-[calc(var(--safe-top)+16px)] md:pb-10">
+    <div
+      className={
+        embedded
+          ? ''
+          : 'mx-auto max-w-2xl px-4 pb-nav pt-[calc(var(--safe-top)+16px)] md:pb-10'
+      }
+    >
       {/* ---------------- Progress ---------------- */}
       <div className="flex items-center gap-2">
         {step > 0 && (
@@ -200,9 +229,9 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       {/* ---------------- Step 1: time ---------------- */}
       {step === 0 && (
         <section className="mt-6">
-          <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
+          <Heading className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
             How long do you have?
-          </h1>
+          </Heading>
           <p lang="mr" className="mt-1 text-[14px] text-[var(--muted)]">किती वेळ आहे?</p>
           <p className="mt-3 text-[14px] leading-relaxed text-[var(--muted)]">
             We&rsquo;ll count queuing as well as walking — at the big mandals
@@ -240,9 +269,9 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       {/* ---------------- Step 2: what to see ---------------- */}
       {step === 1 && (
         <section className="mt-6">
-          <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
+          <Heading className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
             What do you want to see?
-          </h1>
+          </Heading>
           <p className="mt-2 text-[14px] text-[var(--muted)]">Pick as many as you like.</p>
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -307,9 +336,15 @@ export function StartWizard({ mandals }: { mandals: Ganpati[] }) {
       {/* ---------------- Step 3: result ---------------- */}
       {step === 2 && plan && (
         <section className="mt-6">
-          <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
-            Your darshan
-          </h1>
+          {/* "Your route", not "Your darshan". The planner's own heading is
+              "Your darshan" and its empty state is "Plan your darshan", so
+              on one page there were three headings whose names differed by
+              a prefix — ambiguous to anyone navigating by heading, and to
+              any test trying to name one. This also matches the step's own
+              label in the progress bar above. */}
+          <Heading className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
+            Your route
+          </Heading>
 
           {plan.stops.length === 0 ? (
             <div className="mt-4 surface rounded-[var(--radius-card)] border border-[var(--line)] p-5">

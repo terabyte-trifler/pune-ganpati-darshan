@@ -1,21 +1,19 @@
-import type { Metadata } from 'next';
-import { getAllGanpatis } from '@/services/ganpati';
-import { StartWizard } from '@/features/planner/StartWizard';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Build your darshan route',
-  description:
-    'Tell us how long you have and what you want to see, and we’ll build a walkable Pune Ganpati darshan route that actually fits — queuing time included.',
-  alternates: { canonical: '/start' },
-};
-
-export const revalidate = 3600;
-
-export default async function StartPage() {
-  const mandals = await getAllGanpatis();
-  return (
-    <main id="main">
-      <StartWizard mandals={mandals} />
-    </main>
-  );
+/**
+ * The route builder moved into the planner.
+ *
+ * Building a route and then managing it were two pages and a navigation,
+ * and they are one task: you build it, look at it, and start reordering.
+ * The split also meant the wizard's result and the planner showed the same
+ * route in two layouts with two sets of numbers.
+ *
+ * This route stays because it is linked from the home page, the routes
+ * index, the sitemap and anywhere anyone has shared it. `?build=1` is what
+ * keeps the meaning intact: it opens the builder even for someone who
+ * already has a plan saved, which is exactly what "Build my route" should
+ * do for them.
+ */
+export default function StartPage() {
+  redirect('/plan?build=1');
 }

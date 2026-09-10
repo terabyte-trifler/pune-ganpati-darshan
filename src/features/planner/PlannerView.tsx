@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { SavePlanShare } from './SavePlanShare';
+import { StartWizard } from './StartWizard';
 import { StartRouteButton } from './StartRouteButton';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdBadge } from '@/features/crowd/CrowdBadge';
@@ -89,6 +90,21 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
   const [, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
 
+  /**
+   * The route builder lives on this page rather than on one of its own.
+   *
+   * Building a route and then managing it were two pages and a navigation,
+   * and they are one task: you build, look at it, and start reordering. The
+   * handoff also meant the wizard's result screen and the planner showed the
+   * same route in two different layouts with two different sets of numbers.
+   *
+   * Open by default when there is nothing to show, because an empty planner
+   * has no other job. `?build=1` opens it over an existing plan — that is
+   * what /start redirects to, so "Build my route" still means build even
+   * for someone who already has stops saved.
+   */
+  const [buildRequested, setBuildRequested] = useState(false);
+
   const bySlug = useMemo(
     () => new Map(ganpatis.map((g) => [g.slug, g])),
     [ganpatis]
@@ -117,6 +133,18 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
   );
   const [stationId, setStationId] = useState<string | null>(null);
   const station = (stationId ? stationById(stationId) : null) ?? suggestedStation;
+
+
+  const wantsBuild = searchParams.get('build') === '1';
+  const showWizard =
+    !sharedSlugs && (buildRequested || wantsBuild || (hydrated && stops.length === 0));
+
+  const closeWizard = () => {
+    setBuildRequested(false);
+    // Drops ?build=1 so a refresh does not reopen the builder over the
+    // route it has just produced.
+    if (wantsBuild) router.replace('/plan');
+  };
 
   const origin: LatLng = useMemo(
     () =>
@@ -230,32 +258,21 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     );
   }
 
-  /* ---------------- Empty state ---------------- */
+  /* ---------------- Nothing planned yet: build one ---------------- */
   if (stops.length === 0 && !sharedSlugs) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <h1 className="text-[26px] font-extrabold tracking-tight text-[var(--chandan)]">
+      <div className="mx-auto max-w-2xl px-4 py-6">
+        <h1 className="font-display text-[28px] font-extrabold tracking-tight text-[var(--chandan)]">
           Plan your darshan
         </h1>
         <p lang="mr" className="mt-1 text-[14px] text-[var(--muted)]">
           आज कुठे जावे?
         </p>
 
-        <div className="mt-6 surface rounded-[var(--radius-card)] border border-[var(--line)] p-5 text-center">
-          <p className="text-[15px] font-semibold text-[var(--chandan)]">
-            No stops yet
-          </p>
-          <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-[var(--muted)]">
-            Add mandals from any Ganpati page or the map, and we&rsquo;ll put
-            them in the shortest order for you.
-          </p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Button asChild size="sm"><Link href="/explore">Browse mandals</Link></Button>
-            <Button asChild variant="secondary" size="sm"><Link href="/map">Open map</Link></Button>
-          </div>
+        {/* The builder, not a dead end telling you to go somewhere else. */}
+        <div className="mt-5">
+          <StartWizard mandals={ganpatis} embedded onDone={closeWizard} />
         </div>
-
-        <SuggestedRoute ganpatis={ganpatis} onApply={replace} />
       </div>
     );
   }
@@ -300,6 +317,40 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
             </Button>
           </div>
         </div>
+      )}
+
+      {/* ---------------- Build a different route ---------------- */}
+      {showWizard ? (
+        <section className="mt-5 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <h2 className="text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+              Build a different route
+            </h2>
+            <button
+              type="button"
+              onClick={closeWizard}
+              className="min-h-11 text-[13px] text-[var(--muted)] underline"
+            >
+              Cancel
+            </button>
+          </div>
+          <p className="mb-4 text-[12px] leading-relaxed text-[var(--muted)]">
+            Taking a new route replaces the {stops.length}{' '}
+            {stops.length === 1 ? 'stop' : 'stops'} below.
+          </p>
+          <StartWizard mandals={ganpatis} embedded onDone={closeWizard} />
+        </section>
+      ) : (
+        !sharedSlugs && (
+          <button
+            type="button"
+            onClick={() => setBuildRequested(true)}
+            className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold text-[var(--shendur)]"
+          >
+            <Sparkles size={14} aria-hidden="true" />
+            Build a different route
+          </button>
+        )
       )}
 
       {/* ---------------- Travel mode ---------------- */}
@@ -571,52 +622,5 @@ function StopRow({
         <X size={16} aria-hidden="true" />
       </button>
     </Reorder.Item>
-  );
-}
-
-/* ---------------- Curated starting point ---------------- */
-
-function SuggestedRoute({
-  ganpatis, onApply,
-}: {
-  ganpatis: Ganpati[];
-  onApply: (slugs: string[]) => void;
-}) {
-  const manache = ganpatis
-    .filter((g) => g.category === 'maanache')
-    .sort((a, b) => (a.manacheRank ?? 99) - (b.manacheRank ?? 99));
-
-  if (manache.length === 0) return null;
-
-  return (
-    <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--pital)]/30 bg-[var(--dhoop)] p-4">
-      <h2 className="text-[15px] font-bold text-[var(--chandan)]">
-        Manache 5 morning walk
-      </h2>
-      <p lang="mr" className="text-[12px] text-[var(--pital)]">मानाचे पाच — सकाळ दर्शन</p>
-      <p className="mt-2 text-[13px] leading-relaxed text-[var(--muted)]">
-        All five Manache Paach mandals in ceremonial order, on foot, before
-        the peths fill up.
-      </p>
-      <ol className="mt-3 space-y-1">
-        {manache.map((g) => (
-          <li key={g.id} className="flex items-center gap-2 text-[13px] text-[var(--chandan)]">
-            <span className="text-[var(--pital)]">{g.manacheRank}</span>
-            {g.name}
-          </li>
-        ))}
-      </ol>
-      <Button
-        variant="brass"
-        size="sm"
-        className="mt-3"
-        onClick={() => {
-          onApply(manache.map((g) => g.slug));
-          trackEvent('plan_created', { props: { source: 'manache-preset' } });
-        }}
-      >
-        Use this route
-      </Button>
-    </div>
   );
 }

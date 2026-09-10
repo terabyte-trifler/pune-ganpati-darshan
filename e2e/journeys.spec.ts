@@ -217,14 +217,14 @@ test('Flow 9 — the wizard builds a route that fits the time budget', async ({ 
     })
   );
 
-  await page.goto('/start');
+  await page.goto('/plan?build=1');
 
   // Two questions only: how long, and what to see.
   await page.getByRole('button', { name: '2 hours' }).click();
   await page.getByRole('button', { name: /The famous ones/i }).click();
   await page.getByRole('button', { name: /Build my route/i }).click();
 
-  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your route' })).toBeVisible();
 
   // The headline claim must hold: the plan fits inside the chosen budget.
   const summary = await page.getByText(/of your 2 hr/).textContent();
@@ -483,7 +483,7 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
     })
   );
 
-  await page.goto('/start');
+  await page.goto('/plan?build=1');
   await page.getByRole('button', { name: '2 hours' }).click();
 
   // Car is gone from the wizard.
@@ -523,7 +523,7 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
   // still produce a route from it.
   await page.getByRole('button', { name: /^Kasba Peth/ }).click();
   await page.getByRole('button', { name: /Build my route/i }).click();
-  await expect(page.getByRole('heading', { name: 'Your darshan' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your route' })).toBeVisible();
 });
 
 test('Flow 13 — the planner offers metro and starts the route from a station', async ({ page }) => {
@@ -732,4 +732,58 @@ test('Flow 16 — a long darshan still optimises instead of being rejected', asy
   const { error } = await tooMany.json();
   expect(error).toMatch(/up to 20 stops/);
   expect(error).not.toBe('Invalid request');
+});
+
+test('Flow 17 — building and managing a darshan are one page', async ({ page }) => {
+  /**
+   * They used to be /start and /plan, with a navigation between them, and
+   * the wizard's result and the planner showed the same route in two
+   * layouts with two sets of numbers.
+   *
+   * /start still exists because the home page, the routes index and the
+   * sitemap link to it, and because someone may have shared it. It carries
+   * ?build=1 so "Build my route" still means build for a visitor who
+   * already has stops saved, rather than dropping them on their existing
+   * plan.
+   */
+  await page.route('**/api/crowd*', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ statuses: [], computedAt: new Date().toISOString(), stale: false }),
+    })
+  );
+
+  await page.goto('/start');
+  await expect(page).toHaveURL(/\/plan\?build=1$/);
+  await expect(page.getByRole('button', { name: '2 hours' })).toBeVisible();
+
+  // Exactly one h1. The wizard demotes its step headings when embedded, and
+  // two h1s is a real problem for anyone navigating by heading.
+  await expect(page.locator('h1')).toHaveCount(1);
+
+  await page.getByRole('button', { name: '2 hours' }).click();
+  await page.getByRole('button', { name: /The famous ones/i }).click();
+  await page.getByRole('button', { name: /Build my route/i }).click();
+  await expect(page.getByRole('heading', { name: 'Your route' })).toBeVisible();
+
+  // Taking the route must NOT navigate — that handoff is the thing being
+  // removed — and must drop ?build=1 so a refresh does not reopen the
+  // builder over the route it just produced.
+  await page.getByRole('button', { name: /Use this route/i }).click();
+  await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
+  await expect(page.locator('h1')).toHaveCount(1);
+
+  // The builder stays reachable over an existing plan, and says what taking
+  // a new route will cost.
+  await page.getByRole('button', { name: /Build a different route/i }).click();
+  await expect(page.getByRole('button', { name: '3 hours' })).toBeVisible();
+  await expect(page.getByText(/replaces the \d+ stops? below/)).toBeVisible();
+  await expect(page.locator('h1')).toHaveCount(1);
+
+  // And can be dismissed without touching the plan.
+  await page.getByRole('button', { name: /^Cancel$/ }).click();
+  await expect(page.getByRole('button', { name: '3 hours' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Your darshan', exact: true })).toBeVisible();
 });
