@@ -59,6 +59,19 @@ export interface CrowdReportInput {
    * hint for weighting, never a security boundary — see the migration.
    */
   atMandal: boolean;
+  /**
+   * An opaque per-mandal number standing for the reporting device: 1, 2,
+   * 3… within this mandal's window. Enough to count how many distinct
+   * devices back a reading, and meaningless outside that query — raw
+   * device ids never leave the database.
+   */
+  deviceSeq?: number;
+  /**
+   * How old the device was when it made this report, in seconds. Recorded
+   * for calibration; nothing scores on it yet. Null for reports written
+   * before the column existed.
+   */
+  deviceAgeSeconds?: number | null;
 }
 
 /** Outcome of a submission attempt. Mirrors the RPC's contract (§29). */

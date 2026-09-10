@@ -112,7 +112,7 @@ export function SiteFooter() {
             <Link href="/about" className="text-[var(--muted)] hover:text-[var(--chandan)]">
               Gurnoor Singh
             </Link>{' '}
-            at{' '}
+            and{' '}
             <a
               href="https://fennrstudio.com"
               target="_blank"

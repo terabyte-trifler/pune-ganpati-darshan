@@ -116,6 +116,12 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
     status: row.status,
     createdAt: row.created_at,
     atMandal: row.at_mandal ?? false,
+    // Opaque per-mandal device number. Older deployments of the RPC do
+    // not return it; a missing value makes every report look like its own
+    // device, which is the pre-existing behaviour rather than a silent
+    // downgrade to "unconfirmed".
+    deviceSeq: row.device_seq ?? undefined,
+    deviceAgeSeconds: row.device_age_seconds ?? null,
   }));
 
   const now = Date.now();

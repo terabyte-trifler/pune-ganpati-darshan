@@ -258,8 +258,10 @@ describe('aggregateSnapshot', () => {
     const statuses = aggregateSnapshot(
       ['a', 'b'],
       [
-        { mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString(), atMandal: true },
-        { mandalId: 'b', status: 'short', createdAt: new Date(NOW).toISOString(), atMandal: true },
+        { mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString(), atMandal: true, deviceSeq: 1 },
+        { mandalId: 'a', status: 'long', createdAt: new Date(NOW).toISOString(), atMandal: true, deviceSeq: 2 },
+        { mandalId: 'b', status: 'short', createdAt: new Date(NOW).toISOString(), atMandal: true, deviceSeq: 1 },
+        { mandalId: 'b', status: 'short', createdAt: new Date(NOW).toISOString(), atMandal: true, deviceSeq: 2 },
       ],
       NOW
     );
@@ -278,17 +280,24 @@ describe('aggregateSnapshot', () => {
   });
 });
 
+let deviceCounter = 0;
+const nextDevice = () => ++deviceCounter;
+
 describe('proximity weighting', () => {
   /** A report `ageMinutes` old, with explicit provenance. */
   const at = (
     status: CrowdLevel,
     atMandal: boolean,
-    ageMinutes = 1
+    ageMinutes = 1,
+    // A reading needs two devices, so fixtures have to say who reported.
+    // Defaults differ per call site via the counter below.
+    deviceSeq = nextDevice()
   ): CrowdReportInput => ({
     mandalId: 'm1',
     status,
     createdAt: new Date(NOW - ageMinutes * 60_000).toISOString(),
     atMandal,
+    deviceSeq,
   });
 
   it('lets people at the mandal outvote a larger group who are not', () => {
@@ -331,9 +340,74 @@ describe('proximity weighting', () => {
 
   it('treats a missing position as off-site rather than blocking the report', () => {
     // A device that cannot get a fix still gets a voice, at half weight.
-    const result = aggregateMandal('m1', [at('moving', false)], NOW);
+    // Two of them, because one device is never a reading whatever it says.
+    const result = aggregateMandal('m1', [at('moving', false), at('moving', false)], NOW);
 
     expect(result.status).toBe('moving');
+    expect(result.reportCount).toBe(2);
+  });
+});
+
+describe('a reading needs more than one device', () => {
+  const from = (deviceSeq: number, status: CrowdLevel = 'short'): CrowdReportInput => ({
+    mandalId: 'm1',
+    status,
+    createdAt: new Date(NOW - 60_000).toISOString(),
+    atMandal: true,
+    deviceSeq,
+  });
+
+  it('withholds a level when only one device has reported', () => {
+    /**
+     * The whole manipulation exposure. A quiet mandal could be given a
+     * queue by one person, because a fresh browser profile is a fresh
+     * identity and nothing else stood in the way.
+     */
+    const result = aggregateMandal('m1', [from(1)], NOW);
+    expect(result.status).toBeNull();
+    expect(result.label).toBe('Not confirmed yet');
+  });
+
+  it('says there is a report rather than pretending there is none', () => {
+    // "No recent reports" would be the same lie in the other direction:
+    // somebody did report, it just is not confirmed.
+    const result = aggregateMandal('m1', [from(1)], NOW);
     expect(result.reportCount).toBe(1);
+    expect(result.detail).toMatch(/second report/i);
+  });
+
+  it('is not fooled by one device reporting repeatedly', () => {
+    // Same device, three taps — which the hourly cooldown already
+    // prevents, but the aggregation must not depend on that.
+    const result = aggregateMandal('m1', [from(1), from(1), from(1)], NOW);
+    expect(result.status).toBeNull();
+  });
+
+  it('confirms as soon as a second device agrees', () => {
+    const result = aggregateMandal('m1', [from(1), from(2)], NOW);
+    expect(result.status).toBe('short');
+    expect(result.label).toBe('Short');
+  });
+
+  it('counts devices, not reports, even when they disagree', () => {
+    const result = aggregateMandal('m1', [from(1, 'short'), from(2, 'long')], NOW);
+    expect(result.status).not.toBeNull();
+    // Two devices saying different things is a real reading with low
+    // agreement, which is what confidence is for.
+    expect(result.confidence).toBe('low');
+  });
+
+  it('falls back to the old behaviour when the database sends no device', () => {
+    /**
+     * A deployment running the previous crowd_active_reports returns no
+     * device column. Treating that as "one device" would mark every
+     * mandal in the city unconfirmed the moment the app shipped ahead of
+     * the migration, so each report counts as its own device instead.
+     */
+    const legacy: CrowdReportInput[] = [
+      { mandalId: 'm1', status: 'short', createdAt: new Date(NOW).toISOString(), atMandal: true },
+      { mandalId: 'm1', status: 'short', createdAt: new Date(NOW).toISOString(), atMandal: true },
+    ];
+    expect(aggregateMandal('m1', legacy, NOW).status).toBe('short');
   });
 });

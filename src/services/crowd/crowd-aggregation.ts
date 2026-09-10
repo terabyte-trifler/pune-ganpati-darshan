@@ -66,6 +66,22 @@ export const FRESHNESS_HALF_LIFE_MINUTES = 30;
  */
 export const OFFSITE_WEIGHT = 0.5;
 
+/**
+ * How many distinct devices it takes before a reading is a reading.
+ *
+ * One report is information; it is not a reading. Promoting a single tap
+ * to "Short", with a confidence label beside it, is the whole of the
+ * manipulation exposure — a quiet mandal can be given a queue by one
+ * person, because every fresh browser profile is a fresh identity and
+ * nothing else was standing in the way.
+ *
+ * Two does not stop a determined person: they can open two windows. It
+ * stops a mandal being conjured from a single tap, which is the case that
+ * actually matters, and it costs nothing real — a mandal with one report
+ * says so rather than pretending to know.
+ */
+export const MIN_DEVICES_FOR_STATUS = 2;
+
 export function proximityWeight(atMandal: boolean): number {
   return atMandal ? 1 : OFFSITE_WEIGHT;
 }
@@ -184,6 +200,7 @@ export function aggregateMandal(
       ageMinutes: (nowMs - Date.parse(r.createdAt)) / 60_000,
       createdAt: r.createdAt,
       atMandal: r.atMandal,
+      deviceSeq: r.deviceSeq,
     }))
     // Drop anything outside the window up front so reportCount reflects
     // what is actually influencing the result, not what is in the table.
@@ -202,6 +219,17 @@ export function aggregateMandal(
       trend: 'unknown',
     };
   }
+
+  /**
+   * Distinct devices behind these reports.
+   *
+   * `deviceSeq` is opaque and scoped to this mandal — enough to count,
+   * useless for identifying anyone. When the database has not supplied it
+   * (an older deployment of crowd_active_reports), every report counts as
+   * its own device, which preserves the previous behaviour rather than
+   * quietly marking everything unconfirmed.
+   */
+  const devices = new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1)));
 
   const scores: Record<CrowdLevel, number> = { short: 0, moving: 0, long: 0 };
   // Freshness and proximity multiply: a stale on-site report and a fresh
@@ -234,6 +262,28 @@ export function aggregateMandal(
     (newest, r) => (r.ageMinutes < newest.ageMinutes ? r : newest),
     aged[0]
   ).createdAt;
+
+  /**
+   * One device is not a reading.
+   *
+   * Reported honestly rather than hidden: there IS a report, and saying
+   * "no recent reports" would be the same lie in the other direction. The
+   * status is withheld, the count is shown, and the wording asks for the
+   * second report that would settle it.
+   */
+  if (devices.size < MIN_DEVICES_FOR_STATUS) {
+    return {
+      mandalId,
+      status: null,
+      label: 'Not confirmed yet',
+      detail:
+        'One person has reported this mandal. A second report confirms it.',
+      reportCount: aged.length,
+      confidence: 'low',
+      lastUpdated,
+      trend: 'unknown',
+    };
+  }
 
   const { label, detail } = labelFor(winner);
 

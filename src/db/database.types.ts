@@ -279,6 +279,13 @@ export type CrowdDeviceBlockRow = {
   created_by: string | null;
 }
 
+/** One row per reporting device. Written by submit_crowd_report only. */
+export type CrowdDeviceRow = {
+  device_id: string;
+  first_seen_at: string;
+  report_count: number;
+}
+
 export type RateLimitBucketRow = {
   bucket: string;
   key_hash: string;
@@ -296,6 +303,15 @@ export type CrowdActiveReportResult = {
   status: CrowdLevelEnum;
   created_at: string;
   at_mandal: boolean | null;
+  /**
+   * Opaque per-mandal device number (1, 2, 3…). Optional because a
+   * deployment running the older function does not return it, and the
+   * aggregator must degrade to the previous behaviour rather than mark
+   * everything unconfirmed.
+   */
+  device_seq?: number | null;
+  /** Device age in seconds when the report was made. Recorded only. */
+  device_age_seconds?: number | null;
 }
 
 export type CrowdDeviceCooldownResult = {
@@ -322,6 +338,7 @@ export type Database = {
       crowd_report_cooldowns: Table<CrowdReportCooldownRow>;
       crowd_abuse_signals: Table<CrowdAbuseSignalRow>;
       crowd_device_blocks: Table<CrowdDeviceBlockRow>;
+      crowd_devices: Table<CrowdDeviceRow>;
       rate_limit_buckets: Table<RateLimitBucketRow>;
     };
     Views: Record<never, never>;
