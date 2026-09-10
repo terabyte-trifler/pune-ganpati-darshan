@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/explore`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${base}/map`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${base}/plan`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${base}/how-to-use`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/about`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
     ...ganpatis.map((g) => ({
       url: `${base}/ganpati/${g.slug}`,
