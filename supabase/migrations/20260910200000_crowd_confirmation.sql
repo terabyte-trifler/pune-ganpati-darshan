@@ -63,7 +63,17 @@ comment on column crowd_reports.device_age_seconds is
 -- per mandal per window: countable, and meaningless outside this query.
 -- Raw device ids continue never to leave the database.
 -- ---------------------------------------------------------------------
-create or replace function crowd_active_reports(
+-- Dropped first, not replaced. Adding columns to a `returns table`
+-- changes the function's row type, and Postgres refuses that through
+-- `create or replace`:
+--
+--   42P13: cannot change return type of existing function
+--
+-- The drop and the create are in one transaction, so no request can
+-- arrive between them and find the function missing.
+drop function if exists crowd_active_reports(uuid[], interval);
+
+create function crowd_active_reports(
   p_mandal_ids uuid[],
   p_window     interval default '90 minutes'
 ) returns table (
