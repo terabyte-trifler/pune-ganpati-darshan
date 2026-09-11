@@ -16,6 +16,7 @@ import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdPanel } from '@/features/crowd/CrowdPanel';
 import { haversine } from '@/lib/geo';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { CATALOGUE_GENERATED_AT } from '@/services/catalogue';
 import { env } from '@/lib/env';
 
 /**
@@ -42,13 +43,40 @@ export async function generateMetadata({
   const g = await getGanpatiBySlug(slug);
   if (!g) return { title: 'Ganpati not found' };
 
-  const title = `${g.name} — timings, location & directions`;
+  /**
+   * Title, sized for the result page rather than the browser tab.
+   *
+   * This read `${g.name} — timings, location & directions` and inherited
+   * the layout's `· Pune Ganpati Darshan` suffix, which put Dagdusheth at
+   * 94 characters. Google truncates around 60, so the visible result was
+   * "Shrimant Dagdusheth Halwai Ganpati — timings, location &…" — the
+   * suffix cost the words a searcher was actually looking for and showed
+   * none of the brand it was there to show.
+   *
+   * Two changes. The honorific is dropped from the title only: nobody
+   * searches "shrimant dagdusheth halwai ganpati", they search
+   * "dagdusheth ganpati", and the full name is still the H1 and the
+   * schema `name`. And "Pune" is added, because it is in almost every
+   * query for these mandals and was in none of the titles.
+   *
+   * "timings" is gone from the title as well, and that one is not about
+   * length. Not one of the 29 mandals has a confirmed time; every page
+   * says "Not announced yet". A title promising timings would be a
+   * promise the page breaks on arrival, which costs the click and the
+   * trust behind it.
+   *
+   * `absolute` bypasses the layout template deliberately — the brand is
+   * worth 22 characters on a short page like "How to use", and is worth
+   * nothing here.
+   */
+  const shortName = g.name.replace(/^(Shri|Shrimant)\s+/i, '');
+  const title = `${shortName}, Pune — darshan & directions`;
   const description =
     g.description ??
     `${g.name} in ${g.area.name}, Pune. Location, directions and darshan information for Ganeshotsav.`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/ganpati/${g.slug}` },
     openGraph: {
@@ -108,6 +136,12 @@ export default async function GanpatiPage({
       addressCountry: 'IN',
     },
   };
+
+  const catalogueUpdated = CATALOGUE_GENERATED_AT
+    ? new Date(CATALOGUE_GENERATED_AT).toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : null;
 
   return (
     <main id="main" className="pb-nav md:pb-10">
@@ -344,6 +378,13 @@ export default async function GanpatiPage({
         </div>
       </section>
 
+      {/* Provenance, and when the catalogue behind it was last cut.
+          A page that states where its facts come from and how old they
+          are is the difference between a directory and a claim — and for
+          a festival page, staleness is the failure people actually get
+          burned by. The date is the snapshot's, not the row's: per-row
+          timestamps are not wired through, and an invented one would be
+          worse than an honest coarser one. */}
       <p className="mt-8 px-4 text-[12px] leading-relaxed text-[var(--faint)]">
         {g.confidence === 'verified'
           ? 'Location and history for this mandal are cross-checked. Timings are set by the mandal each year.'
@@ -354,6 +395,12 @@ export default async function GanpatiPage({
         >
           More {CATEGORY_LABEL[g.category]} mandals
         </Link>
+        {catalogueUpdated && (
+          <span className="mt-2 block">
+            Catalogue last updated{' '}
+            <time dateTime={CATALOGUE_GENERATED_AT}>{catalogueUpdated}</time>.
+          </span>
+        )}
       </p>
     </main>
   );

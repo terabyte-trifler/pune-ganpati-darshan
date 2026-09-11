@@ -26,7 +26,7 @@ export async function generateMetadata({
   const description = `All ${count} Ganpati mandals in ${area.name} — locations, directions and darshan information for Ganeshotsav.`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/area/${slug}` },
     openGraph: { title, description, url: `/area/${slug}` },

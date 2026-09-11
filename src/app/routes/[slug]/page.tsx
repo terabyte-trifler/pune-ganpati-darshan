@@ -31,7 +31,7 @@ export async function generateMetadata({
     `A ${formatDistance(totals.distanceM)} walking route through ${totals.stopCount} Pune Ganpati mandals.`;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/routes/${route.slug}` },
     openGraph: { title, description, url: `/routes/${route.slug}`, type: 'article' },

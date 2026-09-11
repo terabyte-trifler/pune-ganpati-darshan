@@ -24,7 +24,7 @@ export async function generateMetadata({
   const description = category.description ?? title;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/category/${slug}` },
     openGraph: { title, description, url: `/category/${slug}` },
