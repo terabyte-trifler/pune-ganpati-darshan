@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getAllGanpatis, getAreas, getCategories } from '@/services/ganpati';
 import { ExploreView } from '@/features/search/ExploreView';
+import { JsonLd, itemList } from '@/lib/seo/jsonld';
 
 export const metadata: Metadata = {
   title: 'Explore Pune Ganpati mandals',
@@ -28,6 +29,12 @@ export default async function ExplorePage({
 
   return (
     <main id="main" className="pb-nav md:pb-10">
+      <JsonLd
+        data={itemList(
+          'Ganpati mandals in Pune',
+          ganpatis.map((g) => ({ name: g.name, url: `/ganpati/${g.slug}` }))
+        )}
+      />
       <h1 className="sr-only">Explore Pune Ganpati mandals</h1>
       <ExploreView
         ganpatis={ganpatis}

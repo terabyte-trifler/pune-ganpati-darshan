@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getAllGanpatis, getAreas, getCategories } from '@/services/ganpati';
 import { ExploreView } from '@/features/search/ExploreView';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { JsonLd, itemList } from '@/lib/seo/jsonld';
 import type { GanpatiCategory } from '@/types/ganpati';
 
 export const revalidate = 3600;
@@ -39,9 +41,24 @@ export default async function CategoryPage({
   const category = categories.find((c) => c.key === slug);
   if (!category) notFound();
 
+  /** The mandals in this category, in the order the page lists them. */
+  const inCategory = all.filter((g) => g.category === slug);
+
   return (
     <main id="main" className="pb-nav md:pb-10">
       <div className="px-4 pt-[calc(var(--safe-top)+20px)]">
+        <JsonLd
+          data={itemList(
+            category.name,
+            inCategory.map((g) => ({ name: g.name, url: `/ganpati/${g.slug}` }))
+          )}
+        />
+        <Breadcrumbs
+          trail={[
+            { name: 'Ganpati mandals', url: '/explore' },
+            { name: category.name },
+          ]}
+        />
         <h1 className="font-display text-[30px] font-bold text-[var(--chandan)]">
           {category.name}
         </h1>

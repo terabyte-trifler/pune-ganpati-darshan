@@ -6,6 +6,7 @@ import { getRoutes, getRouteBySlug, computeRouteTotals } from '@/services/routes
 import { RouteTotalStat } from '@/features/planner/RouteTotalStat';
 import { RouteDetailView } from '@/features/planner/RouteDetailView';
 import { ShareButton } from '@/features/discovery/ShareButton';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { formatDistance, formatDuration } from '@/lib/geo';
 import { env } from '@/lib/env';
 
@@ -91,6 +92,12 @@ export default async function RoutePage({
 
         <div className="mt-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
+            <Breadcrumbs
+              trail={[
+                { name: 'Curated routes', url: '/routes' },
+                { name: route.title },
+              ]}
+            />
             <h1 className="font-display text-[30px] font-bold leading-tight text-[var(--chandan)]">
               {route.title}
             </h1>

@@ -4,6 +4,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { GanpatiGlyphSprite } from '@/components/ui/GanpatiGlyphSprite';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { JsonLd, siteGraph } from '@/lib/seo/jsonld';
 import { env } from '@/lib/env';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
@@ -105,6 +106,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
+        <JsonLd data={siteGraph()} />
         <GanpatiGlyphSprite />
         <OfflineBanner />
         {children}

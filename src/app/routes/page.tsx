@@ -5,6 +5,8 @@ import { getRoutes, computeRouteTotals, routesForNow } from '@/services/routes';
 import { formatDistance, formatDuration } from '@/lib/geo';
 import { Button } from '@/components/ui/Button';
 import type { CuratedRoute } from '@/types/ganpati';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { JsonLd, itemList } from '@/lib/seo/jsonld';
 
 export const metadata: Metadata = {
   title: 'Curated darshan routes',
@@ -90,6 +92,13 @@ export default async function RoutesPage() {
   return (
     <main id="main" className="pb-nav md:pb-10">
       <div className="mx-auto max-w-3xl px-4 pt-[calc(var(--safe-top)+20px)]">
+        <JsonLd
+          data={itemList(
+            'Curated Ganpati darshan routes in Pune',
+            routes.map((r) => ({ name: r.title, url: `/routes/${r.slug}` }))
+          )}
+        />
+        <Breadcrumbs trail={[{ name: 'Curated routes' }]} />
         <h1 className="font-display text-[30px] font-bold text-[var(--chandan)]">
           Curated darshan routes
         </h1>

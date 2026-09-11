@@ -15,6 +15,7 @@ import { ViewTracker } from '@/features/discovery/ViewTracker';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { CrowdPanel } from '@/features/crowd/CrowdPanel';
 import { haversine } from '@/lib/geo';
+import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { env } from '@/lib/env';
 
 /**
@@ -134,6 +135,16 @@ export default async function GanpatiPage({
       </div>
 
       <div className="mx-auto max-w-2xl px-4">
+        <div className="pt-3">
+          <Breadcrumbs
+            trail={[
+              { name: 'Ganpati mandals', url: '/explore' },
+              { name: g.area.name, url: `/area/${g.area.slug}` },
+              { name: g.name },
+            ]}
+          />
+        </div>
+
         {/* ---------------- Identity ---------------- */}
         {/* Pulled up over the hero gradient; needs its own stacking
             context or the image container paints over it. */}
