@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Search, Route as RouteIcon, ChevronRight } from 'lucide-react';
 import {
@@ -11,6 +12,20 @@ import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
 import { LiveCrowdSection } from '@/features/crowd/LiveCrowdSection';
 import { Button } from '@/components/ui/Button';
+
+/**
+ * The homepage was the one page on the site with no canonical.
+ *
+ * It is also the page most likely to be reached by several URLs at once —
+ * a trailing slash, a shared link carrying utm_source from Instagram or
+ * X, a Google Discover referrer. Without a canonical, each of those is a
+ * separate candidate and the ranking signals split between them. Every
+ * other route already declares one; this closes the gap at the most
+ * valuable URL.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 /**
  * Homepage.
