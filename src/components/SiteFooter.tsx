@@ -41,6 +41,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
   {
     heading: 'About',
     links: [
+      { href: '/guides', label: 'Guides' },
       { href: '/how-to-use', label: 'How to use' },
       { href: '/about', label: 'About this app' },
       { href: '/about#data', label: 'Your data' },

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { getAllGanpatis, getAreas, getCategories } from '@/services/ganpati';
 import { getRoutes } from '@/services/routes';
+import { GUIDES } from '@/content/guides';
 import { CATALOGUE_GENERATED_AT } from '@/services/catalogue';
 import { env } from '@/lib/env';
 
@@ -61,6 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/explore`, lastModified: catalogueUpdated, changeFrequency: 'daily', priority: 0.9 },
     { url: `${base}/map`, lastModified: catalogueUpdated, changeFrequency: 'daily', priority: 0.9 },
     { url: `${base}/routes`, lastModified: catalogueUpdated, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${base}/guides`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/plan`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/how-to-use`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/about`, changeFrequency: 'yearly', priority: 0.4 },
@@ -82,6 +84,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: catalogueUpdated,
       changeFrequency: 'monthly' as const,
       priority: r.featured ? 0.8 : 0.7,
+    })),
+
+    // Guides carry their own edit date, which is the one lastmod on this
+    // site that is genuinely per-URL.
+    ...GUIDES.map((g) => ({
+      url: `${base}/guides/${g.slug}`,
+      lastModified: when(g.updated),
+      changeFrequency: 'monthly' as const,
+      priority: 0.85,
     })),
 
     ...areas.map((a) => ({
