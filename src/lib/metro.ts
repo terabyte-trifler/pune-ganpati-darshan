@@ -141,7 +141,7 @@ export const LINE_TERMINI: Record<MetroLine, [string, string]> = {
  * Every station, ordered along the walk for the five that matter and
  * along the line for the rest.
  *
- * The five with an exitNote are the ones you get off at for darshan. The
+ * The six with an exitNote are the ones you get off at for darshan. The
  * rest exist so the app can tell someone in Kalyani Nagar or Vanaz which
  * train to board — that is all they are for, and they are kept out of the
  * map and out of the alighting search.
@@ -198,6 +198,25 @@ export const METRO_STATIONS: MetroStation[] = [
       'its being one-way costs so much.',
   },
   {
+    id: 'swargate',
+    name: 'Swargate',
+    nameMr: 'स्वारगेट',
+    lines: ['purple'],
+    lat: 18.5010,
+    lng: 73.8580,
+    // The southern terminus, and the answer to the hole Mandai leaves.
+    // Sarasbaug and Hira Bagh were being sent to Deccan Gymkhana, 1.8 km
+    // away across the river, when Swargate is 430 m from one and 530 m
+    // from the other.
+    tier: 'primary',
+    canAlight: true,
+    exitNote:
+      'The Purple Line’s southern end, under the bus stand. Sarasbaug and ' +
+      'Hira Bagh are the closest mandals — both around 500 m — and it is ' +
+      'the nearest station you can arrive at for the Sadashiv Peth ' +
+      'mandals now that Mandai is exit-only.',
+  },
+  {
     id: 'sambhaji-udyan',
     name: 'Chhatrapati Sambhaji Udyan',
     nameMr: 'छत्रपती संभाजी उद्यान',
@@ -251,9 +270,6 @@ export const METRO_STATIONS: MetroStation[] = [
   { id: 'range-hills', name: 'Range Hills', nameMr: 'रेंज हिल्स', lines: ['purple'], lat: 18.5545, lng: 73.8420, tier: 'network', canAlight: false, exitNote: '' },
   { id: 'shivajinagar', name: 'Shivajinagar', nameMr: 'शिवाजीनगर', lines: ['purple'], lat: 18.5310, lng: 73.8480, tier: 'network', canAlight: false, exitNote: '' },
 
-  /* ---------------- Purple Line, south of Mandai ---------------- */
-  { id: 'swargate', name: 'Swargate', nameMr: 'स्वारगेट', lines: ['purple'], lat: 18.5010, lng: 73.8580, tier: 'network', canAlight: false, exitNote: '' },
-
   /* ---------------- Aqua Line, west of Deccan ---------------- */
   { id: 'vanaz', name: 'Vanaz', nameMr: 'वनाझ', lines: ['aqua'], lat: 18.5075, lng: 73.8065, tier: 'network', canAlight: false, exitNote: '' },
   { id: 'anand-nagar', name: 'Anand Nagar', nameMr: 'आनंद नगर', lines: ['aqua'], lat: 18.5090, lng: 73.8125, tier: 'network', canAlight: false, exitNote: '' },
@@ -300,19 +316,23 @@ export const DARSHAN_STATIONS = METRO_STATIONS.filter((s) => s.tier !== 'network
 /**
  * Where you may actually get off to walk to the mandals.
  *
- * Four of them: Kasba Peth and PMC in the peths, Deccan Gymkhana and
- * Chhatrapati Sambhaji Udyan across the river. Mandai is deliberately
- * absent — it runs
- * one way during the festival, so a route that ends there is a route
- * nobody can take.
+ * Five of them: Kasba Peth, PMC and Swargate on the peth side, Deccan
+ * Gymkhana and Chhatrapati Sambhaji Udyan across the river. Mandai is
+ * deliberately absent — it runs one way during the festival, so a route
+ * that ends there is a route nobody can take.
  *
  * Its absence costs more than the list suggests. Mandai is the nearest
  * station to thirteen of the twenty-three mandals in the catalogue, so for
  * most of the southern peths the app is now sending people to their second
  * choice. That is the right answer and it needs saying out loud, which is
  * what blockedNearerStation is for.
+ *
+ * Swargate absorbs five of those: Sarasbaug, Hira Bagh, Seva Mitra, Natu
+ * Baug and Chinchechi Talim are all closer to it than to any other station
+ * you can get off at.
  */
 export const ARRIVAL_STATIONS = DARSHAN_STATIONS.filter((s) => s.canAlight);
+
 
 /** The default answers: in the peths, and you can get off. */
 export const PRIMARY_STATIONS = ARRIVAL_STATIONS.filter((s) => s.tier === 'primary');

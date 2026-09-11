@@ -171,17 +171,25 @@ describe('stationForRoute', () => {
 });
 
 describe('station data', () => {
-  it('offers the four arrival stations, ranked, and Mandai in none of them', () => {
+  it('offers the five arrival stations, ranked, and Mandai in none of them', () => {
     expect(ARRIVAL_STATIONS.map((s) => s.id).sort()).toEqual(
-      ['deccan-gymkhana', 'kasba-peth', 'pmc', 'sambhaji-udyan']
+      ['deccan-gymkhana', 'kasba-peth', 'pmc', 'sambhaji-udyan', 'swargate']
     );
     expect(PRIMARY_STATIONS.map((s) => s.id).sort()).toEqual(
-      ['kasba-peth', 'pmc']
+      ['kasba-peth', 'pmc', 'swargate']
     );
     expect(EXIT_ONLY_STATIONS.map((s) => s.id)).toEqual(['mandai']);
     expect(
       DARSHAN_STATIONS.filter((s) => s.tier === 'secondary').map((s) => s.id).sort()
     ).toEqual(['deccan-gymkhana', 'sambhaji-udyan']);
+  });
+
+  it('sends the southern mandals to Swargate rather than across the river', () => {
+    // Sarasbaug was going to Deccan Gymkhana, 1.9 km away over the river,
+    // because Mandai is exit-only and nothing else was closer. Swargate is
+    // 533 m from it and is the terminus of the same line Mandai is on.
+    const sarasbaug = { lat: 18.500881, lng: 73.85295 };
+    expect(nearestStation(sarasbaug)?.station.id).toBe('swargate');
   });
 
   it('keeps every arrival station inside the anchor radius of the peth core', () => {

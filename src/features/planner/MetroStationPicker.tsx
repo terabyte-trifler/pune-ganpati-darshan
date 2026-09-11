@@ -136,7 +136,7 @@ export function MetroStationPicker({
             Both are across the river, so the walk in is 20–30 minutes before
             the first mandal. Worth it only if you are already on the Aqua
             Line — otherwise change at Civil Court for the Purple Line and
-            get off at Kasba Peth or Mandai.
+            get off at Kasba Peth for the peths or Swargate for Sarasbaug.
           </p>
         </>
       )}
