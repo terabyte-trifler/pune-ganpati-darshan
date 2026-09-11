@@ -83,6 +83,27 @@ function splitIntoLegs(stops: Ganpati[], hasOrigin: boolean): Ganpati[][] {
   return legs;
 }
 
+/**
+ * How close you must be for "the nearest stop" to mean anything.
+ *
+ * Every mandal in the catalogue sits inside about three kilometres of
+ * every other, so from far enough away one of them is always marginally
+ * nearest and the difference is noise. Someone in Hinjewadi is fifteen
+ * kilometres out: rotating their route to stop 13 because it happens to
+ * be a few hundred metres closer than stop 1 is arithmetically true and
+ * practically absurd.
+ *
+ * Worse, it contradicted the advice directly above it. The metro card
+ * says "get off at Kasba Peth"; the route then began at Kesariwada in
+ * Narayan Peth, 1.2 km from that station, with twelve mandals walked
+ * past on the way. That is the exact visitor this feature exists for.
+ *
+ * Inside this radius you are standing in the peths and joining the route
+ * where you are is the sensible thing. Outside it you are travelling to
+ * the route, and it should start at its beginning.
+ */
+const JOIN_ROUTE_RADIUS_M = 1_500;
+
 export function StartRouteButton({
   stops, mode, source, label, preserveOrder = false,
 }: {
@@ -120,6 +141,14 @@ export function StartRouteButton({
   }, [origin, stops]);
 
   /** The nearest stop, so a visitor already inside the route can join it. */
+  /**
+   * The nearest stop — but only when "nearest" is a real choice.
+   *
+   * Returns 0 (the route's own first stop) whenever the visitor is
+   * further from the whole route than JOIN_ROUTE_RADIUS_M, which also
+   * hides the reorder checkbox, because there is nothing useful to
+   * offer someone who is not there yet.
+   */
   const nearestIndex = useMemo(() => {
     if (!origin) return 0;
     let best = 0;
@@ -128,7 +157,7 @@ export function StartRouteButton({
       const d = haversine(origin, { lat: s.location.lat, lng: s.location.lng });
       if (d < bestDistance) { bestDistance = d; best = i; }
     });
-    return best;
+    return bestDistance <= JOIN_ROUTE_RADIUS_M ? best : 0;
   }, [origin, stops]);
 
   const ordered = useMemo(() => {
