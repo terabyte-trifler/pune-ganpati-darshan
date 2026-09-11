@@ -84,7 +84,7 @@ function splitIntoLegs(stops: Ganpati[], hasOrigin: boolean): Ganpati[][] {
 }
 
 export function StartRouteButton({
-  stops, mode, source, label,
+  stops, mode, source, label, preserveOrder = false,
 }: {
   stops: Ganpati[];
   mode: TravelMode;
@@ -92,9 +92,24 @@ export function StartRouteButton({
   source: string;
   /** Wording for the located primary action. */
   label?: string;
+  /**
+   * The stop order was chosen deliberately and must not be rotated by
+   * default.
+   *
+   * A curated route's order is an argument, not a convenience: "Every
+   * mandal, from Kasba" puts Dagdusheth ninth precisely so its queue is
+   * forty-five minutes rather than two hours, and starting at whichever
+   * stop happens to be nearest throws that away silently. A plan the
+   * visitor built themselves has no such claim on its order, so there the
+   * default stays as it was.
+   *
+   * The checkbox is still offered either way — someone already standing
+   * mid-route may genuinely want to join it there.
+   */
+  preserveOrder?: boolean;
 }) {
   const { state, request } = useGeolocation();
-  const [reorderFromMe, setReorderFromMe] = useState(true);
+  const [reorderFromMe, setReorderFromMe] = useState(!preserveOrder);
   const origin = state.status === 'ready' ? state.position : null;
 
   /** Distance from the visitor to where the route begins. */
@@ -177,13 +192,22 @@ export function StartRouteButton({
         <>
           <p className="mb-2 flex items-center gap-1.5 text-[13px] text-[var(--muted)]">
             <MapPin size={13} aria-hidden="true" className="text-[var(--tulsi)]" />
-            {distanceToStart !== null && nearestIndex === 0 ? (
-              <>The route starts {formatDistance(distanceToStart)} from you.</>
-            ) : (
+            {/* Says where the route will actually begin, which is not
+                always the nearest stop — a curated order is kept unless
+                the visitor asks for it to be rotated. */}
+            {reorderFromMe && nearestIndex > 0 ? (
               <>
-                You&rsquo;re closest to stop {nearestIndex + 1},{' '}
-                {stops[nearestIndex].name.replace(/^(Shri|Shrimant)\s+/i, '')}.
+                Starting at stop {nearestIndex + 1},{' '}
+                {stops[nearestIndex].name.replace(/^(Shri|Shrimant)\s+/i, '')} —
+                the closest to you.
               </>
+            ) : distanceToStart !== null ? (
+              <>
+                Starts at {stops[0].name.replace(/^(Shri|Shrimant)\s+/i, '')},{' '}
+                {formatDistance(distanceToStart)} from you.
+              </>
+            ) : (
+              <>Starts at {stops[0].name.replace(/^(Shri|Shrimant)\s+/i, '')}.</>
             )}
           </p>
 

@@ -90,7 +90,12 @@ export function RouteDetailView({
       )}
 
       {/* ---------------- Navigate ---------------- */}
-      <StartRouteButton stops={mandals} mode={route.mode} source={`route:${route.slug}`} />
+      <StartRouteButton
+        stops={mandals}
+        mode={route.mode}
+        source={`route:${route.slug}`}
+        preserveOrder
+      />
 
       {/* ---------------- Or take it into your own plan ---------------- */}
       <Button
