@@ -5,6 +5,8 @@ import { useClockMs, useCrowdStatus } from './useCrowd';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { CrowdReportButtons } from './CrowdReportButtons';
 import type { CrowdStatus } from '@/types/crowd';
+import { crowdExpectation, type PriorInput } from '@/services/crowd/crowd-prior';
+import type { FestivalPhase } from '@/lib/festival';
 
 /**
  * "Crowd right now" — the mandal detail panel.
@@ -56,12 +58,26 @@ export function CrowdPanel({
   mandalName,
   mandalLocation,
   reportingEnabled,
+  prior,
+  festivalPhase,
 }: {
   mandalId: string;
   mandalName: string;
   /** Used only to decide whether a report counts as made on site. */
   mandalLocation: { lat: number; lng: number };
   reportingEnabled: boolean;
+  /**
+   * The mandal's curated wait figures, for the "usually" fallback.
+   *
+   * Passed in rather than fetched, and the expectation is computed HERE on
+   * the device rather than server-side, for one reason: a prior attached
+   * to the crowd API response would need that request to succeed, and the
+   * moment it is most wanted — 9pm in a peth lane with the cells
+   * saturated — is exactly when it will not. Computed from static props
+   * and the clock, it works with no network at all.
+   */
+  prior?: PriorInput;
+  festivalPhase?: FestivalPhase;
 }) {
   const { status, stale, unavailable, loading } = useCrowdStatus(mandalId);
   // Null until hydrated: the server's clock is not the device's, so
@@ -74,6 +90,15 @@ export function CrowdPanel({
       ? Math.max(0, nowMs - Date.parse(status.lastUpdated))
       : null;
   const ago = agoText(Number.isFinite(ageMs) ? ageMs : null);
+
+  // Lane B. Consulted only where Lane A is silent, and never merged with
+  // it — see services/crowd/crowd-prior. nowMs is null until hydration,
+  // which also keeps this out of the server render: an expectation is a
+  // function of the reader's clock, not the build's.
+  const expectation =
+    !level && prior && festivalPhase && nowMs !== null
+      ? crowdExpectation(prior, festivalPhase, new Date(nowMs))
+      : null;
 
   return (
     <section
@@ -138,6 +163,30 @@ export function CrowdPanel({
             Nobody has reported {mandalName} in the last 90 minutes. If you are
             there, you would be the first.
           </p>
+
+          {/* The expectation. Deliberately styled unlike a reading: the
+              dot is hollow, the wording starts "Usually", and the figure
+              is a rounded range in prose rather than a headline number.
+              Someone glancing at this must not be able to mistake it for
+              something a person reported. */}
+          {expectation && (
+            <div className="mt-3 rounded-[var(--radius-field)] border border-dashed border-[var(--line-strong)] px-3 py-2.5">
+              <p
+                className="flex items-center gap-2 text-[14px] font-semibold"
+                style={{ color: CROWD_COLOR[expectation.level] }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 rounded-full border-[1.5px]"
+                  style={{ borderColor: CROWD_COLOR[expectation.level] }}
+                />
+                {expectation.label} at this hour
+              </p>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--muted)]">
+                {expectation.detail}
+              </p>
+            </div>
+          )}
         </>
       )}
 

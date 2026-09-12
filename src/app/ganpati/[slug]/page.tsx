@@ -3,7 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, CalendarDays } from 'lucide-react';
-import { getAllGanpatis, getGanpatiBySlug } from '@/services/ganpati';
+import { getAllGanpatis, getGanpatiBySlug, getFestivalConfig } from '@/services/ganpati';
+import { getFestivalPhase } from '@/lib/festival';
 import { CategoryBadge, TempleBadge, ConfidenceBadge, CATEGORY_LABEL } from '@/components/ui/Badge';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { SaveButton } from '@/features/favorites/SaveButton';
@@ -99,6 +100,14 @@ export default async function GanpatiPage({
   if (!g) notFound();
 
   const all = await getAllGanpatis();
+
+  // For the crowd panel's "usually busy at this hour" fallback. The phase
+  // comes from festival_config, never from a date in code (§26), so a
+  // future year needs no change here. Computed on the server because the
+  // dates are server data; the expectation itself is computed on the
+  // device, from this plus the reader's own clock.
+  const festivalPhase = getFestivalPhase(await getFestivalConfig());
+
   const nearby = all
     .filter((o) => o.slug !== g.slug)
     .map((o) => ({
@@ -239,6 +248,12 @@ export default async function GanpatiPage({
           mandalName={g.name}
           mandalLocation={g.location}
           reportingEnabled={g.crowdReportingEnabled}
+          prior={{
+            darshanMinutes: g.darshanMinutes,
+            peakDarshanMinutes: g.peakDarshanMinutes,
+            prominence: g.prominence,
+          }}
+          festivalPhase={festivalPhase}
         />
 
         <dl className="mt-6 divide-y divide-[var(--line)] overflow-hidden surface rounded-[var(--radius-card)] border border-[var(--line)]">

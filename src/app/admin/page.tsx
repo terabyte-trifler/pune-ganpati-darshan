@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Plus, Upload, Pencil, Activity, Globe } from 'lucide-react';
+import { Plus, Upload, Pencil, Activity, Globe, Calculator } from 'lucide-react';
 import { getSessionUser } from '@/services/auth';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +32,9 @@ export default async function AdminPage() {
         <div className="flex gap-2">
           <Button asChild variant="secondary" size="sm">
             <Link href="/admin/crowd"><Activity size={15} aria-hidden="true" />Crowd</Link>
+          </Button>
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/admin/crowd-prior"><Calculator size={15} aria-hidden="true" />Prior</Link>
           </Button>
           <Button asChild variant="secondary" size="sm">
             <Link href="/admin/traffic"><Globe size={15} aria-hidden="true" />Traffic</Link>
