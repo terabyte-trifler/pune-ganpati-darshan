@@ -282,6 +282,8 @@ function roundWait(minutes: number): number {
   return Math.max(1, Math.round(minutes / 5) * 5);
 }
 
+const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
 function partOfDay(istHour: number): string {
   if (istHour < 5) return 'at this hour';
   if (istHour < 12) return 'in the morning';
@@ -326,11 +328,16 @@ export function crowdExpectation(
   return {
     level,
     label: LABEL[level],
+    // Deliberately does NOT open with "nobody has reported". Whether
+    // anybody has reported is the panel's fact to state, not this
+    // model's — and it was stating it wrongly: an expectation shows
+    // alongside a single unconfirmed report too, where "nobody has
+    // reported" is simply false.
     detail:
-      `Nobody has reported this mandal recently. ${partOfDay(istHour)} on ` +
-      `day ${phase.day} of the festival the wait here is usually around ` +
-      `${rounded} minutes. That is an expectation from the time and the ` +
-      `mandal's usual queue — not a report from anyone there.${hedge}`,
+      `${capitalise(partOfDay(istHour))} on day ${phase.day} of the festival ` +
+      `the wait here is usually around ${rounded} minutes. That is an ` +
+      `expectation from the time and the mandal's usual queue — not a ` +
+      `report from anyone there.${hedge}`,
     waitMinutes: rounded,
     basis,
     workings: {

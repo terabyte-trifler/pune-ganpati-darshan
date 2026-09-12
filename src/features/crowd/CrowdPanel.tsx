@@ -193,6 +193,21 @@ export function CrowdPanel({
             </>
           ) : loading && !status ? (
             <div className="mt-3 h-6 w-40 animate-pulse rounded bg-[var(--line-strong)]" />
+          ) : status && status.reportCount > 0 ? (
+            /* There IS a report, it just is not a reading yet — one device
+               is not two. The aggregation already words this case
+               precisely ("Not confirmed yet" / "One person has reported
+               this mandal"), and this used to ignore it and print "Nobody
+               has reported" instead, which is the exact lie the
+               aggregation's own comment warns against. Use its wording. */
+            <>
+              <p className="mt-2.5 text-[15px] font-semibold text-[var(--chandan)]">
+                {status.label}
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
+                {status.detail}
+              </p>
+            </>
           ) : (
             <>
               <p className="mt-2.5 text-[15px] font-semibold text-[var(--chandan)]">

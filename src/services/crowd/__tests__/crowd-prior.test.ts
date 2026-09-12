@@ -149,6 +149,15 @@ describe('the expectation', () => {
     }
   });
 
+  it('never claims nobody has reported', () => {
+    // An expectation also shows alongside a single unconfirmed report,
+    // where "nobody has reported" is false. Whether anyone reported is
+    // the panel's fact to state, from the aggregation's own wording.
+    const e = crowdExpectation(DAGDUSHETH, during(9), ist('2026-09-22', 21))!;
+    expect(e.detail.toLowerCase()).not.toContain('nobody');
+    expect(e.detail).toMatch(/not a report/i);
+  });
+
   it('calls the busiest hour of the busiest day heavy at Dagdusheth', () => {
     // Thu 24 Sep 2026, 21:00 — the night before Anant Chaturdashi.
     const e = crowdExpectation(DAGDUSHETH, during(11), ist('2026-09-24', 21))!;
