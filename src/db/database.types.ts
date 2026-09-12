@@ -280,6 +280,24 @@ export type CrowdDeviceBlockRow = {
 }
 
 /** One row per reporting device. Written by submit_crowd_report only. */
+/**
+ * A passive dwell sample. Shadow mode — recorded, never displayed.
+ *
+ * Deliberately device-less and coordinate-less: the client resolves which
+ * mandal it is unambiguously near on the device and sends only the id.
+ * (device, mandal, time) rows would be a location history, and a latitude
+ * here would defeat the arrangement entirely. See the migration header —
+ * and note that this choice does not survive the signal being promoted to
+ * anything a visitor sees.
+ */
+export type CrowdDwellSampleRow = {
+  id: number;
+  mandal_id: string;
+  dwell: 'lingering' | 'queueing';
+  dwell_seconds: number;
+  created_at: string;
+}
+
 export type CrowdDeviceRow = {
   device_id: string;
   first_seen_at: string;
@@ -339,6 +357,7 @@ export type Database = {
       crowd_abuse_signals: Table<CrowdAbuseSignalRow>;
       crowd_device_blocks: Table<CrowdDeviceBlockRow>;
       crowd_devices: Table<CrowdDeviceRow>;
+      crowd_dwell_samples: Table<CrowdDwellSampleRow>;
       rate_limit_buckets: Table<RateLimitBucketRow>;
     };
     Views: Record<never, never>;
