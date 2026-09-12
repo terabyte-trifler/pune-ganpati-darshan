@@ -128,12 +128,12 @@ const HOUR_LOAD: number[] = [
 const VISARJAN_SILENT_AFTER_IST = 13;
 
 /** Quietest modelled wait, as a fraction of the mandal's normal wait. */
-const QUIET_FRACTION = 0.25;
+export const QUIET_FRACTION = 0.25;
 
 /** Wait in minutes at or above which the app already says "30+ min". */
-const LONG_THRESHOLD_MIN = 30;
+export const LONG_THRESHOLD_MIN = 30;
 /** Below this it is a walk-in, not a queue. */
-const SHORT_THRESHOLD_MIN = 10;
+export const SHORT_THRESHOLD_MIN = 10;
 
 /**
  * Peak wait for a mandal with no curated figure, in minutes.

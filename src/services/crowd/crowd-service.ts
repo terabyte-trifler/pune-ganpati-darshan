@@ -385,6 +385,11 @@ export function resetCrowdServiceForTesting() {
 export interface MandalExplain {
   mandalId: string;
   status: CrowdStatus;
+  /**
+   * The same mandal scored from human reports only. Comparing it with
+   * `status` is how the admin sees whether dwell changed the colour.
+   */
+  humanOnly: CrowdStatus;
   breakdown: ScoreBreakdown;
   /** Distinct devices behind the reports, which gates whether a status shows. */
   devices: number;
@@ -461,6 +466,7 @@ export async function getCrowdExplain(): Promise<{
       // The live answer, computed exactly as the API computes it — dwell
       // included only when it is actually switched on.
       status: aggregateMandal(mandalId, reports, now, dwellCounted ? samples : []),
+      humanOnly: aggregateMandal(mandalId, reports, now, []),
       breakdown: scoreBreakdown(aged, samples, now),
       devices: new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1))).size,
     };
