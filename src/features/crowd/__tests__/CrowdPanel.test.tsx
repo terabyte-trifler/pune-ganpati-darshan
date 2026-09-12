@@ -79,20 +79,20 @@ describe('Phase 0 — a measured reading shows its evidence', () => {
     panel();
 
     expect(screen.getByText('Heavy')).toBeDefined();
-    expect(screen.getByText('4')).toBeDefined();
-    expect(screen.getByText(/reports in the last 90\s*min/)).toBeDefined();
     expect(screen.getByText(/Fair signal/)).toBeDefined();
+    // Visitors are never told how many people reported.
+    expect(screen.queryByText('4')).toBeNull();
+    expect(screen.queryByText(/reports? in the last/)).toBeNull();
     expect(screen.getByText(/Updated 3 min ago/)).toBeDefined();
   });
 
-  it('says "report" singular when there is one, and never shows a 0', () => {
-    // A displayed status always has at least two reports, so the singular
-    // is unreachable there — but the branch exists and must be right.
-    mockStatus.status = status({ status: 'short', label: 'Short', reportCount: 1 });
-    panel();
-    expect(screen.getByText(/1/)).toBeDefined();
-    expect(screen.queryByText(/reports in the last/)).toBeNull();
-    expect(screen.getByText(/report in the last/)).toBeDefined();
+  it('never shows a count, however many reported', () => {
+    for (const n of [2, 7, 31]) {
+      mockStatus.status = status({ status: 'short', label: 'Short', reportCount: n, confidence: 'high' });
+      const { container, unmount } = panel();
+      expect(container.textContent ?? '').not.toContain(String(n));
+      unmount();
+    }
   });
 
   it('does NOT show the prior when a reading exists', () => {
@@ -130,12 +130,13 @@ describe('Phase 1 — the prior speaks when the measurement cannot', () => {
     // also not "nobody has reported".
     mockStatus.status = status({
       status: null, label: 'Not confirmed yet',
-      detail: 'One person has reported this mandal. A second report confirms it.',
+      detail: 'A report has come in but is not confirmed yet. It shows once someone else agrees.',
       reportCount: 1,
     });
     panel();
     expect(screen.getByText('Not confirmed yet')).toBeDefined();
-    expect(screen.getByText(/One person has reported this mandal/)).toBeDefined();
+    expect(screen.getByText(/It shows once someone else agrees/)).toBeDefined();
+    expect(screen.queryByText(/One person/)).toBeNull();
     expect(screen.queryByText(/Nobody has reported/)).toBeNull();
     // And the prior still helps, without contradicting it.
     expect(screen.getByText(/Usually heavy at this hour/)).toBeDefined();
@@ -178,7 +179,6 @@ describe('Phase 2 — the dwell line, once it is switched on', () => {
 
     // The reading is untouched.
     expect(screen.getByText('Heavy')).toBeDefined();
-    expect(screen.getByText(/4/)).toBeDefined();
     // And the hint sits beside it, saying something different.
     expect(screen.getByText(/Most visitors near this mandal are stopping/)).toBeDefined();
     expect(screen.getByText(/can also just be people looking/)).toBeDefined();

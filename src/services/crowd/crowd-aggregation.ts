@@ -418,7 +418,8 @@ export function aggregateMandal(
       status: null,
       label: 'Not confirmed yet',
       detail:
-        'One person has reported this mandal. A second report confirms it.',
+        // No number: visitors are never told how many people reported.
+        'A report has come in but is not confirmed yet. It shows once someone else agrees.',
       reportCount: aged.length,
       confidence: 'low',
       lastUpdated,

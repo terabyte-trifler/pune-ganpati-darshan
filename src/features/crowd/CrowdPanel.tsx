@@ -134,36 +134,13 @@ export function CrowdPanel({
             {status?.label}
           </p>
 
-          {/* The count, restored — and the reason the old objection no
-              longer holds.
-
-              It was hidden because "1 recent report" reads as a broken
-              feature rather than an early one. But a status is only shown
-              once MIN_DEVICES_FOR_STATUS distinct devices agree, and
-              reportCount counts reports, so on anything displayed here the
-              number is at least two. The feared "1" is structurally
-              impossible on this line — and the one-report case already
-              says so in words ("One person has reported this mandal").
-
-              Both cues are kept because they are not the same claim. The
-              count is the evidence; the confidence wording also accounts
-              for agreement, so five reports split three ways is "Early
-              signal" despite the count. Showing the number alone would
-              overstate exactly that case. */}
+          {/* No count, by the owner's decision: visitors are never told how
+              many people reported. The confidence wording already carries
+              how solid the reading is — and it accounts for agreement as
+              well as volume, which a bare number would not. Counts remain
+              visible to admins at /admin/crowd and /admin/crowd-score. */}
           <p className="mt-2 text-[13px] text-[var(--muted)]">
-            {status && (
-              <>
-                <span className="font-semibold text-[var(--chandan)] tabular-nums">
-                  {status.reportCount}
-                </span>{' '}
-                {status.reportCount === 1 ? 'report' : 'reports'} in the last 90
-                min
-                <span className="text-[var(--faint)]">
-                  {' · '}
-                  {CONFIDENCE_WORDING[status.confidence]}
-                </span>
-              </>
-            )}
+            {status && CONFIDENCE_WORDING[status.confidence]}
           </p>
 
           {ago && (
@@ -196,8 +173,7 @@ export function CrowdPanel({
           ) : status && status.reportCount > 0 ? (
             /* There IS a report, it just is not a reading yet — one device
                is not two. The aggregation already words this case
-               precisely ("Not confirmed yet" / "One person has reported
-               this mandal"), and this used to ignore it and print "Nobody
+               precisely ("Not confirmed yet"), without a count, and this used to ignore it and print "Nobody
                has reported" instead, which is the exact lie the
                aggregation's own comment warns against. Use its wording. */
             <>

@@ -373,7 +373,7 @@ describe('a reading needs more than one device', () => {
     // somebody did report, it just is not confirmed.
     const result = aggregateMandal('m1', [from(1)], NOW);
     expect(result.reportCount).toBe(1);
-    expect(result.detail).toMatch(/second report/i);
+    expect(result.detail).toMatch(/someone else agrees/i);
   });
 
   it('is not fooled by one device reporting repeatedly', () => {
