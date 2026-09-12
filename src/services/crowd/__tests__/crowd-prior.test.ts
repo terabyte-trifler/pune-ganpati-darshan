@@ -149,6 +149,22 @@ describe('the expectation', () => {
     }
   });
 
+  it('never shows a wait that contradicts its own colour', () => {
+    // Found on the admin preview: Kasba at 21:00 on day 1 modelled 29.1
+    // minutes, was classified yellow, and was printed as "around 30
+    // minutes" — a figure the app calls red everywhere else.
+    for (const m of [DAGDUSHETH, KASBA, UNKNOWN]) {
+      for (let day = 1; day <= 11; day++) {
+        for (let h = 0; h < 24; h++) {
+          const e = crowdExpectation(m, during(day), ist('2026-09-19', h));
+          if (!e) continue;
+          expect(e.level === 'long', `${e.waitMinutes}m labelled ${e.level}`).toBe(e.waitMinutes >= 30);
+          expect(e.level === 'short', `${e.waitMinutes}m labelled ${e.level}`).toBe(e.waitMinutes < 10);
+        }
+      }
+    }
+  });
+
   it('never claims nobody has reported', () => {
     // An expectation also shows alongside a single unconfirmed report,
     // where "nobody has reported" is false. Whether anyone reported is

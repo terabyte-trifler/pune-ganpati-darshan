@@ -320,8 +320,11 @@ export function crowdExpectation(
   const { peak, normal, basis } = waitBounds(mandal);
   const quiet = normal * QUIET_FRACTION;
   const waitMinutes = quiet + load * (peak - quiet);
-  const level = levelForWait(waitMinutes);
   const rounded = roundWait(waitMinutes);
+  // Classified on the ROUNDED figure, because that is the number a visitor
+  // reads. Classifying on the raw 29.1 while printing "around 30 minutes"
+  // put a yellow "Usually moving" beside a wait the app itself calls red.
+  const level = levelForWait(rounded);
 
   const hedge = basis === 'estimated' ? ' This mandal has no confirmed wait times, so this is a rough guide only.' : '';
 
