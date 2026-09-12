@@ -216,7 +216,7 @@ export const GUIDE_EN: GuideContent = {
       dos: [
         'Allow location when the browser asks — every time. Your coordinates never leave your phone; the app sends only which mandal.',
         'Walk up to a mandal and a “You’re here” card appears on the home screen with the three buttons.',
-        'Or open any mandal’s page and use “How’s the crowd?” — you can report from up to 1.5 km away.',
+        'Or open any mandal’s page and use “How’s the crowd?” — you can report from up to 5 km away.',
         'Tap Short, Moving, or 30+ min. That is the whole thing. No account, no sign-in.',
         'You can report the same mandal again after an hour, so a report near the end of a queue is welcome too.',
       ],
@@ -570,7 +570,7 @@ export const GUIDE_MR: GuideContent = {
       dos: [
         'ब्राउझर विचारेल तेव्हा लोकेशनला परवानगी द्या — प्रत्येक वेळी. तुमचे अक्षांश-रेखांश फोनमधून बाहेर जात नाहीत; अ‍ॅप फक्त कोणते मंडळ इतकेच पाठवते.',
         'मंडळाजवळ गेल्यावर होम स्क्रीनवर “You’re here” कार्ड येते, आणि त्यावर ती तीन बटणे असतात.',
-        'किंवा कोणत्याही मंडळाचे पेज उघडून “How’s the crowd?” वापरा — दीड किलोमीटर अंतरावरूनही कळवता येते.',
+        'किंवा कोणत्याही मंडळाचे पेज उघडून “How’s the crowd?” वापरा — पाच किलोमीटर अंतरावरूनही कळवता येते.',
         'Short, Moving किंवा 30+ min दाबा. इतकेच. खाते नाही, लॉगिन नाही.',
         'तासाभराने त्याच मंडळाबद्दल पुन्हा कळवता येते, म्हणून रांग संपत असतानाची नोंदही उपयोगाची आहे.',
       ],

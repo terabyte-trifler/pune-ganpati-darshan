@@ -5,7 +5,6 @@ import { MapPin } from 'lucide-react';
 import { useAutoLocate, useGeolocation } from '@/hooks/useGeolocation';
 import { haversine, formatDistance } from '@/lib/geo';
 import { CrowdReportButtons } from './CrowdReportButtons';
-import { REPORT_MAX_DISTANCE_M } from './report-eligibility';
 import { cn } from '@/lib/utils';
 import type { Ganpati } from '@/types/ganpati';
 
@@ -42,11 +41,15 @@ const AT_RADIUS_M = 120;
  * Beyond this the shortlist stops being "things you might have walked
  * past" and starts being a list of mandals across town.
  *
- * The same radius the report controls themselves enforce, taken from the
- * one place that defines it — a shortlist offering a mandal whose buttons
- * then refuse to appear would be the worst of both.
+ * It used to track REPORT_MAX_DISTANCE_M exactly, so that the shortlist
+ * never offered a mandal whose buttons would then refuse to appear. That
+ * stopped being right when the report radius went to 5 km: this is an
+ * unprompted suggestion on the home page, and suggesting mandals across
+ * the city is noise. It stays deliberately tighter, which is safe in the
+ * one direction that matters — everything offered here can still be
+ * reported.
  */
-const NEAR_RADIUS_M = REPORT_MAX_DISTANCE_M;
+const NEAR_RADIUS_M = 1_500;
 
 /**
  * A fix coarser than this cannot tell two peth mandals apart, and naming

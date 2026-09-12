@@ -30,12 +30,14 @@ describe('report eligibility', () => {
   it('allows a report from anywhere inside the radius, at half weight', () => {
     const e = reportEligibility(ready(northOf(1_200)), MANDAL);
     expect(e.kind).toBe('allowed');
-    // Inside 1.5 km but outside 100 m: worth having, not worth as much.
+    // Inside the report radius but outside 100 m: worth having, not as much.
     expect(e.kind === 'allowed' && e.atMandal).toBe(false);
   });
 
   it('refuses a report from beyond the radius', () => {
-    const e = reportEligibility(ready(northOf(1_600)), MANDAL);
+    // Relative to the constant, so widening the radius cannot silently
+    // turn this into a test of nothing.
+    const e = reportEligibility(ready(northOf(REPORT_MAX_DISTANCE_M + 100)), MANDAL);
     expect(e.kind).toBe('too-far');
     expect(e.kind === 'too-far' && Math.round(e.distanceM)).toBeGreaterThan(REPORT_MAX_DISTANCE_M);
   });

@@ -276,7 +276,7 @@ export function useAutoLocate() {
  * only: if the browser says 'granted' it resolves a position silently, and
  * otherwise it leaves the state alone so the caller can offer a button.
  *
- * Mounted by the report controls, which are refused beyond 1.5 km and so
+ * Mounted by the report controls, which are refused beyond 5 km and so
  * need a position to decide anything. Without this, someone who granted
  * location on the home page and then opened a mandal would be asked to
  * turn on something already on.

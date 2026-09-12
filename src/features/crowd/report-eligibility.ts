@@ -29,8 +29,21 @@ import type { GeoState } from '@/hooks/useGeolocation';
  * ---------------------------------------------------------------------
  */
 
-/** Report a mandal you could plausibly have walked past, and no further. */
-export const REPORT_MAX_DISTANCE_M = 1_500;
+/**
+ * How far away a report is still accepted.
+ *
+ * Widened from 1.5 km to 5 km on the owner's decision. The trade is real
+ * and worth stating: 5 km covers the whole peth core and most of central
+ * Pune, so a report can now come from someone who saw the queue an hour
+ * ago on their way home rather than from someone who can see it now.
+ *
+ * Two things already contain that. Anything beyond AT_MANDAL_RADIUS_M
+ * counts at OFFSITE_WEIGHT, half of a report made at the gate, so the
+ * people actually there still outweigh the people who were. And a status
+ * needs two devices agreeing inside ninety minutes, which a single distant
+ * guess cannot produce on its own.
+ */
+export const REPORT_MAX_DISTANCE_M = 5_000;
 
 /** Inside this you are AT the mandal, and the report carries full weight. */
 export const AT_MANDAL_RADIUS_M = 100;
