@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingDown, TrendingUp, Minus, Users } from 'lucide-react';
+import { TrendingDown, TrendingUp, Minus, Users, Footprints } from 'lucide-react';
 import { useClockMs, useCrowdStatus } from './useCrowd';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { CrowdReportButtons } from './CrowdReportButtons';
@@ -79,7 +79,7 @@ export function CrowdPanel({
   prior?: PriorInput;
   festivalPhase?: FestivalPhase;
 }) {
-  const { status, stale, unavailable, loading } = useCrowdStatus(mandalId);
+  const { status, stale, unavailable, loading, dwell } = useCrowdStatus(mandalId);
   // Null until hydrated: the server's clock is not the device's, so
   // rendering a relative time there would mismatch on hydration.
   const nowMs = useClockMs();
@@ -244,6 +244,28 @@ export function CrowdPanel({
             </div>
           )}
         </>
+      )}
+
+      {/* ---------------- The dwell lane ----------------
+
+          A third thing, rendered below whatever the panel decided above
+          and never inside it. It does not change the colour, the label,
+          the confidence or the trend — it says what devices near the
+          mandal were observed doing, in a proportion rather than a count,
+          and admits it cannot tell a queue from people looking.
+
+          It appears under a measured reading as well as under a silence,
+          because unlike the prior it is an observation rather than a
+          guess, so it does not compete with Lane A for the same claim. */}
+      {dwell && (
+        <p className="prose-measure mt-3 flex gap-2 border-t border-[var(--line)] pt-3 text-[12.5px] leading-relaxed text-[var(--muted)]">
+          <Footprints
+            size={14}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--faint)]"
+          />
+          <span>{dwell.detail}</span>
+        </p>
       )}
 
       {/* ---------------- Report ---------------- */}

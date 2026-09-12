@@ -227,11 +227,21 @@ describe('the prior holds no weight in the measured lane', () => {
 
   it('is not part of the CrowdStatus contract', async () => {
     // It is never serialised through the crowd API either, so it cannot
-    // reach a caller that might treat it as a reading.
+    // reach a caller that might treat it as a reading. Asserted on the
+    // identifiers rather than the substring "expect", which also matches
+    // ordinary prose like "what the clock expects".
     const src = await import('node:fs').then((fs) =>
       fs.readFileSync('src/types/crowd.ts', 'utf8')
     );
-    expect(src).not.toContain('expect');
-    expect(src).not.toContain('prior');
+    expect(src).not.toContain('CrowdExpectation');
+    expect(src).not.toContain('crowd-prior');
+
+    // The CrowdStatus interface specifically must carry no expectation
+    // field — the snapshot may carry other lanes, a status may not.
+    const iface = src.slice(
+      src.indexOf('export interface CrowdStatus'),
+      src.indexOf('}', src.indexOf('export interface CrowdStatus'))
+    );
+    expect(iface).not.toMatch(/expect|prior|dwell/i);
   });
 });

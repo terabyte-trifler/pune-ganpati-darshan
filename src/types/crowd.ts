@@ -40,6 +40,18 @@ export interface CrowdStatus {
 /** A snapshot of every mandal with crowd data, plus how fresh it is. */
 export interface CrowdSnapshot {
   statuses: CrowdStatus[];
+  /**
+   * Passive dwell hints, keyed by mandal id. A THIRD lane: what devices
+   * near a mandal were observed doing, which is neither what anyone
+   * reported nor what the clock expects.
+   *
+   * Kept out of CrowdStatus on purpose. Nothing in this map may alter a
+   * status, its label, its confidence or its trend — it renders as its
+   * own line and is absent entirely unless CROWD_DWELL_PUBLIC is set.
+   * Empty when off, when there are too few samples, or when the read
+   * fails.
+   */
+  dwell?: Record<string, import('@/services/crowd/crowd-dwell').DwellSummary>;
   /** When this snapshot was computed. */
   computedAt: string;
   /**

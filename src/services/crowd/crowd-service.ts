@@ -5,6 +5,7 @@ import { features } from '@/lib/env';
 import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
 import { aggregateSnapshot } from './crowd-aggregation';
+import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
 import {
   CROWD_CACHE_TTL_SECONDS,
   CROWD_STALE_TTL_SECONDS,
@@ -88,6 +89,48 @@ export async function filterKnownMandalIds(ids: string[]): Promise<string[]> {
  * explicit id list so the (mandal_id, created_at desc) index is used
  * rather than a table scan.
  */
+/**
+ * Dwell summaries per mandal, or an empty map.
+ *
+ * Off unless CROWD_DWELL_PUBLIC is set — a switch separate from
+ * CROWD_DWELL_SHADOW, so display can be killed without stopping
+ * collection. Every failure returns {} rather than throwing: this lane is
+ * a hint, and a hint that can take down the crowd snapshot is worse than
+ * no hint.
+ */
+async function readDwellSummaries(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  ids: string[]
+): Promise<Record<string, DwellSummary>> {
+  if (process.env.CROWD_DWELL_PUBLIC !== '1') return {};
+  try {
+    const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
+    const { data, error } = await supabase
+      .from('crowd_dwell_samples')
+      .select('mandal_id, dwell, created_at')
+      .in('mandal_id', ids)
+      .gte('created_at', since)
+      .limit(5_000);
+    if (error || !data) return {};
+
+    const byMandal = new Map<string, { dwell: 'lingering' | 'queueing'; createdAt: string }[]>();
+    for (const row of data) {
+      const list = byMandal.get(row.mandal_id) ?? [];
+      list.push({ dwell: row.dwell, createdAt: row.created_at });
+      byMandal.set(row.mandal_id, list);
+    }
+
+    const out: Record<string, DwellSummary> = {};
+    for (const [mandalId, samples] of byMandal) {
+      const summary = summariseDwell(samples);
+      if (summary) out[mandalId] = summary;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 async function computeSnapshot(): Promise<CrowdSnapshot> {
   const ids = await getKnownMandalIds();
 
@@ -111,6 +154,12 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
     throw new CrowdUnavailableError();
   }
 
+  // The dwell lane, read alongside. Deliberately a separate query and a
+  // separate failure path: if this errors the crowd snapshot must still
+  // be served, because a passive hint failing is not a reason to take
+  // down what people actually reported.
+  const dwell = await readDwellSummaries(supabase, ids);
+
   const reports: CrowdReportInput[] = data.map((row) => ({
     mandalId: row.mandal_id,
     status: row.status,
@@ -129,6 +178,7 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
 
   return {
     statuses,
+    dwell,
     computedAt: new Date(now).toISOString(),
     stale: false,
   };
@@ -152,6 +202,11 @@ export async function getCrowdSnapshot(): Promise<CrowdSnapshot> {
     recordCrowdMetric('crowd_cache_hit', 1);
     return {
       statuses: cached,
+      // The status cache is per mandal and holds no dwell, so it is
+      // carried from the last full computation. At most 15 seconds
+      // stale against a 90-minute window — and without it the hint
+      // would blink out on every cache hit.
+      dwell: lastGood?.dwell,
       computedAt: lastGood?.computedAt ?? new Date().toISOString(),
       stale: false,
     };

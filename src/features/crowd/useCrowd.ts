@@ -25,6 +25,12 @@ export interface UseCrowdStatus {
   stale: boolean;
   unavailable: boolean;
   loading: boolean;
+  /**
+   * The passive dwell hint for this mandal, when there is one. A third
+   * lane — never merged into `status`, so nothing downstream can mistake
+   * it for something a person reported.
+   */
+  dwell: import('@/services/crowd/crowd-dwell').DwellSummary | null;
 }
 
 /**
@@ -43,6 +49,7 @@ export function useCrowdStatus(mandalId: string | null): UseCrowdStatus {
     stale: state.stale,
     unavailable: state.unavailable,
     loading: state.loading,
+    dwell: mandalId ? state.dwell[mandalId] ?? null : null,
   };
 }
 

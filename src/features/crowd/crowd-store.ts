@@ -52,6 +52,7 @@ export interface CrowdStoreState {
   stale: boolean;
   /** The API could not be reached and we have nothing usable. */
   unavailable: boolean;
+  dwell: Record<string, import('@/services/crowd/crowd-dwell').DwellSummary>;
   loading: boolean;
 }
 
@@ -60,6 +61,7 @@ const EMPTY: CrowdStoreState = {
   computedAt: null,
   stale: false,
   unavailable: false,
+  dwell: {},
   loading: true,
 };
 
@@ -154,6 +156,8 @@ async function fetchSnapshot(): Promise<void> {
         byMandalId: toMap(snapshot.statuses),
         computedAt: snapshot.computedAt,
         stale: snapshot.stale,
+        // Absent when the display switch is off, which is the normal case.
+        dwell: snapshot.dwell ?? {},
         unavailable: false,
         loading: false,
       });

@@ -21,6 +21,7 @@ let mockStatus: {
   stale: boolean;
   unavailable: boolean;
   loading: boolean;
+  dwell: { samples: number; queueingShare: number; stopping: boolean; detail: string } | null;
 };
 let mockNow: number | null;
 
@@ -64,7 +65,7 @@ function panel(props: { phase?: FestivalPhase } = {}) {
 
 beforeEach(() => {
   mockNow = NOW;
-  mockStatus = { status: null, stale: false, unavailable: false, loading: false };
+  mockStatus = { status: null, stale: false, unavailable: false, loading: false, dwell: null };
 });
 
 describe('Phase 0 — a measured reading shows its evidence', () => {
@@ -157,5 +158,50 @@ describe('Phase 1 — the prior speaks when the measurement cannot', () => {
     mockNow = null;
     panel();
     expect(screen.queryByText(/Usually/)).toBeNull();
+  });
+});
+
+describe('Phase 2 — the dwell line, once it is switched on', () => {
+  const STOPPING = {
+    samples: 7, queueingShare: 0.71, stopping: true,
+    detail: 'Most visitors near this mandal are stopping rather than walking past. ' +
+      'That usually means a queue, though it can also just be people looking.',
+  };
+
+  it('shows under a measured reading without changing it', () => {
+    mockStatus.status = status({
+      status: 'long', label: 'Heavy', reportCount: 4, confidence: 'medium',
+      detail: 'Devotees report a heavy crowd — 30+ min waits',
+    });
+    mockStatus.dwell = STOPPING;
+    panel();
+
+    // The reading is untouched.
+    expect(screen.getByText('Heavy')).toBeDefined();
+    expect(screen.getByText(/4/)).toBeDefined();
+    // And the hint sits beside it, saying something different.
+    expect(screen.getByText(/Most visitors near this mandal are stopping/)).toBeDefined();
+    expect(screen.getByText(/can also just be people looking/)).toBeDefined();
+  });
+
+  it('shows under a silence, alongside the prior', () => {
+    mockStatus.dwell = STOPPING;
+    panel();
+    expect(screen.getByText('No recent reports')).toBeDefined();
+    expect(screen.getByText(/Usually heavy at this hour/)).toBeDefined();
+    expect(screen.getByText(/are stopping rather than walking past/)).toBeDefined();
+  });
+
+  it('is absent entirely when there is no hint', () => {
+    // The normal case: the switch is off, or too few samples.
+    panel();
+    expect(screen.queryByText(/Most visitors near/)).toBeNull();
+  });
+
+  it('never puts a number on the page', () => {
+    mockStatus.dwell = STOPPING;
+    const { container } = panel();
+    const line = container.querySelector('p.prose-measure.mt-3');
+    expect(line?.textContent ?? '').not.toMatch(/\d/);
   });
 });
