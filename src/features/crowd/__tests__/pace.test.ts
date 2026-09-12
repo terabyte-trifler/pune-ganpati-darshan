@@ -295,15 +295,36 @@ describe('the dwell tracker', () => {
     expect(emits).toEqual([]);
   });
 
-  it('restarts the clock when the device moves to another mandal', () => {
-    const other = zoneOf('akhil-mandai-mandal') ?? ZONES.find((x) => x.mandalId !== z().mandalId)!;
+  it('closes the previous visit when the device walks into the next zone', () => {
+    // People explore the whole peth area on foot, and consecutive zones
+    // in the core are barely ten metres apart — so stepping straight from
+    // one into the next is the NORMAL way a visit ends, not an edge case.
+    // It therefore has to produce the same final sample a confirmed exit
+    // does, or the dense-core mandals lose their duration data entirely.
+    const other = ZONES.find((x) => x.mandalId === 'akhil-mandai-mandal')
+      ?? ZONES.find((x) => x.mandalId !== z().mandalId)!;
     let state = initialDwellState;
     state = stepDwell(state, at(0), inside(), 15, ZONES).state;
-    state = stepDwell(state, at(400), inside(), 15, ZONES).state;
-    const moved = stepDwell(state, at(420), { lat: other.lat, lng: other.lng }, 15, ZONES);
+    state = stepDwell(state, at(600), inside(), 15, ZONES).state;
+
+    const moved = stepDwell(state, at(630), { lat: other.lat, lng: other.lng }, 15, ZONES);
+    expect(moved.emit).not.toBeNull();
+    expect(moved.emit!.mandalId).toBe(z().mandalId);
+    expect(moved.emit!.isFinal).toBe(true);
+    expect(moved.emit!.dwellSeconds).toBe(630);
+
+    // And the clock restarts on the new zone.
     expect(moved.state.mandalId).toBe(other.mandalId);
     expect(moved.state.lastEmittedAtS).toBeNull();
+  });
+
+  it('closes nothing when the previous visit was only a walk-past', () => {
+    const other = ZONES.find((x) => x.mandalId !== z().mandalId)!;
+    let state = initialDwellState;
+    state = stepDwell(state, at(0), inside(), 15, ZONES).state;
+    const moved = stepDwell(state, at(30), { lat: other.lat, lng: other.lng }, 15, ZONES);
     expect(moved.emit).toBeNull();
+    expect(moved.state.mandalId).toBe(other.mandalId);
   });
 
   it('emits nothing at all when the fix is too coarse', () => {

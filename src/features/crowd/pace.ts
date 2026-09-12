@@ -433,15 +433,41 @@ export function stepDwell(
 
   // ---- inside a different zone than before ----
   if (prev.mandalId !== hit.zone.mandalId) {
-    return {
-      state: {
-        mandalId: hit.zone.mandalId,
-        enteredAtMs: nowMs,
-        leftAtMs: null,
-        lastEmittedAtS: null,
-      },
-      emit: null,
+    const fresh: DwellState = {
+      mandalId: hit.zone.mandalId,
+      enteredAtMs: nowMs,
+      leftAtMs: null,
+      lastEmittedAtS: null,
     };
+
+    // Walking straight from one zone into the next ENDS the previous
+    // visit, so it must produce the same final sample a confirmed exit
+    // does. Without this the dense peth core loses almost all its
+    // magnitude data: consecutive zones there are barely ten metres
+    // apart, so a visitor steps from one to the next and never spends
+    // the grace period outside. A simulated circuit produced final rows
+    // for only three of eleven mandals — and the eight it missed were
+    // Dagdusheth, Tulshibaug, Guruji Talim and their neighbours, which
+    // are the ones worth measuring.
+    const leavingId = prev.mandalId;
+    const leaving = zones.find((z) => z.mandalId === leavingId);
+    if (leavingId !== null && leaving && prev.enteredAtMs !== null) {
+      const total = Math.max(0, (nowMs - prev.enteredAtMs) / 1000);
+      const dwell = classifyDwell(total, leaving);
+      if (dwell !== 'passing') {
+        return {
+          state: fresh,
+          emit: {
+            mandalId: leavingId,
+            dwell,
+            dwellSeconds: Math.round(total),
+            isFinal: true,
+          },
+        };
+      }
+    }
+
+    return { state: fresh, emit: null };
   }
 
   // ---- still inside the same zone ----
