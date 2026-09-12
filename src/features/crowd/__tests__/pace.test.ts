@@ -171,7 +171,7 @@ describe('the dwell tracker', () => {
   /** Walk the reducer through a sequence of (seconds, position) fixes. */
   function run(steps: [number, ReturnType<typeof inside> | null][], acc = 15) {
     let state: DwellState = initialDwellState;
-    const emits: { mandalId: string; dwell: string; dwellSeconds: number }[] = [];
+    const emits: { mandalId: string; dwell: string; dwellSeconds: number; isFinal: boolean }[] = [];
     for (const [s, pos] of steps) {
       const out = stepDwell(state, at(s), pos, pos ? acc : null, ZONES);
       state = out.state;
@@ -214,6 +214,39 @@ describe('the dwell tracker', () => {
     ]);
     expect(state.mandalId).toBeNull();
     expect(state.enteredAtMs).toBeNull();
+  });
+
+  it('writes a final sample with the REAL duration when the visit ends', () => {
+    // The bug this guards. The real clock (useClockMs) ticks on exact 30s
+    // boundaries and both thresholds are multiples of 30, so a threshold
+    // marker ALWAYS reads exactly 90 or 360 — a 14-minute queue and a
+    // 6-minute one are indistinguishable from those rows alone. The final
+    // sample is the only one carrying a real duration.
+    const ticks: [number, ReturnType<typeof inside> | null][] = [];
+    for (let t = 0; t <= 840; t += 30) ticks.push([t, inside()]);   // inside
+    for (let t = 870; t <= 990; t += 30) ticks.push([t, null]);     // then gone
+
+    const { emits } = run(ticks);
+    const markers = emits.filter((e) => !e.isFinal);
+    const final = emits.filter((e) => e.isFinal);
+
+    // Pinned exactly, because this is the claim: the markers are constants.
+    expect(markers.map((e) => e.dwellSeconds)).toEqual([90, 360]);
+    expect(markers.map((e) => e.dwell)).toEqual(['lingering', 'queueing']);
+
+    expect(final).toHaveLength(1);
+    // Measured to the first fix seen OUTSIDE (870s), so the 120s grace
+    // period is not counted as time spent in a queue.
+    expect(final[0].dwellSeconds).toBe(870);
+    expect(final[0].dwell).toBe('queueing');
+  });
+
+  it('writes no final sample for a walk-past', () => {
+    const { emits } = run([
+      [0, inside()], [30, inside()],
+      [60, null], [60 + DWELL_EXIT_GRACE_S + 1, null],
+    ]);
+    expect(emits).toEqual([]);
   });
 
   it('restarts the clock when the device moves to another mandal', () => {

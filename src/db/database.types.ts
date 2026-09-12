@@ -295,6 +295,13 @@ export type CrowdDwellSampleRow = {
   mandal_id: string;
   dwell: 'lingering' | 'queueing';
   dwell_seconds: number;
+  /**
+   * True for the one sample written when a visit ends, carrying the whole
+   * duration. False for a threshold marker, whose dwell_seconds is the
+   * threshold rather than an observation. Only is_final rows are usable
+   * for a distribution — see the migration.
+   */
+  is_final: boolean;
   created_at: string;
 }
 

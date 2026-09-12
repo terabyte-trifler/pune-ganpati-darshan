@@ -27,6 +27,12 @@ const bodySchema = z.object({
   mandalId: z.string().uuid(),
   dwell: z.enum(['lingering', 'queueing']),
   dwellSeconds: z.number().int().min(0).max(86_399),
+  /**
+   * True only for the sample written when a visit ends, which is the one
+   * row whose duration is a real observation rather than a threshold.
+   * Defaults false so an older client cannot accidentally claim it.
+   */
+  isFinal: z.boolean().default(false),
 });
 
 export async function POST(request: Request) {
@@ -61,6 +67,7 @@ export async function POST(request: Request) {
     mandal_id: parsed.data.mandalId,
     dwell: parsed.data.dwell,
     dwell_seconds: parsed.data.dwellSeconds,
+    is_final: parsed.data.isFinal,
   });
 
   // The client must never retry or surface this. A lost shadow sample

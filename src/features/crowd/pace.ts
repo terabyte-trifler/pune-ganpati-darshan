@@ -288,7 +288,22 @@ export interface DwellStep {
    * Set when this step crossed into a new class and the caller should
    * record it. Null the rest of the time, which is almost always.
    */
-  emit: { mandalId: string; dwell: DwellClass; dwellSeconds: number } | null;
+  emit: {
+    mandalId: string;
+    dwell: DwellClass;
+    dwellSeconds: number;
+    /**
+     * True for the one sample written when the device is confirmed to
+     * have left, which carries the whole visit's duration.
+     *
+     * False for a threshold marker, whose duration is the threshold
+     * rather than an observation — the clock is quantised to 30s and
+     * both thresholds are multiples of 30, so those rows always read
+     * exactly 90 or 360. Only `isFinal` rows are usable for a
+     * distribution; see the migration.
+     */
+    isFinal: boolean;
+  } | null;
 }
 
 /**
@@ -298,11 +313,27 @@ export interface DwellStep {
  * refused, or still acquiring. That is treated as "outside", because a
  * device we cannot locate is a device we cannot attribute.
  *
- * Emission happens on crossing INTO a class, once per class per visit, so
- * one queue produces at most two records (lingering, then queueing) rather
- * than one every thirty seconds. `passing` is never emitted: someone
- * walking past a mandal is not evidence about its queue, and recording it
- * would bury the signal in the majority case.
+ * Two kinds of sample come out of this.
+ *
+ * THRESHOLD MARKERS (isFinal false) fire on crossing into a class, once
+ * per class per visit, so one queue produces at most two rather than one
+ * every thirty seconds. Their duration is the threshold, not a
+ * measurement — the clock is quantised to 30s and both thresholds are
+ * multiples of 30, so they always read exactly 90 or 360.
+ *
+ * A FINAL SAMPLE (isFinal true) fires once, when departure is confirmed,
+ * and carries the whole visit's duration measured to the last fix seen
+ * inside. This is the only row with a usable magnitude, and magnitude is
+ * the part of the signal that does not scale with how many users the app
+ * has.
+ *
+ * Both are kept because a visit only produces a final sample if the page
+ * is still open when the device leaves — and the longest queues are
+ * exactly where someone gives up and closes the tab. Dropping the markers
+ * would bias the data against the heaviest crowds.
+ *
+ * `passing` is never emitted in either form: walking past a mandal is not
+ * evidence about its queue, and it is the overwhelming majority case.
  */
 export function stepDwell(
   prev: DwellState,
@@ -325,7 +356,26 @@ export function stepDwell(
     if (nowMs - leftAtMs < DWELL_EXIT_GRACE_S * 1000) {
       return { state: { ...prev, leftAtMs }, emit: null };
     }
-    return { state: initialDwellState, emit: null };
+
+    // Departure confirmed. This is the one sample that carries a real
+    // duration: measured to when the device was LAST SEEN INSIDE, not to
+    // now, so the grace period is not counted as time in the queue.
+    const total =
+      prev.enteredAtMs === null ? 0 : Math.max(0, (leftAtMs - prev.enteredAtMs) / 1000);
+    const dwell = classifyDwell(total);
+
+    // A walk-past is still not worth recording, however it ended.
+    if (dwell === 'passing') return { state: initialDwellState, emit: null };
+
+    return {
+      state: initialDwellState,
+      emit: {
+        mandalId: prev.mandalId,
+        dwell,
+        dwellSeconds: Math.round(total),
+        isFinal: true,
+      },
+    };
   }
 
   // ---- inside a different zone than before ----
@@ -353,6 +403,11 @@ export function stepDwell(
 
   return {
     state: { ...state, lastEmittedAtS: dwellSeconds },
-    emit: { mandalId: hit.zone.mandalId, dwell, dwellSeconds: Math.round(dwellSeconds) },
+    emit: {
+      mandalId: hit.zone.mandalId,
+      dwell,
+      dwellSeconds: Math.round(dwellSeconds),
+      isFinal: false,
+    },
   };
 }
