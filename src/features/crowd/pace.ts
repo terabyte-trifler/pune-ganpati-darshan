@@ -34,14 +34,39 @@ import { haversine, type LatLng } from '@/lib/geo';
  *
  * So the radius is not a global constant. It is derived per mandal from
  * that mandal's own geometry: half the distance to its nearest neighbour,
- * less a margin, capped. Inside it, no other mandal can be nearer. Where
- * that radius falls below PACE_MIN_RADIUS_M the mandal is excluded
- * entirely — you can never be sure, so it never reports.
+ * less a margin, capped. Inside it, no other mandal can be nearer.
  *
- * On the current catalogue that admits 25 of 29 mandals, Dagdusheth among
- * them at 65 m. The four excluded are two pairs 30 m and 37 m apart
- * (Kasba/Phani Ali, Bhausaheb Rangari/Balvikas) — which are also the two
- * pairs already flagged as possible duplicate records.
+ * ---------------------------------------------------------------------
+ * When two mandals are too close for ANY radius: the bigger one takes it.
+ *
+ * Two pairs sit closer than twice the minimum radius — Kasba and Phani
+ * Ali at 30 m, Bhausaheb Rangari and Balvikas at 37 m. There is no circle
+ * around either member that excludes the other, so the first version of
+ * this excluded all four. That threw away Kasba, which is the gramdaivat
+ * and the first of the Manache Paach, to protect a record it is 30 m from.
+ *
+ * The better answer uses the asymmetry that is already in the data. Kasba
+ * carries prominence 980 against Phani Ali's 300; Bhausaheb 720 against
+ * Balvikas's 120. A device dwelling in that overlap is far more likely at
+ * the prominent one, by roughly that ratio — so where the gap exceeds
+ * PACE_DOMINANCE_RATIO the dominant mandal ABSORBS its neighbour: it gets
+ * a zone, the neighbour gets none, and the zone records what it absorbed.
+ *
+ * The radius is then computed against the nearest mandal that still has a
+ * zone, which is why Kasba's is 75 m rather than 10 m — its nearest
+ * surviving neighbour is Bhausaheb, 255 m away. The no-overlap guarantee
+ * between zones is untouched.
+ *
+ * What this costs, stated plainly: dwell recorded for Kasba includes
+ * people who were actually at Phani Ali, 30 m away, and the same for
+ * Balvikas inside Bhausaheb. That contamination is bounded by the
+ * prominence ratio, it is named in `absorbs` on the zone, and any
+ * comparison against human reports has to read Kasba's dwell as
+ * "Kasba and Phani Ali together". It is not a hidden error; it is a
+ * declared one.
+ *
+ * On the current catalogue this admits 27 of 29 mandals with nothing
+ * excluded, Dagdusheth at 65 m and Kasba at 75 m.
  */
 
 /** What the dwell time suggests the device is doing. */
@@ -64,6 +89,25 @@ export const PACE_MAX_RADIUS_M = 75;
  * indistinguishable from noise.
  */
 export const PACE_MIN_RADIUS_M = 25;
+
+/**
+ * How much more prominent a mandal must be to absorb a too-close
+ * neighbour rather than both being excluded.
+ *
+ * 2.5 is deliberately well clear of the two real cases (3.3x and 6.0x),
+ * so this never fires on a pair of peers. Two equally prominent mandals
+ * 30 m apart would still both be excluded, which is right: there the
+ * overlap genuinely is a coin flip and there is no bigger one to give it
+ * to.
+ */
+export const PACE_DOMINANCE_RATIO = 2.5;
+
+/**
+ * Below this separation no valid radius exists for either mandal, so one
+ * of them must absorb the other or both must go. It is twice the smallest
+ * usable radius plus the margin, by definition.
+ */
+export const PACE_BLOCK_DISTANCE_M = 2 * (PACE_MIN_RADIUS_M + 5);
 
 /**
  * Taken off half the nearest-neighbour distance.
@@ -92,6 +136,8 @@ export interface PaceMandal {
   id: string;
   lat: number;
   lng: number;
+  /** Used only to settle which of two too-close mandals takes the zone. */
+  prominence: number;
 }
 
 export interface PaceZone {
@@ -100,8 +146,14 @@ export interface PaceZone {
   lng: number;
   /** Derived from geometry; see the note above. */
   radiusM: number;
-  /** Distance to the nearest other mandal, kept for the admin view. */
+  /** Distance to the nearest other mandal WITH A ZONE. */
   nearestNeighbourM: number;
+  /**
+   * Ids of mandals too close to distinguish, whose visitors will be
+   * counted here. Empty for almost every zone. Never ignore it when
+   * comparing dwell against human reports.
+   */
+  absorbs: string[];
 }
 
 /**
@@ -119,19 +171,49 @@ export function paceRadiusFor(nearestNeighbourM: number): number | null {
  * the life of the catalogue — callers compute it once.
  */
 export function paceZones(mandals: PaceMandal[]): PaceZone[] {
-  const zones: PaceZone[] = [];
+  const between = (a: PaceMandal, b: PaceMandal) =>
+    haversine({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng });
+
+  // Pass one: who is absorbed. A mandal surrenders its zone when some
+  // neighbour is too close for any radius to separate them AND is
+  // decisively more prominent. Computed before any radius, because a
+  // surrendered mandal must not influence anyone else's geometry.
+  const absorbedBy = new Map<string, string>();
   for (const m of mandals) {
-    let nearestNeighbourM = Infinity;
     for (const other of mandals) {
       if (other.id === m.id) continue;
-      nearestNeighbourM = Math.min(
-        nearestNeighbourM,
-        haversine({ lat: m.lat, lng: m.lng }, { lat: other.lat, lng: other.lng })
-      );
+      if (between(m, other) >= PACE_BLOCK_DISTANCE_M) continue;
+      if (other.prominence >= PACE_DOMINANCE_RATIO * m.prominence) {
+        absorbedBy.set(m.id, other.id);
+        break;
+      }
+    }
+  }
+
+  const live = mandals.filter((m) => !absorbedBy.has(m.id));
+
+  // Pass two: radii, measured only against mandals that still have a
+  // zone. This is what lets Kasba have 75 m instead of 10 m.
+  const zones: PaceZone[] = [];
+  for (const m of live) {
+    let nearestNeighbourM = Infinity;
+    for (const other of live) {
+      if (other.id === m.id) continue;
+      nearestNeighbourM = Math.min(nearestNeighbourM, between(m, other));
     }
     const radiusM = paceRadiusFor(nearestNeighbourM);
     if (radiusM === null) continue;
-    zones.push({ mandalId: m.id, lat: m.lat, lng: m.lng, radiusM, nearestNeighbourM });
+
+    zones.push({
+      mandalId: m.id,
+      lat: m.lat,
+      lng: m.lng,
+      radiusM,
+      nearestNeighbourM,
+      absorbs: [...absorbedBy.entries()]
+        .filter(([, dominant]) => dominant === m.id)
+        .map(([absorbed]) => absorbed),
+    });
   }
   return zones;
 }

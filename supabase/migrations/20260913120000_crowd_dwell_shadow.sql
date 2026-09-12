@@ -34,6 +34,18 @@
 -- at which the device-keyed question has to be answered properly rather
 -- than inherited from this file.
 --
+-- ---------------------------------------------------------------------
+-- One thing this table cannot express, and the reader must know it.
+--
+-- Two pairs of mandals sit closer than any radius can separate (Kasba and
+-- Phani Ali 30 m apart, Bhausaheb Rangari and Balvikas 37 m). Rather than
+-- discarding all four, the more prominent of each pair absorbs the other
+-- — see features/crowd/pace.ts. So a row against Kasba may describe
+-- someone who was at Phani Ali, and a row against Bhausaheb Rangari may
+-- describe someone at Balvikas. There is no column for that here; the
+-- zone's `absorbs` list is where it is recorded, and any analysis of this
+-- table has to read those two mandals as pairs.
+--
 -- Note also what is NOT here and must never be added: coordinates. The
 -- client resolves which mandal it is near on the device and sends only
 -- the mandal id, exactly as `atMandal` already works. A latitude in this

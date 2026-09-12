@@ -26,6 +26,7 @@ const MANDALS: PaceMandal[] = ALL.map((g) => ({
   id: g.slug,
   lat: g.latitude,
   lng: g.longitude,
+  prominence: g.prominence,
 }));
 
 const ZONES = paceZones(MANDALS);
@@ -51,13 +52,41 @@ describe('the radius comes from geometry, not a constant', () => {
 });
 
 describe('zones over the real catalogue', () => {
-  it('admits most mandals and excludes the crowded pairs', () => {
-    expect(ZONES.length).toBe(25);
+  it('admits every mandal except the two that are absorbed', () => {
     expect(MANDALS.length).toBe(29);
-    for (const slug of ['kasba-ganpati', 'phani-ali-ganesh-mandir']) {
-      const m = MANDALS.find((x) => x.id === slug);
-      if (m) expect(zoneOf(slug)).toBeUndefined();
-    }
+    expect(ZONES.length).toBe(27);
+  });
+
+  it('gives the zone to the prominent mandal of a too-close pair', () => {
+    // Kasba (prominence 980) is 30 m from Phani Ali (300). No radius
+    // separates them, so Kasba takes the zone and Phani Ali gets none —
+    // rather than the first version's answer, which was to throw away the
+    // gramdaivat to protect a record it is 30 m from.
+    const kasba = zoneOf('kasba-ganpati');
+    expect(kasba).toBeDefined();
+    expect(zoneOf('phani-ali-ganesh-mandir')).toBeUndefined();
+    expect(kasba!.absorbs).toContain('phani-ali-ganesh-mandir');
+
+    // And its radius is measured against the nearest mandal that still
+    // has a zone — Bhausaheb Rangari at 255 m — not against the one it
+    // absorbed. That is why it is the full cap and not 10 m.
+    expect(kasba!.radiusM).toBe(PACE_MAX_RADIUS_M);
+  });
+
+  it('does the same for Bhausaheb Rangari and Balvikas', () => {
+    const bh = zoneOf('bhau-rangari-ganpati');
+    expect(bh).toBeDefined();
+    expect(bh!.absorbs).toContain('balvikas-mandal');
+    expect(zoneOf('balvikas-mandal')).toBeUndefined();
+    // Measured against Tambdi Jogeshwari at 118 m, not Balvikas at 37 m.
+    expect(bh!.radiusM).toBeCloseTo(54, 0);
+  });
+
+  it('records absorption nowhere else', () => {
+    // Two peers 30 m apart would still both be excluded; absorption is
+    // only for a decisive prominence gap, and only two pairs qualify.
+    const absorbing = ZONES.filter((z) => z.absorbs.length > 0);
+    expect(absorbing).toHaveLength(2);
   });
 
   it('includes Dagdusheth, which a flat 75 m radius would have excluded', () => {
@@ -118,8 +147,8 @@ describe('resolving a fix', () => {
     // Synthetic, because the real catalogue cannot produce it. Guards the
     // case where a coordinate correction moves two mandals together and
     // nobody recomputes the radii.
-    const a: PaceZone = { mandalId: 'a', lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500 };
-    const b: PaceZone = { mandalId: 'b', lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500 };
+    const a: PaceZone = { mandalId: 'a', lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500, absorbs: [] };
+    const b: PaceZone = { mandalId: 'b', lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500, absorbs: [] };
     expect(resolvePaceZone({ lat: 18.5, lng: 73.85 }, 10, [a, b])).toBeNull();
   });
 });
@@ -214,18 +243,22 @@ describe('the dwell tracker', () => {
     expect(state).toEqual(initialDwellState);
   });
 
-  it('never emits for an excluded mandal', () => {
-    // Kasba has no zone, so standing there all evening records nothing.
-    const kasba = ALL.find((g) => g.slug === 'kasba-ganpati');
-    if (!kasba) return;
-    const pos = { lat: kasba.latitude, lng: kasba.longitude };
+  it('attributes a dwell at Phani Ali to Kasba, and says so', () => {
+    // The declared cost of absorption. Standing at Phani Ali, 30 m from
+    // Kasba, records dwell against Kasba — because no radius can tell the
+    // two apart and Kasba is 3.3x the prominence. The zone names what it
+    // absorbed so a later comparison reads it as "Kasba and Phani Ali".
+    const phani = ALL.find((g) => g.slug === 'phani-ali-ganesh-mandir')!;
+    const pos = { lat: phani.latitude, lng: phani.longitude };
     let state = initialDwellState;
-    const emits = [];
-    for (const s of [0, 120, 400, 900]) {
-      const out = stepDwell(state, at(s), pos, 10, ZONES);
+    const emits: { mandalId: string }[] = [];
+    for (const sec of [0, 120, 400, 900]) {
+      const out = stepDwell(state, at(sec), pos, 10, ZONES);
       state = out.state;
       if (out.emit) emits.push(out.emit);
     }
-    for (const e of emits) expect(e.mandalId).not.toBe('kasba-ganpati');
+    expect(emits.length).toBeGreaterThan(0);
+    for (const e of emits) expect(e.mandalId).toBe('kasba-ganpati');
+    expect(zoneOf('kasba-ganpati')!.absorbs).toContain('phani-ali-ganesh-mandir');
   });
 });

@@ -31,6 +31,7 @@ export default async function MapPage() {
             id: g.id,
             lat: g.location.lat,
             lng: g.location.lng,
+            prominence: g.prominence,
           }))}
         />
       )}
