@@ -4,9 +4,12 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { features } from '@/lib/env';
 import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
-import { aggregateSnapshot } from './crowd-aggregation';
+import { aggregateSnapshot, aggregateMandal } from './crowd-aggregation';
 import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
-import type { DwellInput } from './crowd-aggregation';
+import {
+  scoreBreakdown, ACTIVE_WINDOW_MINUTES,
+  type DwellInput, type ScoreBreakdown,
+} from './crowd-aggregation';
 import {
   CROWD_CACHE_TTL_SECONDS,
   CROWD_STALE_TTL_SECONDS,
@@ -372,4 +375,96 @@ export function resetCrowdServiceForTesting() {
   inFlight = null;
   lastGood = null;
   mandalIdCache = null;
+}
+
+
+/* =====================================================================
+   Admin explainer
+   ===================================================================== */
+
+export interface MandalExplain {
+  mandalId: string;
+  status: CrowdStatus;
+  breakdown: ScoreBreakdown;
+  /** Distinct devices behind the reports, which gates whether a status shows. */
+  devices: number;
+}
+
+/**
+ * Every mandal's reading with the arithmetic that produced it.
+ *
+ * Admin-only and deliberately uncached: it exists to answer "why is this
+ * mandal this colour right now", and a fifteen-second-old answer to that
+ * question is a different question.
+ *
+ * It reads the same rows and calls the same `scoreBreakdown` the live
+ * path does — an explainer that recomputes separately can disagree with
+ * the page it explains, and nobody would notice which one was wrong.
+ *
+ * Dwell is read here regardless of CROWD_DWELL_PUBLIC, so an admin can
+ * see what the signal WOULD contribute before deciding to switch it on.
+ * The `dwellCounted` flag says whether it is actually weighing.
+ */
+export async function getCrowdExplain(): Promise<{
+  mandals: MandalExplain[];
+  dwellCounted: boolean;
+  computedAt: string;
+} | null> {
+  const ids = await getKnownMandalIds();
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const supabase = getSupabaseAdminClient();
+
+  const { data, error } = await supabase.rpc('crowd_active_reports', { p_mandal_ids: ids });
+  if (error || !data) return null;
+
+  const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
+  const { data: dwellRows } = await supabase
+    .from('crowd_dwell_samples')
+    .select('mandal_id, dwell, created_at')
+    .in('mandal_id', ids)
+    .gte('created_at', since)
+    .limit(5_000);
+
+  const dwellCounted = process.env.CROWD_DWELL_PUBLIC === '1';
+  const dwellByMandal: Record<string, DwellInput[]> = {};
+  for (const row of dwellRows ?? []) {
+    (dwellByMandal[row.mandal_id] ??= []).push({ dwell: row.dwell, createdAt: row.created_at });
+  }
+
+  const reportsByMandal = new Map<string, CrowdReportInput[]>();
+  for (const id of ids) reportsByMandal.set(id, []);
+  for (const row of data) {
+    reportsByMandal.get(row.mandal_id)?.push({
+      mandalId: row.mandal_id,
+      status: row.status,
+      createdAt: row.created_at,
+      atMandal: row.at_mandal ?? false,
+      deviceSeq: row.device_seq ?? undefined,
+    });
+  }
+
+  const now = Date.now();
+  const mandals = ids.map((mandalId) => {
+    const reports = reportsByMandal.get(mandalId) ?? [];
+    const samples = dwellByMandal[mandalId] ?? [];
+    const aged = reports
+      .map((r) => ({
+        status: r.status,
+        ageMinutes: (now - Date.parse(r.createdAt)) / 60_000,
+        atMandal: r.atMandal,
+        deviceSeq: r.deviceSeq,
+      }))
+      .filter((r) => Number.isFinite(r.ageMinutes) && r.ageMinutes <= ACTIVE_WINDOW_MINUTES);
+
+    return {
+      mandalId,
+      // The live answer, computed exactly as the API computes it — dwell
+      // included only when it is actually switched on.
+      status: aggregateMandal(mandalId, reports, now, dwellCounted ? samples : []),
+      breakdown: scoreBreakdown(aged, samples, now),
+      devices: new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1))).size,
+    };
+  });
+
+  return { mandals, dwellCounted, computedAt: new Date(now).toISOString() };
 }

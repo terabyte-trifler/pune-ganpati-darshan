@@ -238,6 +238,99 @@ export function labelFor(status: CrowdLevel | null): { label: string; detail: st
  * `nowMs` is injected rather than read from the clock so the behaviour is
  * reproducible in tests and identical for every mandal in a snapshot.
  */
+/** One report, with every factor that produced its weight. */
+export interface ReportContribution {
+  status: CrowdLevel;
+  ageMinutes: number;
+  atMandal: boolean;
+  freshness: number;
+  proximity: number;
+  mass: number;
+}
+
+/** One dwell observation, with its weight after the cap is applied. */
+export interface DwellContribution {
+  dwell: 'lingering' | 'queueing';
+  level: CrowdLevel;
+  ageMinutes: number;
+  freshness: number;
+  /** Before the aggregate cap. */
+  rawMass: number;
+  /** After it. */
+  mass: number;
+}
+
+/**
+ * The complete derivation of a mandal's scores.
+ *
+ * Extracted so the admin explainer and the live path run the SAME code.
+ * An explainer that recomputes the answer separately is an explainer that
+ * can disagree with the page it is explaining, and the disagreement would
+ * be invisible until someone trusted the wrong one.
+ */
+export interface ScoreBreakdown {
+  scores: Record<CrowdLevel, number>;
+  /** Mass from human reports only. Confidence is computed on this. */
+  humanMass: number;
+  /** Human mass plus capped dwell. The winner is argmax over this. */
+  mass: number;
+  reports: ReportContribution[];
+  dwell: DwellContribution[];
+  /** Multiplier applied to every dwell sample to honour DWELL_MASS_CAP. */
+  dwellScale: number;
+  dwellMassRaw: number;
+  dwellMassApplied: number;
+}
+
+export function scoreBreakdown(
+  aged: { status: CrowdLevel; ageMinutes: number; atMandal: boolean }[],
+  dwellSamples: DwellInput[],
+  nowMs: number
+): ScoreBreakdown {
+  const scores: Record<CrowdLevel, number> = { short: 0, moving: 0, long: 0 };
+
+  // Freshness and proximity multiply: a stale on-site report and a fresh
+  // off-site one can legitimately land at similar weight.
+  const reports: ReportContribution[] = aged.map((r) => {
+    const freshness = freshnessWeight(r.ageMinutes);
+    const proximity = proximityWeight(r.atMandal);
+    const mass = freshness * proximity;
+    scores[r.status] += mass;
+    return { status: r.status, ageMinutes: r.ageMinutes, atMandal: r.atMandal, freshness, proximity, mass };
+  });
+
+  // Confidence is computed from the human evidence alone, BEFORE dwell is
+  // added. A passive signal may move which level wins; it must not make a
+  // reader trust the answer more.
+  const humanMass = scores.short + scores.moving + scores.long;
+
+  // Dwell, decayed on the same curve as a report and capped in aggregate
+  // so a busy mandal cannot accumulate unbounded passive weight.
+  const usable = dwellSamples
+    .map((d) => ({ d, ageMinutes: (nowMs - Date.parse(d.createdAt)) / 60_000 }))
+    .filter((x) => Number.isFinite(x.ageMinutes) && x.ageMinutes >= 0 && x.ageMinutes <= ACTIVE_WINDOW_MINUTES);
+
+  const dwellMassRaw = usable.reduce((sum, x) => sum + DWELL_MASS * freshnessWeight(x.ageMinutes), 0);
+  const dwellScale = dwellMassRaw > 0 ? Math.min(1, DWELL_MASS_CAP / dwellMassRaw) : 1;
+
+  const dwell: DwellContribution[] = usable.map((x) => {
+    const freshness = freshnessWeight(x.ageMinutes);
+    const rawMass = DWELL_MASS * freshness;
+    const mass = rawMass * dwellScale;
+    const level = DWELL_LEVEL[x.d.dwell];
+    scores[level] += mass;
+    return { dwell: x.d.dwell, level, ageMinutes: x.ageMinutes, freshness, rawMass, mass };
+  });
+
+  return {
+    scores, humanMass,
+    mass: scores.short + scores.moving + scores.long,
+    reports, dwell, dwellScale,
+    dwellMassRaw,
+    dwellMassApplied: dwellMassRaw * dwellScale,
+  };
+}
+
 export function aggregateMandal(
   mandalId: string,
   reports: CrowdReportInput[],
@@ -282,45 +375,8 @@ export function aggregateMandal(
    */
   const devices = new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1)));
 
-  const scores: Record<CrowdLevel, number> = { short: 0, moving: 0, long: 0 };
-  // Freshness and proximity multiply: a stale on-site report and a fresh
-  // off-site one can legitimately land at similar weight.
-  for (const r of aged) {
-    scores[r.status] += freshnessWeight(r.ageMinutes) * proximityWeight(r.atMandal);
-  }
-
-  // Confidence is computed from the human evidence alone, BEFORE dwell is
-  // added. A passive signal may move which level wins; it must not make a
-  // reader trust the answer more.
-  const humanMass = scores.short + scores.moving + scores.long;
-
-  /**
-   * Dwell, added after the humans and capped in aggregate.
-   *
-   * Decayed on the same curve as a report, so a 70-minute-old observation
-   * is worth what a 70-minute-old report is worth. The cap is applied to
-   * the total rather than per sample, so a busy mandal cannot accumulate
-   * unbounded passive weight.
-   */
-  let dwellMass = 0;
-  for (const d of dwellSamples) {
-    const ageMinutes = (nowMs - Date.parse(d.createdAt)) / 60_000;
-    if (!Number.isFinite(ageMinutes) || ageMinutes < 0) continue;
-    if (ageMinutes > ACTIVE_WINDOW_MINUTES) continue;
-    dwellMass += DWELL_MASS * freshnessWeight(ageMinutes);
-  }
-  if (dwellMass > 0) {
-    const scale = Math.min(1, DWELL_MASS_CAP / dwellMass);
-    for (const d of dwellSamples) {
-      const ageMinutes = (nowMs - Date.parse(d.createdAt)) / 60_000;
-      if (!Number.isFinite(ageMinutes) || ageMinutes < 0) continue;
-      if (ageMinutes > ACTIVE_WINDOW_MINUTES) continue;
-      scores[DWELL_LEVEL[d.dwell]] +=
-        DWELL_MASS * freshnessWeight(ageMinutes) * scale;
-    }
-  }
-
-  const mass = scores.short + scores.moving + scores.long;
+  const breakdown = scoreBreakdown(aged, dwellSamples, nowMs);
+  const { scores, humanMass, mass } = breakdown;
 
   // Argmax, with the most recent report breaking an exact tie. Severity
   // order would be the alternative, but biasing ties toward "heavy" would
