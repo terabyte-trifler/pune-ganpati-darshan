@@ -411,3 +411,30 @@ describe('a reading needs more than one device', () => {
     expect(aggregateMandal('m1', legacy, NOW).status).toBe('short');
   });
 });
+
+
+describe('the report count is safe to display', () => {
+  it('never shows a status backed by fewer than two reports', () => {
+    // What the panel's count line rests on. The count was hidden for
+    // years on the reasoning that "1 recent report" reads as a broken
+    // feature — but a status needs MIN_DEVICES_FOR_STATUS distinct
+    // devices, and reportCount counts reports, so the floor on anything
+    // displayed is two. If MIN_DEVICES_FOR_STATUS is ever lowered to 1,
+    // this fails and the count line has to be reconsidered with it.
+    const now = new Date('2026-09-20T15:30:00.000Z');
+    const at = (mins: number) =>
+      new Date(now.getTime() - mins * 60_000).toISOString();
+
+    const one = aggregateMandal('m1', [
+      { mandalId: 'm1', status: 'long', createdAt: at(5), atMandal: true, deviceSeq: 1 },
+    ], now.getTime());
+    expect(one.status).toBeNull();
+
+    const two = aggregateMandal('m1', [
+      { mandalId: 'm1', status: 'long', createdAt: at(5), atMandal: true, deviceSeq: 1 },
+      { mandalId: 'm1', status: 'long', createdAt: at(7), atMandal: true, deviceSeq: 2 },
+    ], now.getTime());
+    expect(two.status).toBe('long');
+    expect(two.reportCount).toBeGreaterThanOrEqual(2);
+  });
+});

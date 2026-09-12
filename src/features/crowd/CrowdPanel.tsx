@@ -134,14 +134,36 @@ export function CrowdPanel({
             {status?.label}
           </p>
 
-          {/* The raw report count is deliberately not shown here. While the
-              catalogue is young the honest numbers are small, and "1 recent
-              report" reads as a broken feature rather than an early one. The
-              qualitative confidence wording carries the same caveat without
-              inviting that reading. Counts remain visible to admins at
-              /admin/crowd, which is the surface that acts on them. */}
+          {/* The count, restored — and the reason the old objection no
+              longer holds.
+
+              It was hidden because "1 recent report" reads as a broken
+              feature rather than an early one. But a status is only shown
+              once MIN_DEVICES_FOR_STATUS distinct devices agree, and
+              reportCount counts reports, so on anything displayed here the
+              number is at least two. The feared "1" is structurally
+              impossible on this line — and the one-report case already
+              says so in words ("One person has reported this mandal").
+
+              Both cues are kept because they are not the same claim. The
+              count is the evidence; the confidence wording also accounts
+              for agreement, so five reports split three ways is "Early
+              signal" despite the count. Showing the number alone would
+              overstate exactly that case. */}
           <p className="mt-2 text-[13px] text-[var(--muted)]">
-            {status && CONFIDENCE_WORDING[status.confidence]}
+            {status && (
+              <>
+                <span className="font-semibold text-[var(--chandan)] tabular-nums">
+                  {status.reportCount}
+                </span>{' '}
+                {status.reportCount === 1 ? 'report' : 'reports'} in the last 90
+                min
+                <span className="text-[var(--faint)]">
+                  {' · '}
+                  {CONFIDENCE_WORDING[status.confidence]}
+                </span>
+              </>
+            )}
           </p>
 
           {ago && (

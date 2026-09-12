@@ -69,14 +69,16 @@ export function CrowdBadgeView({
     >
       <CrowdDot level={level} />
       {status.label}
-      {/* The count used to sit here, on the reasoning that one report and
-          thirty must not look identical. It is hidden for now because the
-          numbers are still small enough that showing them undersells a
-          reading that is nonetheless the best available. The tradeoff is
-          real and one-directional: this badge can no longer distinguish a
-          lone report from a well-supported one, so the detail panel's
-          confidence wording is now the only strength cue a visitor gets.
-          Admins read the actual counts at /admin/crowd. */}
+      {/* The count stays off THIS surface deliberately, and that is now a
+          narrower decision than it was.
+
+          A badge sits on a map pin and on a card in a grid: its job is
+          triage at a glance, and a second number competing with the label
+          costs more there than it pays. The strength information it cannot
+          carry is no longer lost, though — the detail panel now shows the
+          count alongside the confidence wording, which is the surface
+          where someone is actually deciding whether to walk over.
+          Admins read the raw counts at /admin/crowd. */}
     </span>
   );
 }
