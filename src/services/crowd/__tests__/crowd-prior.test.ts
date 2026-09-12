@@ -202,3 +202,27 @@ describe('the expectation', () => {
     expect(w.load).toBeCloseTo(w.hourFactor * w.dayFactor, 6);
   });
 });
+
+describe('the prior holds no weight in the measured lane', () => {
+  it('is absent from crowd-aggregation entirely', async () => {
+    // The guarantee, asserted rather than trusted: Lane A must not import
+    // or reference the prior. If anyone ever wires it in to "help quiet
+    // mandals get a colour", this fails and says why.
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('src/services/crowd/crowd-aggregation.ts', 'utf8')
+    );
+    expect(src).not.toContain('crowd-prior');
+    expect(src).not.toContain('crowdExpectation');
+    expect(src).not.toContain('CrowdExpectation');
+  });
+
+  it('is not part of the CrowdStatus contract', async () => {
+    // It is never serialised through the crowd API either, so it cannot
+    // reach a caller that might treat it as a reading.
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('src/types/crowd.ts', 'utf8')
+    );
+    expect(src).not.toContain('expect');
+    expect(src).not.toContain('prior');
+  });
+});

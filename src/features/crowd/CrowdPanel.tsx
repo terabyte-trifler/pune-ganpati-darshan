@@ -113,15 +113,18 @@ export function CrowdPanel({
         Crowd right now
       </h2>
 
-      {/* ---------------- Current state ---------------- */}
-      {unavailable ? (
-        <p className="mt-3 text-[14px] leading-relaxed text-[var(--muted)]">
-          Crowd information is temporarily unavailable. Everything else on this
-          page still works.
-        </p>
-      ) : loading && !status ? (
-        <div className="mt-3 h-6 w-40 animate-pulse rounded bg-[var(--line-strong)]" />
-      ) : level ? (
+      {/* ---------------- Current state ----------------
+
+          A measured reading wins outright. Everything else — offline,
+          still loading, or simply unreported — falls through to the same
+          branch, which always ends with the expectation.
+
+          This order matters and it was wrong at first: `unavailable` used
+          to be tested before anything else, so a visitor with no network
+          got "temporarily unavailable" and nothing more. That is the one
+          case the prior exists for — no network is when a live status
+          cannot arrive — and it was the one case that skipped it. */}
+      {level ? (
         <>
           <p
             className="mt-2.5 flex items-center gap-2 text-[22px] font-bold leading-none"
@@ -156,13 +159,29 @@ export function CrowdPanel({
         </>
       ) : (
         <>
-          <p className="mt-2.5 text-[15px] font-semibold text-[var(--chandan)]">
-            No recent reports
-          </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
-            Nobody has reported {mandalName} in the last 90 minutes. If you are
-            there, you would be the first.
-          </p>
+          {unavailable ? (
+            <>
+              <p className="mt-2.5 text-[15px] font-semibold text-[var(--chandan)]">
+                Live reports could not load
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
+                No connection, or the reports are temporarily unreachable.
+                Everything else on this page still works.
+              </p>
+            </>
+          ) : loading && !status ? (
+            <div className="mt-3 h-6 w-40 animate-pulse rounded bg-[var(--line-strong)]" />
+          ) : (
+            <>
+              <p className="mt-2.5 text-[15px] font-semibold text-[var(--chandan)]">
+                No recent reports
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
+                Nobody has reported {mandalName} in the last 90 minutes. If you
+                are there, you would be the first.
+              </p>
+            </>
+          )}
 
           {/* The expectation. Deliberately styled unlike a reading: the
               dot is hollow, the wording starts "Usually", and the figure
