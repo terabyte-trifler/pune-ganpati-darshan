@@ -1,4 +1,4 @@
-import { haversine, type LatLng } from '@/lib/geo';
+import { haversine, DETOUR_FACTOR, MODE_SPEED_MPS, type LatLng } from '@/lib/geo';
 
 /**
  * The passive dwell signal. Shadow mode — nothing it produces is shown.
@@ -118,10 +118,49 @@ export const PACE_BLOCK_DISTANCE_M = 2 * (PACE_MIN_RADIUS_M + 5);
  */
 export const PACE_RADIUS_MARGIN_M = 5;
 
-/** Seconds inside the radius above which this stops being a walk-past. */
-export const DWELL_LINGERING_S = 90;
-/** Seconds above which a queue is the ordinary explanation. */
-export const DWELL_QUEUEING_S = 360;
+/**
+ * The thresholds are per zone, not fixed — because nobody is in a vehicle.
+ *
+ * The peth core is closed to traffic during the festival, which removes
+ * the worst confound a dwell signal can have: a car stuck in traffic near
+ * a mandal is indistinguishable from a person in a queue. Everyone here is
+ * on foot, and that turned out to invalidate the flat thresholds this
+ * started with.
+ *
+ * A pedestrian crossing a zone does not walk its diameter; they walk the
+ * peth grid, which this app already measures at DETOUR_FACTOR 1.71 times
+ * straight-line, at a festival-congested 1.1 m/s. So merely walking
+ * through takes:
+ *
+ *     radius   path    @1.1 m/s   @0.5 m/s (a real crush)
+ *      35 m    120 m     109 s       239 s
+ *      65 m    222 m     202 s       445 s
+ *      75 m    257 m     233 s       513 s
+ *
+ * Against the original flat 90 s / 360 s, a plain walk-through of
+ * Dagdusheth's zone was already "lingering", and in a crush it passed
+ * "queueing" without anyone ever stopping. Worse, the error grew with zone
+ * size, so the bias differed per mandal and cross-mandal comparison would
+ * have been meaningless.
+ *
+ * So both thresholds are multiples of the zone's own crossing time.
+ * `queueing` then survives even a 0.5 m/s crush, which is the class that
+ * has to be trustworthy.
+ *
+ * What `lingering` means is worth stating: it now covers both a brief stop
+ * AND a very slow walk. That is not a defect. In a pedestrianised lane,
+ * moving that slowly IS congestion, so the two readings point the same way.
+ */
+
+/** How long to walk clean through a zone of this radius, in seconds. */
+export function crossingSeconds(radiusM: number): number {
+  return (2 * radiusM * DETOUR_FACTOR) / MODE_SPEED_MPS.walk;
+}
+
+/** Longer than a straight walk-through by this much before it counts. */
+export const DWELL_LINGERING_MULTIPLE = 1.5;
+/** Long enough that no plausible walking speed explains it. */
+export const DWELL_QUEUEING_MULTIPLE = 4;
 
 /**
  * Leaving is only believed after this long outside.
@@ -154,6 +193,12 @@ export interface PaceZone {
    * comparing dwell against human reports.
    */
   absorbs: string[];
+  /** Seconds to walk clean through, at festival walking speed. */
+  crossingS: number;
+  /** Above this, longer than a walk-through explains. */
+  lingeringS: number;
+  /** Above this, no walking speed explains it. */
+  queueingS: number;
 }
 
 /**
@@ -204,12 +249,16 @@ export function paceZones(mandals: PaceMandal[]): PaceZone[] {
     const radiusM = paceRadiusFor(nearestNeighbourM);
     if (radiusM === null) continue;
 
+    const crossingS = crossingSeconds(radiusM);
     zones.push({
       mandalId: m.id,
       lat: m.lat,
       lng: m.lng,
       radiusM,
       nearestNeighbourM,
+      crossingS,
+      lingeringS: crossingS * DWELL_LINGERING_MULTIPLE,
+      queueingS: crossingS * DWELL_QUEUEING_MULTIPLE,
       absorbs: [...absorbedBy.entries()]
         .filter(([, dominant]) => dominant === m.id)
         .map(([absorbed]) => absorbed),
@@ -250,9 +299,9 @@ export function resolvePaceZone(
   return candidates.length === 1 ? candidates[0] : null;
 }
 
-export function classifyDwell(seconds: number): DwellClass {
-  if (seconds >= DWELL_QUEUEING_S) return 'queueing';
-  if (seconds >= DWELL_LINGERING_S) return 'lingering';
+export function classifyDwell(seconds: number, zone: PaceZone): DwellClass {
+  if (seconds >= zone.queueingS) return 'queueing';
+  if (seconds >= zone.lingeringS) return 'lingering';
   return 'passing';
 }
 
@@ -362,7 +411,11 @@ export function stepDwell(
     // now, so the grace period is not counted as time in the queue.
     const total =
       prev.enteredAtMs === null ? 0 : Math.max(0, (leftAtMs - prev.enteredAtMs) / 1000);
-    const dwell = classifyDwell(total);
+    // Classified against the zone it was actually in, which is why the
+    // departing mandal's id is looked up rather than assumed.
+    const leftZone = zones.find((z) => z.mandalId === prev.mandalId);
+    if (!leftZone) return { state: initialDwellState, emit: null };
+    const dwell = classifyDwell(total, leftZone);
 
     // A walk-past is still not worth recording, however it ended.
     if (dwell === 'passing') return { state: initialDwellState, emit: null };
@@ -394,11 +447,14 @@ export function stepDwell(
   // ---- still inside the same zone ----
   const enteredAtMs = prev.enteredAtMs ?? nowMs;
   const dwellSeconds = Math.max(0, (nowMs - enteredAtMs) / 1000);
-  const dwell = classifyDwell(dwellSeconds);
+  const dwell = classifyDwell(dwellSeconds, hit.zone);
   const state: DwellState = { ...prev, enteredAtMs, leftAtMs: null };
 
   if (dwell === 'passing') return { state, emit: null };
-  const already = prev.lastEmittedAtS === null ? 'passing' : classifyDwell(prev.lastEmittedAtS);
+  const already =
+    prev.lastEmittedAtS === null
+      ? 'passing'
+      : classifyDwell(prev.lastEmittedAtS, hit.zone);
   if (already === dwell) return { state, emit: null };
 
   return {

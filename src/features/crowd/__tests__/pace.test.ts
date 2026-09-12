@@ -4,7 +4,8 @@ import {
   paceRadiusFor, paceZones, resolvePaceZone, classifyDwell,
   stepDwell, initialDwellState,
   PACE_MAX_RADIUS_M, PACE_MIN_RADIUS_M,
-  DWELL_LINGERING_S, DWELL_QUEUEING_S, DWELL_EXIT_GRACE_S,
+  DWELL_EXIT_GRACE_S, crossingSeconds,
+  DWELL_LINGERING_MULTIPLE, DWELL_QUEUEING_MULTIPLE,
   type PaceMandal, type PaceZone, type DwellState,
 } from '@/features/crowd/pace';
 
@@ -147,19 +148,56 @@ describe('resolving a fix', () => {
     // Synthetic, because the real catalogue cannot produce it. Guards the
     // case where a coordinate correction moves two mandals together and
     // nobody recomputes the radii.
-    const a: PaceZone = { mandalId: 'a', lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500, absorbs: [] };
-    const b: PaceZone = { mandalId: 'b', lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500, absorbs: [] };
+    const mk = (id: string): PaceZone => ({
+      mandalId: id, lat: 18.5, lng: 73.85, radiusM: 70, nearestNeighbourM: 500,
+      absorbs: [], crossingS: 200, lingeringS: 300, queueingS: 800,
+    });
+    const a = mk('a');
+    const b = mk('b');
     expect(resolvePaceZone({ lat: 18.5, lng: 73.85 }, 10, [a, b])).toBeNull();
   });
 });
 
-describe('dwell classes', () => {
-  it('maps seconds to the three classes', () => {
-    expect(classifyDwell(0)).toBe('passing');
-    expect(classifyDwell(DWELL_LINGERING_S - 1)).toBe('passing');
-    expect(classifyDwell(DWELL_LINGERING_S)).toBe('lingering');
-    expect(classifyDwell(DWELL_QUEUEING_S - 1)).toBe('lingering');
-    expect(classifyDwell(DWELL_QUEUEING_S)).toBe('queueing');
+describe('dwell classes scale with the zone', () => {
+  it('derives thresholds from how long it takes to walk through', () => {
+    // Nobody is in a vehicle — the peths are closed to traffic — so the
+    // only way to cross a zone is on foot, at the app's own
+    // festival-congested walking speed over the peth grid's detour.
+    const z = zoneOf('dagdusheth-halwai-ganpati')!;
+    expect(z.crossingS).toBeCloseTo(crossingSeconds(z.radiusM), 6);
+    expect(z.crossingS).toBeGreaterThan(190);
+    expect(z.crossingS).toBeLessThan(215);
+    expect(z.lingeringS).toBeCloseTo(z.crossingS * DWELL_LINGERING_MULTIPLE, 6);
+    expect(z.queueingS).toBeCloseTo(z.crossingS * DWELL_QUEUEING_MULTIPLE, 6);
+  });
+
+  it('never calls a walk-through queueing, even in a crush', () => {
+    // The bug this replaces. Flat thresholds of 90s/360s meant a plain
+    // walk across Dagdusheth's zone was already "lingering" at 202s, and
+    // at 0.5 m/s in a real crush it passed "queueing" at 445s without
+    // anyone stopping. Every zone must now survive that.
+    for (const z of ZONES) {
+      const crushWalk = (2 * z.radiusM * 1.71) / 0.5;
+      expect(
+        classifyDwell(crushWalk, z),
+        `${z.mandalId} (r=${z.radiusM.toFixed(0)}m) misreads a 0.5 m/s walk-through`
+      ).not.toBe('queueing');
+    }
+  });
+
+  it('still reaches queueing for a real wait', () => {
+    // Dagdusheth's curated peak wait is 150 minutes; the threshold has to
+    // be well inside that or the class is unreachable where it matters.
+    const z = zoneOf('dagdusheth-halwai-ganpati')!;
+    expect(z.queueingS).toBeLessThan(150 * 60);
+    expect(classifyDwell(z.queueingS + 1, z)).toBe('queueing');
+    expect(classifyDwell(0, z)).toBe('passing');
+  });
+
+  it('scales the thresholds with the radius, so mandals stay comparable', () => {
+    const tight = ZONES.reduce((a, b) => (a.radiusM < b.radiusM ? a : b));
+    const wide = ZONES.reduce((a, b) => (a.radiusM > b.radiusM ? a : b));
+    expect(tight.queueingS).toBeLessThan(wide.queueingS);
   });
 });
 
@@ -198,13 +236,13 @@ describe('the dwell tracker', () => {
     // The exit grace. Without it, one bad reading at 200s resets the
     // clock and the queue observation at 400s never happens — and bad
     // readings are the normal condition in these lanes.
-    const { emits } = run([
-      [0, inside()], [120, inside()],
-      [200, null],            // one wild fix
-      [230, inside()],        // back, inside the grace period
-      [400, inside()],
-    ]);
-    expect(emits.map((e) => e.dwell)).toEqual(['lingering', 'queueing']);
+    const ticks: [number, ReturnType<typeof inside> | null][] = [];
+    for (let t = 0; t <= 180; t += 30) ticks.push([t, inside()]);
+    ticks.push([210, null]);                                    // one wild fix
+    for (let t = 240; t <= 900; t += 30) ticks.push([t, inside()]); // back, and stays
+    const { emits } = run(ticks);
+    expect(emits.filter((e) => !e.isFinal).map((e) => e.dwell))
+      .toEqual(['lingering', 'queueing']);
   });
 
   it('forgets the visit once the departure persists', () => {
@@ -230,8 +268,16 @@ describe('the dwell tracker', () => {
     const markers = emits.filter((e) => !e.isFinal);
     const final = emits.filter((e) => e.isFinal);
 
-    // Pinned exactly, because this is the claim: the markers are constants.
-    expect(markers.map((e) => e.dwellSeconds)).toEqual([90, 360]);
+    // Derived from the zone rather than hardcoded, so these stay correct
+    // if the multiples are retuned. The claim being pinned is that a
+    // marker lands on the first 30s tick past its threshold and therefore
+    // carries no information beyond the class.
+    const z = zoneOf('dagdusheth-halwai-ganpati')!;
+    const firstTickPast = (t: number) => Math.ceil(t / 30) * 30;
+    expect(markers.map((e) => e.dwellSeconds)).toEqual([
+      firstTickPast(z.lingeringS),
+      firstTickPast(z.queueingS),
+    ]);
     expect(markers.map((e) => e.dwell)).toEqual(['lingering', 'queueing']);
 
     expect(final).toHaveLength(1);
