@@ -178,7 +178,14 @@ export default async function GanpatiPage({
       </div>
 
       <div className="mx-auto max-w-2xl px-4">
-        <div className="pt-3">
+        {/* The trail is what now sits over the hero gradient. The pull-up
+            used to be on the badge row below, from before breadcrumbs
+            existed — once they were added between the two, the negative
+            margin dragged the badges up onto the trail and the two
+            printed on top of each other on every mandal page. Whatever is
+            first under the hero owns the pull-up, and needs the stacking
+            context or the image container paints over it. */}
+        <div className="relative z-10 -mt-5">
           <Breadcrumbs
             trail={[
               { name: 'Ganpati mandals', url: '/explore' },
@@ -189,9 +196,7 @@ export default async function GanpatiPage({
         </div>
 
         {/* ---------------- Identity ---------------- */}
-        {/* Pulled up over the hero gradient; needs its own stacking
-            context or the image container paints over it. */}
-        <div className="relative z-10 -mt-6 flex flex-wrap items-center gap-2">
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <CategoryBadge category={g.category} rank={g.manacheRank} />
           {g.isTemple && <TempleBadge />}
           <span className="rounded-full border border-[var(--line-strong)] bg-[var(--dhoop)] px-2 py-0.5 text-[12px] font-medium text-[var(--muted)]">
