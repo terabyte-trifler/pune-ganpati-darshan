@@ -40,6 +40,9 @@ const ENDPOINT = '/api/crowd';
  * reading is.
  */
 const POLL_INTERVAL_MS = 30_000;
+
+/** Shorter than the poll interval, so a stalled read cannot stack up. */
+const SNAPSHOT_TIMEOUT_MS = 10_000;
 /** Persisted so a reopened tab has something to show immediately (§56). */
 const STORAGE_KEY = 'ganpatigo_crowd_snapshot';
 /** Beyond this, a restored snapshot is presented as stale, never as now. */
@@ -131,12 +134,20 @@ async function fetchSnapshot(): Promise<void> {
 
   inFlight = (async () => {
     try {
+      // Without a timeout a single hung request never settles, `inFlight`
+      // is never cleared, and every later poll returns that same dead
+      // promise — the crowd data freezes for the rest of the session. On a
+      // saturated festival cell that is not a rare case.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), SNAPSHOT_TIMEOUT_MS);
+
       const response = await fetch(ENDPOINT, {
+        signal: controller.signal,
         headers: { Accept: 'application/json' },
         // The CDN and the browser cache already handle freshness; asking
         // for no-store here would defeat both.
         cache: 'no-cache',
-      });
+      }).finally(() => clearTimeout(timeout));
 
       if (response.status === 503) {
         // Keep whatever we already have and mark it stale rather than

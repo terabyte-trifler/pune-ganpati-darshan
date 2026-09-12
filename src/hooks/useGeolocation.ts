@@ -73,7 +73,51 @@ function setState(next: GeoState) {
  */
 const SIGNIFICANT_MOVE_M = 12;
 
+/**
+ * Accuracy jitter is not news, and in the peths it is relentless.
+ *
+ * The old rule published a fix whenever EITHER the position moved 12 m or
+ * the accuracy changed by 12 m. Between four-storey buildings a stationary
+ * phone reports 30 m, then 90 m, then 45 m, second after second — so the
+ * second half of that rule fired almost every time and every subscriber
+ * re-rendered: the nearby rail re-sorting 29 mandals, the map, the report
+ * controls, the dwell tracker. That is the "it went slow in the peths"
+ * report, and it is worst exactly where the app matters most.
+ *
+ * Accuracy now only republishes when it changes what the app can do: a
+ * fix that crosses the 100 m line deciding whether a report counts as
+ * made at the mandal. Sharper-but-still-jittery is not news.
+ */
+const ACCURACY_GATE_M = 100;
+
+/** At most one publish per this, however often the device fires. */
+const MIN_PUBLISH_INTERVAL_MS = 3_000;
+
+/**
+ * Is this fix worth re-rendering the app for?
+ *
+ * Exported so the rule can be tested without a browser, a device or a
+ * walk through Sadashiv Peth.
+ */
+export function isFixWorthPublishing(
+  prev: LatLng,
+  prevAccuracyM: number,
+  next: LatLng,
+  nextAccuracyM: number
+): boolean {
+  if (metresBetween(prev, next) >= SIGNIFICANT_MOVE_M) return true;
+  // Accuracy alone only matters when it crosses the line that decides
+  // whether a report counts as made at the mandal — in either direction,
+  // because losing it has to show too. A first attempt also republished
+  // any "materially sharper" fix, which sounds reasonable and is not:
+  // 90 m to 45 m is sharper AND pure jitter, so it fired constantly and
+  // rebuilt the storm this filter exists to stop. Between 30 m and 90 m
+  // nothing the app can do changes, so nothing needs redrawing.
+  return (prevAccuracyM <= ACCURACY_GATE_M) !== (nextAccuracyM <= ACCURACY_GATE_M);
+}
+
 let watchId: number | null = null;
+let lastPublishedAt = 0;
 
 function metresBetween(a: LatLng, b: LatLng): number {
   const R = 6371008.8;
@@ -101,15 +145,20 @@ function syncWatch() {
     watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const next: LatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        // Publish only real movement, so standing still costs no renders.
-        if (
-          state.status === 'ready' &&
-          metresBetween(state.position, next) < SIGNIFICANT_MOVE_M &&
-          Math.abs(state.accuracyM - pos.coords.accuracy) < SIGNIFICANT_MOVE_M
-        ) {
-          return;
+        const accuracyM = pos.coords.accuracy;
+
+        if (state.status === 'ready') {
+          if (!isFixWorthPublishing(state.position, state.accuracyM, next, accuracyM)) return;
+
+          // Even real movement is throttled: walking a lane produces a fix
+          // a second, and nothing on screen needs updating that often.
+          // Skipping is safe because the next fix carries the same
+          // information — position is a level, not an event.
+          if (Date.now() - lastPublishedAt < MIN_PUBLISH_INTERVAL_MS) return;
         }
-        setState({ status: 'ready', position: next, accuracyM: pos.coords.accuracy });
+
+        lastPublishedAt = Date.now();
+        setState({ status: 'ready', position: next, accuracyM });
       },
       () => {
         // A failed reading keeps the last known fix. Downgrading to 'denied'

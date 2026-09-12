@@ -87,6 +87,15 @@ function remainingText(seconds: number): string {
   return `in ${minutes} min`;
 }
 
+/**
+ * How long to wait for a report before giving up and offering a retry.
+ *
+ * Generous for a working connection, and far short of the minutes fetch
+ * will otherwise spend on a saturated cell.
+ */
+const SUBMIT_TIMEOUT_MS = 12_000;
+
+
 export function CrowdReportButtons({
   mandalId,
   location,
@@ -175,8 +184,16 @@ export function CrowdReportButtons({
     buzz(12);
 
     try {
+      // A hard timeout, because the peths have no working network at peak
+      // and fetch on its own will wait for minutes. Without this the
+      // button sits on "sending" and the report looks lost with nothing to
+      // tap — which is exactly how it behaved on the ground.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
+
       const response = await fetch(`/api/crowd/${mandalId}/report`, {
         method: 'POST',
+        signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           deviceId,
@@ -186,7 +203,7 @@ export function CrowdReportButtons({
           requestId: newRequestId(),
           atMandal,
         }),
-      });
+      }).finally(() => clearTimeout(timeout));
 
       const result = (await response.json()) as CrowdSubmitResult & {
         crowd?: CrowdStatus | null;
@@ -236,8 +253,17 @@ export function CrowdReportButtons({
           setNotice('Could not send that report.');
           setRetryable(level);
       }
-    } catch {
-      setNotice('You appear to be offline. Your report was not sent.');
+    } catch (err) {
+      // A timeout and a dead connection need different words: one is "wait
+      // and press again", the other is "you have no network at all", and
+      // telling someone in a crowded lane they are offline when they are
+      // not is how a working feature gets abandoned.
+      const timedOut = err instanceof DOMException && err.name === 'AbortError';
+      setNotice(
+        timedOut
+          ? 'The network here is slow and the report did not go through. Tap to try again.'
+          : 'You appear to be offline. Your report was not sent.'
+      );
       setRetryable(level);
     } finally {
       setSubmitting(null);
