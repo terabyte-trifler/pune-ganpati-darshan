@@ -438,3 +438,89 @@ describe('the report count is safe to display', () => {
     expect(two.reportCount).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('dwell contributes mass, within limits', () => {
+  const now = Date.parse('2026-09-19T15:30:00.000Z');
+  const at = (m: number) => new Date(now - m * 60_000).toISOString();
+  const rep = (status: CrowdLevel, m: number, dev: number): CrowdReportInput =>
+    ({ mandalId: 'm', status, createdAt: at(m), atMandal: true, deviceSeq: dev });
+  const dw = (dwell: 'lingering' | 'queueing', m: number) => ({ dwell, createdAt: at(m) });
+
+  it('cannot create a reading on its own', () => {
+    // The limit that matters most. Twenty queueing observations and no
+    // human reports is still "no recent reports" — dwell never counts
+    // toward MIN_DEVICES_FOR_STATUS.
+    const many = Array.from({ length: 20 }, () => dw('queueing', 1));
+    const s = aggregateMandal('m', [], now, many);
+    expect(s.status).toBeNull();
+    expect(s.reportCount).toBe(0);
+  });
+
+  it('cannot create a reading behind a single human report either', () => {
+    const s = aggregateMandal('m', [rep('short', 1, 1)], now,
+      Array.from({ length: 20 }, () => dw('queueing', 1)));
+    expect(s.status).toBeNull();
+    expect(s.label).toBe('Not confirmed yet');
+  });
+
+  it('tips a tie towards what the dwell says', () => {
+    // Two people disagree, 1.0 each. Dwell breaks it.
+    const split = [rep('short', 2, 1), rep('long', 2, 2)];
+    expect(aggregateMandal('m', split, now).status).toBe('short');
+    const tipped = aggregateMandal('m', split, now, [dw('queueing', 1), dw('queueing', 2)]);
+    expect(tipped.status).toBe('long');
+  });
+
+  it('cannot outvote two people who agree', () => {
+    // Two fresh at-gate reports are 2.0; dwell is capped at 1.0, so no
+    // number of observations overturns them.
+    const agreed = [rep('short', 1, 1), rep('short', 2, 2)];
+    const many = Array.from({ length: 40 }, (_, i) => dw('queueing', (i % 30) + 1));
+    expect(aggregateMandal('m', agreed, now, many).status).toBe('short');
+  });
+
+  it('is capped in aggregate, not per sample', () => {
+    // Five samples must not be worth five times one sample once the cap
+    // binds — otherwise this scales with the app's popularity.
+    const base = [rep('short', 2, 1), rep('long', 2, 2)];
+    const five = aggregateMandal('m', base, now, Array.from({ length: 5 }, () => dw('queueing', 1)));
+    const fifty = aggregateMandal('m', base, now, Array.from({ length: 50 }, () => dw('queueing', 1)));
+    expect(five.status).toBe('long');
+    expect(fifty.status).toBe('long');
+    // Both tipped; neither ran away with it.
+    expect(fifty.confidence).toBe(five.confidence);
+  });
+
+  it('does not raise confidence', () => {
+    // A passive signal must not make a reader trust a reading more.
+    const humans = [rep('long', 2, 1), rep('long', 3, 2)];
+    const without = aggregateMandal('m', humans, now);
+    const with_ = aggregateMandal('m', humans, now,
+      Array.from({ length: 20 }, () => dw('queueing', 1)));
+    expect(with_.confidence).toBe(without.confidence);
+  });
+
+  it('lowers agreement when it contradicts the humans', () => {
+    const humans = [rep('short', 2, 1), rep('short', 3, 2)];
+    const agreeing = aggregateMandal('m', humans, now, [dw('lingering', 1)]);
+    const against = aggregateMandal('m', humans, now, [dw('queueing', 1), dw('queueing', 2)]);
+    expect(against.status).toBe('short');
+    // Still short, but the reading is now less clean than it was.
+    expect(against.confidence === 'low' || agreeing.confidence !== against.confidence).toBe(true);
+  });
+
+  it('decays like a report and expires with the window', () => {
+    const split = [rep('short', 2, 1), rep('long', 2, 2)];
+    const stale = aggregateMandal('m', split, now, [
+      dw('queueing', ACTIVE_WINDOW_MINUTES + 5),
+      dw('queueing', ACTIVE_WINDOW_MINUTES + 9),
+    ]);
+    expect(stale.status).toBe('short');
+  });
+
+  it('does not count towards reportCount', () => {
+    const s = aggregateMandal('m', [rep('long', 1, 1), rep('long', 2, 2)], now,
+      Array.from({ length: 9 }, () => dw('queueing', 1)));
+    expect(s.reportCount).toBe(2);
+  });
+});

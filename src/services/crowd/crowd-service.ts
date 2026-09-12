@@ -6,6 +6,7 @@ import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
 import { aggregateSnapshot } from './crowd-aggregation';
 import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
+import type { DwellInput } from './crowd-aggregation';
 import {
   CROWD_CACHE_TTL_SECONDS,
   CROWD_STALE_TTL_SECONDS,
@@ -90,18 +91,25 @@ export async function filterKnownMandalIds(ids: string[]): Promise<string[]> {
  * rather than a table scan.
  */
 /**
- * Dwell summaries per mandal, or an empty map.
+ * Raw dwell samples per mandal, or an empty map.
  *
- * Off unless CROWD_DWELL_PUBLIC is set — a switch separate from
- * CROWD_DWELL_SHADOW, so display can be killed without stopping
- * collection. Every failure returns {} rather than throwing: this lane is
- * a hint, and a hint that can take down the crowd snapshot is worse than
- * no hint.
+ * One read, two uses: the aggregation weights them at DWELL_MASS, and the
+ * same rows are summarised into the sentence shown under the reading. A
+ * second query for the second use would be able to disagree with the
+ * first, which is the kind of bug nobody finds.
+ *
+ * CROWD_DWELL_PUBLIC gates BOTH — it is the single switch for "dwell
+ * affects what a visitor sees", covering the colour and the line
+ * together. Collection is gated separately by CROWD_DWELL_SHADOW, so this
+ * can be killed mid-festival without losing the calibration data.
+ *
+ * Every failure returns {} rather than throwing: a passive signal that
+ * can take down the crowd snapshot is worse than no passive signal.
  */
-async function readDwellSummaries(
+async function readDwellSamples(
   supabase: ReturnType<typeof getSupabaseAdminClient>,
   ids: string[]
-): Promise<Record<string, DwellSummary>> {
+): Promise<Record<string, DwellInput[]>> {
   if (process.env.CROWD_DWELL_PUBLIC !== '1') return {};
   try {
     const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
@@ -113,23 +121,16 @@ async function readDwellSummaries(
       .limit(5_000);
     if (error || !data) return {};
 
-    const byMandal = new Map<string, { dwell: 'lingering' | 'queueing'; createdAt: string }[]>();
+    const out: Record<string, DwellInput[]> = {};
     for (const row of data) {
-      const list = byMandal.get(row.mandal_id) ?? [];
-      list.push({ dwell: row.dwell, createdAt: row.created_at });
-      byMandal.set(row.mandal_id, list);
-    }
-
-    const out: Record<string, DwellSummary> = {};
-    for (const [mandalId, samples] of byMandal) {
-      const summary = summariseDwell(samples);
-      if (summary) out[mandalId] = summary;
+      (out[row.mandal_id] ??= []).push({ dwell: row.dwell, createdAt: row.created_at });
     }
     return out;
   } catch {
     return {};
   }
 }
+
 
 async function computeSnapshot(): Promise<CrowdSnapshot> {
   const ids = await getKnownMandalIds();
@@ -158,7 +159,7 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   // separate failure path: if this errors the crowd snapshot must still
   // be served, because a passive hint failing is not a reason to take
   // down what people actually reported.
-  const dwell = await readDwellSummaries(supabase, ids);
+  const dwellSamples = await readDwellSamples(supabase, ids);
 
   const reports: CrowdReportInput[] = data.map((row) => ({
     mandalId: row.mandal_id,
@@ -174,7 +175,18 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   }));
 
   const now = Date.now();
-  const statuses = aggregateSnapshot(ids, reports, now);
+  // Dwell enters the reading here, at DWELL_MASS each and capped — it can
+  // tip a close call but never create one, because it earns no device
+  // credit. See crowd-aggregation.
+  const statuses = aggregateSnapshot(ids, reports, now, dwellSamples);
+
+  // The same rows, summarised into the sentence rendered under the
+  // reading, so the visitor can see why the colour moved.
+  const dwell: Record<string, DwellSummary> = {};
+  for (const [mandalId, samples] of Object.entries(dwellSamples)) {
+    const summary = summariseDwell(samples, now);
+    if (summary) dwell[mandalId] = summary;
+  }
 
   return {
     statuses,

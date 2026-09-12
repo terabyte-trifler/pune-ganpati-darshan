@@ -74,13 +74,28 @@ describe('summarising dwell', () => {
 });
 
 describe('it cannot reach the measured lane', () => {
-  it('is not imported by the aggregation', async () => {
+  it('reaches the aggregation only as bounded mass, never as wording', async () => {
+    // Dwell DOES weigh on the reading — 0.25 mass, capped at 1.0, per the
+    // plan. What it must not do is bring its own sentence into the
+    // measured lane: the label a visitor reads has to come from the
+    // humans. So the aggregation knows DwellInput and nothing else.
     const src = await import('node:fs').then((fs) =>
       fs.readFileSync('src/services/crowd/crowd-aggregation.ts', 'utf8')
     );
-    expect(src).not.toContain('crowd-dwell');
+    expect(src).toContain('DWELL_MASS');
     expect(src).not.toContain('summariseDwell');
     expect(src).not.toContain('DwellSummary');
+    expect(src).not.toContain('crowd-dwell');
+  });
+
+  it('keeps the three limits that make the weight safe', async () => {
+    const src = await import('node:fs').then((fs) =>
+      fs.readFileSync('src/services/crowd/crowd-aggregation.ts', 'utf8')
+    );
+    // 1. capped in aggregate, 2. excluded from confidence, 3. never a device.
+    expect(src).toContain('DWELL_MASS_CAP');
+    expect(src).toContain('confidenceFrom(humanMass');
+    expect(src).not.toMatch(/devices\.add\(.*dwell/i);
   });
 
   it('is not a field on CrowdStatus', async () => {

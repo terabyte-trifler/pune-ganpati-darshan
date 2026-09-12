@@ -82,6 +82,55 @@ export const OFFSITE_WEIGHT = 0.5;
  */
 export const MIN_DEVICES_FOR_STATUS = 2;
 
+/**
+ * Mass contributed by one passive dwell observation.
+ *
+ * A quarter of a fresh report from someone at the gate, which is the unit
+ * everything here is denominated in. The number is a claim you can argue
+ * with: a dwell sample carries no human judgement, and it cannot say WHY
+ * somebody stopped — a person admiring the dekhava for ten minutes looks
+ * identical to one queueing for ten. A quarter says it is worth having
+ * and worth about a quarter as much.
+ *
+ * Three limits keep it bounded, and all three matter more than the weight:
+ *
+ *   1. DWELL_MASS_CAP — twenty samples cannot outvote two people. Without
+ *      a cap this scales with how popular the app is and silently takes
+ *      over the algorithm as it grows.
+ *   2. It never counts toward MIN_DEVICES_FOR_STATUS, so dwell alone can
+ *      never CREATE a reading. With no human reports there is no status,
+ *      whatever the dwell says.
+ *   3. It is excluded from the confidence calculation. Confidence is how
+ *      much a reader should trust the reading, and a passive signal with
+ *      no judgement behind it must not raise that.
+ *
+ * What it can actually do, therefore, is tip a reading that is already
+ * close, and only when humans have already established one.
+ */
+export const DWELL_MASS = 0.25;
+
+/** Total mass all dwell samples may contribute to one mandal. */
+export const DWELL_MASS_CAP = 1;
+
+/**
+ * Which level a dwell class argues for.
+ *
+ * `queueing` means longer inside the zone than any walking speed
+ * explains; `lingering` means slower than a clean walk-through. In a
+ * pedestrianised lane that second one is congestion, which is what
+ * "moving" describes — a queue that is moving.
+ */
+const DWELL_LEVEL: Record<'lingering' | 'queueing', CrowdLevel> = {
+  lingering: 'moving',
+  queueing: 'long',
+};
+
+/** One passive observation, as aggregation needs it. */
+export interface DwellInput {
+  dwell: 'lingering' | 'queueing';
+  createdAt: string;
+}
+
 export function proximityWeight(atMandal: boolean): number {
   return atMandal ? 1 : OFFSITE_WEIGHT;
 }
@@ -192,7 +241,9 @@ export function labelFor(status: CrowdLevel | null): { label: string; detail: st
 export function aggregateMandal(
   mandalId: string,
   reports: CrowdReportInput[],
-  nowMs: number
+  nowMs: number,
+  /** Passive dwell observations. Optional: absent is the normal case. */
+  dwellSamples: DwellInput[] = []
 ): CrowdStatus {
   const aged = reports
     .map((r) => ({
@@ -238,6 +289,37 @@ export function aggregateMandal(
     scores[r.status] += freshnessWeight(r.ageMinutes) * proximityWeight(r.atMandal);
   }
 
+  // Confidence is computed from the human evidence alone, BEFORE dwell is
+  // added. A passive signal may move which level wins; it must not make a
+  // reader trust the answer more.
+  const humanMass = scores.short + scores.moving + scores.long;
+
+  /**
+   * Dwell, added after the humans and capped in aggregate.
+   *
+   * Decayed on the same curve as a report, so a 70-minute-old observation
+   * is worth what a 70-minute-old report is worth. The cap is applied to
+   * the total rather than per sample, so a busy mandal cannot accumulate
+   * unbounded passive weight.
+   */
+  let dwellMass = 0;
+  for (const d of dwellSamples) {
+    const ageMinutes = (nowMs - Date.parse(d.createdAt)) / 60_000;
+    if (!Number.isFinite(ageMinutes) || ageMinutes < 0) continue;
+    if (ageMinutes > ACTIVE_WINDOW_MINUTES) continue;
+    dwellMass += DWELL_MASS * freshnessWeight(ageMinutes);
+  }
+  if (dwellMass > 0) {
+    const scale = Math.min(1, DWELL_MASS_CAP / dwellMass);
+    for (const d of dwellSamples) {
+      const ageMinutes = (nowMs - Date.parse(d.createdAt)) / 60_000;
+      if (!Number.isFinite(ageMinutes) || ageMinutes < 0) continue;
+      if (ageMinutes > ACTIVE_WINDOW_MINUTES) continue;
+      scores[DWELL_LEVEL[d.dwell]] +=
+        DWELL_MASS * freshnessWeight(ageMinutes) * scale;
+    }
+  }
+
   const mass = scores.short + scores.moving + scores.long;
 
   // Argmax, with the most recent report breaking an exact tie. Severity
@@ -258,6 +340,9 @@ export function aggregateMandal(
   }
 
   const agreement = mass > 0 ? scores[winner] / mass : 0;
+  // Agreement is measured over the combined scores — a dwell sample that
+  // contradicts the humans should reduce agreement, and therefore
+  // confidence, rather than being invisible to it.
   const lastUpdated = aged.reduce(
     (newest, r) => (r.ageMinutes < newest.ageMinutes ? r : newest),
     aged[0]
@@ -293,7 +378,7 @@ export function aggregateMandal(
     label,
     detail,
     reportCount: aged.length,
-    confidence: confidenceFrom(mass, agreement),
+    confidence: confidenceFrom(humanMass, agreement),
     lastUpdated,
     trend: trendFrom(aged),
   };
@@ -309,11 +394,15 @@ export function aggregateMandal(
 export function aggregateSnapshot(
   mandalIds: string[],
   reports: CrowdReportInput[],
-  nowMs: number
+  nowMs: number,
+  /** Passive dwell observations per mandal. Empty is the normal case. */
+  dwellByMandal: Record<string, DwellInput[]> = {}
 ): CrowdStatus[] {
   const byMandal = new Map<string, CrowdReportInput[]>();
   for (const id of mandalIds) byMandal.set(id, []);
   for (const r of reports) byMandal.get(r.mandalId)?.push(r);
 
-  return mandalIds.map((id) => aggregateMandal(id, byMandal.get(id) ?? [], nowMs));
+  return mandalIds.map((id) =>
+    aggregateMandal(id, byMandal.get(id) ?? [], nowMs, dwellByMandal[id] ?? [])
+  );
 }
