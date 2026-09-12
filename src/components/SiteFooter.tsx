@@ -43,6 +43,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
     links: [
       { href: '/guides', label: 'Guides' },
       { href: '/how-to-use', label: 'How to use' },
+      { href: '/how-to-use/marathi', label: 'कसे वापरावे' },
       { href: '/about', label: 'About this app' },
       { href: '/about#data', label: 'Your data' },
       { href: '/licences', label: 'Data & licences' },

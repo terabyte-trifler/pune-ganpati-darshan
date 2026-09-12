@@ -65,6 +65,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/guides`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/plan`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/how-to-use`, changeFrequency: 'monthly', priority: 0.6 },
+    // The Marathi guide is its own URL, so it needs its own row — an
+    // hreflang pair is not a substitute for being listed.
+    { url: `${base}/how-to-use/marathi`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/about`, changeFrequency: 'yearly', priority: 0.4 },
     { url: `${base}/licences`, changeFrequency: 'yearly', priority: 0.3 },
 
