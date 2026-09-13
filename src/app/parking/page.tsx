@@ -10,6 +10,7 @@ import { haversine, formatDistance } from '@/lib/geo';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { JsonLd, itemList } from '@/lib/seo/jsonld';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { MapLegend } from '@/features/map/MapLegend';
 
 export const revalidate = 3600;
 
@@ -112,15 +113,24 @@ export default async function ParkingPage() {
           frameOn={PARKING.map((p) => ({ lat: p.lat, lng: p.lng }))}
           className="mt-5 h-[420px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[500px]"
         />
-        <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">
-          Mandal pins, metro stations, parking as blue P discs and closures as
-          dashed lines. Zoom in for the names — they appear as the lanes become
-          legible rather than crowding the view. The{' '}
-          <Link href="/map" className="text-[var(--shendur)]">
-            full map
-          </Link>{' '}
-          has live queue colours and search.
-        </p>
+        {/* The key, open rather than behind a button.
+            On the full map it hides behind an ⓘ because the map is the
+            whole screen and a permanent legend would eat it. Here the map
+            is one block on a page that exists to explain the plan, so the
+            explanation belongs beside it — and the counts come from the
+            same data the map draws, so they cannot disagree. */}
+        <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.09em] text-[var(--faint)]">
+            What the map shows
+          </h2>
+          <div className="mt-3">
+            <MapLegend showMapLink />
+          </div>
+          <p className="prose-measure mt-2.5 text-[11.5px] leading-relaxed text-[var(--faint)]">
+            Zoom in for the names — they appear as the lanes become legible
+            rather than crowding the view.
+          </p>
+        </div>
 
         {/* Provenance first, because it is what makes the list worth
             trusting — and what bounds it. */}
