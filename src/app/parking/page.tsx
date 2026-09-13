@@ -99,9 +99,16 @@ export default async function ParkingPage() {
             three separate lists cannot answer that — the relationship
             between them is spatial. Interactive, so it can be panned into
             the peth the reader actually cares about. */}
-        <div className="mt-5 h-[300px] overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[380px]">
-          <MiniMap mandals={ganpatis} showTraffic interactive />
-        </div>
+        {/* The height goes on MiniMap itself, not a wrapper: the loader
+            puts this className on its own holder and renders the map
+            h-full inside it, so a wrapper with the height leaves the
+            holder at zero and the canvas draws nothing. */}
+        <MiniMap
+          mandals={ganpatis}
+          showTraffic
+          interactive
+          className="mt-5 h-[300px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[380px]"
+        />
         <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">
           Mandal pins, metro stations, parking as blue P discs and closures as
           dashed lines. Zoom in for the names — they appear as the lanes become
