@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Plus, Upload, Pencil, Activity, Globe, Calculator, Sigma } from 'lucide-react';
+import { Plus, Upload, Pencil, Activity, Globe, Calculator, Sigma, ShieldAlert } from 'lucide-react';
 import { getSessionUser } from '@/services/auth';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Button } from '@/components/ui/Button';
@@ -38,6 +38,9 @@ export default async function AdminPage() {
           </Button>
           <Button asChild variant="secondary" size="sm">
             <Link href="/admin/crowd-prior"><Calculator size={15} aria-hidden="true" />Prior</Link>
+          </Button>
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/admin/override"><ShieldAlert size={15} aria-hidden="true" />Override</Link>
           </Button>
           <Button asChild variant="secondary" size="sm">
             <Link href="/admin/traffic"><Globe size={15} aria-hidden="true" />Traffic</Link>

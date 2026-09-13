@@ -5,7 +5,7 @@ import { features } from '@/lib/env';
 import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
 import { paceZones } from '@/features/crowd/pace';
-import { aggregateSnapshot, aggregateMandal } from './crowd-aggregation';
+import { aggregateSnapshot, aggregateMandal, labelFor } from './crowd-aggregation';
 import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
 import {
   scoreBreakdown, ACTIVE_WINDOW_MINUTES,
@@ -206,6 +206,72 @@ async function readWaitReports(
   }
 }
 
+/**
+ * Admin overrides still in force, keyed by mandal.
+ *
+ * Deliberately NOT behind a feature flag and deliberately not part of the
+ * aggregation: this is not evidence to be weighed, it is a person with
+ * the app's own account saying "show this". It is applied last, on top of
+ * whatever the algorithms decided, and it expires on its own.
+ *
+ * Failure returns {} — an override system that can take down the crowd
+ * snapshot is worse than one that occasionally does not apply.
+ */
+async function readOverrides(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  ids: string[]
+): Promise<Record<string, { status: CrowdLevel; setBy: string; expiresAt: string }>> {
+  try {
+    const { data, error } = await supabase.rpc('crowd_active_overrides', {
+      p_mandal_ids: ids,
+    });
+    if (error || !data) return {};
+    const out: Record<string, { status: CrowdLevel; setBy: string; expiresAt: string }> = {};
+    for (const row of data) {
+      out[row.mandal_id] = {
+        status: row.status as CrowdLevel,
+        setBy: row.set_by,
+        expiresAt: row.expires_at,
+      };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Replace a reading with what the admin asserted.
+ *
+ * The wording matters as much as the colour. Lane A says "Devotees
+ * report", and an override is not devotees — it is one named person. So
+ * it gets its own sentence, and `source` records what it is, while the
+ * label stays the ordinary one because to a visitor it IS the reading.
+ *
+ * `reportCount` is left at what the evidence actually was, not inflated
+ * to make the override look corroborated. The confidence is high because
+ * somebody with the account went and looked; if that turns out to be a
+ * habit of asserting from home, this is the number to revisit.
+ */
+function applyOverride(
+  status: CrowdStatus,
+  override: { status: CrowdLevel; setBy: string; expiresAt: string }
+): CrowdStatus {
+  const { label } = labelFor(override.status);
+  return {
+    ...status,
+    status: override.status,
+    label,
+    detail: 'Checked by the Pune Ganpati Darshan team just now',
+    source: 'override',
+    confidence: 'high',
+    trend: 'unknown',
+    // The moment it was asserted is the moment it describes. Keeping an
+    // older report's timestamp here would date the override wrongly.
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
 async function computeSnapshot(): Promise<CrowdSnapshot> {
   const ids = await getKnownMandalIds();
 
@@ -235,6 +301,7 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   // down what people actually reported.
   const dwellSamples = await readDwellSamples(supabase, ids);
   const waitSamples = await readWaitReports(supabase, ids);
+  const overrides = await readOverrides(supabase, ids);
 
   const reports: CrowdReportInput[] = data.map((row) => ({
     mandalId: row.mandal_id,
@@ -253,7 +320,12 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   // Dwell enters the reading here, at DWELL_MASS each and capped — it can
   // tip a close call but never create one, because it earns no device
   // credit. See crowd-aggregation.
-  const statuses = aggregateSnapshot(ids, reports, now, dwellSamples, waitSamples);
+  const computed = aggregateSnapshot(ids, reports, now, dwellSamples, waitSamples);
+  // Last, and above everything. An override does not join the weighing —
+  // it replaces the result of it.
+  const statuses = computed.map((s) =>
+    overrides[s.mandalId] ? applyOverride(s, overrides[s.mandalId]) : s
+  );
 
   // The same rows, summarised into the sentence rendered under the
   // reading, so the visitor can see why the colour moved.
@@ -608,3 +680,110 @@ export async function getCrowdExplain(): Promise<{
 
   return { mandals, dwellCounted, computedAt: new Date(now).toISOString() };
 }
+
+
+/* =====================================================================
+   Admin override — write path
+   ===================================================================== */
+
+export interface OverrideResult {
+  success: boolean;
+  reason?: 'cooldown' | 'invalid_request' | 'unavailable';
+  retryAfter?: number;
+  expiresAt?: string;
+}
+
+/**
+ * Assert a queue level for one mandal, above every algorithm.
+ *
+ * Authorization is NOT here. The caller must already have established
+ * that the session belongs to an admin — that check needs the request's
+ * cookies and belongs in the route. What is here is the cooldown, which
+ * has to be atomic and therefore has to be in the database.
+ *
+ * `actor` is recorded on the row. An override is the one place a person
+ * overrules the evidence, so it is never anonymous.
+ */
+export async function setCrowdOverride(input: {
+  mandalId: string;
+  status: CrowdLevel;
+  actor: string;
+}): Promise<OverrideResult> {
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { success: false, reason: 'unavailable' };
+  }
+  const known = await filterKnownMandalIds([input.mandalId]);
+  if (known.length === 0) return { success: false, reason: 'invalid_request' };
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase.rpc('set_crowd_override', {
+    p_mandal_id: input.mandalId,
+    p_status: input.status,
+    p_actor: input.actor,
+  });
+
+  if (error || !data) {
+    console.error('[crowd] override failed', { code: error?.code, message: error?.message });
+    return { success: false, reason: 'unavailable' };
+  }
+
+  const result = data as OverrideResult;
+  // Straight through the 15-second cache, so the map changes on the next
+  // poll rather than up to fifteen seconds later. The whole point of an
+  // override is that somebody is standing there wanting it fixed now.
+  if (result.success) await getCrowdCache().invalidate(input.mandalId);
+  return result;
+}
+
+/** Expire an override early. Idempotent: clearing nothing is a success. */
+export async function clearCrowdOverride(mandalId: string): Promise<OverrideResult> {
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { success: false, reason: 'unavailable' };
+  }
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase.rpc('clear_crowd_override', { p_mandal_id: mandalId });
+  if (error) return { success: false, reason: 'unavailable' };
+  await getCrowdCache().invalidate(mandalId);
+  return { success: true };
+}
+
+/** Every override still in force, for the admin surface. */
+export async function getActiveOverrides(): Promise<
+  Record<string, { status: CrowdLevel; setBy: string; expiresAt: string }>
+> {
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return {};
+  const ids = await getKnownMandalIds();
+  return readOverrides(getSupabaseAdminClient(), ids);
+}
+
+/**
+ * When each mandal may next be overridden, in seconds. Absent means now.
+ *
+ * Purely so the admin page can grey a button instead of offering one the
+ * database will refuse.
+ */
+export async function getOverrideCooldowns(): Promise<Record<string, number>> {
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return {};
+  const supabase = getSupabaseAdminClient();
+  const since = new Date(Date.now() - OVERRIDE_COOLDOWN_MS).toISOString();
+  const { data, error } = await supabase
+    .from('crowd_admin_overrides')
+    .select('mandal_id, created_at')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false });
+  if (error || !data) return {};
+
+  const out: Record<string, number> = {};
+  for (const row of data) {
+    if (out[row.mandal_id] !== undefined) continue;
+    const ready = Date.parse(row.created_at) + OVERRIDE_COOLDOWN_MS;
+    const seconds = Math.ceil((ready - Date.now()) / 1000);
+    if (seconds > 0) out[row.mandal_id] = seconds;
+  }
+  return out;
+}
+
+/** Mirrors p_cooldown in the migration. Display only; the database decides. */
+export const OVERRIDE_COOLDOWN_MS = 15 * 60_000;
+/** Mirrors p_hold. Display only. */
+export const OVERRIDE_HOLD_MS = 30 * 60_000;

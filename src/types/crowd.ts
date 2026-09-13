@@ -36,7 +36,12 @@ export type CrowdTrend = 'improving' | 'stable' | 'worsening' | 'unknown';
  * says what was seen rather than what anyone claimed, and confidence
  * stays low whatever the sample count.
  *
- * There is deliberately no third value for the clock model. That never
+ * 'override' — an admin asserted it, and for thirty minutes it replaces
+ * whatever the evidence says. Ranked and drawn exactly as a report,
+ * because a person is behind it; kept distinct so the admin surfaces can
+ * see which mandals are being held by hand rather than measured.
+ *
+ * There is deliberately no value for the clock model. That never
  * becomes a CrowdStatus at all, because it is not a measurement of
  * anything — it is attached alongside, in its own type, and tests assert
  * that the two cannot meet inside this interface. Which is also why this
@@ -52,7 +57,7 @@ export interface CrowdStatus {
   detail: string;
   reportCount: number;
   /** Whether a person said this, or only the devices did. See above. */
-  source: 'reported' | 'observed';
+  source: 'reported' | 'observed' | 'override';
   confidence: CrowdConfidence;
   /**
    * Median wait in minutes, from people who queued here and said how

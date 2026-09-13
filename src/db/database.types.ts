@@ -304,6 +304,19 @@ export type CrowdWaitReportRow = {
   created_at: string;
 }
 
+/**
+ * An admin's assertion about a queue, in force for thirty minutes.
+ * `set_by` is the account email — attributable on purpose.
+ */
+export type CrowdAdminOverrideRow = {
+  id: string;
+  mandal_id: string;
+  status: 'short' | 'moving' | 'long';
+  set_by: string;
+  created_at: string;
+  expires_at: string;
+};
+
 export type CrowdDwellSampleRow = {
   id: number;
   mandal_id: string;
@@ -387,6 +400,7 @@ export type Database = {
       crowd_device_blocks: Table<CrowdDeviceBlockRow>;
       crowd_devices: Table<CrowdDeviceRow>;
       crowd_dwell_samples: Table<CrowdDwellSampleRow>;
+      crowd_admin_overrides: Table<CrowdAdminOverrideRow>;
       crowd_wait_reports: Table<CrowdWaitReportRow>;
       rate_limit_buckets: Table<RateLimitBucketRow>;
     };
@@ -405,6 +419,30 @@ export type Database = {
       crowd_wait_reports_recent: {
         Args: { p_mandal_ids: string[]; p_window?: string };
         Returns: { mandal_id: string; minutes: number; created_at: string }[];
+      };
+      set_crowd_override: {
+        Args: {
+          p_mandal_id: string;
+          p_status: 'short' | 'moving' | 'long';
+          p_actor: string;
+          p_hold?: string;
+          p_cooldown?: string;
+        };
+        Returns: unknown;
+      };
+      clear_crowd_override: {
+        Args: { p_mandal_id: string };
+        Returns: unknown;
+      };
+      crowd_active_overrides: {
+        Args: { p_mandal_ids: string[] };
+        Returns: {
+          mandal_id: string;
+          status: 'short' | 'moving' | 'long';
+          set_by: string;
+          created_at: string;
+          expires_at: string;
+        }[];
       };
       search_ganpatis: {
         Args: { q: string; max_results?: number };
