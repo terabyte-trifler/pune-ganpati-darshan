@@ -107,6 +107,9 @@ export default async function ParkingPage() {
           mandals={ganpatis}
           showTraffic
           interactive
+          // Framed on the police plan, not the catalogue: fitting all 29
+          // mandals reaches Chinchwad and squeezes the peths into a corner.
+          frameOn={PARKING.map((p) => ({ lat: p.lat, lng: p.lng }))}
           className="mt-5 h-[300px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[380px]"
         />
         <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">

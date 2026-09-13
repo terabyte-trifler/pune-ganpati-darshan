@@ -63,6 +63,17 @@ export interface MiniMapProps {
    * whole point.
    */
   showTraffic?: boolean;
+  /**
+   * Frame on these coordinates instead of on the mandals.
+   *
+   * Needed as soon as a map carries something other than mandals. On
+   * /parking, framing to all 29 mandals includes Morya Gosavi in
+   * Chinchwad, 14 km from the peths, and the whole plan collapses into an
+   * unreadable clump in one corner. Framing on the plan's own extent puts
+   * the peths across the frame; the Chinchwad pin is simply off it, which
+   * is honest — it is not in the peths.
+   */
+  frameOn?: { lat: number; lng: number }[];
 }
 
 /**
@@ -98,7 +109,7 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
-  className, zoom, interactive = true, showTraffic = false,
+  className, zoom, interactive = true, showTraffic = false, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -153,10 +164,12 @@ export function MiniMap({
      * itself was a dot in an empty map.
      */
     const anchor =
-      mandals.length === 1 ? nearestStation(points[0]) : null;
-    const framed = anchor
-      ? [...points, { lat: anchor.station.lat, lng: anchor.station.lng }]
-      : points;
+      !frameOn && mandals.length === 1 ? nearestStation(points[0]) : null;
+    const framed = frameOn?.length
+      ? frameOn
+      : anchor
+        ? [...points, { lat: anchor.station.lat, lng: anchor.station.lng }]
+        : points;
 
     const b = boundsOf(framed, mandals.length === 1 && !anchor ? 0.004 : 0.0025);
 
