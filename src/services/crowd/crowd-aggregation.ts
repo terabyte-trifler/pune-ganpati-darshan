@@ -69,18 +69,25 @@ export const OFFSITE_WEIGHT = 0.5;
 /**
  * How many distinct devices it takes before a reading is a reading.
  *
- * One report is information; it is not a reading. Promoting a single tap
- * to "Short", with a confidence label beside it, is the whole of the
- * manipulation exposure — a quiet mandal can be given a queue by one
- * person, because every fresh browser profile is a fresh identity and
- * nothing else was standing in the way.
+ * One, by the owner's decision. Anything higher meant that on a quiet
+ * mandal — or on any mandal early in the festival — a person who reported
+ * what they were looking at saw nothing appear, and the tracker stayed
+ * empty while reports sat unconfirmed. A signal nobody sees is a signal
+ * nobody sends twice.
  *
- * Two does not stop a determined person: they can open two windows. It
- * stops a mandal being conjured from a single tap, which is the case that
- * actually matters, and it costs nothing real — a mandal with one report
- * says so rather than pretending to know.
+ * The cost is real and is not hidden: one person can now set a mandal's
+ * colour on their own, and every fresh browser profile is a fresh
+ * identity, so nothing in the app stops someone doing it deliberately.
+ * What limits the damage is everything around this number — a report
+ * decays by half every thirty minutes, expires after ninety, is capped at
+ * one per device per mandal per hour, and a single report scores mass 1.0
+ * which confidenceFrom reports as "Early signal" rather than anything
+ * confident. A second, honest report outweighs a stale wrong one quickly.
+ *
+ * If manipulation shows up during the festival, this is the number to
+ * raise, and `blockDevice` in crowd-admin is the faster remedy.
  */
-export const MIN_DEVICES_FOR_STATUS = 2;
+export const MIN_DEVICES_FOR_STATUS = 1;
 
 /**
  * Mass contributed by one passive dwell observation.

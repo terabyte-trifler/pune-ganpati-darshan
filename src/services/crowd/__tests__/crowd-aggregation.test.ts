@@ -348,7 +348,7 @@ describe('proximity weighting', () => {
   });
 });
 
-describe('a reading needs more than one device', () => {
+describe('one device is enough for a reading', () => {
   const from = (deviceSeq: number, status: CrowdLevel = 'short'): CrowdReportInput => ({
     mandalId: 'm1',
     status,
@@ -357,33 +357,34 @@ describe('a reading needs more than one device', () => {
     deviceSeq,
   });
 
-  it('withholds a level when only one device has reported', () => {
-    /**
-     * The whole manipulation exposure. A quiet mandal could be given a
-     * queue by one person, because a fresh browser profile is a fresh
-     * identity and nothing else stood in the way.
-     */
+  it('shows a level from a single report', () => {
+    // The owner's decision, and the reason for it: a person who reports
+    // what they are looking at has to see it appear, or they do not
+    // report again. The exposure this accepts — one person can colour a
+    // mandal alone — is documented on MIN_DEVICES_FOR_STATUS.
     const result = aggregateMandal('m1', [from(1)], NOW);
-    expect(result.status).toBeNull();
-    expect(result.label).toBe('Not confirmed yet');
+    expect(result.status).toBe('short');
+    expect(result.label).toBe('Short');
   });
 
-  it('says there is a report rather than pretending there is none', () => {
-    // "No recent reports" would be the same lie in the other direction:
-    // somebody did report, it just is not confirmed.
+  it('calls a single report an early signal, not a confident one', () => {
+    // What carries the weakness now that the device gate does not. One
+    // fresh report is mass 1.0, which is below the threshold for medium.
     const result = aggregateMandal('m1', [from(1)], NOW);
     expect(result.reportCount).toBe(1);
-    expect(result.detail).toMatch(/someone else agrees/i);
+    expect(result.confidence).toBe('low');
   });
 
-  it('is not fooled by one device reporting repeatedly', () => {
-    // Same device, three taps — which the hourly cooldown already
-    // prevents, but the aggregation must not depend on that.
-    const result = aggregateMandal('m1', [from(1), from(1), from(1)], NOW);
-    expect(result.status).toBeNull();
+  it('still counts devices rather than taps', () => {
+    // Same device, three times — which the hourly cooldown already
+    // prevents. It is one voice however often it speaks, so the reading
+    // must not grow more confident for the repetition.
+    const once = aggregateMandal('m1', [from(1)], NOW);
+    const thrice = aggregateMandal('m1', [from(1), from(1), from(1)], NOW);
+    expect(thrice.status).toBe(once.status);
   });
 
-  it('confirms as soon as a second device agrees', () => {
+  it('strengthens as a second device agrees', () => {
     const result = aggregateMandal('m1', [from(1), from(2)], NOW);
     expect(result.status).toBe('short');
     expect(result.label).toBe('Short');
@@ -414,28 +415,24 @@ describe('a reading needs more than one device', () => {
 
 
 describe('the report count is safe to display', () => {
-  it('never shows a status backed by fewer than two reports', () => {
-    // What the panel's count line rests on. The count was hidden for
-    // years on the reasoning that "1 recent report" reads as a broken
-    // feature — but a status needs MIN_DEVICES_FOR_STATUS distinct
-    // devices, and reportCount counts reports, so the floor on anything
-    // displayed is two. If MIN_DEVICES_FOR_STATUS is ever lowered to 1,
-    // this fails and the count line has to be reconsidered with it.
+  it('shows a status from one report, and says it is early', () => {
+    // The count was hidden from visitors entirely, so nothing on the
+    // public side depends on a floor any more. What must hold is that a
+    // lone report reads as weak: mass 1.0 is below the medium threshold.
     const now = new Date('2026-09-20T15:30:00.000Z');
-    const at = (mins: number) =>
-      new Date(now.getTime() - mins * 60_000).toISOString();
+    const at = (mins: number) => new Date(now.getTime() - mins * 60_000).toISOString();
 
     const one = aggregateMandal('m1', [
       { mandalId: 'm1', status: 'long', createdAt: at(5), atMandal: true, deviceSeq: 1 },
     ], now.getTime());
-    expect(one.status).toBeNull();
+    expect(one.status).toBe('long');
+    expect(one.confidence).toBe('low');
 
     const two = aggregateMandal('m1', [
       { mandalId: 'm1', status: 'long', createdAt: at(5), atMandal: true, deviceSeq: 1 },
       { mandalId: 'm1', status: 'long', createdAt: at(7), atMandal: true, deviceSeq: 2 },
     ], now.getTime());
     expect(two.status).toBe('long');
-    expect(two.reportCount).toBeGreaterThanOrEqual(2);
   });
 });
 
@@ -456,11 +453,14 @@ describe('dwell contributes mass, within limits', () => {
     expect(s.reportCount).toBe(0);
   });
 
-  it('cannot create a reading behind a single human report either', () => {
-    const s = aggregateMandal('m', [rep('short', 1, 1)], now,
-      Array.from({ length: 20 }, () => dw('queueing', 1)));
-    expect(s.status).toBeNull();
-    expect(s.label).toBe('Not confirmed yet');
+  it('still cannot create a reading out of nothing', () => {
+    // The limit that survives the device minimum going to one: dwell earns
+    // no device credit, so with no human report at all there is no status
+    // however many observations arrive.
+    const many = Array.from({ length: 20 }, () => dw('queueing', 1));
+    expect(aggregateMandal('m1', [], now, many).status).toBeNull();
+    // With one human report the reading exists, and dwell may shade it.
+    expect(aggregateMandal('m1', [rep('short', 1, 1)], now, many).status).not.toBeNull();
   });
 
   it('tips a tie towards what the dwell says', () => {
