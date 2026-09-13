@@ -49,6 +49,55 @@ const IDLE: GeoState = { status: 'idle' };
 let state: GeoState = IDLE;
 const listeners = new Set<() => void>();
 
+/**
+ * Retrying a fix that failed, which is the difference between the app
+ * working in the peths and not.
+ *
+ * `getCurrentPosition` times out after ten seconds, and between
+ * four-storey buildings on a first cold fix that happens often. When it
+ * did, the state went to 'unavailable' and NOTHING ever tried again:
+ * `autoLocate` only runs from 'idle', and the watch only starts once a
+ * position exists. The report buttons then said "turn on location" for a
+ * permission that was already granted, and the only way out was to
+ * reload the page — which is exactly what was reported from the ground.
+ *
+ * So a failure now schedules another attempt, a few times, with a gap.
+ * Bounded rather than endless: each attempt wakes the GPS, and a phone in
+ * a lane with no sky should not be drained retrying forever. A tap or a
+ * return to the tab resets the count, because both mean the person is
+ * asking again.
+ */
+const RETRY_DELAY_MS = 8_000;
+const MAX_RETRIES = 4;
+let retries = 0;
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelRetry() {
+  if (retryTimer) {
+    clearTimeout(retryTimer);
+    retryTimer = null;
+  }
+}
+
+function scheduleRetry() {
+  if (retryTimer || retries >= MAX_RETRIES) return;
+  if (listeners.size === 0) return;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    retries += 1;
+    // Only from 'unavailable': 'denied' cannot be undone by retrying, and
+    // a position that has since arrived needs nothing.
+    if (state.status === 'unavailable') requestLocation();
+  }, RETRY_DELAY_MS);
+}
+
+/** Called when a person asks again, directly or by coming back to the tab. */
+export function retryLocation() {
+  retries = 0;
+  cancelRetry();
+  if (state.status === 'unavailable' || state.status === 'idle') requestLocation();
+}
+
 function setState(next: GeoState) {
   state = next;
   for (const listener of listeners) listener();
@@ -56,6 +105,12 @@ function setState(next: GeoState) {
   // watch is (re)evaluated whenever the state changes rather than only when
   // a component subscribes.
   syncWatch();
+
+  if (next.status === 'unavailable') scheduleRetry();
+  else if (next.status === 'ready') {
+    retries = 0;
+    cancelRetry();
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -186,6 +241,11 @@ function onVisibilityChange() {
   // Hidden tears the watch down; visible builds it again, which also
   // delivers a fresh fix for the walk that happened with the screen off.
   syncWatch();
+  // And a return to the tab is someone asking again: a fix that failed
+  // while the screen was off should not still be failing when they look.
+  if (document.visibilityState === 'visible' && state.status === 'unavailable') {
+    retryLocation();
+  }
 }
 
 function subscribe(listener: () => void): () => void {
@@ -312,7 +372,10 @@ async function autoLocate() {
  */
 export function useAutoLocate() {
   useEffect(() => {
-    void autoLocate();
+    // 'unavailable' means a fix was attempted and failed, so there is a
+    // permission to use and something to retry — see scheduleRetry.
+    if (state.status === 'unavailable') retryLocation();
+    else void autoLocate();
   }, []);
 }
 
@@ -332,6 +395,13 @@ export function useAutoLocate() {
  */
 export function useResolveLocation() {
   useEffect(() => {
+    // A fix that was attempted and failed has a permission behind it and
+    // deserves another go — without this the report controls sat on "turn
+    // on location" for a permission already granted until a reload.
+    if (state.status === 'unavailable') {
+      retryLocation();
+      return;
+    }
     if (state.status !== 'idle') return;
     const permissions =
       typeof navigator === 'undefined' ? undefined : navigator.permissions;
@@ -359,6 +429,8 @@ export function useGeolocation() {
 export function resetGeolocationForTesting() {
   state = IDLE;
   listeners.clear();
+  retries = 0;
+  cancelRetry();
   if (watchId !== null && typeof navigator !== 'undefined') {
     navigator.geolocation.clearWatch(watchId);
   }

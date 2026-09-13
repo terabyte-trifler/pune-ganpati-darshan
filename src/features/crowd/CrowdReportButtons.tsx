@@ -11,7 +11,7 @@ import {
   subscribeToCooldowns,
 } from './cooldown-store';
 import { useClockMs } from './useCrowd';
-import { useGeolocation, useResolveLocation } from '@/hooks/useGeolocation';
+import { useGeolocation, retryLocation, useResolveLocation } from '@/hooks/useGeolocation';
 import { formatDistance, type LatLng } from '@/lib/geo';
 import { reportEligibility, REPORT_MAX_DISTANCE_M } from './report-eligibility';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
@@ -334,6 +334,24 @@ export function CrowdReportButtons({
             <MapPin size={14} aria-hidden="true" />
             Turn on location to report the queue
           </button>
+        ) : eligibility.kind === 'no-location' && eligibility.reason === 'unavailable' ? (
+          /* A fix that failed rather than a permission that was refused.
+             It retries on its own a few times, but a person standing in a
+             lane should not have to wait for that — or reload the page,
+             which is what they were doing before this existed. */
+          <>
+            <p className="text-[12px] leading-relaxed text-[var(--muted)]">
+              Still finding your location — the lanes here block GPS.
+            </p>
+            <button
+              type="button"
+              onClick={() => retryLocation()}
+              className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold text-[var(--shendur)]"
+            >
+              <MapPin size={14} aria-hidden="true" />
+              Try again
+            </button>
+          </>
         ) : (
           <p className="text-[12px] leading-relaxed text-[var(--muted)]">{message}</p>
         )}
