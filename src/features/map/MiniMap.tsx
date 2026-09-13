@@ -15,6 +15,8 @@ import { buildMarkerSvg, buildRouteStopSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { boundsOf } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
+import { addParkingLayers } from '@/lib/maps/parking-layer';
+import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdState } from '@/features/crowd/useCrowd';
 import type { Ganpati } from '@/types/ganpati';
@@ -52,6 +54,15 @@ export interface MiniMapProps {
   /** Single-location maps want a fixed zoom rather than a bounds fit. */
   zoom?: number;
   interactive?: boolean;
+  /**
+   * Draw the Traffic Police plan — parking, closures, junctions — as well.
+   *
+   * Opt-in rather than always on. On a mandal page the question is "where
+   * is this one and how do I get to it", and a dashed closure across the
+   * frame would answer a question nobody asked. On /parking it is the
+   * whole point.
+   */
+  showTraffic?: boolean;
 }
 
 /**
@@ -87,7 +98,7 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
-  className, zoom, interactive = true,
+  className, zoom, interactive = true, showTraffic = false,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -192,6 +203,10 @@ export function MiniMap({
       // peths with no stations on it answers "which mandals" and leaves
       // "how do I get to them" to a different screen.
       addMetroLayers(map);
+      if (showTraffic) {
+        addParkingLayers(map);
+        addClosureLayers(map);
+      }
 
       map.addLayer({
         id: 'route-line',

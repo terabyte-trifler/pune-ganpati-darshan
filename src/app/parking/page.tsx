@@ -9,6 +9,7 @@ import { getAllGanpatis } from '@/services/ganpati';
 import { haversine, formatDistance } from '@/lib/geo';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { JsonLd, itemList } from '@/lib/seo/jsonld';
+import { MiniMap } from '@/features/map/MiniMapLoader';
 
 export const revalidate = 3600;
 
@@ -91,6 +92,25 @@ export default async function ParkingPage() {
             </a>
           ))}
         </nav>
+
+        {/* Everything on one frame, before the lists.
+            Someone deciding where to leave a vehicle is comparing parking
+            against closures against the mandal they are heading for, and
+            three separate lists cannot answer that — the relationship
+            between them is spatial. Interactive, so it can be panned into
+            the peth the reader actually cares about. */}
+        <div className="mt-5 h-[300px] overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[380px]">
+          <MiniMap mandals={ganpatis} showTraffic interactive />
+        </div>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--faint)]">
+          Mandal pins, metro stations, parking as blue P discs and closures as
+          dashed lines. Zoom in for the names — they appear as the lanes become
+          legible rather than crowding the view. The{' '}
+          <Link href="/map" className="text-[var(--shendur)]">
+            full map
+          </Link>{' '}
+          has live queue colours and search.
+        </p>
 
         {/* Provenance first, because it is what makes the list worth
             trusting — and what bounds it. */}
