@@ -132,6 +132,39 @@ const DWELL_LEVEL: Record<'lingering' | 'queueing', CrowdLevel> = {
   queueing: 'long',
 };
 
+/**
+ * Mass for one reported wait time.
+ *
+ * Above the unit — a fresh report from someone at the gate is 1.0 —
+ * because it is better evidence than the unit is. A colour is a judgement
+ * about a queue somebody is looking at; minutes are a number they know,
+ * given after the fact by the person who did the waiting. There is no
+ * "heavy or just moving" to disagree about.
+ *
+ * It still decays and expires like everything else: a wait reported
+ * eighty minutes ago describes a queue that has since moved.
+ */
+export const WAIT_MASS = 1.5;
+
+/**
+ * Which level a reported wait argues for.
+ *
+ * The same thresholds the rest of the app uses for a queue: 30 minutes is
+ * where "heavy" starts, under 10 is a walk-in. Written here rather than
+ * imported from the prior so that Lane A never depends on Lane B.
+ */
+export function levelForWaitMinutes(minutes: number): CrowdLevel {
+  if (minutes >= 30) return 'long';
+  if (minutes >= 10) return 'moving';
+  return 'short';
+}
+
+/** One reported wait, as aggregation needs it. */
+export interface WaitInput {
+  minutes: number;
+  createdAt: string;
+}
+
 /** One passive observation, as aggregation needs it. */
 export interface DwellInput {
   dwell: 'lingering' | 'queueing';
@@ -275,6 +308,14 @@ export interface DwellContribution {
  * can disagree with the page it is explaining, and the disagreement would
  * be invisible until someone trusted the wrong one.
  */
+export interface WaitContribution {
+  minutes: number;
+  level: CrowdLevel;
+  ageMinutes: number;
+  freshness: number;
+  mass: number;
+}
+
 export interface ScoreBreakdown {
   scores: Record<CrowdLevel, number>;
   /** Mass from human reports only. Confidence is computed on this. */
@@ -282,7 +323,10 @@ export interface ScoreBreakdown {
   /** Human mass plus capped dwell. The winner is argmax over this. */
   mass: number;
   reports: ReportContribution[];
+  waits: WaitContribution[];
   dwell: DwellContribution[];
+  /** Median of the reported waits in the window, or null if none. */
+  waitMedianMinutes: number | null;
   /** Multiplier applied to every dwell sample to honour DWELL_MASS_CAP. */
   dwellScale: number;
   dwellMassRaw: number;
@@ -292,7 +336,8 @@ export interface ScoreBreakdown {
 export function scoreBreakdown(
   aged: { status: CrowdLevel; ageMinutes: number; atMandal: boolean }[],
   dwellSamples: DwellInput[],
-  nowMs: number
+  nowMs: number,
+  waitSamples: WaitInput[] = []
 ): ScoreBreakdown {
   const scores: Record<CrowdLevel, number> = { short: 0, moving: 0, long: 0 };
 
@@ -305,6 +350,33 @@ export function scoreBreakdown(
     scores[r.status] += mass;
     return { status: r.status, ageMinutes: r.ageMinutes, atMandal: r.atMandal, freshness, proximity, mass };
   });
+
+  /**
+   * Reported waits, which are human evidence and count as such.
+   *
+   * Added before humanMass is taken, unlike dwell: a wait time is
+   * somebody's own report, so it should raise confidence exactly as a
+   * colour does. It is only the passive signal that must not.
+   */
+  const waits: WaitContribution[] = [];
+  for (const w of waitSamples) {
+    const ageMinutes = (nowMs - Date.parse(w.createdAt)) / 60_000;
+    if (!Number.isFinite(ageMinutes) || ageMinutes < 0) continue;
+    if (ageMinutes > ACTIVE_WINDOW_MINUTES) continue;
+    const freshness = freshnessWeight(ageMinutes);
+    const mass = WAIT_MASS * freshness;
+    const level = levelForWaitMinutes(w.minutes);
+    scores[level] += mass;
+    waits.push({ minutes: w.minutes, level, ageMinutes, freshness, mass });
+  }
+
+  const sorted = waits.map((w) => w.minutes).sort((a, b) => a - b);
+  const waitMedianMinutes =
+    sorted.length === 0
+      ? null
+      : sorted.length % 2
+        ? sorted[(sorted.length - 1) / 2]
+        : Math.round((sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2);
 
   // Confidence is computed from the human evidence alone, BEFORE dwell is
   // added. A passive signal may move which level wins; it must not make a
@@ -332,7 +404,7 @@ export function scoreBreakdown(
   return {
     scores, humanMass,
     mass: scores.short + scores.moving + scores.long,
-    reports, dwell, dwellScale,
+    reports, waits, waitMedianMinutes, dwell, dwellScale,
     dwellMassRaw,
     dwellMassApplied: dwellMassRaw * dwellScale,
   };
@@ -343,7 +415,9 @@ export function aggregateMandal(
   reports: CrowdReportInput[],
   nowMs: number,
   /** Passive dwell observations. Optional: absent is the normal case. */
-  dwellSamples: DwellInput[] = []
+  dwellSamples: DwellInput[] = [],
+  /** Reported wait times, from people who queued here. */
+  waitSamples: WaitInput[] = []
 ): CrowdStatus {
   const aged = reports
     .map((r) => ({
@@ -357,7 +431,15 @@ export function aggregateMandal(
     // what is actually influencing the result, not what is in the table.
     .filter((r) => Number.isFinite(r.ageMinutes) && r.ageMinutes <= ACTIVE_WINDOW_MINUTES);
 
-  if (aged.length === 0) {
+  const freshWaits = waitSamples.filter((w) => {
+    const age = (nowMs - Date.parse(w.createdAt)) / 60_000;
+    return Number.isFinite(age) && age >= 0 && age <= ACTIVE_WINDOW_MINUTES;
+  });
+
+  // A wait report is a report. Somebody who queued and told us how long
+  // has said more than somebody who tapped a colour, so a mandal with
+  // only wait reports must still produce a reading.
+  if (aged.length === 0 && freshWaits.length === 0) {
     const { label, detail } = labelFor(null);
     return {
       mandalId,
@@ -366,6 +448,8 @@ export function aggregateMandal(
       detail,
       reportCount: 0,
       confidence: 'low',
+      waitMedianMinutes: null,
+      waitReportCount: 0,
       lastUpdated: null,
       trend: 'unknown',
     };
@@ -381,8 +465,11 @@ export function aggregateMandal(
    * quietly marking everything unconfirmed.
    */
   const devices = new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1)));
+  // Each wait report is its own device: the write path allows one per
+  // device per mandal per visit, so two waits are two people.
+  for (let i = 0; i < freshWaits.length; i++) devices.add(-1000 - i);
 
-  const breakdown = scoreBreakdown(aged, dwellSamples, nowMs);
+  const breakdown = scoreBreakdown(aged, dwellSamples, nowMs, waitSamples);
   const { scores, humanMass, mass } = breakdown;
 
   // Argmax, with the most recent report breaking an exact tie. Severity
@@ -406,10 +493,17 @@ export function aggregateMandal(
   // Agreement is measured over the combined scores — a dwell sample that
   // contradicts the humans should reduce agreement, and therefore
   // confidence, rather than being invisible to it.
-  const lastUpdated = aged.reduce(
-    (newest, r) => (r.ageMinutes < newest.ageMinutes ? r : newest),
-    aged[0]
-  ).createdAt;
+  /**
+   * The newest thing anyone told us, colour or wait time.
+   *
+   * Taken across both, because a mandal can now have a reading with no
+   * colour reports at all — and reducing over the empty `aged` array
+   * threw, which is how that case was found.
+   */
+  const lastUpdated = [
+    ...aged.map((r) => r.createdAt),
+    ...freshWaits.map((w) => w.createdAt),
+  ].reduce((newest, t) => (Date.parse(t) > Date.parse(newest) ? t : newest));
 
   /**
    * One device is not a reading.
@@ -429,6 +523,8 @@ export function aggregateMandal(
         'A report has come in but is not confirmed yet. It shows once someone else agrees.',
       reportCount: aged.length,
       confidence: 'low',
+      waitMedianMinutes: breakdown.waitMedianMinutes,
+      waitReportCount: breakdown.waits.length,
       lastUpdated,
       trend: 'unknown',
     };
@@ -441,8 +537,10 @@ export function aggregateMandal(
     status: winner,
     label,
     detail,
-    reportCount: aged.length,
+    reportCount: aged.length + freshWaits.length,
     confidence: confidenceFrom(humanMass, agreement),
+    waitMedianMinutes: breakdown.waitMedianMinutes,
+    waitReportCount: breakdown.waits.length,
     lastUpdated,
     trend: trendFrom(aged),
   };
@@ -460,13 +558,15 @@ export function aggregateSnapshot(
   reports: CrowdReportInput[],
   nowMs: number,
   /** Passive dwell observations per mandal. Empty is the normal case. */
-  dwellByMandal: Record<string, DwellInput[]> = {}
+  dwellByMandal: Record<string, DwellInput[]> = {},
+  /** Reported wait times per mandal. */
+  waitByMandal: Record<string, WaitInput[]> = {}
 ): CrowdStatus[] {
   const byMandal = new Map<string, CrowdReportInput[]>();
   for (const id of mandalIds) byMandal.set(id, []);
   for (const r of reports) byMandal.get(r.mandalId)?.push(r);
 
   return mandalIds.map((id) =>
-    aggregateMandal(id, byMandal.get(id) ?? [], nowMs, dwellByMandal[id] ?? [])
+    aggregateMandal(id, byMandal.get(id) ?? [], nowMs, dwellByMandal[id] ?? [], waitByMandal[id] ?? [])
   );
 }

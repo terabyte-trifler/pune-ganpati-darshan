@@ -11,6 +11,7 @@ import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
 import { LiveCrowdSection } from '@/features/crowd/LiveCrowdSection';
+import { WaitPrompt } from '@/features/crowd/WaitPrompt';
 import { Button } from '@/components/ui/Button';
 import { PARKING } from '@/content/parking';
 import { ROAD_CLOSURES } from '@/content/diversions';
@@ -137,6 +138,14 @@ export default async function HomePage() {
           shelf — when nobody has reported it becomes the invitation to
           report instead.
           ---------------------------------------------------------------- */}
+      {/* Asked before the tracker, and only when there is something to
+          ask: somebody returning from a darshan has the answer in their
+          head right now, and in ten minutes they will be guessing. It
+          renders nothing at all the rest of the time. */}
+      <section className="mt-5 px-4">
+        <WaitPrompt ganpatis={all} />
+      </section>
+
       <LiveCrowdSection ganpatis={all} />
 
       {/* ----------------------------------------------------------------

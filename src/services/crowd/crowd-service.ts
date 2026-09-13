@@ -8,7 +8,7 @@ import { aggregateSnapshot, aggregateMandal } from './crowd-aggregation';
 import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
 import {
   scoreBreakdown, ACTIVE_WINDOW_MINUTES,
-  type DwellInput, type ScoreBreakdown,
+  type DwellInput, type WaitInput, type ScoreBreakdown,
 } from './crowd-aggregation';
 import {
   CROWD_CACHE_TTL_SECONDS,
@@ -135,6 +135,36 @@ async function readDwellSamples(
 }
 
 
+/**
+ * Reported wait times per mandal, in the live window.
+ *
+ * Unlike dwell this is not behind a switch: a wait time is somebody's own
+ * report, the same kind of thing as a colour, and there was never a
+ * question about whether to show it. Failure returns {} so the crowd
+ * snapshot survives a wait-table problem.
+ */
+async function readWaitReports(
+  supabase: ReturnType<typeof getSupabaseAdminClient>,
+  ids: string[]
+): Promise<Record<string, WaitInput[]>> {
+  try {
+    const { data, error } = await supabase.rpc('crowd_wait_reports_recent', {
+      p_mandal_ids: ids,
+    });
+    if (error || !data) return {};
+    const out: Record<string, WaitInput[]> = {};
+    for (const row of data) {
+      (out[row.mandal_id] ??= []).push({
+        minutes: row.minutes,
+        createdAt: row.created_at,
+      });
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 async function computeSnapshot(): Promise<CrowdSnapshot> {
   const ids = await getKnownMandalIds();
 
@@ -163,6 +193,7 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   // be served, because a passive hint failing is not a reason to take
   // down what people actually reported.
   const dwellSamples = await readDwellSamples(supabase, ids);
+  const waitSamples = await readWaitReports(supabase, ids);
 
   const reports: CrowdReportInput[] = data.map((row) => ({
     mandalId: row.mandal_id,
@@ -181,7 +212,7 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   // Dwell enters the reading here, at DWELL_MASS each and capped — it can
   // tip a close call but never create one, because it earns no device
   // credit. See crowd-aggregation.
-  const statuses = aggregateSnapshot(ids, reports, now, dwellSamples);
+  const statuses = aggregateSnapshot(ids, reports, now, dwellSamples, waitSamples);
 
   // The same rows, summarised into the sentence rendered under the
   // reading, so the visitor can see why the colour moved.
@@ -396,6 +427,57 @@ export interface MandalExplain {
 }
 
 /**
+ * Record how long somebody waited.
+ *
+ * Thin wrapper over the RPC, which owns every rule — the cooldown, the
+ * per-device cap, the IP throttle and the block list — exactly as the
+ * colour report does. Nothing here decides anything.
+ */
+export async function submitWaitReport(input: {
+  mandalId: string;
+  deviceId: string;
+  minutes: number;
+  requestId?: string;
+  ip?: string | null;
+}): Promise<CrowdSubmitResult & { minutes?: number }> {
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { success: false, reason: 'unavailable' };
+  }
+  const known = await filterKnownMandalIds([input.mandalId]);
+  if (known.length === 0) return { success: false, reason: 'invalid_request' };
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await supabase.rpc('submit_wait_report', {
+    p_mandal_id: input.mandalId,
+    p_device_id: input.deviceId,
+    p_minutes: input.minutes,
+    p_request_id: input.requestId ?? null,
+    p_ip_hash: input.ip ? hashIp(input.ip) : null,
+  });
+
+  if (error || !data) {
+    recordCrowdMetric('crowd_error', 1);
+    return { success: false, reason: 'unavailable' };
+  }
+
+  const result = data as {
+    success: boolean; reason?: string; minutes?: number; idempotent?: boolean;
+    retryAfter?: number;
+  };
+  if (result.success) {
+    // A wait report changes this mandal's reading, so the cached status
+    // must go — same as a colour report.
+    await getCrowdCache().invalidate(input.mandalId);
+    return { success: true, status: 'moving', idempotent: Boolean(result.idempotent), minutes: result.minutes };
+  }
+  return {
+    success: false,
+    reason: (result.reason ?? 'unavailable') as 'cooldown' | 'rate_limited' | 'reporting_disabled' | 'invalid_request' | 'unavailable',
+    retryAfter: result.retryAfter ?? 0,
+  } as CrowdSubmitResult;
+}
+
+/**
  * Every mandal's reading with the arithmetic that produced it.
  *
  * Admin-only and deliberately uncached: it exists to answer "why is this
@@ -430,6 +512,7 @@ export async function getCrowdExplain(): Promise<{
     .gte('created_at', since)
     .limit(5_000);
 
+  const waitByMandal = await readWaitReports(supabase, ids);
   const dwellCounted = process.env.CROWD_DWELL_PUBLIC === '1';
   const dwellByMandal: Record<string, DwellInput[]> = {};
   for (const row of dwellRows ?? []) {
@@ -452,6 +535,7 @@ export async function getCrowdExplain(): Promise<{
   const mandals = ids.map((mandalId) => {
     const reports = reportsByMandal.get(mandalId) ?? [];
     const samples = dwellByMandal[mandalId] ?? [];
+    const waits = waitByMandal[mandalId] ?? [];
     const aged = reports
       .map((r) => ({
         status: r.status,
@@ -465,9 +549,9 @@ export async function getCrowdExplain(): Promise<{
       mandalId,
       // The live answer, computed exactly as the API computes it — dwell
       // included only when it is actually switched on.
-      status: aggregateMandal(mandalId, reports, now, dwellCounted ? samples : []),
-      humanOnly: aggregateMandal(mandalId, reports, now, []),
-      breakdown: scoreBreakdown(aged, samples, now),
+      status: aggregateMandal(mandalId, reports, now, dwellCounted ? samples : [], waits),
+      humanOnly: aggregateMandal(mandalId, reports, now, [], waits),
+      breakdown: scoreBreakdown(aged, samples, now, waits),
       devices: new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1))).size,
     };
   });

@@ -7,6 +7,7 @@ import {
   paceZones, stepDwell, initialDwellState,
   type DwellState, type PaceMandal,
 } from './pace';
+import { noteQueued } from './wait-prompt-store';
 
 /**
  * Drives the dwell tracker from the device's own location. Shadow mode.
@@ -65,7 +66,25 @@ export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
     );
     state.current = next;
 
-    if (!emit || posting.current) return;
+    if (!emit) return;
+
+    /**
+     * A finished queue is the moment to line up the wait question.
+     *
+     * Only on the final sample, and only for `queueing`: a walk-past
+     * cannot be answered, and asking about one teaches people to ignore
+     * the card. Nothing is sent here — it is a note on this device that
+     * there is something worth asking about next time the app is opened.
+     *
+     * Kept outside the shadow-mode flag on purpose. Collection can be
+     * switched off without taking the question with it, because the
+     * answer is a person's own report rather than a passive observation.
+     */
+    if (emit.isFinal && emit.dwell === 'queueing') {
+      noteQueued(emit.mandalId, emit.dwellSeconds);
+    }
+
+    if (posting.current) return;
     posting.current = true;
 
     void fetch('/api/crowd/dwell', {

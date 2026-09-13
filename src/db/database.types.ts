@@ -290,6 +290,20 @@ export type CrowdDeviceBlockRow = {
  * and note that this choice does not survive the signal being promoted to
  * anything a visitor sees.
  */
+/**
+ * A reported wait time. Device-keyed, because it is displayed and it
+ * moves the colour, so it needs the same one-per-visit protection an
+ * ordinary report has. See the migration.
+ */
+export type CrowdWaitReportRow = {
+  id: string;
+  mandal_id: string;
+  device_id: string;
+  minutes: number;
+  request_id: string | null;
+  created_at: string;
+}
+
 export type CrowdDwellSampleRow = {
   id: number;
   mandal_id: string;
@@ -365,10 +379,25 @@ export type Database = {
       crowd_device_blocks: Table<CrowdDeviceBlockRow>;
       crowd_devices: Table<CrowdDeviceRow>;
       crowd_dwell_samples: Table<CrowdDwellSampleRow>;
+      crowd_wait_reports: Table<CrowdWaitReportRow>;
       rate_limit_buckets: Table<RateLimitBucketRow>;
     };
     Views: Record<never, never>;
     Functions: {
+      submit_wait_report: {
+        Args: {
+          p_mandal_id: string;
+          p_device_id: string;
+          p_minutes: number;
+          p_request_id?: string | null;
+          p_ip_hash?: string | null;
+        };
+        Returns: unknown;
+      };
+      crowd_wait_reports_recent: {
+        Args: { p_mandal_ids: string[]; p_window?: string };
+        Returns: { mandal_id: string; minutes: number; created_at: string }[];
+      };
       search_ganpatis: {
         Args: { q: string; max_results?: number };
         Returns: SearchGanpatiResult[];

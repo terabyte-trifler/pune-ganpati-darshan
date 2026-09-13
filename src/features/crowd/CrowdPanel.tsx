@@ -1,9 +1,10 @@
 'use client';
 
-import { TrendingDown, TrendingUp, Minus, Users, Footprints } from 'lucide-react';
+import { TrendingDown, TrendingUp, Minus, Users, Footprints, Hourglass } from 'lucide-react';
 import { useClockMs, useCrowdStatus } from './useCrowd';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { CrowdReportButtons } from './CrowdReportButtons';
+import { WaitReportButtons } from './WaitReportButtons';
 import type { CrowdStatus } from '@/types/crowd';
 import { crowdExpectation, type PriorInput } from '@/services/crowd/crowd-prior';
 import type { FestivalPhase } from '@/lib/festival';
@@ -151,6 +152,22 @@ export function CrowdPanel({
 
           {status && <TrendLine status={status} />}
 
+          {/* The one number here that was measured rather than judged, so
+              it is stated plainly and attributed to the people who waited.
+              "About" because it is a median of a handful of reports, not a
+              promise about the queue in front of you. */}
+          {status?.waitMedianMinutes !== null && status?.waitMedianMinutes !== undefined && (
+            <p className="mt-2 flex items-center gap-1.5 text-[13px] text-[var(--chandan)]">
+              <Hourglass size={13} aria-hidden="true" className="text-[var(--shendur)]" />
+              People waited about{' '}
+              <span className="font-semibold">
+                {status.waitMedianMinutes >= 60
+                  ? `${Math.round((status.waitMedianMinutes / 60) * 10) / 10} hr`
+                  : `${status.waitMedianMinutes} min`}
+              </span>
+            </p>
+          )}
+
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
             Reported by devotees in the last 90 minutes. Not a measured queue
             time.
@@ -248,6 +265,15 @@ export function CrowdPanel({
       {reportingEnabled && (
         <div className="mt-4 border-t border-[var(--line)] pt-4">
           <CrowdReportButtons mandalId={mandalId} location={mandalLocation} />
+
+          {/* Asked without a location gate, unlike the colour buttons.
+              A wait time is given after the fact, often on the walk to the
+              next mandal or on the bus home, and refusing it because the
+              person has already moved on would throw away the best report
+              in the app. The cooldown stops it being repeated. */}
+          <div className="mt-4 border-t border-[var(--line)] pt-4">
+            <WaitReportButtons mandalId={mandalId} />
+          </div>
         </div>
       )}
     </section>

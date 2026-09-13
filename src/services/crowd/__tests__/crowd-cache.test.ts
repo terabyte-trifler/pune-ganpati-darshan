@@ -15,6 +15,8 @@ const status = (mandalId: string): CrowdStatus => ({
   detail: 'Devotees report a heavy crowd',
   reportCount: 4,
   confidence: 'medium',
+  waitMedianMinutes: null,
+  waitReportCount: 0,
   lastUpdated: new Date().toISOString(),
   trend: 'stable',
 });

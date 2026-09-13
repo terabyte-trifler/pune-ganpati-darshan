@@ -32,6 +32,17 @@ export interface CrowdStatus {
   detail: string;
   reportCount: number;
   confidence: CrowdConfidence;
+  /**
+   * Median wait in minutes, from people who queued here and said how
+   * long. Null when nobody has.
+   *
+   * The only number in this object measured rather than judged: every
+   * other field describes what a queue looked like, this one is how long
+   * somebody stood in it. Shown as "about 25 min" and never as a promise.
+   */
+  waitMedianMinutes: number | null;
+  /** How many wait reports that median came from. */
+  waitReportCount: number;
   /** ISO timestamp of the most recent active report, or null. */
   lastUpdated: string | null;
   trend: CrowdTrend;
