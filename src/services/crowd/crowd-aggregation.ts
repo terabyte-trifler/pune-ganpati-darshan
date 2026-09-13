@@ -148,12 +148,23 @@ export const MIN_DWELL_DEVICES_FOR_STATUS = 3;
 export const DWELL_DOMINANCE_SHARE = 0.6;
 
 /**
- * Which level a dwell class argues for.
+ * Which level a dwell class argues for WHEN IT IS ONLY ADDING MASS.
  *
  * `queueing` means longer inside the zone than any walking speed
  * explains; `lingering` means slower than a clean walk-through. In a
  * pedestrianised lane that second one is congestion, which is what
  * "moving" describes — a queue that is moving.
+ *
+ * Deliberately never `short`, and that is not an omission. In the mass
+ * lane dwell is shading a reading people established, so it is allowed
+ * to argue that a queue is worse than reported and never that it is
+ * better: an optimistic passive nudge sends somebody into a queue on the
+ * strength of a signal that cannot tell queueing from looking.
+ *
+ * The standalone lane — `dwellConsensus`, where dwell speaks with nobody
+ * reporting — CAN reach `short`, because it has protections this mapping
+ * does not: a measured duration rather than a threshold, three agreeing
+ * devices, and a veto if any device proves a queue exists.
  */
 const DWELL_LEVEL: Record<'lingering' | 'queueing', CrowdLevel> = {
   lingering: 'moving',
@@ -197,6 +208,22 @@ export interface WaitInput {
 export interface DwellInput {
   dwell: 'lingering' | 'queueing';
   createdAt: string;
+  /**
+   * Seconds inside the zone. For a threshold marker this is the threshold
+   * — a lower bound, quantised to the 30-second clock. Only an `isFinal`
+   * row carries a measured duration.
+   */
+  dwellSeconds?: number;
+  /** True for the one row written when a visit is confirmed to have ended. */
+  isFinal?: boolean;
+  /**
+   * Seconds to walk clean through this mandal's zone, from its geometry.
+   *
+   * Attached by the service rather than sent by the client: this is now
+   * load-bearing for what colour a mandal takes, and a number the client
+   * chooses is a number an attacker chooses.
+   */
+  crossingSeconds?: number;
   /**
    * Digest of (device, mandal, IST day, salt) — not a device id, and not
    * joinable across mandals or days. See lib/dwell-key.
@@ -297,21 +324,31 @@ export function trendFrom(
  * devices where a person needs none.
  */
 export function observedLabelFor(level: CrowdLevel): { label: string; detail: string } {
-  return level === 'long'
-    ? {
-        label: 'Observed heavy',
-        detail:
-          'Phones near this mandal are stopping for longer than any walking ' +
-          'speed explains. Nobody has reported it — that is what devices were ' +
-          'seen doing, and people stop to look as well as to queue.',
-      }
-    : {
-        label: 'Observed moving',
-        detail:
-          'Phones near this mandal are moving through slower than a clean ' +
-          'walk. Nobody has reported it — that is what devices were seen ' +
-          'doing, not something anyone said.',
-      };
+  if (level === 'long') {
+    return {
+      label: 'Observed heavy',
+      detail:
+        'Phones near this mandal are stopping for longer than any walking ' +
+        'speed explains. Nobody has reported it — that is what devices were ' +
+        'seen doing, and people stop to look as well as to queue.',
+    };
+  }
+  if (level === 'short') {
+    return {
+      label: 'Observed short',
+      detail:
+        'Phones near this mandal are arriving and leaving again within a few ' +
+        'minutes, and none of them stayed long enough to look like a queue. ' +
+        'Nobody has reported it — that is what devices were seen doing.',
+    };
+  }
+  return {
+    label: 'Observed moving',
+    detail:
+      'Phones near this mandal are moving through slower than a clean ' +
+      'walk. Nobody has reported it — that is what devices were seen ' +
+      'doing, not something anyone said.',
+  };
 }
 
 /**
@@ -431,12 +468,94 @@ export function dwellDeviceCount(samples: DwellInput[], nowMs: number): number {
 }
 
 /**
+ * What one device's rows say about the queue, and whether it proves one.
+ *
+ * ---------------------------------------------------------------------
+ * Why a marker and a final sample are read differently.
+ *
+ * A threshold marker says "at least this long". It is a LOWER BOUND — the
+ * visit was still running when it was written, and may have run for
+ * another hour. A lower bound can argue that a queue exists; it can never
+ * argue that one is short, because the thing it does not know is exactly
+ * how much longer the person stood there.
+ *
+ * A final sample is a measurement: the visit ended, and the row carries
+ * its whole length. That is the only row entitled to say "short".
+ *
+ * What it measures, though, is time in the zone, not time in a queue —
+ * and the zones run from 35 m to 75 m, where walking clean across takes
+ * 2.2 and 4.7 minutes respectively. So the walk is subtracted and the
+ * EXCESS is what gets classified, on the same minute thresholds a
+ * reported wait time uses. Without that, a stroll across a big zone and a
+ * real wait at a small one would read the same.
+ */
+interface DeviceReading {
+  level: CrowdLevel;
+  /**
+   * This device is positive evidence that a queue exists here.
+   *
+   * Either it crossed the queueing threshold, or its completed visit had
+   * ten minutes in it that walking does not explain. Used to veto a
+   * "short" consensus — see dwellConsensus.
+   */
+  queued: boolean;
+}
+
+function readDevice(rows: AgedDwell[]): DeviceReading {
+  const queueingMarker = rows.some((x) => x.d.dwell === 'queueing');
+
+  // The longest completed visit this device recorded. There is normally
+  // at most one; taking the longest is defensive rather than meaningful.
+  const finals = rows.filter((x) => x.d.isFinal && typeof x.d.dwellSeconds === 'number');
+  const final = finals.reduce<AgedDwell | null>(
+    (best, x) => (!best || (x.d.dwellSeconds ?? 0) > (best.d.dwellSeconds ?? 0) ? x : best),
+    null
+  );
+
+  if (final) {
+    const crossing = final.d.crossingSeconds ?? 0;
+    const excessMinutes = Math.max(0, (final.d.dwellSeconds ?? 0) - crossing) / 60;
+    const level = levelForWaitMinutes(excessMinutes);
+    return {
+      level,
+      // A queueing marker still counts as proof even where the measured
+      // excess lands short, which happens at the smallest zones: four
+      // times a 2.2-minute crossing is under nine minutes in total.
+      queued: queueingMarker || level !== 'short',
+    };
+  }
+
+  // Markers only: a lower bound, and never short.
+  return {
+    level: DWELL_LEVEL[queueingMarker ? 'queueing' : 'lingering'],
+    queued: queueingMarker,
+  };
+}
+
+/**
  * What the dwell devices agree on, or null.
  *
  * Returns a level only when enough independent devices have been seen and
  * enough of them behaved the same way — see MIN_DWELL_DEVICES_FOR_STATUS
  * and DWELL_DOMINANCE_SHARE. This is the only path by which a mandal can
  * take a colour with nobody having reported it.
+ *
+ * ---------------------------------------------------------------------
+ * The veto, and the mandal it exists for.
+ *
+ * Dagdusheth's zone is 65 m and its peak queue is 150 minutes. People
+ * stand on the road outside it constantly without ever joining that
+ * queue — looking at the dekhava, taking photographs, waiting for family
+ * — and three of them leaving after six minutes is exactly the pattern a
+ * genuinely short mandal produces. Without a guard, the busiest mandal in
+ * Pune would go green off passers-by.
+ *
+ * So a `short` consensus is refused outright if ANY device in the window
+ * is positive evidence of a queue. One person standing thirteen minutes
+ * proves a queue exists; three people strolling past do not prove it
+ * does not. The errors are not the same size either: a pessimistic
+ * passive signal costs somebody a walk to another mandal, an optimistic
+ * one sends them into a two-hour queue on the app's word.
  */
 export function dwellConsensus(
   samples: DwellInput[],
@@ -457,20 +576,40 @@ export function dwellConsensus(
      */
     .filter((x) => typeof x.d.deviceKey === 'string' && x.d.deviceKey.length > 0);
 
-  const devices = collapseDwellByDevice(fresh);
-  if (devices.length < MIN_DWELL_DEVICES_FOR_STATUS) return null;
+  // Group every row by device, rather than keeping one row each: reading
+  // a device needs its markers AND its final sample together.
+  const byDevice = new Map<string, AgedDwell[]>();
+  for (const x of fresh) {
+    const key = x.d.deviceKey as string;
+    (byDevice.get(key) ?? byDevice.set(key, []).get(key)!).push(x);
+  }
+  if (byDevice.size < MIN_DWELL_DEVICES_FOR_STATUS) return null;
 
-  const queueing = devices.filter((x) => x.d.dwell === 'queueing').length;
-  const share = Math.max(queueing, devices.length - queueing) / devices.length;
+  const readings = [...byDevice.values()].map(readDevice);
+  const total = readings.length;
+
+  let winner: CrowdLevel = 'moving';
+  let best = -1;
+  for (const level of LEVELS) {
+    const n = readings.filter((r) => r.level === level).length;
+    if (n > best) {
+      best = n;
+      winner = level;
+    }
+  }
+
+  const share = best / total;
   if (share < DWELL_DOMINANCE_SHARE) return null;
 
-  const winner = queueing * 2 >= devices.length ? 'queueing' : 'lingering';
-  const newestAt = devices.reduce(
+  // The veto. See the note above.
+  if (winner === 'short' && readings.some((r) => r.queued)) return null;
+
+  const newestAt = fresh.reduce(
     (newest, x) => (Date.parse(x.d.createdAt) > Date.parse(newest) ? x.d.createdAt : newest),
-    devices[0].d.createdAt
+    fresh[0].d.createdAt
   );
 
-  return { level: DWELL_LEVEL[winner], devices: devices.length, share, newestAt };
+  return { level: winner, devices: total, share, newestAt };
 }
 
 export function scoreBreakdown(

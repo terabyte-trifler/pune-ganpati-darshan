@@ -43,7 +43,7 @@ const CROWD_KEYS = [
   'none', 'short', 'moving', 'long',
   // Half-filled for dwell, hollow for the prior. Same keys the full map
   // registers, so the two maps cannot drift apart.
-  'obs-moving', 'obs-long',
+  'obs-short', 'obs-moving', 'obs-long',
   'est-short', 'est-moving', 'est-long',
 ] as const;
 type CrowdKey = (typeof CROWD_KEYS)[number];

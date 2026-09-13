@@ -101,6 +101,86 @@ describe('the promotion gate', () => {
   });
 });
 
+describe('a completed visit can say short — carefully', () => {
+  const now = Date.parse('2026-09-18T16:00:00.000Z');
+  // Tulshibaug: 50 m zone, 155s to walk across, queueing at 622s.
+  const CROSS_SMALL = 155;
+  // Dagdusheth: 65 m zone, 202s across.
+  const CROSS_BIG = 202;
+
+  const visit = (
+    key: string,
+    dwellSeconds: number,
+    crossingSeconds: number,
+    dwell: 'lingering' | 'queueing' = 'lingering'
+  ): DwellInput => ({
+    dwell,
+    createdAt: new Date(now - 4 * 60_000).toISOString(),
+    deviceKey: key,
+    dwellSeconds,
+    isFinal: true,
+    crossingSeconds,
+  });
+
+  const marker = (
+    key: string,
+    dwell: 'lingering' | 'queueing',
+    crossingSeconds: number
+  ): DwellInput => ({
+    dwell,
+    createdAt: new Date(now - 6 * 60_000).toISOString(),
+    deviceKey: key,
+    dwellSeconds: dwell === 'queueing' ? crossingSeconds * 4 : crossingSeconds * 1.5,
+    isFinal: false,
+    crossingSeconds,
+  });
+
+  it('reads three quick completed visits as short', () => {
+    // Eight minutes in the zone, 2.6 of which is walking across it: five
+    // and a half minutes unexplained, which the wait scale calls short.
+    const quick = ['a', 'b', 'c'].map((k) => visit(k, 8 * 60, CROSS_SMALL));
+    expect(dwellConsensus(quick, now)?.level).toBe('short');
+  });
+
+  it('subtracts the walk, so a big zone is not read as a wait', () => {
+    // The same eight minutes at a 75 m zone is mostly transit.
+    const bigZone = ['a', 'b', 'c'].map((k) => visit(k, 8 * 60, 470));
+    expect(dwellConsensus(bigZone, now)?.level).toBe('short');
+    // And a real wait still reads as one, at either size.
+    const waited = ['a', 'b', 'c'].map((k) => visit(k, 25 * 60, CROSS_SMALL));
+    expect(dwellConsensus(waited, now)?.level).toBe('moving');
+  });
+
+  it('never says short on a threshold marker alone', () => {
+    // A marker is a lower bound: the visit was still running when it was
+    // written, so it cannot argue the queue was short.
+    const markersOnly = ['a', 'b', 'c'].map((k) => marker(k, 'lingering', CROSS_SMALL));
+    expect(dwellConsensus(markersOnly, now)?.level).toBe('moving');
+  });
+
+  it('refuses short at Dagdusheth when one person actually queued', () => {
+    // The case this guard exists for. Three people stand on the road
+    // outside for six minutes and walk on — exactly what a short mandal
+    // looks like — while a fourth is in the queue. Without the veto the
+    // busiest mandal in Pune goes green off passers-by.
+    const passersBy = ['a', 'b', 'c'].map((k) => visit(k, 6 * 60, CROSS_BIG));
+    expect(dwellConsensus(passersBy, now)?.level).toBe('short');
+
+    const andOneQueueing = [...passersBy, marker('d', 'queueing', CROSS_BIG)];
+    expect(dwellConsensus(andOneQueueing, now)).toBeNull();
+  });
+
+  it('still lets a queue be seen when most people are in it', () => {
+    const queueing = ['a', 'b', 'c'].map((k) => marker(k, 'queueing', CROSS_BIG));
+    expect(dwellConsensus(queueing, now)?.level).toBe('long');
+  });
+
+  it('reads one device\'s marker and final together, not as two devices', () => {
+    const oneVisit = [marker('a', 'lingering', CROSS_SMALL), visit('a', 8 * 60, CROSS_SMALL)];
+    expect(dwellConsensus(oneVisit, now)).toBeNull();
+  });
+});
+
 describe('what the table may still never hold', () => {
   it('has no device id and no coordinate column', () => {
     const sql = readFileSync(

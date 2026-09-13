@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { features } from '@/lib/env';
 import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
+import { paceZones } from '@/features/crowd/pace';
 import { aggregateSnapshot, aggregateMandal } from './crowd-aggregation';
 import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
 import {
@@ -80,6 +81,38 @@ async function getKnownMandalIds(): Promise<string[]> {
   return ids;
 }
 
+/**
+ * Seconds to walk clean through each mandal's dwell zone.
+ *
+ * Derived here, from the catalogue, rather than taken from the client.
+ * It decides how much of a visit was walking and how much was waiting,
+ * which now decides what colour a mandal can take — so a number the
+ * client chooses would be a number an attacker chooses.
+ *
+ * Same geometry the device uses to decide it is inside a zone, from the
+ * same pure function, so the two cannot drift apart.
+ */
+let crossingCache: { byId: Record<string, number>; at: number } | null = null;
+
+async function getCrossingSeconds(): Promise<Record<string, number>> {
+  const now = Date.now();
+  if (crossingCache && now - crossingCache.at < MANDAL_ID_TTL_MS) return crossingCache.byId;
+  const ganpatis = await getAllGanpatis();
+  const byId: Record<string, number> = {};
+  for (const zone of paceZones(
+    ganpatis.map((g) => ({
+      id: g.id,
+      lat: g.location.lat,
+      lng: g.location.lng,
+      prominence: g.prominence,
+    }))
+  )) {
+    byId[zone.mandalId] = zone.crossingS;
+  }
+  crossingCache = { byId, at: now };
+  return byId;
+}
+
 /** Drop anything that is not a published mandal. Never throws on bad input. */
 export async function filterKnownMandalIds(ids: string[]): Promise<string[]> {
   const known = new Set(await getKnownMandalIds());
@@ -118,18 +151,22 @@ async function readDwellSamples(
     const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
     const { data, error } = await supabase
       .from('crowd_dwell_samples')
-      .select('mandal_id, dwell, created_at, device_key')
+      .select('mandal_id, dwell, dwell_seconds, is_final, created_at, device_key')
       .in('mandal_id', ids)
       .gte('created_at', since)
       .limit(5_000);
     if (error || !data) return {};
 
+    const crossing = await getCrossingSeconds();
     const out: Record<string, DwellInput[]> = {};
     for (const row of data) {
       (out[row.mandal_id] ??= []).push({
         dwell: row.dwell,
         createdAt: row.created_at,
         deviceKey: row.device_key,
+        dwellSeconds: row.dwell_seconds,
+        isFinal: row.is_final,
+        crossingSeconds: crossing[row.mandal_id],
       });
     }
     return out;
@@ -410,6 +447,7 @@ export function resetCrowdServiceForTesting() {
   inFlight = null;
   lastGood = null;
   mandalIdCache = null;
+  crossingCache = null;
 }
 
 
@@ -511,12 +549,13 @@ export async function getCrowdExplain(): Promise<{
   const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
   const { data: dwellRows } = await supabase
     .from('crowd_dwell_samples')
-    .select('mandal_id, dwell, created_at, device_key')
+    .select('mandal_id, dwell, dwell_seconds, is_final, created_at, device_key')
     .in('mandal_id', ids)
     .gte('created_at', since)
     .limit(5_000);
 
   const waitByMandal = await readWaitReports(supabase, ids);
+  const explainCrossing = await getCrossingSeconds();
   const dwellCounted = process.env.CROWD_DWELL_PUBLIC === '1';
   const dwellByMandal: Record<string, DwellInput[]> = {};
   for (const row of dwellRows ?? []) {
@@ -524,6 +563,9 @@ export async function getCrowdExplain(): Promise<{
       dwell: row.dwell,
       createdAt: row.created_at,
       deviceKey: row.device_key,
+      dwellSeconds: row.dwell_seconds,
+      isFinal: row.is_final,
+      crossingSeconds: explainCrossing[row.mandal_id],
     });
   }
 

@@ -43,7 +43,7 @@ import type { CrowdLevel, CrowdStatus } from '@/types/crowd';
 export type CrowdPinKey =
   | 'none'
   | CrowdLevel
-  | 'obs-moving' | 'obs-long'
+  | 'obs-short' | 'obs-moving' | 'obs-long'
   | 'est-short' | 'est-moving' | 'est-long';
 
 /**
