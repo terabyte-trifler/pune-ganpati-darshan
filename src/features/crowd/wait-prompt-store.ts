@@ -34,6 +34,25 @@ export interface WaitPrompt {
   dwellSeconds: number;
 }
 
+/**
+ * The snapshot handed to React, held by reference.
+ *
+ * useSyncExternalStore compares snapshots with Object.is and re-renders
+ * when they differ — so returning a freshly parsed array on every call is
+ * an infinite render loop, not merely wasteful. The first version did
+ * exactly that and locked the home page up; the component test caught it
+ * as "Maximum update depth exceeded".
+ *
+ * So the parsed list is cached here and only replaced when it actually
+ * changes: on a write, or when an entry has expired.
+ */
+let snapshot: WaitPrompt[] = [];
+let loaded = false;
+
+function same(a: WaitPrompt[], b: WaitPrompt[]): boolean {
+  return a.length === b.length && a.every((p, i) => p.mandalId === b[i].mandalId && p.at === b[i].at);
+}
+
 function read(): WaitPrompt[] {
   if (typeof localStorage === 'undefined') return [];
   try {
@@ -57,11 +76,16 @@ function read(): WaitPrompt[] {
 }
 
 function write(list: WaitPrompt[]) {
+  const next = list.slice(-5);
   try {
-    localStorage.setItem(KEY, JSON.stringify(list.slice(-5)));
+    localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
     /* Private mode, or storage full. Losing a prompt costs nothing. */
   }
+  // The stored value and the snapshot React sees must move together, or
+  // the card keeps offering a prompt that has already been answered.
+  snapshot = next;
+  loaded = true;
   listeners.forEach((l) => l());
 }
 
@@ -73,7 +97,17 @@ export function subscribeWaitPrompts(listener: () => void): () => void {
 }
 
 export function getWaitPrompts(): WaitPrompt[] {
-  return read();
+  if (!loaded) {
+    loaded = true;
+    snapshot = read();
+    return snapshot;
+  }
+  // Only re-parse enough to notice an expiry: anything else would hand
+  // React a new array for an unchanged list.
+  const now = Date.now();
+  const live = snapshot.filter((p) => now - p.at < EXPIRY_MS);
+  if (!same(live, snapshot)) snapshot = live;
+  return snapshot;
 }
 
 /**
@@ -84,12 +118,18 @@ export function getWaitPrompts(): WaitPrompt[] {
  * they cannot answer, and asking it twice teaches them to ignore the card.
  */
 export function noteQueued(mandalId: string, dwellSeconds: number) {
-  const list = read().filter((p) => p.mandalId !== mandalId);
+  const list = getWaitPrompts().filter((p) => p.mandalId !== mandalId);
   list.push({ mandalId, at: Date.now(), dwellSeconds });
   write(list);
 }
 
 /** Answered, or dismissed. Either way, stop asking. */
 export function clearWaitPrompt(mandalId: string) {
-  write(read().filter((p) => p.mandalId !== mandalId));
+  write(getWaitPrompts().filter((p) => p.mandalId !== mandalId));
+}
+
+/** Tests only: forget the cached snapshot between cases. */
+export function resetWaitPromptsForTesting() {
+  snapshot = [];
+  loaded = false;
 }
