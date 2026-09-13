@@ -104,3 +104,55 @@ export function boundsOf(points: LatLng[], padding = 0.002) {
     east: east + padding,
   };
 }
+
+/**
+ * Metres from a point to the nearest part of a path.
+ *
+ * Needed because a closure is a line, not a place: "is this parking on a
+ * closed road" is a question about distance to the whole stretch, and
+ * measuring to its end points would miss a spot sitting halfway along it.
+ *
+ * Works in a local flat projection rather than on the sphere. Over the
+ * few hundred metres this is asked about, at Pune's latitude, the error
+ * is centimetres — and the alternative is a great-circle cross-track
+ * calculation whose failure modes are much harder to see.
+ */
+export function metresToPath(point: LatLng, path: [number, number][]): number {
+  if (path.length === 0) return Infinity;
+
+  // Metres per degree at this latitude, so x and y are comparable.
+  const mPerLat = 111_132;
+  const mPerLng = 111_320 * Math.cos((point.lat * Math.PI) / 180);
+  const x = (p: LatLng) => p.lng * mPerLng;
+  const y = (p: LatLng) => p.lat * mPerLat;
+
+  const px = x(point);
+  const py = y(point);
+  let best = Infinity;
+
+  for (let i = 0; i < path.length; i++) {
+    const [alng, alat] = path[i];
+    const ax = alng * mPerLng;
+    const ay = alat * mPerLat;
+
+    // A single-point path is just that point.
+    if (i === path.length - 1) {
+      if (path.length === 1) best = Math.min(best, Math.hypot(px - ax, py - ay));
+      break;
+    }
+
+    const [blng, blat] = path[i + 1];
+    const bx = blng * mPerLng;
+    const by = blat * mPerLat;
+
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lengthSq = dx * dx + dy * dy;
+    // Clamped to the segment, so a point beyond an end measures to that end
+    // rather than to an imaginary extension of the road.
+    const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lengthSq));
+    best = Math.min(best, Math.hypot(px - (ax + t * dx), py - (ay + t * dy)));
+  }
+
+  return best;
+}

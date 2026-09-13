@@ -81,6 +81,20 @@ export function ParkingRideCard({
         </li>
       </ol>
 
+      {choice.detouredForClosures && (
+        <p className="prose-measure mt-3 flex gap-2 rounded-[var(--radius-field)] border border-[var(--zendu)]/30 bg-[var(--zendu)]/[0.07] px-3 py-2.5 text-[12.5px] leading-relaxed text-[var(--muted)]">
+          <TriangleAlert size={13} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--zendu)]" />
+          <span>
+            Roads on the way close after 17:00, so the ride above already
+            allows for a diversion. Expect to be sent round — the{' '}
+            <a href="/parking#closures" className="font-semibold text-[var(--shendur)]">
+              closure list
+            </a>{' '}
+            shows which stretches.
+          </span>
+        </p>
+      )}
+
       <a
         href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&travelmode=driving`}
         target="_blank"
@@ -95,9 +109,10 @@ export function ParkingRideCard({
         <CircleParking size={13} aria-hidden="true" className="mt-0.5 shrink-0" />
         <span>
           Chosen for the whole journey rather than the shortest ride: a spot a
-          little further out often saves more walking than it costs. The peths
-          are closed to vehicles in the evening, so the rest is on foot either
-          way.
+          little further out often saves more walking than it costs, and after
+          17:00 a ride that has to go round a closure is priced as the longer
+          ride it is. The peths are closed to vehicles in the evening, so the
+          rest is on foot either way — closures do not stop you walking.
         </span>
       </p>
       <p className="prose-measure mt-1.5 flex gap-2 text-[12px] leading-relaxed text-[var(--faint)]">
