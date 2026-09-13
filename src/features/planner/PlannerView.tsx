@@ -247,13 +247,13 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     const roadDistance = distance * DETOUR_FACTOR;
     return {
       distanceM: roadDistance,
-      // Plus the ride, when there is one: the plan's headline time has to
-      // include getting to the parking or it understates the evening.
-      durationS:
-        estimateDurationSeconds(distance, legMode) +
-        (parking ? parking.rideMinutes * 60 : 0),
+      // Walking only. The ride is added once below, so it survives the
+      // switch to routed numbers — it used to be folded in here and then
+      // vanish the moment someone tapped Optimise, because the routed
+      // duration covers the walk alone.
+      durationS: estimateDurationSeconds(distance, legMode),
     };
-  }, [stops, origin, legMode, parking]);
+  }, [stops, origin, legMode]);
 
   /**
    * Queuing time, which this view did not count at all.
@@ -359,7 +359,16 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
   }
 
   const totalDistance = result?.distanceM ?? estimate?.distanceM ?? null;
-  const travelS = result?.durationS ?? estimate?.durationS ?? null;
+  const walkS = result?.durationS ?? estimate?.durationS ?? null;
+  /**
+   * The ride to the parking, added to whichever walking figure is in use.
+   *
+   * Both paths need it and only one had it: the local estimate folded the
+   * ride in, the routed result did not, so optimising a two-wheeler plan
+   * quietly cut the best part of an hour off the total.
+   */
+  const rideS = parking ? parking.rideMinutes * 60 : 0;
+  const travelS = walkS === null ? null : walkS + rideS;
   const totalDuration = travelS === null ? null : travelS + darshanS;
   const isEstimate = !result || result.estimated;
   const crowdAdjusted = stops.some((g) => crowdState.byMandalId[g.id]?.status);
@@ -561,14 +570,16 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
             <p className="text-[22px] font-bold leading-none text-[var(--chandan)]">
               {totalDistance !== null ? formatDistance(totalDistance) : '—'}
             </p>
-            <p className="mt-1 text-[12px] text-[var(--faint)]">distance</p>
+            <p className="mt-1 text-[12px] text-[var(--faint)]">
+              {parking ? 'on foot' : 'distance'}
+            </p>
           </div>
           <div>
             <p className="text-[22px] font-bold leading-none text-[var(--chandan)]">
               {totalDuration !== null ? formatDuration(totalDuration) : '—'}
             </p>
             <p className="mt-1 text-[12px] text-[var(--faint)]">
-              walk + darshan
+              {parking ? 'ride + walk + darshan' : 'walk + darshan'}
             </p>
             {/* The provenance label stays exactly one of three known values.
                 It is the page's statement about where this number came
@@ -625,7 +636,22 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       </div>
 
       {!sharedSlugs && (
-        <StartRouteButton stops={stops} mode={mode} source="planner" label="Start my darshan" />
+        <StartRouteButton
+          stops={stops}
+          mode={mode}
+          source="planner"
+          label="Start my darshan"
+          // The walk begins where the vehicle is left, not where the rider
+          // is standing when they tap.
+          startFrom={
+            parking
+              ? {
+                  point: { lat: parking.spot.lat, lng: parking.spot.lng },
+                  label: 'parking',
+                }
+              : null
+          }
+        />
       )}
 
       {/* ---------------- Stops ---------------- */}

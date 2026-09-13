@@ -109,7 +109,7 @@ function splitIntoLegs(stops: Ganpati[], hasOrigin: boolean): Ganpati[][] {
 const JOIN_ROUTE_RADIUS_M = 1_500;
 
 export function StartRouteButton({
-  stops, mode, source, label, preserveOrder = false,
+  stops, mode, source, label, preserveOrder = false, startFrom = null,
 }: {
   stops: Ganpati[];
   mode: TravelMode;
@@ -132,10 +132,23 @@ export function StartRouteButton({
    * mid-route may genuinely want to join it there.
    */
   preserveOrder?: boolean;
+  /**
+   * Start the walk somewhere other than the visitor's own position.
+   *
+   * Set on a two-wheeler plan, where the walk begins at the parking. The
+   * handoff is a walking route in every mode, so without this Google Maps
+   * was given the rider's live position and would have walked them in
+   * from Kothrud — several kilometres on foot to reach a route they were
+   * going to ride to.
+   */
+  startFrom?: { point: LatLng; label: string } | null;
 }) {
   const { state, request } = useGeolocation();
   const [reorderFromMe, setReorderFromMe] = useState(!preserveOrder);
-  const origin = state.status === 'ready' ? state.position : null;
+  const located = state.status === 'ready' ? state.position : null;
+  // An explicit start wins: it is a fact about the plan, not a guess about
+  // where the person is standing.
+  const origin = startFrom ? startFrom.point : located;
 
   /** Distance from the visitor to where the route begins. */
   const distanceToStart = useMemo(() => {
@@ -240,7 +253,8 @@ export function StartRouteButton({
             ) : distanceToStart !== null ? (
               <>
                 Starts at {stops[0].name.replace(/^(Shri|Shrimant)\s+/i, '')},{' '}
-                {formatDistance(distanceToStart)} from you.
+                {formatDistance(distanceToStart)}{' '}
+                {startFrom ? `from the ${startFrom.label}` : 'from you'}.
               </>
             ) : (
               <>Starts at {stops[0].name.replace(/^(Shri|Shrimant)\s+/i, '')}.</>
