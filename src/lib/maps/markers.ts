@@ -60,6 +60,27 @@ export function pinColor(crowd: CrowdLevel | null | undefined): string {
   return crowd ? CROWD_PIN_COLOR[crowd] : UNREPORTED_COLOR;
 }
 
+/** The ground every pin sits on, and what a hollow pin is filled with. */
+const PIN_INK = '#14100c';
+
+/**
+ * Splits a pin image key back into what it means.
+ *
+ * The key travels through the GeoJSON as a string because the map builds
+ * an image id by concatenation, so this is where it becomes a level and a
+ * provenance again. `est-moving` is an amber pin drawn hollow.
+ */
+export function splitPinKey(key: string): {
+  level: CrowdLevel | null;
+  estimated: boolean;
+} {
+  if (key === 'none') return { level: null, estimated: false };
+  if (key.startsWith('est-')) {
+    return { level: key.slice(4) as CrowdLevel, estimated: true };
+  }
+  return { level: key as CrowdLevel, estimated: false };
+}
+
 /**
  * Compact Ganpati silhouette for map pins, matching GanpatiGlyph.
  *
@@ -97,7 +118,18 @@ export interface MarkerVisual {
 export function buildMarkerSvg(
   category: GanpatiCategory,
   selected: boolean,
-  crowd?: CrowdLevel | null
+  crowd?: CrowdLevel | null,
+  /**
+   * Drawn hollow: the queue's colour as a ring and a mark on the map's own
+   * ground, rather than a filled disc.
+   *
+   * This is the whole safeguard for putting the prior on the map. A filled
+   * pin means people reported this; an outlined one means the app worked it
+   * out from the clock. The difference survives greyscale, a colour-blind
+   * reader and a glance from arm's length, which a word on a label does
+   * not — and the label says "Est." as well.
+   */
+  estimated = false
 ): MarkerVisual {
   const color = pinColor(crowd);
   const size = selected ? 46 : 34;
@@ -105,11 +137,19 @@ export function buildMarkerSvg(
   // greyscale and to colour-blind users.
   const ring = category === 'maanache' ? 2.4 : 1.4;
 
+  const body = estimated
+    ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}" stroke="${color}" stroke-width="${
+        category === 'maanache' ? 3.4 : 2.6
+      }"/>
+       ${glyph(color)}
+       ${eyes(PIN_INK)}`
+    : `<circle cx="12" cy="12" r="10.2" fill="${color}" stroke="${PIN_INK}" stroke-width="${ring}"/>
+       ${glyph(PIN_INK)}
+       ${eyes(color)}`;
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="0.28"/>` : ''}
-    <circle cx="12" cy="12" r="10.2" fill="${color}" stroke="#14100c" stroke-width="${ring}"/>
-    ${glyph('#14100c')}
-    ${eyes(color)}
+    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="${estimated ? 0.16 : 0.28}"/>` : ''}
+    ${body}
   </svg>`;
 
   return { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, size };
@@ -129,7 +169,9 @@ export function buildMarkerSvg(
  */
 export function buildRouteStopSvg(
   selected: boolean,
-  crowd?: CrowdLevel | null
+  crowd?: CrowdLevel | null,
+  /** Hollow, for the same reason as buildMarkerSvg. */
+  estimated = false
 ): MarkerVisual {
   // A route stop reads the queue like every other pin. Selection is carried
   // by size and the halo rather than by colour, so choosing a stop can no
@@ -139,11 +181,17 @@ export function buildRouteStopSvg(
   // read, and the larger target is worth having where stops overlap.
   const size = selected ? 48 : 40;
 
+  const body = estimated
+    ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}" stroke="${color}" stroke-width="2.6"/>
+       ${glyph(color)}
+       ${eyes(PIN_INK)}`
+    : `<circle cx="12" cy="12" r="10.2" fill="${color}" stroke="${PIN_INK}" stroke-width="1.6"/>
+       ${glyph(PIN_INK)}
+       ${eyes(color)}`;
+
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="0.3"/>` : ''}
-    <circle cx="12" cy="12" r="10.2" fill="${color}" stroke="#14100c" stroke-width="1.6"/>
-    ${glyph('#14100c')}
-    ${eyes(color)}
+    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="${estimated ? 0.18 : 0.3}"/>` : ''}
+    ${body}
   </svg>`;
 
   return { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, size };

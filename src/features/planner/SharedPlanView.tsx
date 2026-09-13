@@ -96,7 +96,7 @@ export function SharedPlanView({
                 {stop.name}
               </Link>
               <p className="truncate text-[12px] text-[var(--faint)]">{stop.area.name}</p>
-              <CrowdBadge mandalId={stop.id} className="mt-1" />
+              <CrowdBadge mandalId={stop.id} prior={stop} className="mt-1" />
             </div>
           </li>
         ))}

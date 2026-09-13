@@ -155,7 +155,11 @@ export function RouteDetailView({
                     </span>
                     {/* The most useful thing on this page mid-route: which
                         of these five stops is currently heaving. */}
-                    <CrowdBadge mandalId={stop.ganpati.id} className="mt-1" />
+                    <CrowdBadge
+                      mandalId={stop.ganpati.id}
+                      prior={stop.ganpati}
+                      className="mt-1"
+                    />
                     <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-[var(--faint)]">
                       <span>{stop.ganpati.area.name}</span>
                       {minutes != null && (

@@ -53,10 +53,11 @@ export function GanpatiCard({
           <CategoryBadge category={ganpati.category} rank={ganpati.manacheRank} />
           {ganpati.isTemple && <TempleBadge />}
         </div>
-        {/* Renders nothing until someone has actually reported, so a quiet
-            mandal shows no badge rather than a reassuring one. */}
+        {/* Filled when people have reported, hollow and "Est." when the
+            hour-of-day model is the only thing speaking, absent when
+            neither has anything to say. */}
         <div className="absolute right-2 top-2">
-          <CrowdBadge mandalId={ganpati.id} />
+          <CrowdBadge mandalId={ganpati.id} prior={ganpati} />
         </div>
       </div>
 

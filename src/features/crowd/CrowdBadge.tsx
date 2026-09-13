@@ -1,18 +1,23 @@
 'use client';
 
-import { useCrowdStatus } from './useCrowd';
+import { useCrowdDisplayFor } from './useCrowdDisplay';
+import type { CrowdDisplay } from './crowd-display';
 import { cn } from '@/lib/utils';
-import type { CrowdLevel, CrowdStatus } from '@/types/crowd';
+import type { PriorInput } from '@/services/crowd/crowd-prior';
+import type { CrowdLevel } from '@/types/crowd';
 
 /**
  * Compact crowd indicator for cards, list rows and map callouts.
  *
- * Renders nothing when there are no recent reports. That is the rule the
- * whole feature stands on: an absent badge means "we don't know", and an
- * empty state must never be dressed up as a short queue (§32, §33). A
- * "No recent reports" chip on every card before the festival starts would
- * also be noise on top of being useless, so the explicit empty wording
- * lives in the detail panel where there is room to explain it.
+ * Two states, never confused. A filled badge is what people reported. A
+ * dashed, hollow one prefixed "Est." is what the app expects from the
+ * hour and the day of the festival, shown only where nobody has reported
+ * — see features/crowd/crowd-display.
+ *
+ * It still renders nothing at all when there is neither: outside the
+ * festival, and on visarjan afternoon, an absent badge means "we don't
+ * know", and an empty state must never be dressed up as a short queue
+ * (§32, §33).
  */
 
 export const CROWD_COLOR: Record<CrowdLevel, string> = {
@@ -31,27 +36,47 @@ const SHAPE: Record<CrowdLevel, string> = {
   long: 'rounded-[2px] rotate-45',
 };
 
-export function CrowdDot({ level, size = 8 }: { level: CrowdLevel; size?: number }) {
+export function CrowdDot({
+  level,
+  size = 8,
+  /**
+   * Outline only, for a level the app worked out rather than was told.
+   *
+   * The same distinction the pins make, in the same visual language: a
+   * filled mark is a report, a hollow one is an estimate. It reads in
+   * greyscale, which the word "Est." beside it does not.
+   */
+  hollow = false,
+}: {
+  level: CrowdLevel;
+  size?: number;
+  hollow?: boolean;
+}) {
   return (
     <span
       aria-hidden="true"
       className={cn('inline-block shrink-0', SHAPE[level])}
-      style={{ width: size, height: size, background: CROWD_COLOR[level] }}
+      style={{
+        width: size,
+        height: size,
+        background: hollow ? 'transparent' : CROWD_COLOR[level],
+        boxShadow: hollow ? `inset 0 0 0 1.5px ${CROWD_COLOR[level]}` : undefined,
+      }}
     />
   );
 }
 
-/** Presentational form — takes a status directly, for server-rendered lists. */
+/** Presentational form — takes a display directly, for server-rendered lists. */
 export function CrowdBadgeView({
-  status,
+  display,
   className,
 }: {
-  status: CrowdStatus | null;
+  display: CrowdDisplay | null;
   className?: string;
 }) {
-  if (!status?.status || status.reportCount === 0) return null;
+  if (!display) return null;
 
-  const level = status.status;
+  const { level, estimated } = display;
 
   return (
     <span
@@ -59,16 +84,27 @@ export function CrowdBadgeView({
         'inline-flex items-center gap-1.5 rounded-full px-2 py-1',
         'text-[12px] font-semibold leading-none',
         'border backdrop-blur-sm',
+        // Dashed, like the panel's expectation box: an estimate is drawn
+        // as an outline of a badge rather than a badge.
+        estimated && 'border-dashed',
         className
       )}
       style={{
         color: CROWD_COLOR[level],
-        borderColor: `color-mix(in srgb, ${CROWD_COLOR[level]} 40%, transparent)`,
-        background: `color-mix(in srgb, ${CROWD_COLOR[level]} 14%, rgb(20 16 12 / 0.82))`,
+        borderColor: `color-mix(in srgb, ${CROWD_COLOR[level]} ${estimated ? 34 : 40}%, transparent)`,
+        background: estimated
+          ? 'rgb(20 16 12 / 0.72)'
+          : `color-mix(in srgb, ${CROWD_COLOR[level]} 14%, rgb(20 16 12 / 0.82))`,
       }}
+      // Read aloud, "Est. short" is a fragment. This is the sentence.
+      title={
+        estimated
+          ? `Estimated from the time of day — nobody has reported this mandal in the last 90 minutes`
+          : undefined
+      }
     >
-      <CrowdDot level={level} />
-      {status.label}
+      <CrowdDot level={level} hollow={estimated} />
+      {display.label}
       {/* The count stays off THIS surface deliberately, and that is now a
           narrower decision than it was.
 
@@ -83,14 +119,23 @@ export function CrowdBadgeView({
   );
 }
 
-/** Live form — subscribes to the shared store. */
+/**
+ * Live form — subscribes to the shared store.
+ *
+ * `prior` is optional and its absence is a real decision, not an
+ * oversight: a surface that passes it gets an "Est." badge where nobody
+ * has reported, and one that does not shows nothing there, exactly as
+ * before. Anywhere a mandal's catalogue entry is to hand, pass it.
+ */
 export function CrowdBadge({
   mandalId,
+  prior,
   className,
 }: {
   mandalId: string;
+  prior?: PriorInput;
   className?: string;
 }) {
-  const { status } = useCrowdStatus(mandalId);
-  return <CrowdBadgeView status={status} className={className} />;
+  const display = useCrowdDisplayFor(mandalId, prior);
+  return <CrowdBadgeView display={display} className={className} />;
 }

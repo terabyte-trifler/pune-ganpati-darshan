@@ -5,14 +5,14 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Search, LocateFixed, X, ChevronRight } from 'lucide-react';
 import { BottomSheet, type Detent } from './BottomSheet';
-import { useCrowdState } from '@/features/crowd/useCrowd';
+import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
+import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 import { CrowdBadgeView } from '@/features/crowd/CrowdBadge';
 import { CrowdReportButtons } from '@/features/crowd/CrowdReportButtons';
 import { MapUnavailable } from './MapUnavailable';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import type { MapFailure } from './MapCanvas';
 import { MapKey } from './MapKey';
-import type { CrowdLevel } from '@/types/crowd';
 import { MapSkeleton } from './MapSkeleton';
 import { Chip } from '@/components/ui/Chip';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
@@ -60,14 +60,12 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
    * for the whole city, so adding crowd colour to 23 markers costs one
    * request per 20 seconds rather than one per marker (§22).
    */
-  const crowdState = useCrowdState();
+  const displays = useCrowdDisplays(ganpatis);
   const crowdLevels = useMemo(() => {
-    const out: Record<string, CrowdLevel> = {};
-    for (const [id, status] of Object.entries(crowdState.byMandalId)) {
-      if (status.status) out[id] = status.status;
-    }
+    const out: Record<string, CrowdPinKey> = {};
+    for (const [id, display] of Object.entries(displays)) out[id] = display.pinKey;
     return out;
-  }, [crowdState]);
+  }, [displays]);
 
   const { state: geo, request: requestLocation } = useGeolocation();
   const { items: saved, hydrated } = useFavorites();
@@ -243,9 +241,7 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
               <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                 {/* Renders nothing until someone has reported, so silence
                     never reads as a calm queue. */}
-                <CrowdBadgeView
-                  status={crowdState.byMandalId[selected.ganpati.id] ?? null}
-                />
+                <CrowdBadgeView display={displays[selected.ganpati.id] ?? null} />
                 <Link
                   href={`/ganpati/${selected.ganpati.slug}`}
                   className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-[var(--shendur)]"
@@ -329,7 +325,7 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
                       {g.name}
                     </p>
                     <CrowdBadgeView
-                      status={crowdState.byMandalId[g.id] ?? null}
+                      display={displays[g.id] ?? null}
                       className="my-0.5"
                     />
                     <p lang="mr" className="truncate text-[12px] text-[var(--muted)]">

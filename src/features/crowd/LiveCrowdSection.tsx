@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useCrowdState, useClockMs } from './useCrowd';
+import { useCrowdDisplays } from './useCrowdDisplay';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { haversine, formatDistance } from '@/lib/geo';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
@@ -64,8 +65,11 @@ function Legend() {
       </ul>
       <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
         Every mandal on the map is drawn in its queue&rsquo;s colour, and it
-        changes as people report. Grey means nobody has reported that one
-        yet — not that it is quiet.
+        changes as people report. A <strong className="font-semibold">filled</strong>{' '}
+        pin is what people reported; a{' '}
+        <strong className="font-semibold">hollow</strong> one is an estimate from
+        the hour of day, shown only where nobody has reported yet. Grey means
+        even that has nothing to say — not that the mandal is quiet.
       </p>
     </div>
   );
@@ -87,6 +91,8 @@ interface Ranked {
   g: Ganpati;
   level: CrowdLevel;
   label: string;
+  /** True when nobody reported this and the hour-of-day model spoke. */
+  estimated: boolean;
   distanceM: number | null;
   /** When this mandal was last reported — NOT when the snapshot was built. */
   lastUpdated: string | null;
@@ -135,47 +141,59 @@ function Heading({ suffix }: { suffix?: string | null }) {
 }
 
 export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
-  const { byMandalId, unavailable, loading, stale, computedAt } = useCrowdState();
+  const { unavailable, loading, stale, computedAt } = useCrowdState();
+  const displays = useCrowdDisplays(ganpatis);
   const { state } = useGeolocation();
   const nowMs = useClockMs();
 
   const position = state.status === 'ready' ? state.position : null;
 
-  const { rows, heavyCount } = useMemo(() => {
-    const withStatus = ganpatis
+  const { rows, heavyCount, anyEstimated, anyMeasured } = useMemo(() => {
+    const all = ganpatis
       .map((g) => {
-        const status = byMandalId[g.id];
-        if (!status?.status) return null;
+        const display = displays[g.id];
+        if (!display) return null;
         return {
           g,
-          level: status.status,
-          label: status.label,
+          level: display.level,
+          label: display.label,
+          estimated: display.estimated,
           distanceM: position
             ? haversine(position, { lat: g.location.lat, lng: g.location.lng })
             : null,
-          lastUpdated: status.lastUpdated,
+          lastUpdated: display.lastUpdated,
         } satisfies Ranked;
       })
       .filter((r): r is Ranked => r !== null);
 
-    const good = withStatus
-      .filter((r) => GOOD.includes(r.level))
-      .sort((a, b) => {
-        // Short before moving, then nearest — or best known when we have no
-        // position to sort by.
-        const byLevel = GOOD.indexOf(a.level) - GOOD.indexOf(b.level);
-        if (byLevel !== 0) return byLevel;
-        if (a.distanceM !== null && b.distanceM !== null) {
-          return a.distanceM - b.distanceM;
-        }
-        return b.g.prominence - a.g.prominence;
-      });
+    const rank = (a: Ranked, b: Ranked) => {
+      // Short before moving, then nearest — or best known when we have no
+      // position to sort by.
+      const byLevel = GOOD.indexOf(a.level) - GOOD.indexOf(b.level);
+      if (byLevel !== 0) return byLevel;
+      if (a.distanceM !== null && b.distanceM !== null) {
+        return a.distanceM - b.distanceM;
+      }
+      return b.g.prominence - a.g.prominence;
+    };
+
+    const good = all.filter((r) => GOOD.includes(r.level));
+    // Reports first, always, and estimates only to fill the space left
+    // over. A mandal somebody is standing outside beats a mandal a model
+    // has an opinion about, every time — however good the opinion.
+    const measured = good.filter((r) => !r.estimated).sort(rank);
+    const estimated = good.filter((r) => r.estimated).sort(rank);
+    const shown = [...measured, ...estimated].slice(0, MAX_ROWS);
 
     return {
-      rows: good.slice(0, MAX_ROWS),
-      heavyCount: withStatus.filter((r) => r.level === 'long').length,
+      rows: shown,
+      // Counted from reports only. "3 mandals are heavy right now" is a
+      // claim about now, and the model is not entitled to make it.
+      heavyCount: all.filter((r) => !r.estimated && r.level === 'long').length,
+      anyEstimated: shown.some((r) => r.estimated),
+      anyMeasured: measured.length > 0,
     };
-  }, [ganpatis, byMandalId, position]);
+  }, [ganpatis, displays, position]);
 
   const ageMs =
     nowMs !== null && computedAt ? Math.max(0, nowMs - Date.parse(computedAt)) : null;
@@ -183,7 +201,13 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
 
   /* ---------------- Unavailable ---------------- */
 
-  if (unavailable) {
+  // Only when there is nothing at all to put here. The estimates are
+  // computed on the device from static catalogue data and the clock, so
+  // they survive exactly the situation this branch describes — and that
+  // situation, a saturated cell in a peth at 9pm, is the one the model
+  // was written for. Falling through means the section still answers the
+  // question when the network cannot.
+  if (unavailable && rows.length === 0) {
     return (
       <Shell>
         <Heading />
@@ -277,10 +301,10 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
         {rows.length > 0 ? (
           <>
             <p className="mt-2.5 text-[13px] font-semibold text-[var(--chandan)]">
-              Shortest queues
+              {anyMeasured ? 'Shortest queues' : 'Expected to be quietest'}
             </p>
             <ul className="mt-1.5 divide-y divide-[var(--line)]">
-              {rows.map(({ g, level, label, distanceM, lastUpdated }) => {
+              {rows.map(({ g, level, label, estimated, distanceM, lastUpdated }) => {
                 // Each mandal's OWN freshness. A reading can be 80 minutes
                 // old inside a snapshot computed a second ago, so this is
                 // the only honest place to put a time.
@@ -299,7 +323,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                     >
                       <span className="flex min-w-0 items-start gap-2.5">
                         <span className="mt-[5px] flex shrink-0">
-                          <CrowdDot level={level} size={10} />
+                          <CrowdDot level={level} size={10} hollow={estimated} />
                         </span>
                         <span className="flex min-w-0 flex-col">
                           <span className="truncate text-[14px] text-[var(--chandan)]">
@@ -308,7 +332,14 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                           <span className="mt-0.5 truncate text-[12px] text-[var(--faint)]">
                             {[
                               distanceM !== null ? formatDistance(distanceM) : null,
-                              rowAgo ? `reported ${rowAgo}` : null,
+                              // An estimate has no report time, and saying
+                              // so is the point: the second line says where
+                              // the row came from, not when.
+                              estimated
+                                ? 'usual for this hour'
+                                : rowAgo
+                                  ? `reported ${rowAgo}`
+                                  : null,
                             ]
                               .filter(Boolean)
                               .join(' · ')}
@@ -326,6 +357,14 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                 );
               })}
             </ul>
+
+            {anyEstimated && (
+              <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
+                Rows marked <strong className="font-semibold">Est.</strong> are
+                worked out from the hour and this mandal&rsquo;s usual queue —
+                nobody has reported those. A hollow dot means an estimate.
+              </p>
+            )}
           </>
         ) : (
           // Everything reported is heavy. Saying so is more useful than an

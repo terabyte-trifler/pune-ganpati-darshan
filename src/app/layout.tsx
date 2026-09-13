@@ -8,6 +8,8 @@ import { JsonLd, siteGraph } from '@/lib/seo/jsonld';
 import { env } from '@/lib/env';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
+import { FestivalConfigProvider } from '@/features/crowd/FestivalPhaseProvider';
+import { getFestivalConfig } from '@/services/ganpati';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -94,9 +96,21 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-export default function RootLayout({
+/**
+ * Async for one reason: the festival's dates.
+ *
+ * The "usually" prior now colours mandals nobody has reported — on every
+ * map, in the tracker and on the cards — and to do that it has to know
+ * which day of the festival it is. Fetching the config here means one
+ * read per rendered page rather than a prop threaded through four map
+ * components, and every page in the app is revalidated rather than
+ * per-request, so it costs a query an hour.
+ */
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const festival = await getFestivalConfig();
+
   return (
     <html lang="en" className={`${manrope.variable} ${mukta.variable} ${fraunces.variable}`}>
       <body className="min-h-dvh bg-[var(--raat)] antialiased">
@@ -109,9 +123,11 @@ export default function RootLayout({
         <JsonLd data={siteGraph()} />
         <GanpatiGlyphSprite />
         <OfflineBanner />
-        {children}
-        <SiteFooter />
-        <BottomNav />
+        <FestivalConfigProvider config={festival}>
+          {children}
+          <SiteFooter />
+          <BottomNav />
+        </FestivalConfigProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>

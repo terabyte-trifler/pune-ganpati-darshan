@@ -11,16 +11,16 @@ import {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
-import { buildMarkerSvg, buildRouteStopSvg } from '@/lib/maps/markers';
+import { buildMarkerSvg, buildRouteStopSvg, splitPinKey } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { boundsOf } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { nearestStation } from '@/lib/metro';
-import { useCrowdState } from '@/features/crowd/useCrowd';
+import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
+import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 import type { Ganpati } from '@/types/ganpati';
-import type { CrowdLevel } from '@/types/crowd';
 
 /**
  * Embedded map for content pages — a mandal's location, a route's shape, the
@@ -39,7 +39,12 @@ import type { CrowdLevel } from '@/types/crowd';
  * Pins here are coloured by the queue, exactly as on the full map — the
  * tracker's colour on every map in the app, updating as reports land.
  */
-const CROWD_KEYS = ['none', 'short', 'moving', 'long'] as const;
+const CROWD_KEYS = [
+  'none', 'short', 'moving', 'long',
+  // Hollow variants for the prior, which colours the mandals nobody has
+  // reported. Same keys the full map registers.
+  'est-short', 'est-moving', 'est-long',
+] as const;
 type CrowdKey = (typeof CROWD_KEYS)[number];
 
 export interface MiniMapProps {
@@ -95,11 +100,8 @@ function collapseAttribution(container: HTMLElement) {
 async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
   const id = `mini-${crowd}`;
   if (map.hasImage(id)) return;
-  const { url, size } = buildMarkerSvg(
-    'local',
-    false,
-    crowd === 'none' ? null : (crowd as CrowdLevel)
-  );
+  const { level, estimated } = splitPinKey(crowd);
+  const { url, size } = buildMarkerSvg('local', false, level, estimated);
   // 3x raster: see MapCanvas. These maps are small, so a soft pin is the
   // most conspicuous thing on them.
   const image = new Image(size * 3, size * 3);
@@ -133,14 +135,12 @@ export function MiniMap({
    * extra request: the poller is already running for the rest of the app,
    * so a map costs nothing to colour.
    */
-  const crowdState = useCrowdState();
+  const displays = useCrowdDisplays(mandals);
   const crowdByMandalId = useMemo(() => {
-    const out: Record<string, CrowdLevel> = {};
-    for (const [id, status] of Object.entries(crowdState.byMandalId)) {
-      if (status.status) out[id] = status.status;
-    }
+    const out: Record<string, CrowdPinKey> = {};
+    for (const [id, display] of Object.entries(displays)) out[id] = display.pinKey;
     return out;
-  }, [crowdState]);
+  }, [displays]);
 
   // Read inside the map-setup effect, which deliberately runs once; the
   // effects below keep the drawn pins in step as readings change.
@@ -323,7 +323,8 @@ export function MiniMap({
     numberedRef.current.forEach((m) => m.remove());
     numberedRef.current = mandals.map((mandal, i) => {
       const active = mandal.slug === selectedSlug;
-      const { url, size } = buildRouteStopSvg(active, crowdByMandalId[mandal.id] ?? null);
+      const stop = splitPinKey(crowdByMandalId[mandal.id] ?? 'none');
+      const { url, size } = buildRouteStopSvg(active, stop.level, stop.estimated);
       const badge = Math.round(size * 0.44);
 
       const el = document.createElement('button');

@@ -220,8 +220,16 @@ export function CrowdPanel({
               something a person reported. */}
           {expectation && (
             <div className="mt-3 rounded-[var(--radius-field)] border border-dashed border-[var(--line-strong)] px-3 py-2.5">
+              {/* Named before it is read, not after. The prose below says
+                  "not a report from anyone there", but somebody skimming a
+                  coloured line does not reach the prose — and this is the
+                  same word the map pins and the tracker rows use, so the
+                  three surfaces teach each other. */}
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--faint)]">
+                Estimated
+              </p>
               <p
-                className="flex items-center gap-2 text-[14px] font-semibold"
+                className="mt-1 flex items-center gap-2 text-[14px] font-semibold"
                 style={{ color: CROWD_COLOR[expectation.level] }}
               >
                 <span

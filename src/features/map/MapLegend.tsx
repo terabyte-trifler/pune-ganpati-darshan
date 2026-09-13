@@ -15,11 +15,24 @@ import { ROAD_CLOSURES, CLOSURE_JUNCTIONS } from '@/content/diversions';
  * client sheet on /map without either needing a copy.
  */
 
+/**
+ * Filled means somebody reported it; hollow means the app worked it out.
+ *
+ * The same convention the metro pins below already use on these maps, and
+ * the same one the badges and the tracker rows use — so it only has to be
+ * learned once.
+ */
 const CROWD = [
   { color: 'var(--crowd-short)', label: 'Short queue' },
   { color: 'var(--crowd-moving)', label: 'Moving' },
   { color: 'var(--crowd-long)', label: 'Heavy' },
-  { color: 'var(--faint)', label: 'Not reported yet' },
+  {
+    color: 'var(--crowd-moving)',
+    label: 'Hollow — estimated, nobody has reported',
+    hollow: true,
+    wide: true,
+  },
+  { color: 'var(--faint)', label: 'Grey — no report and no estimate', wide: true },
 ];
 
 export const PARKING_PIN = '#6C8AB0';
@@ -42,11 +55,16 @@ export function MapLegend({
       </p>
       <ul className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1">
         {CROWD.map((c) => (
-          <li key={c.label} className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
+          <li
+            key={c.label}
+            className={`flex items-center gap-2 text-[12px] text-[var(--muted)]${
+              c.wide ? ' col-span-2' : ''
+            }`}
+          >
             <span
               aria-hidden="true"
-              className="h-2.5 w-2.5 shrink-0 rounded-full"
-              style={{ background: c.color }}
+              className={`h-2.5 w-2.5 shrink-0 rounded-full${c.hollow ? ' border-[1.5px]' : ''}`}
+              style={c.hollow ? { borderColor: c.color } : { background: c.color }}
             />
             {c.label}
           </li>

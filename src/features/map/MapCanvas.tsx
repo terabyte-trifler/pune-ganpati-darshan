@@ -11,14 +11,14 @@ import {
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
-import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
+import { buildMarkerSvg, buildClusterPinSvg, splitPinKey } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import type { Ganpati } from '@/types/ganpati';
-import type { CrowdLevel } from '@/types/crowd';
+import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 
 /**
  * The map.
@@ -48,7 +48,7 @@ export interface MapCanvasProps {
    * Crowd level per mandal id. Absent means no recent reports, which is
    * rendered as no dot at all — never as a calm queue (§32, §33).
    */
-  crowd?: Record<string, CrowdLevel>;
+  crowd?: Record<string, CrowdPinKey>;
 }
 
 /**
@@ -65,7 +65,7 @@ function collapseAttribution(container: HTMLElement) {
 
 function toFeatureCollection(
   ganpatis: Ganpati[],
-  crowd: Record<string, CrowdLevel> = {}
+  crowd: Record<string, CrowdPinKey> = {}
 ): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -104,7 +104,12 @@ const PIN_RASTER = 3;
  * selected-or-not, which is sixteen small images registered once — where
  * keying on category as well would have been sixty-four.
  */
-const CROWD_KEYS = ['none', 'short', 'moving', 'long'] as const;
+const CROWD_KEYS = [
+  'none', 'short', 'moving', 'long',
+  // The prior's three, drawn hollow. A mandal nobody has reported is no
+  // longer automatically grey — see features/crowd/crowd-display.
+  'est-short', 'est-moving', 'est-long',
+] as const;
 
 function pinId(crowd: string, manache: boolean, selected: boolean) {
   return `pin-${crowd}${manache ? '-m' : ''}${selected ? '-sel' : ''}`;
@@ -119,10 +124,12 @@ async function registerPin(
   const id = pinId(crowd, manache, selected);
   if (map.hasImage(id)) return;
 
+  const { level, estimated } = splitPinKey(crowd);
   const { url, size } = buildMarkerSvg(
     manache ? 'maanache' : 'local',
     selected,
-    crowd === 'none' ? null : (crowd as CrowdLevel)
+    level,
+    estimated
   );
   const image = new Image(size * PIN_RASTER, size * PIN_RASTER);
   await new Promise<void>((resolve) => {
