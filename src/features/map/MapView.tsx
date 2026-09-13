@@ -11,6 +11,7 @@ import { CrowdReportButtons } from '@/features/crowd/CrowdReportButtons';
 import { MapUnavailable } from './MapUnavailable';
 import { MapErrorBoundary } from './MapErrorBoundary';
 import type { MapFailure } from './MapCanvas';
+import { MapKey } from './MapKey';
 import type { CrowdLevel } from '@/types/crowd';
 import { MapSkeleton } from './MapSkeleton';
 import { Chip } from '@/components/ui/Chip';
@@ -191,6 +192,12 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
           ))}
         </div>
       </div>
+
+      {/* ---------------- Map key ----------------
+          The map carries mandals, metro and the police plan now; without
+          this, three of those are symbols nobody can decode. It also
+          carries the credit and the link to the police's own map. */}
+      {!mapsOff && <MapKey />}
 
       {/* ---------------- Locate button ---------------- */}
       {!mapsOff && (
