@@ -68,10 +68,20 @@ export function OverrideControls({
         router.refresh();
         return;
       }
+      // Say which failure it was. "Could not set that" is the same
+      // message whether the database is unreachable, the migration has
+      // not been run, or the id is wrong — and on an admin screen the
+      // difference is the whole point.
       setNotice(
         result.reason === 'cooldown'
           ? `Cooldown — ${mmss(result.retryAfter ?? 0)} left`
-          : 'Could not set that'
+          : result.reason === 'unavailable'
+            ? 'Database unreachable, or the override migration has not been run'
+            : result.reason === 'invalid_request'
+              ? 'Unknown mandal, or an invalid level'
+              : response.status === 404
+                ? 'Not signed in as an admin — the session may have expired'
+                : `Failed (${response.status})`
       );
     } catch {
       setNotice('Network error');
