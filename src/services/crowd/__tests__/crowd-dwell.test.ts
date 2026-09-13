@@ -73,6 +73,48 @@ describe('summarising dwell', () => {
   });
 });
 
+describe('one visit is one voice', () => {
+  const ago = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+
+  it('does not let a single phone become "most visitors"', () => {
+    // The exact shape one long visit produces: a lingering marker, a
+    // queueing marker, and a final sample. Three rows, one device — and
+    // three rows used to be the threshold, so this said "most visitors
+    // near this mandal are stopping" off one person standing still.
+    const oneVisit = [
+      { dwell: 'lingering' as const, createdAt: ago(11), deviceKey: 'k' },
+      { dwell: 'queueing' as const, createdAt: ago(4), deviceKey: 'k' },
+      { dwell: 'queueing' as const, createdAt: ago(2), deviceKey: 'k' },
+    ];
+    expect(summariseDwell(oneVisit)).toBeNull();
+  });
+
+  it('speaks once three separate phones have been seen', () => {
+    const three = [
+      { dwell: 'queueing' as const, createdAt: ago(9), deviceKey: 'a' },
+      { dwell: 'queueing' as const, createdAt: ago(6), deviceKey: 'b' },
+      { dwell: 'lingering' as const, createdAt: ago(3), deviceKey: 'c' },
+    ];
+    const summary = summariseDwell(three);
+    expect(summary?.samples).toBe(3);
+    expect(summary?.queueingShare).toBeCloseTo(2 / 3);
+  });
+
+  it('counts the strongest class each phone reached, not every row', () => {
+    const rising = [
+      { dwell: 'lingering' as const, createdAt: ago(9), deviceKey: 'a' },
+      { dwell: 'queueing' as const, createdAt: ago(8), deviceKey: 'a' },
+      { dwell: 'lingering' as const, createdAt: ago(7), deviceKey: 'b' },
+      { dwell: 'queueing' as const, createdAt: ago(6), deviceKey: 'b' },
+      { dwell: 'lingering' as const, createdAt: ago(5), deviceKey: 'c' },
+      { dwell: 'queueing' as const, createdAt: ago(4), deviceKey: 'c' },
+    ];
+    const summary = summariseDwell(rising);
+    expect(summary?.samples).toBe(3);
+    expect(summary?.queueingShare).toBe(1);
+  });
+});
+
 describe('it cannot reach the measured lane', () => {
   it('reaches the aggregation only as bounded mass, never as wording', async () => {
     // Dwell DOES weigh on the reading — 0.25 mass, capped at 1.0, per the

@@ -30,12 +30,19 @@
 export const DWELL_WINDOW_MINUTES = 90;
 
 /**
- * Fewer than this and there is no proportion worth quoting.
+ * Fewer DEVICES than this and there is no proportion worth quoting.
  *
- * Three is low, and deliberately: unlike a crowd report, a dwell sample
+ * Devices, not rows, and that correction matters more than the number.
+ * One visit emits up to three rows — a lingering marker, a queueing
+ * marker and a final sample — which is exactly this threshold. So while
+ * this counted rows, one person standing at Tulshibaug for eleven minutes
+ * produced the sentence "most visitors near this mandal are stopping",
+ * which is the one claim it is not allowed to make. The shadow table had
+ * no way to tell one phone from three; the device key does.
+ *
+ * Three is still low, deliberately: unlike a crowd report, a dwell sample
  * is not a claim anybody made, so a wrong one costs a reader nothing but
- * a slightly wrong adjective. The protection that matters is that this
- * never moves the colour.
+ * a slightly wrong adjective.
  */
 export const MIN_DWELL_SAMPLES = 3;
 
@@ -45,12 +52,18 @@ export const STOPPING_SHARE = 0.5;
 export interface DwellSample {
   dwell: 'lingering' | 'queueing';
   createdAt: string;
+  /**
+   * Per (device, mandal, IST day) digest — see lib/dwell-key. Null on
+   * shadow-mode rows, which cannot be collapsed and so each stand as
+   * their own device; there is no better answer available for them.
+   */
+  deviceKey?: string | null;
 }
 
 export interface DwellSummary {
-  /** How many samples are behind this. Never shown to a visitor. */
+  /** How many DEVICES are behind this. Never shown to a visitor. */
   samples: number;
-  /** Share of samples that reached `queueing`, 0–1. */
+  /** Share of those devices that reached `queueing`, 0–1. */
   queueingShare: number;
   /** The sentence to render, already hedged. */
   detail: string;
@@ -73,14 +86,31 @@ export function summariseDwell(
     return Number.isFinite(age) && age >= 0 && age <= DWELL_WINDOW_MINUTES;
   });
 
-  if (fresh.length < MIN_DWELL_SAMPLES) return null;
+  /**
+   * One entry per device, at the strongest class it reached.
+   *
+   * `queueing` supersedes `lingering` because they are the same visit
+   * seen further along, and counting both would have one person argue
+   * against themselves in the proportion.
+   */
+  const byDevice = new Map<string, DwellSample>();
+  fresh.forEach((sample, i) => {
+    const key = sample.deviceKey ?? `\u0000row-${i}`;
+    const held = byDevice.get(key);
+    if (!held || (sample.dwell === 'queueing' && held.dwell !== 'queueing')) {
+      byDevice.set(key, sample);
+    }
+  });
+  const devices = [...byDevice.values()];
 
-  const queueing = fresh.filter((s) => s.dwell === 'queueing').length;
-  const queueingShare = queueing / fresh.length;
+  if (devices.length < MIN_DWELL_SAMPLES) return null;
+
+  const queueing = devices.filter((s) => s.dwell === 'queueing').length;
+  const queueingShare = queueing / devices.length;
   const stopping = queueingShare >= STOPPING_SHARE;
 
   return {
-    samples: fresh.length,
+    samples: devices.length,
     queueingShare,
     stopping,
     // No number, and no claim about why. "Phones" rather than "people"
