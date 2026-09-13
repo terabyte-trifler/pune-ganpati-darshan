@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import {
+  PLAN_KEYS, VISIT_KEYS, CACHE_KEYS, DEVICE_KEYS,
+} from '@/features/settings/StoredData';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -19,15 +22,15 @@ function walk(dir: string): string[] {
   });
 }
 
-/** Keys the page lists and the controls clear. */
-const DECLARED = new Set([
-  'pg.plan',
-  'pg.favorites',
-  'pg.mode',
-  'pg.session',
-  'pg.referrer',
-  'ganpatigo_crowd_snapshot',
-  'ganpatigo_device_id',
+/**
+ * Keys the page lists and the controls clear — read from the page itself.
+ *
+ * This used to be a second copy of the list, which meant the page and
+ * this check could disagree while both looked right. A privacy page that
+ * has drifted from what the app actually writes is worse than none.
+ */
+const DECLARED = new Set<string>([
+  ...PLAN_KEYS, ...VISIT_KEYS, ...CACHE_KEYS, ...DEVICE_KEYS,
 ]);
 
 describe('stored data', () => {

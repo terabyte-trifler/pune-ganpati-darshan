@@ -17,11 +17,28 @@ import { Button } from '@/components/ui/Button';
  * own devtools.
  */
 
-/** Kept in step with the modules that own these keys. */
-const PLAN_KEYS = ['pg.plan', 'pg.favorites', 'pg.mode'] as const;
-const VISIT_KEYS = ['pg.session', 'pg.referrer'] as const;
-const CACHE_KEYS = ['ganpatigo_crowd_snapshot'] as const;
-const DEVICE_KEYS = ['ganpatigo_device_id'] as const;
+/**
+ * Kept in step with the modules that own these keys.
+ *
+ * Exported because the test that checks this page lists everything the
+ * app writes used to keep its own copy of the list — so the page and the
+ * check could drift apart, which is the one thing a privacy page must
+ * not do. The test now reads these.
+ */
+export const PLAN_KEYS = ['pg.plan', 'pg.favorites', 'pg.mode'] as const;
+export const VISIT_KEYS = [
+  'pg.session',
+  'pg.referrer',
+  /**
+   * Mandals this device appears to have queued at, waiting to be asked
+   * how long. The most revealing thing the app keeps — it is where this
+   * phone stood — so it is listed by name, clears with the visit, and
+   * never leaves the device. See crowd/wait-prompt-store.
+   */
+  'pg:wait-prompts:v1',
+] as const;
+export const CACHE_KEYS = ['ganpatigo_crowd_snapshot'] as const;
+export const DEVICE_KEYS = ['ganpatigo_device_id'] as const;
 
 type Scope = 'plan' | 'visit' | 'all';
 
@@ -53,8 +70,8 @@ const ACTIONS: {
     scope: 'visit',
     title: 'Clear this visit',
     detail:
-      'The anonymous session id used to count visits, the site you arrived from, and the cached crowd readings. Your plan and saved mandals are kept.',
-    keys: 'pg.session · pg.referrer · ganpatigo_crowd_snapshot',
+      'The anonymous session id used to count visits, the site you arrived from, the cached crowd readings, and any mandal the app is waiting to ask you about. Your plan and saved mandals are kept.',
+    keys: 'pg.session · pg.referrer · pg:wait-prompts:v1 · ganpatigo_crowd_snapshot',
     label: 'Clear',
   },
   {
