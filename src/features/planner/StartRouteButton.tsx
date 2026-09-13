@@ -35,7 +35,7 @@ import type { Ganpati, TravelMode } from '@/types/ganpati';
 const MAX_WAYPOINTS = 9;
 const MAX_POINTS_PER_LEG = MAX_WAYPOINTS + 2;
 
-function mapsUrl(origin: LatLng | null, stops: Ganpati[], mode: TravelMode) {
+function mapsUrl(origin: LatLng | null, stops: Ganpati[]) {
   const url = new URL('https://www.google.com/maps/dir/');
   url.searchParams.set('api', '1');
 
@@ -58,10 +58,14 @@ function mapsUrl(origin: LatLng | null, stops: Ganpati[], mode: TravelMode) {
     );
   }
 
-  // Metro routes are walked between stops — the train got you to the
-  // station, and Google's transit directions between two mandals 400 m
-  // apart would offer a bus nobody takes.
-  url.searchParams.set('travelmode', mode === 'two_wheeler' ? 'driving' : 'walking');
+  // Every mode is walked between stops, including two-wheeler.
+  //
+  // The train got you to the station and the vehicle got you to the
+  // parking; from there the peths are closed to traffic and Google's
+  // driving directions between two mandals 400 m apart would route around
+  // the closures by a kilometre, or through a barricade. Riding to the
+  // parking is its own step, with its own directions link on the plan.
+  url.searchParams.set('travelmode', 'walking');
   return url.toString();
 }
 
@@ -174,9 +178,12 @@ export function StartRouteButton({
 
   const open = (leg: Ganpati[], index: number) => {
     trackEvent('plan_started', {
-      props: { source, leg: index, located: Boolean(origin) },
+      // `mode` is no longer in the URL — every handoff is walked — so it
+      // is recorded instead. Which mode people start from is the thing
+      // worth knowing, and it is now the only place that knowledge exists.
+      props: { source, mode, leg: index, located: Boolean(origin) },
     });
-    window.open(mapsUrl(index === 0 ? origin : null, leg, mode), '_blank', 'noopener');
+    window.open(mapsUrl(index === 0 ? origin : null, leg), '_blank', 'noopener');
   };
 
   return (

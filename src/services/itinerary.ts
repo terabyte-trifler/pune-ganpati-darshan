@@ -5,6 +5,7 @@ import {
   type TravelMode,
 } from '@/lib/geo';
 import { optimizeLocally } from '@/services/route-optimizer';
+import { chooseParking, type ParkingChoice } from './parking-plan';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
@@ -64,6 +65,14 @@ export interface Itinerary {
   hasUnknownDwell: boolean;
   /** True when at least one stop's timing was adjusted by a live report. */
   crowdAdjusted: boolean;
+  /**
+   * Two-wheeler plans only: where to leave the vehicle, and the ride to
+   * get there. Null in every other mode, and null when there are no stops.
+   *
+   * The peths are closed to traffic during the festival, so a two-wheeler
+   * plan is one ride and then a walk — see services/parking-plan.
+   */
+  parking: ParkingChoice | null;
 }
 
 /**
@@ -179,7 +188,27 @@ function costOf(
   mode: TravelMode,
   pace: DarshanPace,
   crowd: Record<string, CrowdLevel | null>
-): { travel: number; darshan: number; total: number } {
+): { travel: number; darshan: number; total: number; parking?: ParkingChoice | null } {
+  // A two-wheeler cannot be ridden between mandals during the festival:
+  // the peth core is barricaded. So the journey is a ride to parking and a
+  // walk from it, and the budget has to be spent that way or the plan
+  // promises a trip the police have closed.
+  if (mode === 'two_wheeler' && ordered.length > 0) {
+    const parking = chooseParking(origin, ordered);
+    if (parking) {
+      const darshan = ordered.reduce(
+        (sum, g) => sum + dwellMinutes(g, pace, crowd[g.id]),
+        0
+      );
+      return {
+        travel: parking.travelMinutes,
+        darshan,
+        total: parking.travelMinutes + darshan,
+        parking,
+      };
+    }
+  }
+
   let travelSeconds = 0;
   let previous = origin;
   for (const g of ordered) {
@@ -199,6 +228,15 @@ function costOf(
 /** Orders a set of stops for the shortest walk from the origin. */
 function order(mandals: Ganpati[], origin: LatLng, mode: TravelMode): Ganpati[] {
   if (mandals.length < 2) return mandals;
+
+  // On a two-wheeler the walk starts at the parking, so the order has to
+  // be optimised from there. Ordering from the rider's own position would
+  // sequence a walk nobody takes.
+  if (mode === 'two_wheeler') {
+    const parking = chooseParking(origin, mandals);
+    if (parking) return parking.order.map((i) => mandals[i]);
+  }
+
   const result = optimizeLocally(
     origin,
     mandals.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
@@ -245,10 +283,16 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
 
   const finalOrder = order(chosen, origin, mode);
   const cost = costOf(finalOrder, origin, mode, pace, crowdByMandalId);
+  const parking = cost.parking ?? null;
 
-  // Per-stop breakdown, so the UI can show where the time goes.
+  // Per-stop breakdown, so the UI can show where the time goes. On a
+  // two-wheeler the legs start at the parking and are walked, because that
+  // is the journey the plan actually describes.
   const stops: ItineraryStop[] = [];
-  let previous = origin;
+  const legMode: TravelMode = parking ? 'walk' : mode;
+  let previous: LatLng = parking
+    ? { lat: parking.spot.lat, lng: parking.spot.lng }
+    : origin;
   for (const g of finalOrder) {
     const point = { lat: g.location.lat, lng: g.location.lng };
     stops.push({
@@ -257,7 +301,7 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
       // up to the total the user was shown rather than drifting from it.
       darshanMinutes: dwellMinutes(g, pace, crowdByMandalId[g.id]),
       travelMinutesFromPrevious: Math.round(
-        estimateDurationSeconds(haversine(previous, point), mode) / 60
+        estimateDurationSeconds(haversine(previous, point), legMode) / 60
       ),
       crowd: crowdByMandalId[g.id] ?? null,
     });
@@ -273,5 +317,6 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
     skipped,
     hasUnknownDwell: finalOrder.some((g) => g.darshanMinutes == null),
     crowdAdjusted: finalOrder.some((g) => crowdByMandalId[g.id] != null),
+    parking,
   };
 }

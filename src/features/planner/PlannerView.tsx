@@ -27,6 +27,8 @@ import {
 } from '@/lib/geo';
 import { MetroStationPicker } from './MetroStationPicker';
 import { MetroJourneyCard } from './MetroJourneyCard';
+import { ParkingRideCard } from './ParkingRideCard';
+import { chooseParking } from '@/services/parking-plan';
 import { stationForRoute, returnStation, stationById, PRIMARY_STATIONS } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -185,21 +187,50 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     if (wantsBuild) router.replace('/plan');
   };
 
+  /**
+   * Two-wheeler plans start with a ride to parking.
+   *
+   * The peths are closed to traffic in the evening, so the stops cannot be
+   * ridden between — the journey is one ride and then a walk, and
+   * everything below treats the parking as the origin of that walk. Needs
+   * a real position: guessing the rider is at the city centre would send
+   * them to a parking chosen for somebody else.
+   */
+  const parking = useMemo(() => {
+    if (mode !== 'two_wheeler' || geo.status !== 'ready' || stops.length === 0) {
+      return null;
+    }
+    return chooseParking(geo.position, stops);
+  }, [mode, geo, stops]);
+
   const origin: LatLng = useMemo(
     () =>
       mode === 'metro'
         ? { lat: station.lat, lng: station.lng }
-        : geo.status === 'ready'
-          ? geo.position
-          : PUNE_CENTER,
-    [mode, station, geo]
+        : parking
+          ? { lat: parking.spot.lat, lng: parking.spot.lng }
+          : geo.status === 'ready'
+            ? geo.position
+            : PUNE_CENTER,
+    [mode, station, geo, parking]
   );
+
+  /**
+   * The mode the legs between stops are actually travelled in.
+   *
+   * On a two-wheeler that is walking, once the vehicle is parked. Using
+   * the riding speed here is what made the old plans claim journeys
+   * through barricaded lanes.
+   */
+  const legMode: TravelMode = parking ? 'walk' : mode;
   const originLabel =
     mode === 'metro'
       ? `${station.name} metro`
-      : geo.status === 'ready'
-        ? 'Your location'
-        : 'Pune city centre';
+      : parking
+        ? `${parking.spot.name} parking`
+        : geo.status === 'ready'
+          ? 'Your location'
+          : 'Pune city centre';
 
   /**
    * Local estimate shown before (and instead of) any API call. Clearly an
@@ -216,9 +247,13 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     const roadDistance = distance * DETOUR_FACTOR;
     return {
       distanceM: roadDistance,
-      durationS: estimateDurationSeconds(distance, mode),
+      // Plus the ride, when there is one: the plan's headline time has to
+      // include getting to the parking or it understates the evening.
+      durationS:
+        estimateDurationSeconds(distance, legMode) +
+        (parking ? parking.rideMinutes * 60 : 0),
     };
-  }, [stops, origin, mode]);
+  }, [stops, origin, legMode, parking]);
 
   /**
    * Queuing time, which this view did not count at all.
@@ -253,9 +288,12 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          // `origin` is already the parking on a two-wheeler, and the legs
+          // are walked from it — so the router is asked for the walk, not
+          // for a ride through closed lanes.
           origin,
           stops: stops.map((s) => ({ lat: s.location.lat, lng: s.location.lng })),
-          mode,
+          mode: legMode,
           optimize: true,
         }),
       });
@@ -470,6 +508,23 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
             value={station}
             onChange={(s) => { setStationId(s.id); setResult(null); }}
             userLocation={geo.status === 'ready' ? geo.position : null}
+          />
+        </div>
+      )}
+
+      {/* The ride to the parking, which is the first leg of the plan. */}
+      {parking && (
+        <div className="mt-4">
+          <ParkingRideCard
+            choice={parking}
+            walkToFirstM={
+              stops[0]
+                ? haversine(
+                    { lat: parking.spot.lat, lng: parking.spot.lng },
+                    { lat: stops[0].location.lat, lng: stops[0].location.lng }
+                  )
+                : null
+            }
           />
         </div>
       )}
