@@ -36,6 +36,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
       { href: '/start', label: 'Build a route' },
       { href: '/routes', label: 'Curated routes' },
       { href: '/plan', label: 'Your darshan' },
+      { href: '/parking', label: 'Parking' },
     ],
   },
   {

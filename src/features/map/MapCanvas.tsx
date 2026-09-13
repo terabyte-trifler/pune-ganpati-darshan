@@ -15,6 +15,7 @@ import { buildMarkerSvg, buildClusterPinSvg } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
+import { addParkingLayers } from '@/lib/maps/parking-layer';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
@@ -239,8 +240,9 @@ export function MapCanvas({
         paint: { 'line-color': '#E2621B', 'line-width': 4, 'line-opacity': 0.9 },
       });
 
-      // Stations first, so the mandal pins draw on top of them.
+      // Context layers first, so the mandal pins draw on top of them.
       addMetroLayers(map);
+      addParkingLayers(map);
 
       // A cluster is several mandals, so it is drawn as a Ganpati too —
       // brass rather than vermilion, and larger the more it holds. It was a
