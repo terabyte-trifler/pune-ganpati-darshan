@@ -220,17 +220,23 @@ async function readWaitReports(
 async function readOverrides(
   supabase: ReturnType<typeof getSupabaseAdminClient>,
   ids: string[]
-): Promise<Record<string, { status: CrowdLevel; setBy: string; expiresAt: string }>> {
+): Promise<
+  Record<string, { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }>
+> {
   try {
     const { data, error } = await supabase.rpc('crowd_active_overrides', {
       p_mandal_ids: ids,
     });
     if (error || !data) return {};
-    const out: Record<string, { status: CrowdLevel; setBy: string; expiresAt: string }> = {};
+    const out: Record<
+      string,
+      { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }
+    > = {};
     for (const row of data) {
       out[row.mandal_id] = {
         status: row.status as CrowdLevel,
         setBy: row.set_by,
+        createdAt: row.created_at,
         expiresAt: row.expires_at,
       };
     }
@@ -255,20 +261,22 @@ async function readOverrides(
  */
 function applyOverride(
   status: CrowdStatus,
-  override: { status: CrowdLevel; setBy: string; expiresAt: string }
+  override: { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }
 ): CrowdStatus {
   const { label } = labelFor(override.status);
   return {
     ...status,
     status: override.status,
     label,
-    detail: 'Checked by the Pune Ganpati Darshan team just now',
+    detail: 'Checked by the Pune Ganpati Darshan team',
     source: 'override',
     confidence: 'high',
     trend: 'unknown',
-    // The moment it was asserted is the moment it describes. Keeping an
-    // older report's timestamp here would date the override wrongly.
-    lastUpdated: new Date().toISOString(),
+    // When it was ASSERTED, not when this snapshot was built. Using the
+    // clock here made every override read "just now" for its whole
+    // half-hour, because the snapshot recomputes every fifteen seconds —
+    // so a value set twenty-five minutes ago looked freshly checked.
+    lastUpdated: override.createdAt,
   };
 }
 
@@ -749,7 +757,7 @@ export async function clearCrowdOverride(mandalId: string): Promise<OverrideResu
 
 /** Every override still in force, for the admin surface. */
 export async function getActiveOverrides(): Promise<
-  Record<string, { status: CrowdLevel; setBy: string; expiresAt: string }>
+  Record<string, { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }>
 > {
   if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return {};
   const ids = await getKnownMandalIds();

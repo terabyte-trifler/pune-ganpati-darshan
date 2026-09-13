@@ -49,19 +49,28 @@ export type CrowdPinKey =
 /**
  * Three tiers, and the whole app orders on them.
  *
+ * override  — an admin asserted it. Outranks everything, drawn filled.
  * reported  — somebody said something. The only tier worded as a report.
  * observed  — nobody said anything, but enough independent devices were
  *             seen dwelling to say something anyway. Half-filled.
  * estimated — nobody said anything and nothing was seen; the clock model
  *             speaks. Hollow.
  */
-export type CrowdSource = 'reported' | 'observed' | 'estimated';
+export type CrowdSource = 'override' | 'reported' | 'observed' | 'estimated';
 
-/** Reports first, then observations, then the model. Lower sorts first. */
+/**
+ * Lower sorts first.
+ *
+ * `override` above `reported` because it is a person with the app's own
+ * account asserting a value, and for its half-hour it is the answer —
+ * there is nothing for a report to add to it. It draws exactly like a
+ * report; only the wording differs, because nobody reported it.
+ */
 export const SOURCE_RANK: Record<CrowdSource, number> = {
-  reported: 0,
-  observed: 1,
-  estimated: 2,
+  override: 0,
+  reported: 1,
+  observed: 2,
+  estimated: 3,
 };
 
 export interface CrowdDisplay {
@@ -116,7 +125,7 @@ export function crowdDisplayFor(
     return {
       level: status.status,
       label: status.label,
-      source: observed ? 'observed' : 'reported',
+      source: status.source === 'override' ? 'override' : observed ? 'observed' : 'reported',
       estimated: false,
       estimatedWaitMinutes: null,
       lastUpdated: status.lastUpdated,

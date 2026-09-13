@@ -81,6 +81,35 @@ describe('reports outrank estimates', () => {
   });
 });
 
+describe('an override outranks everything', () => {
+  it('is listed above a report, whatever the colours', () => {
+    const ranked = rankTrackerRows(
+      [
+        row('est', 'short', 'estimated'),
+        row('obs', 'short', 'observed'),
+        row('rep', 'short', 'reported'),
+        row('set', 'long', 'override'),
+      ],
+      4
+    );
+    expect(ranked.map((r) => r.id)).toEqual(['set', 'rep', 'obs', 'est']);
+  });
+
+  it('takes the rows before a report can', () => {
+    const ranked = rankTrackerRows(
+      [
+        row('rep-a', 'short', 'reported'),
+        row('rep-b', 'short', 'reported'),
+        row('set-a', 'moving', 'override'),
+        row('set-b', 'long', 'override'),
+        row('set-c', 'long', 'override'),
+      ],
+      3
+    );
+    expect(ranked.every((r) => r.source === 'override')).toBe(true);
+  });
+});
+
 describe('within a group', () => {
   it('puts the shortest queue first', () => {
     const ranked = rankTrackerRows(

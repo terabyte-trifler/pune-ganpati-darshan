@@ -83,7 +83,9 @@ export function CrowdBadgeView({
   if (!display) return null;
 
   const { level, source } = display;
-  const fill = source === 'reported' ? 'filled' : source === 'observed' ? 'half' : 'hollow';
+  // An override draws exactly like a report: a person is behind it, and a
+  // visitor has no use for the distinction. Only the wording differs.
+  const fill = source === 'observed' ? 'half' : source === 'estimated' ? 'hollow' : 'filled';
 
   return (
     <span

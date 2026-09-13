@@ -95,6 +95,15 @@ export function CrowdPanel({
    * anyone claimed, and the dot is half-filled rather than solid.
    */
   const observed = status?.source === 'observed';
+  /**
+   * Held by hand.
+   *
+   * Nobody reported this — somebody with the app's account went and
+   * looked, or spoke to someone who had. Every sentence below that would
+   * otherwise say "devotees" has to say so, because the whole panel is
+   * built on not claiming more than it knows.
+   */
+  const overridden = status?.source === 'override';
   const ageMs =
     nowMs !== null && status?.lastUpdated
       ? Math.max(0, nowMs - Date.parse(status.lastUpdated))
@@ -150,7 +159,7 @@ export function CrowdPanel({
               well as volume, which a bare number would not. Counts remain
               visible to admins at /admin/crowd and /admin/crowd-score. */}
           <p className="mt-2 text-[13px] text-[var(--muted)]">
-            {observed
+            {observed || overridden
               ? status?.detail
               : status && CONFIDENCE_WORDING[status.confidence]}
           </p>
@@ -159,9 +168,11 @@ export function CrowdPanel({
             <p className="mt-1 text-[12px] text-[var(--faint)]">
               {observed
                 ? `Devices last seen ${ago}`
-                : stale
-                  ? `Last known — updated ${ago}`
-                  : `Updated ${ago}`}
+                : overridden
+                  ? `Checked ${ago}`
+                  : stale
+                    ? `Last known — updated ${ago}`
+                    : `Updated ${ago}`}
             </p>
           )}
 
@@ -186,7 +197,9 @@ export function CrowdPanel({
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
             {observed
               ? 'Nobody has reported this mandal in the last 90 minutes. One tap below replaces this with something a person said.'
-              : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
+              : overridden
+                ? 'Set by the team rather than by devotee reports. It lasts half an hour, then live reports take over again.'
+                : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
           </p>
         </>
       ) : (

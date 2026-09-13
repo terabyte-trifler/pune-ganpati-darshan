@@ -321,14 +321,19 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                 const rowAgo = agoText(Number.isFinite(rowAge) ? rowAge : null);
                 const subtitle = [
                   distanceM !== null ? formatDistance(distanceM) : null,
-                  source === 'reported' && rowAgo
-                    ? `reported ${rowAgo}`
-                    : // An observation has a time too, and it is a
-                      // different claim: this is when the devices were
-                      // seen, not when anyone said anything.
-                      source === 'observed' && rowAgo
-                      ? `seen ${rowAgo}`
-                      : null,
+                  // Each tier says where its time came from, because the
+                  // three are different claims: somebody reported this,
+                  // devices were seen doing it, or the team went and
+                  // checked. Only the first is a report.
+                  !rowAgo
+                    ? null
+                    : source === 'reported'
+                      ? `reported ${rowAgo}`
+                      : source === 'observed'
+                        ? `seen ${rowAgo}`
+                        : source === 'override'
+                          ? `checked ${rowAgo}`
+                          : null,
                 ]
                   .filter(Boolean)
                   .join(' · ');
@@ -346,11 +351,11 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                             level={level}
                             size={10}
                             fill={
-                              source === 'reported'
-                                ? 'filled'
-                                : source === 'observed'
-                                  ? 'half'
-                                  : 'hollow'
+                              source === 'observed'
+                                ? 'half'
+                                : source === 'estimated'
+                                  ? 'hollow'
+                                  : 'filled'
                             }
                           />
                         </span>

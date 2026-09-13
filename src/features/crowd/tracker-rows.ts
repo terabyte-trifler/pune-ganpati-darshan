@@ -10,6 +10,8 @@ import { SOURCE_RANK, type CrowdSource } from './crowd-display';
  *
  * Three tiers, in strict order:
  *
+ *   override   an admin asserted it, and for thirty minutes it is the
+ *              answer. Above everything.
  *   reported   somebody said something. Any level, green amber or red.
  *   observed   nobody said anything, but enough devices were seen
  *              dwelling that the app is willing to say something.
@@ -49,7 +51,7 @@ function byQueue(a: Rankable, b: Rankable): number {
  * level comparison at the top of a comparator.
  */
 export function rankTrackerRows<T extends Rankable>(all: T[], max: number): T[] {
-  const tiers: CrowdSource[] = ['reported', 'observed', 'estimated'];
+  const tiers: CrowdSource[] = ['override', 'reported', 'observed', 'estimated'];
   return tiers
     .sort((a, b) => SOURCE_RANK[a] - SOURCE_RANK[b])
     .flatMap((tier) => all.filter((r) => r.source === tier).sort(byQueue))
