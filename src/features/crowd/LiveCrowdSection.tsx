@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useCrowdState, useClockMs } from './useCrowd';
 import { useCrowdDisplays } from './useCrowdDisplay';
+import { rankTrackerRows, type Rankable } from './tracker-rows';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { haversine, formatDistance } from '@/lib/geo';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
@@ -84,16 +85,20 @@ const LEGEND: { level: CrowdLevel; label: string; hint: string }[] = [
 
 const MAX_ROWS = 3;
 
-/** Short first, then moving. Long is summarised, never listed. */
-const GOOD: CrowdLevel[] = ['short', 'moving'];
-
-interface Ranked {
+/**
+ * A row, and everything the ordering needs from it.
+ *
+ * The list used to stop at 'moving' — heavy mandals were summarised in a
+ * line and never given a row, on the grounds that a ranked table of
+ * places to avoid is not a plan. That held while every row was a report.
+ * It stopped holding the moment the prior started filling rows, because
+ * it meant a mandal somebody is standing outside, reporting a heavy
+ * queue, could be pushed off the list by a mandal a model merely has an
+ * opinion about. See tracker-rows for the rule that replaced it.
+ */
+interface Ranked extends Rankable {
   g: Ganpati;
-  level: CrowdLevel;
   label: string;
-  /** True when nobody reported this and the hour-of-day model spoke. */
-  estimated: boolean;
-  distanceM: number | null;
   /** When this mandal was last reported — NOT when the snapshot was built. */
   lastUpdated: string | null;
 }
@@ -148,7 +153,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
 
   const position = state.status === 'ready' ? state.position : null;
 
-  const { rows, heavyCount, anyEstimated, anyMeasured } = useMemo(() => {
+  const { rows, heavyElsewhere, anyEstimated, anyMeasured, allGood } = useMemo(() => {
     const all = ganpatis
       .map((g) => {
         const display = displays[g.id];
@@ -161,37 +166,31 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
           distanceM: position
             ? haversine(position, { lat: g.location.lat, lng: g.location.lng })
             : null,
+          prominence: g.prominence,
           lastUpdated: display.lastUpdated,
         } satisfies Ranked;
       })
       .filter((r): r is Ranked => r !== null);
 
-    const rank = (a: Ranked, b: Ranked) => {
-      // Short before moving, then nearest — or best known when we have no
-      // position to sort by.
-      const byLevel = GOOD.indexOf(a.level) - GOOD.indexOf(b.level);
-      if (byLevel !== 0) return byLevel;
-      if (a.distanceM !== null && b.distanceM !== null) {
-        return a.distanceM - b.distanceM;
-      }
-      return b.g.prominence - a.g.prominence;
-    };
-
-    const good = all.filter((r) => GOOD.includes(r.level));
-    // Reports first, always, and estimates only to fill the space left
-    // over. A mandal somebody is standing outside beats a mandal a model
-    // has an opinion about, every time — however good the opinion.
-    const measured = good.filter((r) => !r.estimated).sort(rank);
-    const estimated = good.filter((r) => r.estimated).sort(rank);
-    const shown = [...measured, ...estimated].slice(0, MAX_ROWS);
+    // Provenance first, level second. Every reading somebody's phone
+    // produced — a queue report, a wait time, a dwell-tipped colour — is
+    // listed ahead of every estimate, green amber or red, and the model
+    // fills only what is left.
+    const shown = rankTrackerRows(all, MAX_ROWS);
+    const shownIds = new Set(shown.map((r) => r.g.id));
 
     return {
       rows: shown,
-      // Counted from reports only. "3 mandals are heavy right now" is a
-      // claim about now, and the model is not entitled to make it.
-      heavyCount: all.filter((r) => !r.estimated && r.level === 'long').length,
+      // Only the heavy ones that did not get a row, so the summary adds
+      // something rather than repeating what is directly above it. Counted
+      // from reports alone: "3 mandals are heavy right now" is a claim
+      // about now, and the model is not entitled to make it.
+      heavyElsewhere: all.filter(
+        (r) => !r.estimated && r.level === 'long' && !shownIds.has(r.g.id)
+      ).length,
       anyEstimated: shown.some((r) => r.estimated),
-      anyMeasured: measured.length > 0,
+      anyMeasured: all.some((r) => !r.estimated),
+      allGood: shown.every((r) => r.level !== 'long'),
     };
   }, [ganpatis, displays, position]);
 
@@ -221,7 +220,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
 
   /* ---------------- First load ---------------- */
 
-  if (loading && rows.length === 0 && heavyCount === 0) {
+  if (loading && rows.length === 0) {
     /**
      * A skeleton the same shape and height as the loaded section.
      *
@@ -267,7 +266,9 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
 
   /* ---------------- Nobody has reported ---------------- */
 
-  if (rows.length === 0 && heavyCount === 0) {
+  // Every level is listable now, so an empty list means nothing at all:
+  // no reports anywhere and nothing the prior is willing to say.
+  if (rows.length === 0) {
     return (
       <>
         <Shell>
@@ -298,11 +299,13 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
             and worth saying. */}
         <Heading suffix={stale && ago ? `last known · ${ago}` : null} />
 
-        {rows.length > 0 ? (
-          <>
-            <p className="mt-2.5 text-[13px] font-semibold text-[var(--chandan)]">
-              {anyMeasured ? 'Shortest queues' : 'Expected to be quietest'}
-            </p>
+        <p className="mt-2.5 text-[13px] font-semibold text-[var(--chandan)]">
+          {!anyMeasured
+            ? 'Expected to be quietest'
+            : allGood
+              ? 'Shortest queues'
+              : 'Reported right now'}
+        </p>
             <ul className="mt-1.5 divide-y divide-[var(--line)]">
               {rows.map(({ g, level, label, estimated, distanceM, lastUpdated }) => {
                 // Each mandal's OWN freshness. A reading can be 80 minutes
@@ -358,28 +361,23 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
               })}
             </ul>
 
-            {anyEstimated && (
-              <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
-                Rows marked <strong className="font-semibold">Est.</strong> are
-                worked out from the hour and this mandal&rsquo;s usual queue —
-                nobody has reported those. A hollow dot means an estimate.
-              </p>
-            )}
-          </>
-        ) : (
-          // Everything reported is heavy. Saying so is more useful than an
-          // empty "shortest queues" list with nothing under it.
-          <p className="mt-2.5 text-[14px] leading-relaxed text-[var(--muted)]">
-            Every mandal reported in the last 90 minutes has a heavy queue.
+        {anyEstimated && (
+          <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
+            Rows marked <strong className="font-semibold">Est.</strong> are worked
+            out from the hour and this mandal&rsquo;s usual queue — nobody has
+            reported those. They only ever fill rows nothing reported could.
           </p>
         )}
 
-        {heavyCount > 0 && rows.length > 0 && (
+        {/* The heavy mandals that did not fit. "more" only when one of
+            them is already in the list above — otherwise there is nothing
+            for it to be more than. */}
+        {heavyElsewhere > 0 && (
           <p className="mt-2.5 flex items-center gap-2 text-[13px] text-[var(--muted)]">
             <CrowdDot level="long" size={9} />
-            {heavyCount === 1
-              ? '1 mandal is heavy right now'
-              : `${heavyCount} mandals are heavy right now`}
+            {heavyElsewhere === 1
+              ? `1${allGood ? '' : ' more'} mandal is heavy right now`
+              : `${heavyElsewhere}${allGood ? '' : ' more'} mandals are heavy right now`}
           </p>
         )}
 
