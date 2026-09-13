@@ -10,8 +10,8 @@ import type { CrowdLevel } from '@/types/crowd';
  * Compact crowd indicator for cards, list rows and map callouts.
  *
  * Two states, never confused. A filled badge is what people reported. A
- * dashed, hollow one prefixed "Est." is what the app expects from the
- * hour and the day of the festival, shown only where nobody has reported
+ * dashed, hollow one prefixed "Estimated" is what the app expects from
+ * the hour and the day of the festival, shown only where nobody has reported
  * — see features/crowd/crowd-display.
  *
  * It still renders nothing at all when there is neither: outside the
@@ -44,7 +44,7 @@ export function CrowdDot({
    *
    * The same distinction the pins make, in the same visual language: a
    * filled mark is a report, a hollow one is an estimate. It reads in
-   * greyscale, which the word "Est." beside it does not.
+   * greyscale, which the word beside it does not.
    */
   hollow = false,
 }: {
@@ -96,7 +96,7 @@ export function CrowdBadgeView({
           ? 'rgb(20 16 12 / 0.72)'
           : `color-mix(in srgb, ${CROWD_COLOR[level]} 14%, rgb(20 16 12 / 0.82))`,
       }}
-      // Read aloud, "Est. short" is a fragment. This is the sentence.
+      // Read aloud, "Estimated short" is a fragment. This is the sentence.
       title={
         estimated
           ? `Estimated from the time of day — nobody has reported this mandal in the last 90 minutes`
@@ -104,7 +104,9 @@ export function CrowdBadgeView({
       }
     >
       <CrowdDot level={level} hollow={estimated} />
-      {display.label}
+      {/* Truncates rather than overflows: "Estimated moving" is long, and
+          the badge sits in a corner of a half-width card. */}
+      <span className="truncate">{display.label}</span>
       {/* The count stays off THIS surface deliberately, and that is now a
           narrower decision than it was.
 
@@ -123,7 +125,7 @@ export function CrowdBadgeView({
  * Live form — subscribes to the shared store.
  *
  * `prior` is optional and its absence is a real decision, not an
- * oversight: a surface that passes it gets an "Est." badge where nobody
+ * oversight: a surface that passes it gets an "Estimated" badge where nobody
  * has reported, and one that does not shows nothing there, exactly as
  * before. Anywhere a mandal's catalogue entry is to hand, pass it.
  */

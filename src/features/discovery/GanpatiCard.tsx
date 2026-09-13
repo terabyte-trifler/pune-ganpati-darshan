@@ -53,18 +53,25 @@ export function GanpatiCard({
           <CategoryBadge category={ganpati.category} rank={ganpati.manacheRank} />
           {ganpati.isTemple && <TempleBadge />}
         </div>
-        {/* Filled when people have reported, hollow and "Est." when the
-            hour-of-day model is the only thing speaking, absent when
-            neither has anything to say. */}
-        <div className="absolute right-2 top-2">
-          <CrowdBadge mandalId={ganpati.id} prior={ganpati} />
-        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="clamp-2 text-[14px] font-semibold leading-tight text-[var(--chandan)]">
           {ganpati.name}
         </h3>
+        {/* In the body, not over the photograph.
+            It used to sit in the image's top-right corner opposite the
+            category badge, and on a half-width card the two collided —
+            "#1 · Manache Paach" and "Estimated moving" cannot both fit
+            across 172px, so one covered the other. Here the queue gets a
+            line of its own and the label stays whole, which matters more
+            than the corner did: it is the one thing on this card that
+            changes through the evening.
+
+            Filled when people have reported, hollow and "Estimated" when
+            the hour-of-day model is the only thing speaking, absent when
+            neither has anything to say. */}
+        <CrowdBadge mandalId={ganpati.id} prior={ganpati} className="self-start" />
         {ganpati.nameMr && (
           <p lang="mr" className="clamp-2 text-[12px] leading-tight text-[var(--muted)]">
             {ganpati.nameMr}

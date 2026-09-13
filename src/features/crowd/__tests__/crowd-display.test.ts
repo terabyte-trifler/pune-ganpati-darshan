@@ -74,7 +74,7 @@ describe('an estimate always says it is one', () => {
   it('is marked in the data, the label and the pin', () => {
     expect(display?.estimated).toBe(true);
     expect(display?.label).toBe(ESTIMATED_LABEL[display!.level]);
-    expect(display?.label.startsWith('Est.')).toBe(true);
+    expect(display?.label.startsWith('Estimated ')).toBe(true);
     expect(display?.pinKey).toBe(`est-${display!.level}`);
   });
 
@@ -84,7 +84,7 @@ describe('an estimate always says it is one', () => {
 
   it('labels every level', () => {
     for (const level of ['short', 'moving', 'long'] as const) {
-      expect(ESTIMATED_LABEL[level].startsWith('Est. ')).toBe(true);
+      expect(ESTIMATED_LABEL[level].startsWith('Estimated ')).toBe(true);
     }
   });
 });

@@ -24,9 +24,10 @@ import type { CrowdLevel, CrowdStatus } from '@/types/crowd';
  *   - It still carries no mass. It cannot tip, strengthen or outvote a
  *     measurement; `crowd-aggregation` does not import the prior and this
  *     module is downstream of both.
- *   - It is always labelled. "Est. short", not "Short" — a hollow pin,
- *     not a filled one. A visitor must be able to tell in one glance
- *     which of the two they are looking at, without reading the word.
+ *   - It is always labelled. "Estimated short", not "Short" — and a
+ *     hollow pin, not a filled one. A visitor must be able to tell in one
+ *     glance which of the two they are looking at, without reading the
+ *     word.
  *
  * Grey survives as a real state: before and after the festival, and on
  * visarjan afternoon, the prior declines to speak and a mandal with no
@@ -43,7 +44,7 @@ export type CrowdPinKey = 'none' | CrowdLevel | 'est-short' | 'est-moving' | 'es
 
 export interface CrowdDisplay {
   level: CrowdLevel;
-  /** Badge and row wording. Says "Est." when nobody reported. */
+  /** Badge and row wording. Says "Estimated" when nobody reported. */
   label: string;
   /** True when this came from the prior rather than from people. */
   estimated: boolean;
@@ -57,15 +58,17 @@ export interface CrowdDisplay {
 /**
  * Deliberately the same three words the reports use, prefixed.
  *
- * Not a separate vocabulary: "Est. short" and "Short" mean the same thing
- * about the queue and differ only in where the claim came from, so
+ * Not a separate vocabulary: "Estimated short" and "Short" mean the same
+ * thing about the queue and differ only in where the claim came from, so
  * inventing a second set of words would imply a difference that is not
- * there. The prefix carries the whole of the difference.
+ * there. The prefix carries the whole of the difference, and it is
+ * spelled out rather than abbreviated — the label is the only place the
+ * provenance is stated in words, so it should not need decoding.
  */
 export const ESTIMATED_LABEL: Record<CrowdLevel, string> = {
-  short: 'Est. short',
-  moving: 'Est. moving',
-  long: 'Est. heavy',
+  short: 'Estimated short',
+  moving: 'Estimated moving',
+  long: 'Estimated heavy',
 };
 
 /**

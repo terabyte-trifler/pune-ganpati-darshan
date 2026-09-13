@@ -316,6 +316,12 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                     ? Math.max(0, nowMs - Date.parse(lastUpdated))
                     : null;
                 const rowAgo = agoText(Number.isFinite(rowAge) ? rowAge : null);
+                const subtitle = [
+                  distanceM !== null ? formatDistance(distanceM) : null,
+                  estimated || !rowAgo ? null : `reported ${rowAgo}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ');
 
                 return (
                   <li key={g.id}>
@@ -332,21 +338,17 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                           <span className="truncate text-[14px] text-[var(--chandan)]">
                             {g.name}
                           </span>
-                          <span className="mt-0.5 truncate text-[12px] text-[var(--faint)]">
-                            {[
-                              distanceM !== null ? formatDistance(distanceM) : null,
-                              // An estimate has no report time, and saying
-                              // so is the point: the second line says where
-                              // the row came from, not when.
-                              estimated
-                                ? 'usual for this hour'
-                                : rowAgo
-                                  ? `reported ${rowAgo}`
-                                  : null,
-                            ]
-                              .filter(Boolean)
-                              .join(' · ')}
-                          </span>
+                          {/* An estimate has no report time, and it does not
+                              get a substitute one. The label already says
+                              "Estimated"; a second line restating that in
+                              other words only makes the row longer. With no
+                              position to show either, the line is dropped
+                              rather than rendered empty. */}
+                          {subtitle && (
+                            <span className="mt-0.5 truncate text-[12px] text-[var(--faint)]">
+                              {subtitle}
+                            </span>
+                          )}
                         </span>
                       </span>
                       <span
@@ -363,7 +365,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
 
         {anyEstimated && (
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
-            Rows marked <strong className="font-semibold">Est.</strong> are worked
+            <strong className="font-semibold">Estimated</strong> rows are worked
             out from the hour and this mandal&rsquo;s usual queue — nobody has
             reported those. They only ever fill rows nothing reported could.
           </p>
