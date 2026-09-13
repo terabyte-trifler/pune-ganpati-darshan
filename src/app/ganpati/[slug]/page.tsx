@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, Clock, CalendarDays } from 'lucide-react';
 import { getAllGanpatis, getGanpatiBySlug, getFestivalConfig } from '@/services/ganpati';
+import { DwellSignal } from '@/features/crowd/DwellSignal';
 import { getFestivalPhase } from '@/lib/festival';
 import { CategoryBadge, TempleBadge, ConfidenceBadge, CATEGORY_LABEL } from '@/components/ui/Badge';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
@@ -107,6 +108,10 @@ export default async function GanpatiPage({
   // dates are server data; the expectation itself is computed on the
   // device, from this plus the reader's own clock.
   const festivalPhase = getFestivalPhase(await getFestivalConfig());
+
+  // Shadow mode, off unless the flag is set. Read on the server so a
+  // build with it off ships no collection at all.
+  const dwellShadow = process.env.CROWD_DWELL_SHADOW === '1';
 
   const nearby = all
     .filter((o) => o.slug !== g.slug)
@@ -422,6 +427,35 @@ export default async function GanpatiPage({
           </span>
         )}
       </p>
+
+      {/* The dwell tracker, mounted here as well as on the map.
+          It ran only on /map, on the reasoning that the map is where
+          somebody walking the peths has the app open. The data says
+          otherwise: a festival's worth of use produced one dwell sample
+          and thirty-three queue reports, and the reports come from here —
+          this is the page open in front of somebody standing in a queue.
+
+          Mounting it twice used to mean counting one device twice; the
+          per-(device, mandal, day) key ends that, and the visit clock now
+          lives in module state so walking from the map into this page no
+          longer restarts it.
+
+          Every mandal is passed, not just this one: the zone radii are
+          derived from how close the neighbours are, so a single-mandal
+          list would compute the wrong zone. Which mandal somebody is
+          standing at is a question about where they are, not about which
+          page they are reading. */}
+      {dwellShadow && (
+        <DwellSignal
+          enabled
+          mandals={all.map((m) => ({
+            id: m.id,
+            lat: m.location.lat,
+            lng: m.location.lng,
+            prominence: m.prominence,
+          }))}
+        />
+      )}
     </main>
   );
 }

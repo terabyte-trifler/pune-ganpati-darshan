@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useClockMs } from './useCrowd';
 import {
@@ -39,6 +39,17 @@ import { noteQueued } from './wait-prompt-store';
  * own.
  */
 
+/**
+ * The visit in progress, shared by every surface that mounts the tracker.
+ * See the note inside the hook.
+ */
+let trackerState: DwellState = initialDwellState;
+/**
+ * One in-flight post at a time, across surfaces. A dropped sample costs a
+ * little calibration precision and nothing else, so there is no retry.
+ */
+let posting = false;
+
 export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
   const { state: geo } = useGeolocation();
   const nowMs = useClockMs();
@@ -47,10 +58,6 @@ export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
   // would be 841 haversines a minute for no reason.
   const zones = useMemo(() => (enabled ? paceZones(mandals) : []), [mandals, enabled]);
 
-  const state = useRef<DwellState>(initialDwellState);
-  // One in-flight post at a time. A dropped sample costs a little
-  // calibration precision and nothing else, so there is no retry.
-  const posting = useRef(false);
 
   useEffect(() => {
     if (!enabled || nowMs === null || zones.length === 0) return;
@@ -58,14 +65,16 @@ export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
     const position = geo.status === 'ready' ? geo.position : null;
     const accuracyM = geo.status === 'ready' ? geo.accuracyM : null;
 
+    // Read at effect time, not render time: the module value is what
+    // another surface may have advanced.
     const { state: next, emit } = stepDwell(
-      state.current,
+      trackerState,
       nowMs,
       position,
       accuracyM,
       zones
     );
-    state.current = next;
+    trackerState = next;
 
     if (!emit) return;
 
@@ -85,8 +94,8 @@ export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
       noteQueued(emit.mandalId, emit.dwellSeconds);
     }
 
-    if (posting.current) return;
-    posting.current = true;
+    if (posting) return;
+    posting = true;
 
     // The device id now travels with the sample. It is never stored: the
     // route checks the block list with it and derives a per-(mandal, day)
@@ -108,7 +117,7 @@ export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
         // feature that shows them nothing.
       })
       .finally(() => {
-        posting.current = false;
+        posting = false;
       });
   }, [enabled, nowMs, geo, zones]);
 }
