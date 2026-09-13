@@ -156,3 +156,63 @@ export function metresToPath(point: LatLng, path: [number, number][]): number {
 
   return best;
 }
+
+/* ------------------------------------------------------------------ *
+ * Riding in, which is a different problem from walking the peths.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Road distance for a ride, as a multiple of straight-line distance.
+ *
+ * NOT DETOUR_FACTOR. That 1.71 was measured on 22 walks inside the peth
+ * grid, where the lanes rarely let you go directly and short hops detour
+ * worst. A ride in from Hinjewadi or Kothrud is mostly arterial —
+ * Paud Road, Karve Road, the bypass — and those run roughly where you
+ * want to go.
+ *
+ * Applying the walking factor to a ride was overstating the journey
+ * before it was even multiplied by too slow a speed: Hinjewadi came out
+ * at 25 km of road for a 15 km straight line.
+ */
+export const RIDE_DETOUR_FACTOR = 1.3;
+
+/**
+ * Average riding speed, which depends on how far you are coming.
+ *
+ * One constant cannot describe both ends of this. The last kilometre into
+ * the peths during Ganeshotsav is walking pace on a two-wheeler; the ten
+ * kilometres in from Hinjewadi are ordinary city riding. Using the
+ * congested figure for the whole distance is what turned a Hinjewadi ride
+ * into two hours.
+ *
+ * So it ramps: 12 km/h for a short hop that is all festival traffic,
+ * rising to 22 km/h for a long ride that is mostly arterial. 22 rather
+ * than 30 because this is a festival evening — the roads into the centre
+ * are busier than usual and the last stretch is always slow.
+ *
+ * These are judgements, not measurements. Two or three timed rides would
+ * replace them with something better, and this is the one place to
+ * change.
+ */
+const RIDE_SLOW_MPS = 12_000 / 3600;
+const RIDE_FAST_MPS = 22_000 / 3600;
+const RIDE_SLOW_UNDER_M = 1_500;
+const RIDE_FAST_OVER_M = 10_000;
+
+export function rideSpeedMps(roadDistanceM: number): number {
+  if (roadDistanceM <= RIDE_SLOW_UNDER_M) return RIDE_SLOW_MPS;
+  if (roadDistanceM >= RIDE_FAST_OVER_M) return RIDE_FAST_MPS;
+  const t = (roadDistanceM - RIDE_SLOW_UNDER_M) / (RIDE_FAST_OVER_M - RIDE_SLOW_UNDER_M);
+  return RIDE_SLOW_MPS + t * (RIDE_FAST_MPS - RIDE_SLOW_MPS);
+}
+
+/**
+ * Seconds to ride a straight-line distance, detour and speed included.
+ *
+ * The one place two-wheeler travel time is estimated, so a better number
+ * from a real ride changes every screen at once.
+ */
+export function estimateRideSeconds(straightLineM: number): number {
+  const road = straightLineM * RIDE_DETOUR_FACTOR;
+  return road / rideSpeedMps(road);
+}

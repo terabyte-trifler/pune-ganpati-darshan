@@ -1,5 +1,5 @@
 import { PARKING, type ParkingSpot } from '@/content/parking';
-import { haversine, estimateDurationSeconds, metresToPath, type LatLng } from '@/lib/geo';
+import { haversine, estimateRideSeconds, metresToPath, type LatLng } from '@/lib/geo';
 import { ROAD_CLOSURES } from '@/content/diversions';
 import { optimizeLocally } from '@/services/route-optimizer';
 
@@ -154,14 +154,14 @@ export interface ParkingChoice {
 }
 
 /**
- * Straight-line ride distance is multiplied by DETOUR_FACTOR inside
- * estimateDurationSeconds, which is tuned for the peth grid. A ride in
- * from outside the city follows bigger roads and detours less, but
- * over-estimating the ride is the safe direction: it costs the plan a
- * mandal rather than stranding someone.
+ * Riding time, from the ride model rather than the walking one.
+ *
+ * This used to call estimateDurationSeconds with 'two_wheeler', which
+ * applies the peth walking detour factor and a flat 13 km/h. Hinjewadi
+ * came out at two hours. See estimateRideSeconds in lib/geo.
  */
 function rideSeconds(from: LatLng, to: LatLng): number {
-  return estimateDurationSeconds(haversine(from, to), 'two_wheeler');
+  return estimateRideSeconds(haversine(from, to));
 }
 
 /**
@@ -196,6 +196,9 @@ export function chooseParking(
   const points = mandals.map((m) => ({ lat: m.location.lat, lng: m.location.lng }));
 
   let best: ParkingChoice | null = null;
+  // Compared in seconds, displayed in minutes. Scoring on the rounded
+  // minutes would let two spots tie on a number the rider never sees.
+  let bestSeconds = Infinity;
 
   for (const spot of candidates) {
     const point: LatLng = { lat: spot.lat, lng: spot.lng };
@@ -215,14 +218,21 @@ export function chooseParking(
     // rather than scored as though the walk were free.
     if (walk.totalCost === null) continue;
 
-    const travelMinutes = Math.round((ride + walk.totalCost) / 60);
-    if (best && travelMinutes >= best.travelMinutes) continue;
+    const seconds = ride + walk.totalCost;
+    if (seconds >= bestSeconds) continue;
+    bestSeconds = seconds;
+
+    // The total is the sum of the two figures shown, not a separately
+    // rounded number — otherwise a card can read "12 min + 39 min" beside
+    // a total of 50 and look broken over a rounding error.
+    const rideMinutes = Math.round(ride / 60);
+    const walkMinutes = Math.round(walk.totalCost / 60);
 
     best = {
       spot,
-      rideMinutes: Math.round(ride / 60),
-      walkMinutes: Math.round(walk.totalCost / 60),
-      travelMinutes,
+      rideMinutes,
+      walkMinutes,
+      travelMinutes: rideMinutes + walkMinutes,
       order: walk.order,
       detouredForClosures: detoured,
       closuresInForce: inForce,
