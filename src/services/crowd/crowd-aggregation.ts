@@ -120,6 +120,34 @@ export const DWELL_MASS = 0.25;
 export const DWELL_MASS_CAP = 1;
 
 /**
+ * Distinct devices before dwell may colour a mandal with nobody reporting.
+ *
+ * Three, against the one device a human report needs, and the gap is the
+ * point. A report is a claim somebody made; a dwell sample is a phone
+ * that stopped, and a phone stops for reasons the app cannot see — the
+ * dekhava is good, somebody took a call, somebody is waiting for a
+ * friend. One of those is an anecdote. Three independent phones behaving
+ * the same way at the same mandal inside ninety minutes is a pattern, and
+ * a pattern is the least this is allowed to speak on.
+ *
+ * Devices, not samples: one visit emits up to three rows (two threshold
+ * markers and a final), so a sample count would let one person clear this
+ * bar alone. That is the whole reason device_key exists.
+ */
+export const MIN_DWELL_DEVICES_FOR_STATUS = 3;
+
+/**
+ * And they have to agree.
+ *
+ * Two phones queueing and two lingering is not an observation, it is
+ * noise with a majority. The winning class must hold this share of the
+ * dwell devices or the signal declines to speak and the mandal falls
+ * through to the prior — which is the honest outcome, because "some
+ * people stopped and some did not" is what it actually saw.
+ */
+export const DWELL_DOMINANCE_SHARE = 0.6;
+
+/**
  * Which level a dwell class argues for.
  *
  * `queueing` means longer inside the zone than any walking speed
@@ -169,6 +197,15 @@ export interface WaitInput {
 export interface DwellInput {
   dwell: 'lingering' | 'queueing';
   createdAt: string;
+  /**
+   * Digest of (device, mandal, IST day, salt) — not a device id, and not
+   * joinable across mandals or days. See lib/dwell-key.
+   *
+   * Null for every row written in shadow mode, before the column existed.
+   * Those count as their own device each, which is the old behaviour
+   * rather than a silent downgrade to uncountable.
+   */
+  deviceKey?: string | null;
 }
 
 export function proximityWeight(atMandal: boolean): number {
@@ -248,6 +285,33 @@ export function trendFrom(
   const delta = mean(recent) - mean(prior);
   if (Math.abs(delta) < TREND_EPSILON) return 'stable';
   return delta > 0 ? 'worsening' : 'improving';
+}
+
+/**
+ * Wording for a reading nobody reported.
+ *
+ * Deliberately a different verb from Lane A's. Lane A says "Devotees
+ * report"; this says what was seen, and admits in the same sentence that
+ * it cannot tell a queue from a crowd admiring the dekhava — because it
+ * genuinely cannot, and that limitation is the reason this needs three
+ * devices where a person needs none.
+ */
+export function observedLabelFor(level: CrowdLevel): { label: string; detail: string } {
+  return level === 'long'
+    ? {
+        label: 'Observed heavy',
+        detail:
+          'Phones near this mandal are stopping for longer than any walking ' +
+          'speed explains. Nobody has reported it — that is what devices were ' +
+          'seen doing, and people stop to look as well as to queue.',
+      }
+    : {
+        label: 'Observed moving',
+        detail:
+          'Phones near this mandal are moving through slower than a clean ' +
+          'walk. Nobody has reported it — that is what devices were seen ' +
+          'doing, not something anyone said.',
+      };
 }
 
 /**
@@ -333,6 +397,82 @@ export interface ScoreBreakdown {
   dwellMassApplied: number;
 }
 
+interface AgedDwell {
+  d: DwellInput;
+  ageMinutes: number;
+}
+
+/** queueing supersedes lingering: it is the same visit, gone further. */
+function collapseDwellByDevice(fresh: AgedDwell[]): AgedDwell[] {
+  const best = new Map<string, AgedDwell>();
+  fresh.forEach((x, i) => {
+    // A null key cannot be deduplicated, so it is given a key of its own.
+    const key = x.d.deviceKey ?? `\u0000row-${i}`;
+    const held = best.get(key);
+    if (!held) {
+      best.set(key, x);
+      return;
+    }
+    const stronger = x.d.dwell === 'queueing' && held.d.dwell !== 'queueing';
+    // Same class: keep the fresher one, so the decay reflects the most
+    // recent time this device was seen doing it.
+    const fresher = x.d.dwell === held.d.dwell && x.ageMinutes < held.ageMinutes;
+    if (stronger || fresher) best.set(key, x);
+  });
+  return [...best.values()];
+}
+
+/** Distinct devices behind a mandal's fresh dwell samples. */
+export function dwellDeviceCount(samples: DwellInput[], nowMs: number): number {
+  const fresh = samples
+    .map((d) => ({ d, ageMinutes: (nowMs - Date.parse(d.createdAt)) / 60_000 }))
+    .filter((x) => Number.isFinite(x.ageMinutes) && x.ageMinutes >= 0 && x.ageMinutes <= ACTIVE_WINDOW_MINUTES);
+  return collapseDwellByDevice(fresh).length;
+}
+
+/**
+ * What the dwell devices agree on, or null.
+ *
+ * Returns a level only when enough independent devices have been seen and
+ * enough of them behaved the same way — see MIN_DWELL_DEVICES_FOR_STATUS
+ * and DWELL_DOMINANCE_SHARE. This is the only path by which a mandal can
+ * take a colour with nobody having reported it.
+ */
+export function dwellConsensus(
+  samples: DwellInput[],
+  nowMs: number
+): { level: CrowdLevel; devices: number; share: number; newestAt: string } | null {
+  const fresh = samples
+    .map((d) => ({ d, ageMinutes: (nowMs - Date.parse(d.createdAt)) / 60_000 }))
+    .filter((x) => Number.isFinite(x.ageMinutes) && x.ageMinutes >= 0 && x.ageMinutes <= ACTIVE_WINDOW_MINUTES)
+    /**
+     * Attributable rows only.
+     *
+     * Shadow-mode rows carry no key, and the whole safety argument for
+     * letting dwell colour a mandal is that the devices behind it can be
+     * counted. Twenty unattributable rows are one caller or twenty
+     * people and there is no way to tell, so they may still add mass to
+     * a reading a human established — that is unchanged — but they may
+     * not create one.
+     */
+    .filter((x) => typeof x.d.deviceKey === 'string' && x.d.deviceKey.length > 0);
+
+  const devices = collapseDwellByDevice(fresh);
+  if (devices.length < MIN_DWELL_DEVICES_FOR_STATUS) return null;
+
+  const queueing = devices.filter((x) => x.d.dwell === 'queueing').length;
+  const share = Math.max(queueing, devices.length - queueing) / devices.length;
+  if (share < DWELL_DOMINANCE_SHARE) return null;
+
+  const winner = queueing * 2 >= devices.length ? 'queueing' : 'lingering';
+  const newestAt = devices.reduce(
+    (newest, x) => (Date.parse(x.d.createdAt) > Date.parse(newest) ? x.d.createdAt : newest),
+    devices[0].d.createdAt
+  );
+
+  return { level: DWELL_LEVEL[winner], devices: devices.length, share, newestAt };
+}
+
 export function scoreBreakdown(
   aged: { status: CrowdLevel; ageMinutes: number; atMandal: boolean }[],
   dwellSamples: DwellInput[],
@@ -385,9 +525,23 @@ export function scoreBreakdown(
 
   // Dwell, decayed on the same curve as a report and capped in aggregate
   // so a busy mandal cannot accumulate unbounded passive weight.
-  const usable = dwellSamples
+  const fresh = dwellSamples
     .map((d) => ({ d, ageMinutes: (nowMs - Date.parse(d.createdAt)) / 60_000 }))
     .filter((x) => Number.isFinite(x.ageMinutes) && x.ageMinutes >= 0 && x.ageMinutes <= ACTIVE_WINDOW_MINUTES);
+
+  /**
+   * One sample per device, and the strongest class that device reached.
+   *
+   * A single visit emits up to three rows — a lingering marker, a
+   * queueing marker, and a final sample on the way out — so scoring rows
+   * would count one person two or three times, and would count them
+   * against themselves: the lingering marker argues `moving` while the
+   * queueing marker that supersedes it argues `long`.
+   *
+   * So each device contributes once, at its high-water mark. Rows with no
+   * key are shadow-mode rows and each stand alone, exactly as they did.
+   */
+  const usable = collapseDwellByDevice(fresh);
 
   const dwellMassRaw = usable.reduce((sum, x) => sum + DWELL_MASS * freshnessWeight(x.ageMinutes), 0);
   const dwellScale = dwellMassRaw > 0 ? Math.min(1, DWELL_MASS_CAP / dwellMassRaw) : 1;
@@ -440,6 +594,41 @@ export function aggregateMandal(
   // has said more than somebody who tapped a colour, so a mandal with
   // only wait reports must still produce a reading.
   if (aged.length === 0 && freshWaits.length === 0) {
+    /**
+     * Nobody reported — but the phones may still have agreed.
+     *
+     * The one path to a colour with no human behind it, and the narrowest
+     * thing in this file: three independent devices, sixty per cent of
+     * them behaving the same way, inside the same ninety minutes. It is
+     * reached only here, where Lane A has nothing at all, so it can never
+     * dilute, tip or override a report — those are decided above.
+     *
+     * Marked `observed`, not `reported`, all the way to the pin.
+     */
+    const consensus = dwellConsensus(dwellSamples, nowMs);
+    if (consensus) {
+      const { label, detail } = observedLabelFor(consensus.level);
+      return {
+        mandalId,
+        status: consensus.level,
+        label,
+        detail,
+        // Nobody reported. Saying "1 report" because three phones walked
+        // slowly would be the exact lie this field exists to prevent.
+        reportCount: 0,
+        source: 'observed',
+        // Never anything but low, whatever the sample count. Confidence
+        // is how far a reader should trust the reading, and a passive
+        // signal with no judgement behind it does not earn more.
+        confidence: 'low',
+        waitMedianMinutes: null,
+        waitReportCount: 0,
+        // When the devices were seen, not when anyone reported.
+        lastUpdated: consensus.newestAt,
+        trend: 'unknown',
+      };
+    }
+
     const { label, detail } = labelFor(null);
     return {
       mandalId,
@@ -447,6 +636,7 @@ export function aggregateMandal(
       label,
       detail,
       reportCount: 0,
+      source: 'reported',
       confidence: 'low',
       waitMedianMinutes: null,
       waitReportCount: 0,
@@ -522,6 +712,7 @@ export function aggregateMandal(
         // No number: visitors are never told how many people reported.
         'A report has come in but is not confirmed yet. It shows once someone else agrees.',
       reportCount: aged.length,
+      source: 'reported',
       confidence: 'low',
       waitMedianMinutes: breakdown.waitMedianMinutes,
       waitReportCount: breakdown.waits.length,
@@ -538,6 +729,7 @@ export function aggregateMandal(
     label,
     detail,
     reportCount: aged.length + freshWaits.length,
+    source: 'reported',
     confidence: confidenceFrom(humanMass, agreement),
     waitMedianMinutes: breakdown.waitMedianMinutes,
     waitReportCount: breakdown.waits.length,

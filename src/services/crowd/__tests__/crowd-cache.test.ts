@@ -14,6 +14,7 @@ const status = (mandalId: string): CrowdStatus => ({
   label: 'Heavy',
   detail: 'Devotees report a heavy crowd',
   reportCount: 4,
+  source: 'reported',
   confidence: 'medium',
   waitMedianMinutes: null,
   waitReportCount: 0,

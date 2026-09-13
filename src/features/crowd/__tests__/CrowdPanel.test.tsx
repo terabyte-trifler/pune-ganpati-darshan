@@ -47,7 +47,7 @@ const NOW = Date.parse('2026-09-19T15:30:00.000Z');
 
 const status = (over: Partial<CrowdStatus>): CrowdStatus => ({
   mandalId: 'T', status: null, label: '', detail: '', reportCount: 0,
-  confidence: 'low', waitMedianMinutes: null, waitReportCount: 0,
+  source: 'reported', confidence: 'low', waitMedianMinutes: null, waitReportCount: 0,
   lastUpdated: null, trend: 'unknown', ...over,
 });
 

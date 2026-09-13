@@ -16,7 +16,9 @@ import { ROAD_CLOSURES, CLOSURE_JUNCTIONS } from '@/content/diversions';
  */
 
 /**
- * Filled means somebody reported it; hollow means the app worked it out.
+ * How full the pin is says where the colour came from: filled is a
+ * report, half is what phones nearby were seen doing, hollow is the app's
+ * own estimate from the hour.
  *
  * The same convention the metro pins below already use on these maps, and
  * the same one the badges and the tracker rows use — so it only has to be
@@ -28,11 +30,17 @@ const CROWD = [
   { color: 'var(--crowd-long)', label: 'Heavy' },
   {
     color: 'var(--crowd-moving)',
-    label: 'Hollow — estimated, nobody has reported',
+    label: 'Half — observed, nobody has reported',
+    half: true,
+    wide: true,
+  },
+  {
+    color: 'var(--crowd-moving)',
+    label: 'Hollow — estimated from the hour of day',
     hollow: true,
     wide: true,
   },
-  { color: 'var(--faint)', label: 'Grey — no report and no estimate', wide: true },
+  { color: 'var(--faint)', label: 'Grey — nothing to go on at all', wide: true },
 ];
 
 export const PARKING_PIN = '#6C8AB0';
@@ -63,8 +71,19 @@ export function MapLegend({
           >
             <span
               aria-hidden="true"
-              className={`h-2.5 w-2.5 shrink-0 rounded-full${c.hollow ? ' border-[1.5px]' : ''}`}
-              style={c.hollow ? { borderColor: c.color } : { background: c.color }}
+              className={`h-2.5 w-2.5 shrink-0 rounded-full${
+                c.hollow || c.half ? ' border-[1.5px]' : ''
+              }`}
+              style={
+                c.hollow
+                  ? { borderColor: c.color }
+                  : c.half
+                    ? {
+                        borderColor: c.color,
+                        background: `color-mix(in srgb, ${c.color} 30%, transparent)`,
+                      }
+                    : { background: c.color }
+              }
             />
             {c.label}
           </li>

@@ -7,6 +7,7 @@ import {
   paceZones, stepDwell, initialDwellState,
   type DwellState, type PaceMandal,
 } from './pace';
+import { getDeviceId } from './device';
 import { noteQueued } from './wait-prompt-store';
 
 /**
@@ -87,10 +88,18 @@ export function useDwellSignal(mandals: PaceMandal[], enabled: boolean): void {
     if (posting.current) return;
     posting.current = true;
 
+    // The device id now travels with the sample. It is never stored: the
+    // route checks the block list with it and derives a per-(mandal, day)
+    // key, which is what lands in the table. Without it a sample cannot be
+    // counted as a device, and dwell can no longer be trusted to colour
+    // anything on its own.
+    const deviceId = getDeviceId();
+    if (!deviceId) return;
+
     void fetch('/api/crowd/dwell', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(emit),
+      body: JSON.stringify({ ...emit, deviceId }),
       keepalive: true,
     })
       .catch(() => {

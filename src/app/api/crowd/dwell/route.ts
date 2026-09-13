@@ -2,14 +2,21 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
+import { dwellDeviceKey } from '@/lib/dwell-key';
 
 /**
  * Record a passive dwell sample. Shadow mode.
  *
- * Deliberately the thinnest endpoint in the app. It takes a mandal id, a
- * class and a duration, and writes a row that identifies nobody — see the
- * migration header for why it is device-less, and for the note that the
- * decision does not survive the signal being displayed.
+ * It takes a mandal id, a device id, a class and a duration, and writes a
+ * row that identifies nobody: the device id is used here — to check the
+ * block list, and to derive a per-(mandal, day) key — and then discarded.
+ * See 20260914160000_dwell_device_key.sql for why that is a key and not
+ * an id, and the shadow migration for what it replaced.
+ *
+ * The device id became necessary when dwell was allowed to colour a
+ * mandal with no human report behind it: a signal that decides something
+ * is a signal worth gaming, and an endpoint with no cooldown and no
+ * identity cannot be defended.
  *
  * There is no GET. Nothing reads this back except the admin surface,
  * through the service role. The table has no SELECT policy, so a stolen
@@ -25,6 +32,11 @@ export const dynamic = 'force-dynamic';
 
 const bodySchema = z.object({
   mandalId: z.string().uuid(),
+  /**
+   * The same opaque per-device value the crowd reports use. Never stored
+   * here — see dwellDeviceKey.
+   */
+  deviceId: z.string().min(8).max(64),
   dwell: z.enum(['lingering', 'queueing']),
   dwellSeconds: z.number().int().min(0).max(86_399),
   /**
@@ -63,11 +75,27 @@ export async function POST(request: Request) {
   const supabase = getSupabaseAdminClient();
   if (!supabase) return NextResponse.json({ error: 'unavailable' }, { status: 503 });
 
+  // A device blocked for abusing crowd reports is blocked here too: it is
+  // the same person, and this signal now moves the same colours. Checked
+  // against the raw id, which is the last thing done with it — the block
+  // list stays the only table where a device id lives.
+  const { data: blocked } = await supabase
+    .from('crowd_device_blocks')
+    .select('device_id')
+    .eq('device_id', parsed.data.deviceId)
+    .maybeSingle();
+  if (blocked) {
+    // 204, not 403. A blocked caller learning it is blocked starts
+    // rotating device ids; one that thinks it is being recorded does not.
+    return new NextResponse(null, { status: 204 });
+  }
+
   const { error } = await supabase.from('crowd_dwell_samples').insert({
     mandal_id: parsed.data.mandalId,
     dwell: parsed.data.dwell,
     dwell_seconds: parsed.data.dwellSeconds,
     is_final: parsed.data.isFinal,
+    device_key: dwellDeviceKey(parsed.data.deviceId, parsed.data.mandalId),
   });
 
   // The client must never retry or surface this. A lost shadow sample

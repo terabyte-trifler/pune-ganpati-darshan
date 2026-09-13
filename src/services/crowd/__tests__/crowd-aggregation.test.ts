@@ -441,26 +441,68 @@ describe('dwell contributes mass, within limits', () => {
   const at = (m: number) => new Date(now - m * 60_000).toISOString();
   const rep = (status: CrowdLevel, m: number, dev: number): CrowdReportInput =>
     ({ mandalId: 'm', status, createdAt: at(m), atMandal: true, deviceSeq: dev });
-  const dw = (dwell: 'lingering' | 'queueing', m: number) => ({ dwell, createdAt: at(m) });
+  const dw = (dwell: 'lingering' | 'queueing', m: number, deviceKey?: string) =>
+    ({ dwell, createdAt: at(m), deviceKey: deviceKey ?? null });
 
-  it('cannot create a reading on its own', () => {
-    // The limit that matters most. Twenty queueing observations and no
-    // human reports is still "no recent reports" — dwell never counts
-    // toward MIN_DEVICES_FOR_STATUS.
+  it('cannot create a reading from rows it cannot attribute', () => {
+    // The limit that matters most, and the one that survived promotion.
+    // Twenty queueing rows with no device key are one caller or twenty
+    // people and nothing distinguishes them, so they produce no reading
+    // however many arrive. Shadow-mode rows are exactly these.
     const many = Array.from({ length: 20 }, () => dw('queueing', 1));
     const s = aggregateMandal('m', [], now, many);
     expect(s.status).toBeNull();
     expect(s.reportCount).toBe(0);
   });
 
-  it('still cannot create a reading out of nothing', () => {
-    // The limit that survives the device minimum going to one: dwell earns
-    // no device credit, so with no human report at all there is no status
-    // however many observations arrive.
-    const many = Array.from({ length: 20 }, () => dw('queueing', 1));
-    expect(aggregateMandal('m1', [], now, many).status).toBeNull();
-    // With one human report the reading exists, and dwell may shade it.
-    expect(aggregateMandal('m1', [rep('short', 1, 1)], now, many).status).not.toBeNull();
+  it('creates an observed reading from enough distinct devices', () => {
+    const three = [dw('queueing', 1, 'a'), dw('queueing', 2, 'b'), dw('queueing', 3, 'c')];
+    const s = aggregateMandal('m', [], now, three);
+    expect(s.status).toBe('long');
+    expect(s.source).toBe('observed');
+    // Nobody reported, and the field that says so must not be inflated.
+    expect(s.reportCount).toBe(0);
+    // A passive signal never earns more than the lowest confidence.
+    expect(s.confidence).toBe('low');
+    expect(s.label).toBe('Observed heavy');
+  });
+
+  it('needs three of them, not two', () => {
+    const two = [dw('queueing', 1, 'a'), dw('queueing', 2, 'b')];
+    expect(aggregateMandal('m', [], now, two).status).toBeNull();
+  });
+
+  it('counts devices rather than rows, so one visit is one voice', () => {
+    // A single visit emits a lingering marker, a queueing marker and a
+    // final sample. Three rows, one phone, no reading.
+    const oneVisit = [dw('lingering', 3, 'a'), dw('queueing', 2, 'a'), dw('queueing', 1, 'a')];
+    expect(aggregateMandal('m', [], now, oneVisit).status).toBeNull();
+  });
+
+  it('declines when the devices disagree', () => {
+    // Three lingering, two queueing: 60% is the bar and this is exactly
+    // at it, so it speaks; flip one and it does not.
+    const split = [
+      dw('lingering', 1, 'a'), dw('lingering', 2, 'b'), dw('lingering', 3, 'c'),
+      dw('queueing', 1, 'd'), dw('queueing', 2, 'e'),
+    ];
+    expect(aggregateMandal('m', [], now, split).status).toBe('moving');
+
+    const even = [
+      dw('lingering', 1, 'a'), dw('lingering', 2, 'b'),
+      dw('queueing', 1, 'c'), dw('queueing', 2, 'd'),
+    ];
+    expect(aggregateMandal('m', [], now, even).status).toBeNull();
+  });
+
+  it('always loses to a person', () => {
+    // Ten devices queueing, one human says short. The human wins outright
+    // and the reading is a report, not an observation — dwell may shade
+    // it, but the branch that lets dwell speak is never reached.
+    const many = Array.from({ length: 10 }, (_, i) => dw('queueing', 1, `d${i}`));
+    const s = aggregateMandal('m1', [rep('short', 1, 1)], now, many);
+    expect(s.source).toBe('reported');
+    expect(s.reportCount).toBe(1);
   });
 
   it('tips a tie towards what the dwell says', () => {

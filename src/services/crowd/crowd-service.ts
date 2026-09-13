@@ -118,7 +118,7 @@ async function readDwellSamples(
     const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
     const { data, error } = await supabase
       .from('crowd_dwell_samples')
-      .select('mandal_id, dwell, created_at')
+      .select('mandal_id, dwell, created_at, device_key')
       .in('mandal_id', ids)
       .gte('created_at', since)
       .limit(5_000);
@@ -126,7 +126,11 @@ async function readDwellSamples(
 
     const out: Record<string, DwellInput[]> = {};
     for (const row of data) {
-      (out[row.mandal_id] ??= []).push({ dwell: row.dwell, createdAt: row.created_at });
+      (out[row.mandal_id] ??= []).push({
+        dwell: row.dwell,
+        createdAt: row.created_at,
+        deviceKey: row.device_key,
+      });
     }
     return out;
   } catch {
@@ -507,7 +511,7 @@ export async function getCrowdExplain(): Promise<{
   const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
   const { data: dwellRows } = await supabase
     .from('crowd_dwell_samples')
-    .select('mandal_id, dwell, created_at')
+    .select('mandal_id, dwell, created_at, device_key')
     .in('mandal_id', ids)
     .gte('created_at', since)
     .limit(5_000);
@@ -516,7 +520,11 @@ export async function getCrowdExplain(): Promise<{
   const dwellCounted = process.env.CROWD_DWELL_PUBLIC === '1';
   const dwellByMandal: Record<string, DwellInput[]> = {};
   for (const row of dwellRows ?? []) {
-    (dwellByMandal[row.mandal_id] ??= []).push({ dwell: row.dwell, createdAt: row.created_at });
+    (dwellByMandal[row.mandal_id] ??= []).push({
+      dwell: row.dwell,
+      createdAt: row.created_at,
+      deviceKey: row.device_key,
+    });
   }
 
   const reportsByMandal = new Map<string, CrowdReportInput[]>();

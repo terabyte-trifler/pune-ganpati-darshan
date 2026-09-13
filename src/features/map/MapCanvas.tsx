@@ -106,6 +106,9 @@ const PIN_RASTER = 3;
  */
 const CROWD_KEYS = [
   'none', 'short', 'moving', 'long',
+  // Dwell's two, drawn half-filled: nobody reported, but enough devices
+  // were seen dwelling to say something.
+  'obs-moving', 'obs-long',
   // The prior's three, drawn hollow. A mandal nobody has reported is no
   // longer automatically grey — see features/crowd/crowd-display.
   'est-short', 'est-moving', 'est-long',
@@ -124,12 +127,12 @@ async function registerPin(
   const id = pinId(crowd, manache, selected);
   if (map.hasImage(id)) return;
 
-  const { level, estimated } = splitPinKey(crowd);
+  const { level, fill } = splitPinKey(crowd);
   const { url, size } = buildMarkerSvg(
     manache ? 'maanache' : 'local',
     selected,
     level,
-    estimated
+    fill
   );
   const image = new Image(size * PIN_RASTER, size * PIN_RASTER);
   await new Promise<void>((resolve) => {

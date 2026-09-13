@@ -86,6 +86,15 @@ export function CrowdPanel({
   const nowMs = useClockMs();
 
   const level = status?.status ?? null;
+  /**
+   * A reading with nobody behind it.
+   *
+   * Enough independent devices dwelled here that the app is willing to
+   * put a colour on the mandal, but no person reported it — so every
+   * sentence in this branch has to say what was seen rather than what
+   * anyone claimed, and the dot is half-filled rather than solid.
+   */
+  const observed = status?.source === 'observed';
   const ageMs =
     nowMs !== null && status?.lastUpdated
       ? Math.max(0, nowMs - Date.parse(status.lastUpdated))
@@ -131,7 +140,7 @@ export function CrowdPanel({
             className="mt-2.5 flex items-center gap-2 text-[22px] font-bold leading-none"
             style={{ color: CROWD_COLOR[level] }}
           >
-            <CrowdDot level={level} size={12} />
+            <CrowdDot level={level} size={12} fill={observed ? 'half' : 'filled'} />
             {status?.label}
           </p>
 
@@ -141,12 +150,18 @@ export function CrowdPanel({
               well as volume, which a bare number would not. Counts remain
               visible to admins at /admin/crowd and /admin/crowd-score. */}
           <p className="mt-2 text-[13px] text-[var(--muted)]">
-            {status && CONFIDENCE_WORDING[status.confidence]}
+            {observed
+              ? status?.detail
+              : status && CONFIDENCE_WORDING[status.confidence]}
           </p>
 
           {ago && (
             <p className="mt-1 text-[12px] text-[var(--faint)]">
-              {stale ? `Last known — updated ${ago}` : `Updated ${ago}`}
+              {observed
+                ? `Devices last seen ${ago}`
+                : stale
+                  ? `Last known — updated ${ago}`
+                  : `Updated ${ago}`}
             </p>
           )}
 
@@ -169,8 +184,9 @@ export function CrowdPanel({
           )}
 
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
-            Reported by devotees in the last 90 minutes. Not a measured queue
-            time.
+            {observed
+              ? 'Nobody has reported this mandal in the last 90 minutes. One tap below replaces this with something a person said.'
+              : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
           </p>
         </>
       ) : (

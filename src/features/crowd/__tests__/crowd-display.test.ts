@@ -34,6 +34,7 @@ const reported = (level: 'short' | 'moving' | 'long'): CrowdStatus => ({
   label: level === 'short' ? 'Short' : level === 'moving' ? 'Moving' : 'Heavy',
   detail: 'Devotees report',
   reportCount: 3,
+  source: 'reported',
   confidence: 'medium',
   waitMedianMinutes: null,
   waitReportCount: 0,
@@ -54,6 +55,7 @@ describe('a report always wins', () => {
     expect(display).toEqual({
       level: 'short',
       label: 'Short',
+      source: 'reported',
       estimated: false,
       estimatedWaitMinutes: null,
       lastUpdated: '2026-09-18T15:30:00.000Z',
@@ -122,8 +124,9 @@ describe('silence is still a state', () => {
 
 describe('the pin artwork', () => {
   it('draws an estimate hollow, not filled', () => {
-    const filled = decodeURIComponent(buildMarkerSvg('local', false, 'moving', false).url);
-    const hollow = decodeURIComponent(buildMarkerSvg('local', false, 'moving', true).url);
+    const filled = decodeURIComponent(buildMarkerSvg('local', false, 'moving', 'filled').url);
+    const hollow = decodeURIComponent(buildMarkerSvg('local', false, 'moving', 'hollow').url);
+    const half = decodeURIComponent(buildMarkerSvg('local', false, 'moving', 'half').url);
 
     // Filled: the queue colour is the body, the ground is the outline.
     expect(filled).toContain('<circle cx="12" cy="12" r="10.2" fill="#f2a93b"');
@@ -131,6 +134,10 @@ describe('the pin artwork', () => {
     // and the mark — so the difference survives a glance and greyscale.
     expect(hollow).toContain('<circle cx="12" cy="12" r="10.2" fill="#14100c" stroke="#f2a93b"');
     expect(hollow).not.toContain('<circle cx="12" cy="12" r="10.2" fill="#f2a93b"');
+    // Half: the colour is the body, but washed out and ringed, so it is
+    // never mistaken for a report at a glance.
+    expect(half).toContain('fill-opacity="0.26"');
+    expect(half).toContain('stroke="#f2a93b"');
   });
 });
 

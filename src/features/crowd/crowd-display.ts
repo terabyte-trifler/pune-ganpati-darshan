@@ -40,13 +40,36 @@ import type { CrowdLevel, CrowdStatus } from '@/types/crowd';
  *
  * `none` is still grey. The `est-` variants draw the same colour hollow.
  */
-export type CrowdPinKey = 'none' | CrowdLevel | 'est-short' | 'est-moving' | 'est-long';
+export type CrowdPinKey =
+  | 'none'
+  | CrowdLevel
+  | 'obs-moving' | 'obs-long'
+  | 'est-short' | 'est-moving' | 'est-long';
+
+/**
+ * Three tiers, and the whole app orders on them.
+ *
+ * reported  — somebody said something. The only tier worded as a report.
+ * observed  — nobody said anything, but enough independent devices were
+ *             seen dwelling to say something anyway. Half-filled.
+ * estimated — nobody said anything and nothing was seen; the clock model
+ *             speaks. Hollow.
+ */
+export type CrowdSource = 'reported' | 'observed' | 'estimated';
+
+/** Reports first, then observations, then the model. Lower sorts first. */
+export const SOURCE_RANK: Record<CrowdSource, number> = {
+  reported: 0,
+  observed: 1,
+  estimated: 2,
+};
 
 export interface CrowdDisplay {
   level: CrowdLevel;
-  /** Badge and row wording. Says "Estimated" when nobody reported. */
+  /** Badge and row wording. Names its own tier: "Observed", "Estimated". */
   label: string;
-  /** True when this came from the prior rather than from people. */
+  source: CrowdSource;
+  /** True only for the clock model. Kept because it reads better at use. */
   estimated: boolean;
   /** The modelled wait in minutes. Null for a measured reading. */
   estimatedWaitMinutes: number | null;
@@ -86,13 +109,20 @@ export function crowdDisplayFor(
   at: Date | null
 ): CrowdDisplay | null {
   if (status?.status) {
+    // `source` distinguishes a reading people gave from one the dwell
+    // devices produced on their own. Both are measurements of something
+    // real, so both outrank the model — but only one may say "reported".
+    const observed = status.source === 'observed';
     return {
       level: status.status,
       label: status.label,
+      source: observed ? 'observed' : 'reported',
       estimated: false,
       estimatedWaitMinutes: null,
       lastUpdated: status.lastUpdated,
-      pinKey: status.status,
+      pinKey: observed
+        ? (`obs-${status.status}` as CrowdPinKey)
+        : status.status,
     };
   }
 
@@ -104,6 +134,7 @@ export function crowdDisplayFor(
   return {
     level: expectation.level,
     label: ESTIMATED_LABEL[expectation.level],
+    source: 'estimated',
     estimated: true,
     estimatedWaitMinutes: expectation.waitMinutes,
     lastUpdated: null,

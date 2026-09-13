@@ -258,6 +258,21 @@ export default function AboutPage() {
             </p>
             <p>
               <strong className="font-semibold text-[var(--chandan)]">
+                How long your phone stayed near a mandal.
+              </strong>{' '}
+              When the map is open, the app notices on your phone whether you
+              walked past a mandal or stopped there, and sends one of two
+              words — stopped, or slowed — with the mandal and nothing else.
+              It never sends where you are. It is stored with a code made from
+              your device, that mandal and today&rsquo;s date, so the same
+              phone counts once rather than five times; because the mandal and
+              the date are mixed in, the same phone at two mandals has two
+              unrelated codes, and there is no way to join them into where
+              anybody spent their evening. The codes stop matching at
+              midnight, and the rows are deleted after the festival.
+            </p>
+            <p>
+              <strong className="font-semibold text-[var(--chandan)]">
                 Analytics.
               </strong>{' '}
               Page views are counted with a session id that lasts until you

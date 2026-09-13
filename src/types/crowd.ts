@@ -23,6 +23,26 @@ export type CrowdTrend = 'improving' | 'stable' | 'worsening' | 'unknown';
  * has visited yet — the single most misleading thing this feature could
  * do. Callers must handle null; `label` already carries wording for it.
  */
+/**
+ * `source`, and why the explanation lives out here.
+ *
+ * 'reported' — at least one person said something: a colour, a wait time,
+ * or both. The normal case, and the only one that may be worded as a
+ * report.
+ *
+ * 'observed' — nobody said anything, and enough independent devices were
+ * seen stopping at the mandal to say something anyway. Weaker than a
+ * report and never dressed as one: the label says "Observed", the wording
+ * says what was seen rather than what anyone claimed, and confidence
+ * stays low whatever the sample count.
+ *
+ * There is deliberately no third value for the clock model. That never
+ * becomes a CrowdStatus at all, because it is not a measurement of
+ * anything — it is attached alongside, in its own type, and tests assert
+ * that the two cannot meet inside this interface. Which is also why this
+ * paragraph is here rather than on the field: those tests read the
+ * interface body and would fail on the words alone.
+ */
 export interface CrowdStatus {
   mandalId: string;
   status: CrowdLevel | null;
@@ -31,6 +51,8 @@ export interface CrowdStatus {
   /** A sentence for the detail panel, always attributed to reports. */
   detail: string;
   reportCount: number;
+  /** Whether a person said this, or only the devices did. See above. */
+  source: 'reported' | 'observed';
   confidence: CrowdConfidence;
   /**
    * Median wait in minutes, from people who queued here and said how

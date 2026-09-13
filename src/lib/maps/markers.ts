@@ -70,15 +70,20 @@ const PIN_INK = '#14100c';
  * an image id by concatenation, so this is where it becomes a level and a
  * provenance again. `est-moving` is an amber pin drawn hollow.
  */
+export type PinFill = 'filled' | 'half' | 'hollow';
+
 export function splitPinKey(key: string): {
   level: CrowdLevel | null;
-  estimated: boolean;
+  fill: PinFill;
 } {
-  if (key === 'none') return { level: null, estimated: false };
+  if (key === 'none') return { level: null, fill: 'filled' };
   if (key.startsWith('est-')) {
-    return { level: key.slice(4) as CrowdLevel, estimated: true };
+    return { level: key.slice(4) as CrowdLevel, fill: 'hollow' };
   }
-  return { level: key as CrowdLevel, estimated: false };
+  if (key.startsWith('obs-')) {
+    return { level: key.slice(4) as CrowdLevel, fill: 'half' };
+  }
+  return { level: key as CrowdLevel, fill: 'filled' };
 }
 
 /**
@@ -120,35 +125,48 @@ export function buildMarkerSvg(
   selected: boolean,
   crowd?: CrowdLevel | null,
   /**
-   * Drawn hollow: the queue's colour as a ring and a mark on the map's own
-   * ground, rather than a filled disc.
+   * How sure the app is that a person is behind this colour.
    *
-   * This is the whole safeguard for putting the prior on the map. A filled
-   * pin means people reported this; an outlined one means the app worked it
-   * out from the clock. The difference survives greyscale, a colour-blind
-   * reader and a glance from arm's length, which a word on a label does
-   * not — and the label says "Est." as well.
+   *   filled — somebody reported it.
+   *   half   — nobody reported it; enough devices were seen dwelling that
+   *            the app is willing to say something. A washed body with a
+   *            solid ring: clearly the queue's colour, clearly not a
+   *            report.
+   *   hollow — nobody reported it and nothing was seen; the clock model
+   *            speaks. The ring alone.
+   *
+   * Carried by fill rather than by wording because a pin has no room for
+   * wording, and because it then survives greyscale, a colour-blind
+   * reader and a glance from arm's length. The labels say "Observed" and
+   * "Estimated" wherever there IS room.
    */
-  estimated = false
+  fill: PinFill = 'filled'
 ): MarkerVisual {
   const color = pinColor(crowd);
   const size = selected ? 46 : 34;
   // Manache Paach get a heavier ring so they are distinguishable in
   // greyscale and to colour-blind users.
   const ring = category === 'maanache' ? 2.4 : 1.4;
+  const outline = category === 'maanache' ? 3.4 : 2.6;
 
-  const body = estimated
-    ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}" stroke="${color}" stroke-width="${
-        category === 'maanache' ? 3.4 : 2.6
-      }"/>
-       ${glyph(color)}
-       ${eyes(PIN_INK)}`
-    : `<circle cx="12" cy="12" r="10.2" fill="${color}" stroke="${PIN_INK}" stroke-width="${ring}"/>
-       ${glyph(PIN_INK)}
-       ${eyes(color)}`;
+  const body =
+    fill === 'hollow'
+      ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}" stroke="${color}" stroke-width="${outline}"/>
+         ${glyph(color)}
+         ${eyes(PIN_INK)}`
+      : fill === 'half'
+        ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}"/>
+           <circle cx="12" cy="12" r="10.2" fill="${color}" fill-opacity="0.26" stroke="${color}" stroke-width="${outline}"/>
+           ${glyph(PIN_INK)}
+           ${eyes(color)}`
+        : `<circle cx="12" cy="12" r="10.2" fill="${color}" stroke="${PIN_INK}" stroke-width="${ring}"/>
+           ${glyph(PIN_INK)}
+           ${eyes(color)}`;
+
+  const haloOpacity = fill === 'filled' ? 0.28 : fill === 'half' ? 0.22 : 0.16;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="${estimated ? 0.16 : 0.28}"/>` : ''}
+    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="${haloOpacity}"/>` : ''}
     ${body}
   </svg>`;
 
@@ -170,8 +188,8 @@ export function buildMarkerSvg(
 export function buildRouteStopSvg(
   selected: boolean,
   crowd?: CrowdLevel | null,
-  /** Hollow, for the same reason as buildMarkerSvg. */
-  estimated = false
+  /** Same three fills, for the same reason as buildMarkerSvg. */
+  fill: PinFill = 'filled'
 ): MarkerVisual {
   // A route stop reads the queue like every other pin. Selection is carried
   // by size and the halo rather than by colour, so choosing a stop can no
@@ -181,16 +199,24 @@ export function buildRouteStopSvg(
   // read, and the larger target is worth having where stops overlap.
   const size = selected ? 48 : 40;
 
-  const body = estimated
-    ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}" stroke="${color}" stroke-width="2.6"/>
-       ${glyph(color)}
-       ${eyes(PIN_INK)}`
-    : `<circle cx="12" cy="12" r="10.2" fill="${color}" stroke="${PIN_INK}" stroke-width="1.6"/>
-       ${glyph(PIN_INK)}
-       ${eyes(color)}`;
+  const body =
+    fill === 'hollow'
+      ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}" stroke="${color}" stroke-width="2.6"/>
+         ${glyph(color)}
+         ${eyes(PIN_INK)}`
+      : fill === 'half'
+        ? `<circle cx="12" cy="12" r="10.2" fill="${PIN_INK}"/>
+           <circle cx="12" cy="12" r="10.2" fill="${color}" fill-opacity="0.26" stroke="${color}" stroke-width="2.6"/>
+           ${glyph(PIN_INK)}
+           ${eyes(color)}`
+        : `<circle cx="12" cy="12" r="10.2" fill="${color}" stroke="${PIN_INK}" stroke-width="1.6"/>
+           ${glyph(PIN_INK)}
+           ${eyes(color)}`;
+
+  const halo = fill === 'filled' ? 0.3 : fill === 'half' ? 0.24 : 0.18;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="${estimated ? 0.18 : 0.3}"/>` : ''}
+    ${selected ? `<circle cx="12" cy="12" r="11.4" fill="${color}" opacity="${halo}"/>` : ''}
     ${body}
   </svg>`;
 

@@ -39,8 +39,9 @@ const WORD: Record<CrowdLevel, string> = { short: 'Green · Short', moving: 'Yel
 const DECIDER: Record<Decider, { label: string; note: string }> = {
   measured: { label: 'Phase 0 · measured', note: 'Two or more devices agreed. Shown on map pin, explore badge and panel.' },
   'dwell-tipped': { label: 'Phase 2 · dwell decided', note: 'Humans alone would have shown a different colour. Dwell changed it.' },
+  'dwell-only': { label: 'Phase 2 · dwell alone', note: 'Nobody reported. 3+ distinct devices agreed, so the mandal is coloured half-filled and labelled "Observed". Never worded as a report.' },
   unconfirmed: { label: 'One report · not confirmed', note: 'No colour on map or badge. Panel shows "Not confirmed yet" plus the Phase 1 estimate.' },
-  prior: { label: 'Phase 1 · usually', note: 'Nobody reported. Panel only, hollow ring — never on a pin or badge.' },
+  prior: { label: 'Phase 1 · estimated', note: 'Nobody reported and no dwell consensus. Hollow pin and an "Estimated" label everywhere. Zero mass — it never enters the score.' },
   silent: { label: 'Silent', note: 'Nobody reported and the prior declines (outside the festival, or visarjan afternoon).' },
 };
 

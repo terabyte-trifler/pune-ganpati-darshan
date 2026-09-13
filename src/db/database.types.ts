@@ -316,6 +316,14 @@ export type CrowdDwellSampleRow = {
    * for a distribution — see the migration.
    */
   is_final: boolean;
+  /**
+   * Digest of (device, mandal, IST day, salt). NOT a device id: it cannot
+   * be joined across mandals or across days, and cannot be reversed
+   * without the route's salt. Present so aggregation can count devices
+   * rather than rows now that dwell can colour a mandal on its own.
+   * Null on every row written in shadow mode.
+   */
+  device_key: string | null;
   created_at: string;
 }
 

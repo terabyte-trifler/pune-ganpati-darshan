@@ -10,6 +10,14 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
   resolve: {
-    alias: { '@': path.resolve(import.meta.dirname, './src') },
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+      // `server-only` is a build-time guard with no runtime: importing it
+      // outside a bundler throws, which would make every server module
+      // untestable. Stubbed rather than dropped from those modules — the
+      // guard is what keeps them out of a client bundle, and that matters
+      // more than the inconvenience here.
+      'server-only': path.resolve(import.meta.dirname, './src/test/server-only-stub.ts'),
+    },
   },
 });

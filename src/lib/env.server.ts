@@ -26,6 +26,7 @@ const serverSchema = z.object({
    * should be set in production — see hashIp() in crowd-service.ts.
    */
   CROWD_IP_SALT: optional(z.string().min(16)),
+  CROWD_DWELL_SALT: optional(z.string().min(16)),
   /**
    * Enables the crowd metrics endpoint when set. Unset in normal
    * operation, which makes the endpoint return 404 rather than exist and
@@ -47,6 +48,7 @@ export function serverEnv(): z.infer<typeof serverSchema> {
       OPENROUTESERVICE_API_KEY: process.env.OPENROUTESERVICE_API_KEY,
       ROUTING_OSRM_URL: process.env.ROUTING_OSRM_URL,
       CROWD_IP_SALT: process.env.CROWD_IP_SALT,
+      CROWD_DWELL_SALT: process.env.CROWD_DWELL_SALT,
       CROWD_METRICS_TOKEN: process.env.CROWD_METRICS_TOKEN,
     });
   }

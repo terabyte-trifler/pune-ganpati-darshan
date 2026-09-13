@@ -12,6 +12,9 @@ import type { CrowdExpectation } from './crowd-prior';
  *                 samples or did not change the winner.
  *   dwell-tipped  Lane A, but the humans alone would have produced a
  *                 different colour. Dwell decided it.
+ *   dwell-only    Nobody reported. Enough distinct devices were seen
+ *                 dwelling that the mandal takes a colour anyway, shown
+ *                 as "Observed" and half-filled, never as a report.
  *   unconfirmed   One device reported. No colour; the prior speaks
  *                 alongside "Not confirmed yet".
  *   prior         Nobody reported. Lane B speaks: "Usually …".
@@ -19,12 +22,15 @@ import type { CrowdExpectation } from './crowd-prior';
  *                 after the festival, or visarjan afternoon.
  *
  * Where a colour appears differs by lane, and the admin should know it:
- * a measured colour shows on the map pin, the explore badge and the
- * panel; a prior shows ONLY inside the mandal page's panel, hollow and
- * labelled "Usually", never on a pin or a badge.
+ * a measured colour shows filled on the map pin, the explore badge and
+ * the panel; a dwell-only colour shows in the same places half-filled and
+ * labelled "Observed"; the prior shows everywhere too, but hollow and
+ * labelled "Estimated", and it is the only one of the three that is not a
+ * measurement of anything.
  */
 
-export type Decider = 'measured' | 'dwell-tipped' | 'unconfirmed' | 'prior' | 'silent';
+export type Decider =
+  | 'measured' | 'dwell-tipped' | 'dwell-only' | 'unconfirmed' | 'prior' | 'silent';
 
 export interface Decision {
   decider: Decider;
@@ -43,7 +49,12 @@ export function decide(
 ): Decision {
   if (live.status) {
     return {
-      decider: humanOnly.status !== live.status ? 'dwell-tipped' : 'measured',
+      decider:
+        live.source === 'observed'
+          ? 'dwell-only'
+          : humanOnly.status !== live.status
+            ? 'dwell-tipped'
+            : 'measured',
       level: live.status,
       onMapAndBadges: true,
       humanOnlyLevel: humanOnly.status,

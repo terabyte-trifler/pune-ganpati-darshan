@@ -65,12 +65,13 @@ function Legend() {
         ))}
       </ul>
       <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
-        Every mandal on the map is drawn in its queue&rsquo;s colour, and it
-        changes as people report. A <strong className="font-semibold">filled</strong>{' '}
-        pin is what people reported; a{' '}
+        Every mandal on the map is drawn in its queue&rsquo;s colour. A{' '}
+        <strong className="font-semibold">filled</strong> pin is what people
+        reported; a <strong className="font-semibold">half-filled</strong> one is
+        what phones nearby were seen doing; a{' '}
         <strong className="font-semibold">hollow</strong> one is an estimate from
-        the hour of day, shown only where nobody has reported yet. Grey means
-        even that has nothing to say — not that the mandal is quiet.
+        the hour of day. Grey means none of the three has anything to say — not
+        that the mandal is quiet.
       </p>
     </div>
   );
@@ -153,7 +154,8 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
 
   const position = state.status === 'ready' ? state.position : null;
 
-  const { rows, heavyElsewhere, anyEstimated, anyMeasured, allGood } = useMemo(() => {
+  const { rows, heavyElsewhere, anyEstimated, anyObserved, anyMeasured, allGood } =
+    useMemo(() => {
     const all = ganpatis
       .map((g) => {
         const display = displays[g.id];
@@ -162,7 +164,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
           g,
           level: display.level,
           label: display.label,
-          estimated: display.estimated,
+          source: display.source,
           distanceM: position
             ? haversine(position, { lat: g.location.lat, lng: g.location.lng })
             : null,
@@ -186,10 +188,11 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
       // from reports alone: "3 mandals are heavy right now" is a claim
       // about now, and the model is not entitled to make it.
       heavyElsewhere: all.filter(
-        (r) => !r.estimated && r.level === 'long' && !shownIds.has(r.g.id)
+        (r) => r.source === 'reported' && r.level === 'long' && !shownIds.has(r.g.id)
       ).length,
-      anyEstimated: shown.some((r) => r.estimated),
-      anyMeasured: all.some((r) => !r.estimated),
+      anyEstimated: shown.some((r) => r.source === 'estimated'),
+      anyObserved: shown.some((r) => r.source === 'observed'),
+      anyMeasured: all.some((r) => r.source === 'reported'),
       allGood: shown.every((r) => r.level !== 'long'),
     };
   }, [ganpatis, displays, position]);
@@ -307,7 +310,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
               : 'Reported right now'}
         </p>
             <ul className="mt-1.5 divide-y divide-[var(--line)]">
-              {rows.map(({ g, level, label, estimated, distanceM, lastUpdated }) => {
+              {rows.map(({ g, level, label, source, distanceM, lastUpdated }) => {
                 // Each mandal's OWN freshness. A reading can be 80 minutes
                 // old inside a snapshot computed a second ago, so this is
                 // the only honest place to put a time.
@@ -318,7 +321,14 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                 const rowAgo = agoText(Number.isFinite(rowAge) ? rowAge : null);
                 const subtitle = [
                   distanceM !== null ? formatDistance(distanceM) : null,
-                  estimated || !rowAgo ? null : `reported ${rowAgo}`,
+                  source === 'reported' && rowAgo
+                    ? `reported ${rowAgo}`
+                    : // An observation has a time too, and it is a
+                      // different claim: this is when the devices were
+                      // seen, not when anyone said anything.
+                      source === 'observed' && rowAgo
+                      ? `seen ${rowAgo}`
+                      : null,
                 ]
                   .filter(Boolean)
                   .join(' · ');
@@ -332,7 +342,17 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                     >
                       <span className="flex min-w-0 items-start gap-2.5">
                         <span className="mt-[5px] flex shrink-0">
-                          <CrowdDot level={level} size={10} hollow={estimated} />
+                          <CrowdDot
+                            level={level}
+                            size={10}
+                            fill={
+                              source === 'reported'
+                                ? 'filled'
+                                : source === 'observed'
+                                  ? 'half'
+                                  : 'hollow'
+                            }
+                          />
                         </span>
                         <span className="flex min-w-0 flex-col">
                           <span className="truncate text-[14px] text-[var(--chandan)]">
@@ -363,11 +383,23 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
               })}
             </ul>
 
-        {anyEstimated && (
+        {(anyObserved || anyEstimated) && (
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
-            <strong className="font-semibold">Estimated</strong> rows are worked
-            out from the hour and this mandal&rsquo;s usual queue — nobody has
-            reported those. They only ever fill rows nothing reported could.
+            {anyObserved && (
+              <>
+                <strong className="font-semibold">Observed</strong> rows are what
+                phones near the mandal were seen doing — stopping rather than
+                walking past.{' '}
+              </>
+            )}
+            {anyEstimated && (
+              <>
+                <strong className="font-semibold">Estimated</strong> rows are
+                worked out from the hour and this mandal&rsquo;s usual queue.{' '}
+              </>
+            )}
+            Nobody has reported those, and they only ever fill rows a report
+            could not.
           </p>
         )}
 

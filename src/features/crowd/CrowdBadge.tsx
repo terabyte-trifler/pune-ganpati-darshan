@@ -9,10 +9,11 @@ import type { CrowdLevel } from '@/types/crowd';
 /**
  * Compact crowd indicator for cards, list rows and map callouts.
  *
- * Two states, never confused. A filled badge is what people reported. A
- * dashed, hollow one prefixed "Estimated" is what the app expects from
- * the hour and the day of the festival, shown only where nobody has reported
- * — see features/crowd/crowd-display.
+ * Three states, never confused. A filled badge is what people reported.
+ * A half-filled one prefixed "Observed" is what devices near the mandal
+ * were seen doing, with nobody reporting. A dashed, hollow one prefixed
+ * "Estimated" is what the app expects from the hour and the day of the
+ * festival — see features/crowd/crowd-display.
  *
  * It still renders nothing at all when there is neither: outside the
  * festival, and on visarjan afternoon, an absent badge means "we don't
@@ -40,18 +41,18 @@ export function CrowdDot({
   level,
   size = 8,
   /**
-   * Outline only, for a level the app worked out rather than was told.
-   *
-   * The same distinction the pins make, in the same visual language: a
-   * filled mark is a report, a hollow one is an estimate. It reads in
-   * greyscale, which the word beside it does not.
+   * How much of the dot is filled in, matching the map pins exactly:
+   * filled is a report, half is something the devices were observed
+   * doing, hollow is the clock model. It reads in greyscale, which the
+   * word beside it does not.
    */
-  hollow = false,
+  fill = 'filled',
 }: {
   level: CrowdLevel;
   size?: number;
-  hollow?: boolean;
+  fill?: 'filled' | 'half' | 'hollow';
 }) {
+  const color = CROWD_COLOR[level];
   return (
     <span
       aria-hidden="true"
@@ -59,8 +60,13 @@ export function CrowdDot({
       style={{
         width: size,
         height: size,
-        background: hollow ? 'transparent' : CROWD_COLOR[level],
-        boxShadow: hollow ? `inset 0 0 0 1.5px ${CROWD_COLOR[level]}` : undefined,
+        background:
+          fill === 'filled'
+            ? color
+            : fill === 'half'
+              ? `color-mix(in srgb, ${color} 30%, transparent)`
+              : 'transparent',
+        boxShadow: fill === 'filled' ? undefined : `inset 0 0 0 1.5px ${color}`,
       }}
     />
   );
@@ -76,7 +82,8 @@ export function CrowdBadgeView({
 }) {
   if (!display) return null;
 
-  const { level, estimated } = display;
+  const { level, source } = display;
+  const fill = source === 'reported' ? 'filled' : source === 'observed' ? 'half' : 'hollow';
 
   return (
     <span
@@ -85,25 +92,33 @@ export function CrowdBadgeView({
         'text-[12px] font-semibold leading-none',
         'border backdrop-blur-sm',
         // Dashed, like the panel's expectation box: an estimate is drawn
-        // as an outline of a badge rather than a badge.
-        estimated && 'border-dashed',
+        // as an outline of a badge rather than a badge. An observation is
+        // a solid border — it is a measurement, just not a report.
+        source === 'estimated' && 'border-dashed',
         className
       )}
       style={{
         color: CROWD_COLOR[level],
-        borderColor: `color-mix(in srgb, ${CROWD_COLOR[level]} ${estimated ? 34 : 40}%, transparent)`,
-        background: estimated
-          ? 'rgb(20 16 12 / 0.72)'
-          : `color-mix(in srgb, ${CROWD_COLOR[level]} 14%, rgb(20 16 12 / 0.82))`,
+        borderColor: `color-mix(in srgb, ${CROWD_COLOR[level]} ${
+          source === 'estimated' ? 34 : 40
+        }%, transparent)`,
+        background:
+          source === 'estimated'
+            ? 'rgb(20 16 12 / 0.72)'
+            : `color-mix(in srgb, ${CROWD_COLOR[level]} ${
+                source === 'observed' ? 9 : 14
+              }%, rgb(20 16 12 / 0.82))`,
       }}
       // Read aloud, "Estimated short" is a fragment. This is the sentence.
       title={
-        estimated
-          ? `Estimated from the time of day — nobody has reported this mandal in the last 90 minutes`
-          : undefined
+        source === 'estimated'
+          ? 'Estimated from the time of day — nobody has reported this mandal in the last 90 minutes'
+          : source === 'observed'
+            ? 'Nobody has reported this mandal — this is what devices near it were seen doing'
+            : undefined
       }
     >
-      <CrowdDot level={level} hollow={estimated} />
+      <CrowdDot level={level} fill={fill} />
       {/* Truncates rather than overflows: "Estimated moving" is long, and
           the badge sits in a corner of a half-width card. */}
       <span className="truncate">{display.label}</span>

@@ -41,8 +41,9 @@ import type { Ganpati } from '@/types/ganpati';
  */
 const CROWD_KEYS = [
   'none', 'short', 'moving', 'long',
-  // Hollow variants for the prior, which colours the mandals nobody has
-  // reported. Same keys the full map registers.
+  // Half-filled for dwell, hollow for the prior. Same keys the full map
+  // registers, so the two maps cannot drift apart.
+  'obs-moving', 'obs-long',
   'est-short', 'est-moving', 'est-long',
 ] as const;
 type CrowdKey = (typeof CROWD_KEYS)[number];
@@ -100,8 +101,8 @@ function collapseAttribution(container: HTMLElement) {
 async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
   const id = `mini-${crowd}`;
   if (map.hasImage(id)) return;
-  const { level, estimated } = splitPinKey(crowd);
-  const { url, size } = buildMarkerSvg('local', false, level, estimated);
+  const { level, fill } = splitPinKey(crowd);
+  const { url, size } = buildMarkerSvg('local', false, level, fill);
   // 3x raster: see MapCanvas. These maps are small, so a soft pin is the
   // most conspicuous thing on them.
   const image = new Image(size * 3, size * 3);
@@ -324,7 +325,7 @@ export function MiniMap({
     numberedRef.current = mandals.map((mandal, i) => {
       const active = mandal.slug === selectedSlug;
       const stop = splitPinKey(crowdByMandalId[mandal.id] ?? 'none');
-      const { url, size } = buildRouteStopSvg(active, stop.level, stop.estimated);
+      const { url, size } = buildRouteStopSvg(active, stop.level, stop.fill);
       const badge = Math.round(size * 0.44);
 
       const el = document.createElement('button');
