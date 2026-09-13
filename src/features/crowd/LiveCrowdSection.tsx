@@ -321,19 +321,17 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                 const rowAgo = agoText(Number.isFinite(rowAge) ? rowAge : null);
                 const subtitle = [
                   distanceM !== null ? formatDistance(distanceM) : null,
-                  // Each tier says where its time came from, because the
-                  // three are different claims: somebody reported this,
-                  // devices were seen doing it, or the team went and
-                  // checked. Only the first is a report.
+                  // An override reads as a report here, by the owner's
+                  // decision: a person went and looked, which is what the
+                  // word means to a visitor. Dwell still says "seen",
+                  // because no person was involved in it at all.
                   !rowAgo
                     ? null
-                    : source === 'reported'
-                      ? `reported ${rowAgo}`
-                      : source === 'observed'
-                        ? `seen ${rowAgo}`
-                        : source === 'override'
-                          ? `checked ${rowAgo}`
-                          : null,
+                    : source === 'observed'
+                      ? `seen ${rowAgo}`
+                      : source === 'estimated'
+                        ? null
+                        : `reported ${rowAgo}`,
                 ]
                   .filter(Boolean)
                   .join(' · ');

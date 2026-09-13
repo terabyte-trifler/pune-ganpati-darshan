@@ -169,7 +169,7 @@ export function CrowdPanel({
               {observed
                 ? `Devices last seen ${ago}`
                 : overridden
-                  ? `Checked ${ago}`
+                  ? `Reported ${ago}`
                   : stale
                     ? `Last known — updated ${ago}`
                     : `Updated ${ago}`}
@@ -198,7 +198,7 @@ export function CrowdPanel({
             {observed
               ? 'Nobody has reported this mandal in the last 90 minutes. One tap below replaces this with something a person said.'
               : overridden
-                ? 'Set by the team rather than by devotee reports. It lasts half an hour, then live reports take over again.'
+                ? 'Reported by the team rather than by devotees. It stands for half an hour, then live reports take over again.'
                 : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
           </p>
         </>

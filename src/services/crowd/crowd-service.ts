@@ -268,7 +268,10 @@ function applyOverride(
     ...status,
     status: override.status,
     label,
-    detail: 'Checked by the Pune Ganpati Darshan team',
+    // "Reported", by the owner's decision — a person did go and look.
+    // Not "devotees report", though: that is Lane A's wording and it
+    // means several people, where this is one.
+    detail: 'Reported by the Pune Ganpati Darshan team',
     source: 'override',
     confidence: 'high',
     trend: 'unknown',

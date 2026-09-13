@@ -83,8 +83,11 @@ describe('it sits above the algorithms, not inside them', () => {
 
   it('does not claim devotees said it', () => {
     // Lane A's wording is "Devotees report". One named person is not
-    // devotees, so the override gets its own sentence.
-    expect(service).toContain('Checked by the Pune Ganpati Darshan team');
+    // devotees, so the override keeps its own sentence.
+    // It says "reported", by the owner's decision — a person did look.
+    // It must still never say "Devotees report", which is Lane A's
+    // wording and claims several people where this is one.
+    expect(service).toContain('Reported by the Pune Ganpati Darshan team');
     expect(service).not.toContain('Devotees report');
   });
 
