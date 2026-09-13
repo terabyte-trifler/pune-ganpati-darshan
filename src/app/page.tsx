@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Search, Route as RouteIcon, ChevronRight } from 'lucide-react';
+import { Search, Route as RouteIcon, ChevronRight, CircleParking, Ban } from 'lucide-react';
 import {
   getAllGanpatis, getAreas, getFestivalConfig, getManachePaach,
 } from '@/services/ganpati';
@@ -12,6 +12,8 @@ import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
 import { LiveCrowdSection } from '@/features/crowd/LiveCrowdSection';
 import { Button } from '@/components/ui/Button';
+import { PARKING } from '@/content/parking';
+import { ROAD_CLOSURES } from '@/content/diversions';
 
 /**
  * The homepage was the one page on the site with no canonical.
@@ -195,6 +197,42 @@ export default async function HomePage() {
       {/* ---------------- Near you ---------------- */}
       <section className="mt-7">
         <NearbyRail ganpatis={all} />
+      </section>
+
+      {/* ---------------- Getting there ----------------
+
+          Placed after the crowd and the nearby rail, and before the
+          browsing sections: someone opening the app at home is deciding
+          how to get in, and until now the app answered that for the metro
+          and for walking and said nothing at all to anyone bringing a
+          vehicle. It is one card rather than a rail because the content is
+          a published list, not something that changes minute to minute. */}
+      <section className="mt-7 px-4">
+        <Link
+          href="/parking"
+          className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4 transition-colors hover:border-[#6C8AB0]/50"
+        >
+          <span
+            aria-hidden="true"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#6C8AB0]/40"
+          >
+            <CircleParking size={19} className="text-[#6C8AB0]" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-semibold text-[var(--chandan)]">
+              Parking &amp; road closures
+            </span>
+            <span className="mt-0.5 block text-[12.5px] leading-relaxed text-[var(--muted)]">
+              {PARKING.length} places to park and {ROAD_CLOSURES.length} roads
+              closed after 17:00, as published by the Pune City Traffic Police.
+            </span>
+            <span className="mt-1 flex items-center gap-1 text-[11.5px] text-[var(--faint)]">
+              <Ban size={11} aria-hidden="true" />
+              A plan, not a live view — follow the barricades
+            </span>
+          </span>
+          <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-[var(--faint)]" />
+        </Link>
       </section>
 
       {/* ---------------- Manache Paach ---------------- */}

@@ -86,3 +86,44 @@ describe('the police parking list', () => {
     }
   });
 });
+
+describe('the closures and junctions', () => {
+  it('keeps the police layer title, so the hours are quoted not invented', async () => {
+    const { CLOSURE_LAYER_TITLE, DIVERSION_SOURCE } = await import('@/content/diversions');
+    expect(CLOSURE_LAYER_TITLE).toBe('Road Closures after 17:00');
+    // Same capture of the same map as the parking list, deliberately.
+    expect(DIVERSION_SOURCE.url).toBe(PARKING_SOURCE.url);
+  });
+
+  it('draws every closure as a line with at least two points', async () => {
+    const { ROAD_CLOSURES } = await import('@/content/diversions');
+    const { closureFeatureCollection } = await import('@/lib/maps/closures-layer');
+    expect(ROAD_CLOSURES).toHaveLength(13);
+    for (const c of ROAD_CLOSURES) {
+      expect(c.path.length, c.name).toBeGreaterThanOrEqual(2);
+      for (const [lng, lat] of c.path) {
+        expect(lat, c.name).toBeGreaterThan(18.4);
+        expect(lat, c.name).toBeLessThan(18.65);
+        expect(lng, c.name).toBeGreaterThan(73.75);
+        expect(lng, c.name).toBeLessThan(73.95);
+      }
+    }
+    // Every drawn closure states the hours on the map itself.
+    for (const f of closureFeatureCollection().features) {
+      expect(String(f.properties?.label)).toMatch(/after 17:00/);
+    }
+  });
+
+  it('never says what happens at a junction', async () => {
+    const { CLOSURE_JUNCTIONS } = await import('@/content/diversions');
+    expect(CLOSURE_JUNCTIONS).toHaveLength(23);
+    // The source labels these pins with a place name only. Any verb here
+    // would be an instruction invented on the police's behalf.
+    for (const j of CLOSURE_JUNCTIONS) {
+      expect(j.name, j.name).not.toMatch(/no entry|diverted|closed|barricade|one way/i);
+      expect(j.sourceName.length).toBeGreaterThan(2);
+    }
+    // Eleven of them are unnumbered on the map; that stays visible.
+    expect(CLOSURE_JUNCTIONS.filter((j) => j.no === null)).toHaveLength(11);
+  });
+});

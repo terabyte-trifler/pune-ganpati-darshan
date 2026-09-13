@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CircleParking, ExternalLink, Navigation, TriangleAlert } from 'lucide-react';
+import { CircleParking, ExternalLink, Navigation, TriangleAlert, Ban, MapPin } from 'lucide-react';
 import { PARKING, PARKING_SOURCE } from '@/content/parking';
+import {
+  ROAD_CLOSURES, CLOSURE_JUNCTIONS, CLOSURE_LAYER_TITLE, LINE_7_NOTE,
+} from '@/content/diversions';
 import { getAllGanpatis } from '@/services/ganpati';
 import { haversine, formatDistance } from '@/lib/geo';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -10,10 +13,11 @@ import { JsonLd, itemList } from '@/lib/seo/jsonld';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: { absolute: 'Ganpati parking in Pune — the official police list' },
+  title: { absolute: 'Ganpati parking and traffic diversions in Pune' },
   description:
-    'The 23 parking places published by the Pune City Traffic Police for ' +
-    'Ganeshotsav, each with the nearest mandal and directions.',
+    'The parking places, road closures after 17:00 and junctions published ' +
+    'by the Pune City Traffic Police for Ganeshotsav — with the nearest ' +
+    'mandal to each parking place, and directions.',
   alternates: { canonical: '/parking' },
 };
 
@@ -55,18 +59,38 @@ export default async function ParkingPage() {
         />
         <Breadcrumbs trail={[{ name: 'Parking' }]} />
 
-        <h1 className="font-display mt-2 flex items-center gap-2 text-[30px] font-bold leading-tight text-[var(--chandan)]">
-          <CircleParking size={24} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
-          Where to park
+        <h1 className="font-display mt-2 text-[30px] font-bold leading-tight text-[var(--chandan)]">
+          Parking &amp; road closures
         </h1>
         <p className="prose-measure mt-2 text-[16px] leading-[1.7] text-[var(--muted)]">
-          {PARKING.length} places the Pune City Traffic Police have published for
-          the festival. They are on the{' '}
+          What the Pune City Traffic Police have published for the festival:{' '}
+          {PARKING.length} places to park, {ROAD_CLOSURES.length} stretches closed
+          after 17:00, and {CLOSURE_JUNCTIONS.length} junctions named on the same
+          plan. All of it is on the{' '}
           <Link href="/map" className="text-[var(--shendur)]">
             map
           </Link>{' '}
-          too, marked <span className="font-semibold text-[#6C8AB0]">P</span>.
+          too — parking as blue <span className="font-semibold text-[#6C8AB0]">P</span>{' '}
+          discs, closures as dashed lines.
         </p>
+
+        {/* Jump links: this page is now three lists and someone arriving
+            from a WhatsApp forward wants one of them, not a scroll. */}
+        <nav aria-label="Sections" className="mt-4 flex flex-wrap gap-1.5">
+          {[
+            ['#parking', `Parking (${PARKING.length})`],
+            ['#closures', `Closed roads (${ROAD_CLOSURES.length})`],
+            ['#junctions', `Junctions (${CLOSURE_JUNCTIONS.length})`],
+          ].map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className="inline-flex min-h-11 items-center rounded-[var(--radius-chip)] border border-[var(--line-strong)] px-3 text-[13px] text-[var(--muted)]"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
 
         {/* Provenance first, because it is what makes the list worth
             trusting — and what bounds it. */}
@@ -99,7 +123,15 @@ export default async function ParkingPage() {
           </p>
         </div>
 
-        <ul className="mt-6 flex flex-col gap-2.5">
+        <h2
+          id="parking"
+          className="font-display mt-8 flex scroll-mt-6 items-center gap-2 text-[21px] font-bold text-[var(--chandan)]"
+        >
+          <CircleParking size={19} aria-hidden="true" className="shrink-0 text-[#6C8AB0]" />
+          Where to park
+        </h2>
+
+        <ul className="mt-3 flex flex-col gap-2.5">
           {rows.map(({ p, nearest }) => (
             <li
               key={p.no}
@@ -149,21 +181,82 @@ export default async function ParkingPage() {
           ))}
         </ul>
 
-        <div className="mt-8 rounded-[var(--radius-card)] border border-[var(--line)] p-4">
+        {/* ---------------- Closures ---------------- */}
+        <h2
+          id="closures"
+          className="font-display mt-10 flex scroll-mt-6 items-center gap-2 text-[21px] font-bold text-[var(--chandan)]"
+        >
+          <Ban size={19} aria-hidden="true" className="shrink-0 text-[#C8BCA8]" />
+          Roads closed after 17:00
+        </h2>
+        <p className="prose-measure mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          The police map&rsquo;s own layer is titled &ldquo;{CLOSURE_LAYER_TITLE}&rdquo;,
+          so the hours are theirs. Stretch names and end points are quoted as
+          published.
+        </p>
+        <ul className="mt-3 flex flex-col gap-1.5">
+          {ROAD_CLOSURES.map((c) => (
+            <li
+              key={c.name}
+              className="rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3.5 py-2.5"
+            >
+              <p className="text-[14.5px] font-semibold leading-snug text-[var(--chandan)]">
+                {c.name === 'Line 7' ? 'Unnamed stretch' : c.name}
+              </p>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--muted)]">
+                {c.note || (c.name === 'Line 7' ? LINE_7_NOTE : 'No end points given on the map.')}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        {/* ---------------- Junctions ---------------- */}
+        <h2
+          id="junctions"
+          className="font-display mt-10 flex scroll-mt-6 items-center gap-2 text-[21px] font-bold text-[var(--chandan)]"
+        >
+          <MapPin size={19} aria-hidden="true" className="shrink-0 text-[#C8BCA8]" />
+          Junctions on the closure plan
+        </h2>
+        <p className="prose-measure mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          These {CLOSURE_JUNCTIONS.length} junctions are marked on the same
+          layer. The map does not say what happens at each one — whether it is a
+          barricade, a no-entry or a turning point — so neither does this page.
+          Expect to be directed when you reach one.
+        </p>
+        <ul className="mt-3 flex flex-wrap gap-1.5">
+          {CLOSURE_JUNCTIONS.map((j) => (
+            <li
+              key={j.sourceName}
+              className="rounded-[var(--radius-chip)] border border-[var(--line)] bg-[var(--dhoop)] px-3 py-1.5 text-[13px] text-[var(--chandan)]"
+            >
+              {j.no !== null && (
+                <span className="mr-1.5 font-mono text-[11px] tabular-nums text-[#C8BCA8]">
+                  {j.no}
+                </span>
+              )}
+              {j.name}
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-10 rounded-[var(--radius-card)] border border-[var(--line)] p-4">
           <h2 className="text-[12px] font-bold uppercase tracking-[0.08em] text-[var(--faint)]">
-            Two things this list does not have
+            What this page does not have
           </h2>
           <p className="prose-measure mt-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
-            The numbering skips 8, 18, 23 and 24. Those were not published, so
-            they are not here — a list running 1 to 27 with four invented
-            entries would be worse than a list with gaps.
+            The parking numbering skips 8, 18, 23 and 24. Those were not
+            published, so they are not here — a list running 1 to 27 with four
+            invented entries would be worse than a list with gaps.
           </p>
           <p className="prose-measure mt-2 text-[13px] leading-relaxed text-[var(--muted)]">
-            The same police map also carries road closures after 17:00 and the
-            junctions being diverted. Those are not on this page yet: a closure
-            shown a day late is worse than no closure at all, and they need
-            checking against the current notice before they go anywhere near
-            the app.
+            No capacity, no charges, no whether-it-is-full, and no live
+            confirmation that a closure is in force tonight. This is a plan
+            captured on{' '}
+            {new Date(PARKING_SOURCE.captured).toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'long', year: 'numeric',
+            })}
+            , and police arrangements change on the day.
           </p>
         </div>
       </div>

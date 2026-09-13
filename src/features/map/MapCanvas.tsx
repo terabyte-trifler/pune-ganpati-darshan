@@ -16,6 +16,7 @@ import { isWebglAvailable } from '@/lib/maps/webgl';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
+import { addClosureLayers } from '@/lib/maps/closures-layer';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
 
@@ -231,6 +232,11 @@ export function MapCanvas({
           geometry: { type: 'LineString', coordinates: [] },
         },
       });
+
+      // Closures under the route on purpose: where a planned route meets a
+      // closed road, the route must stay visible so the conflict is
+      // obvious rather than painted over.
+      addClosureLayers(map);
 
       map.addLayer({
         id: 'route-line',
