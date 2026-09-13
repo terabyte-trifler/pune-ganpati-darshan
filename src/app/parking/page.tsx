@@ -106,7 +106,7 @@ export default async function ParkingPage() {
             holder at zero and the canvas draws nothing. */}
         <MiniMap
           mandals={ganpatis}
-          showTraffic
+          showClosures
           interactive
           // Framed on the police plan, not the catalogue: fitting all 29
           // mandals reaches Chinchwad and squeezes the peths into a corner.

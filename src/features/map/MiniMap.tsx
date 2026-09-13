@@ -55,14 +55,18 @@ export interface MiniMapProps {
   zoom?: number;
   interactive?: boolean;
   /**
-   * Draw the Traffic Police plan — parking, closures, junctions — as well.
+   * Draw the closures and their junctions as well.
    *
-   * Opt-in rather than always on. On a mandal page the question is "where
-   * is this one and how do I get to it", and a dashed closure across the
-   * frame would answer a question nobody asked. On /parking it is the
-   * whole point.
+   * Parking is NOT behind this — it is on every map in the app, because
+   * "where do I leave the vehicle" is a question worth answering wherever
+   * a map appears, including on a single mandal's page.
+   *
+   * Closures are different: a dashed line across a mandal's own map
+   * answers a question nobody asked there, and on a route map it competes
+   * with the route itself. So they stay opt-in, for /parking and the full
+   * map, where they are the subject.
    */
-  showTraffic?: boolean;
+  showClosures?: boolean;
   /**
    * Frame on these coordinates instead of on the mandals.
    *
@@ -109,7 +113,7 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
-  className, zoom, interactive = true, showTraffic = false, frameOn,
+  className, zoom, interactive = true, showClosures = false, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -216,10 +220,9 @@ export function MiniMap({
       // peths with no stations on it answers "which mandals" and leaves
       // "how do I get to them" to a different screen.
       addMetroLayers(map);
-      if (showTraffic) {
-        addParkingLayers(map);
-        addClosureLayers(map);
-      }
+      // Parking on every map; closures only where they are the subject.
+      addParkingLayers(map);
+      if (showClosures) addClosureLayers(map);
 
       map.addLayer({
         id: 'route-line',
