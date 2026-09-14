@@ -236,6 +236,25 @@ const DWELL_LEVEL: Record<'lingering' | 'queueing', CrowdLevel> = {
 export const WAIT_MASS = 1.5;
 
 /**
+ * How recent a wait must be to describe the queue NOW.
+ *
+ * Two half-lives, where the evidence is still worth a quarter of a fresh
+ * report. It governs two things that must never disagree: the median the
+ * panel prints, and the floor that median sets on the colour.
+ *
+ * They were split at first — the floor took one half-life, the printed
+ * median took the whole ninety-minute window — and Dagdusheth immediately
+ * showed the bug that split caused: waits of 15 minutes (23 min old) and
+ * 45 minutes (41 min old) produced a printed median of 30 beside a colour
+ * of Moving, because only the 15 counted toward the floor.
+ *
+ * One window for both. If a wait is too old to colour with, it is too old
+ * to quote as what people are waiting, and saying it anyway is the
+ * contradiction this whole rule exists to remove.
+ */
+export const WAIT_CURRENT_MINUTES = 2 * FRESHNESS_HALF_LIFE_MINUTES;
+
+/**
  * Which level a reported wait argues for.
  *
  * The same thresholds the rest of the app uses for a queue: 30 minutes is
@@ -739,7 +758,14 @@ export function scoreBreakdown(
     waits.push({ minutes: w.minutes, level, ageMinutes, freshness, mass });
   }
 
-  const sorted = waits.map((w) => w.minutes).sort((a, b) => a - b);
+  // Only waits recent enough to describe the queue now — see
+  // WAIT_CURRENT_MINUTES. The older ones still carry mass, decayed, and
+  // still argue for a level; they just do not get to be quoted as the
+  // current wait or to set the floor.
+  const sorted = waits
+    .filter((w) => w.ageMinutes <= WAIT_CURRENT_MINUTES)
+    .map((w) => w.minutes)
+    .sort((a, b) => a - b);
   const waitMedianMinutes =
     sorted.length === 0
       ? null
@@ -926,28 +952,18 @@ export function aggregateMandal(
    * short for everyone behind them; the errors are not the same size.
    * Understating a queue sends somebody into it.
    *
-   * Only waits from the last half-life count toward the floor, and the
-   * first version of this missed that: an eighty-minute-old wait of
-   * forty-five minutes has decayed to a sixth of its weight in the
-   * scoring, and would still have pinned the mandal red against two fresh
-   * reports saying the queue had cleared. A floor that ignores decay is a
-   * floor that outlives the queue it describes.
-   *
-   * The DISPLAYED median still spans the full window, and that is not a
-   * contradiction: "people waited about 45 min" is past tense and true,
-   * beside a colour describing now.
+   * Only waits from WAIT_CURRENT_MINUTES count, for the floor AND for the
+   * printed median, which are now the same number. A floor that ignores
+   * decay outlives the queue it describes; a printed median on a wider
+   * window than the floor contradicts the colour beside it. Both were
+   * tried and both were wrong.
    */
-  const recentWaits = breakdown.waits
-    .filter((w) => w.ageMinutes <= FRESHNESS_HALF_LIFE_MINUTES)
-    .map((w) => w.minutes)
-    .sort((a, b) => a - b);
-  if (recentWaits.length > 0) {
-    const mid = Math.floor(recentWaits.length / 2);
-    const median =
-      recentWaits.length % 2
-        ? recentWaits[mid]
-        : Math.round((recentWaits[mid - 1] + recentWaits[mid]) / 2);
-    const floor = levelForWaitMinutes(median);
+  // The same median the panel prints, by construction rather than by
+  // coincidence: breakdown.waitMedianMinutes is already computed over
+  // WAIT_CURRENT_MINUTES, so the number shown and the colour shown can
+  // never disagree.
+  if (breakdown.waitMedianMinutes !== null) {
+    const floor = levelForWaitMinutes(breakdown.waitMedianMinutes);
     if (SEVERITY[floor] > SEVERITY[winner]) winner = floor;
   }
 

@@ -463,6 +463,29 @@ describe('a reported wait sets the floor on the colour', () => {
     expect(s.status).toBe('long');
   });
 
+  it('colours from the same waits it quotes', () => {
+    // The real Dagdusheth case: 15 min reported 23 minutes ago and 45 min
+    // reported 41 minutes ago. The printed median was taken over ninety
+    // minutes and the floor over thirty, so the card read "Moving" above
+    // "about 30 min". One window for both settles it.
+    const waits = [
+      { minutes: 15, createdAt: at(23) },
+      { minutes: 45, createdAt: at(41) },
+    ];
+    const s = aggregateMandal('m', [rep('moving', 20, 1)], now, [], waits);
+    expect(s.waitMedianMinutes).toBe(30);
+    expect(s.status).toBe('long');
+  });
+
+  it('stops quoting a wait once it is too old to colour with', () => {
+    // If it cannot set the floor it cannot be printed as the current
+    // wait either — that asymmetry was the bug.
+    const stale = [{ minutes: 45, createdAt: at(80) }];
+    const s = aggregateMandal('m', [rep('short', 1, 1)], now, [], stale);
+    expect(s.waitMedianMinutes).toBeNull();
+    expect(s.status).toBe('short');
+  });
+
   it('ignores a wait that has decayed past the queue it described', () => {
     // Eighty minutes old: worth a sixth of its weight in the scoring, and
     // it must not pin the mandal red against fresh reports saying the
