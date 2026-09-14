@@ -25,7 +25,13 @@ export type AnalyticsEventName =
   | 'share_clicked'
   | 'location_enabled'
   | 'crowd_reported'
-  | 'crowd_report_rejected';
+  | 'crowd_report_rejected'
+  /**
+   * How long a position took and how good it was, bucketed — never a
+   * coordinate. The only way to measure geolocation, which cannot be
+   * profiled from a desktop. See hooks/useGeolocation.
+   */
+  | 'location_fix';
 
 interface QueuedEvent {
   name: AnalyticsEventName;

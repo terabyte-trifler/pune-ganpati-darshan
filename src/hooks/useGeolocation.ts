@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import type { LatLng } from '@/lib/geo';
+import { trackEvent } from '@/services/analytics';
 
 /**
  * Geolocation.
@@ -87,7 +88,9 @@ function scheduleRetry() {
     retries += 1;
     // Only from 'unavailable': 'denied' cannot be undone by retrying, and
     // a position that has since arrived needs nothing.
-    if (state.status === 'unavailable') requestLocation();
+    // Retries ask the GPS radio: if wifi and cell could not answer the
+    // first time, asking them again the same way is unlikely to help.
+    if (state.status === 'unavailable') requestPreciseLocation();
   }, RETRY_DELAY_MS);
 }
 
@@ -273,7 +276,62 @@ const getSnapshot = () => state;
 /** Stable across renders, so SSR and hydration cannot disagree. */
 const getServerSnapshot = () => IDLE;
 
+/**
+ * Where the time actually goes, measured on real handsets.
+ *
+ * A location fix cannot be profiled from a desktop: headless Chrome
+ * answers instantly with a faked position, and an emulator's GPS is not a
+ * GPS. So the acquisition reports its own timing, as an aggregate event
+ * with no coordinates in it — how long, how accurate, and which stage
+ * answered. That is enough to tell a slow fix from a denied one, and a
+ * cached coarse answer from a cold GPS lock, without the analytics ever
+ * learning where anybody is.
+ */
+function markLocationStart(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+function recordLocationTiming(
+  stage: 'coarse' | 'precise' | 'denied' | 'failed',
+  startedAt: number,
+  accuracyM: number | null
+) {
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const ms = Math.round(now - startedAt);
+  trackEvent('location_fix', {
+    props: {
+      stage,
+      // Bucketed, not raw: a millisecond figure is a fingerprint of a
+      // device, and the question is only ever "fast, slow, or hopeless".
+      ms: ms < 500 ? '<500' : ms < 1500 ? '<1.5s' : ms < 4000 ? '<4s' : ms < 10_000 ? '<10s' : '10s+',
+      accuracy:
+        accuracyM === null ? 'none'
+          : accuracyM <= 30 ? '<=30m'
+            : accuracyM <= 100 ? '<=100m'
+              : accuracyM <= 500 ? '<=500m'
+                : '>500m',
+    },
+  });
+}
+
 export function requestLocation() {
+  acquire(false);
+}
+
+/**
+ * Retry with the GPS radio.
+ *
+ * Exported separately rather than as a parameter on requestLocation,
+ * because that function is passed straight to onClick in five places —
+ * a boolean parameter there silently receives a MouseEvent, which is
+ * truthy, and every tap would have engaged high accuracy. The compiler
+ * caught it; the seam keeps it caught.
+ */
+export function requestPreciseLocation() {
+  acquire(true);
+}
+
+function acquire(precise: boolean) {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
     setState({ status: 'unavailable' });
     return;
@@ -284,25 +342,66 @@ export function requestLocation() {
   if (state.status === 'locating') return;
 
   setState({ status: 'locating' });
+
+  /**
+   * Coarse first, then let the watch sharpen it.
+   *
+   * This asked for a high-accuracy fix and nothing else, which engages the
+   * GPS radio: seconds outdoors, tens of seconds or never indoors or in a
+   * peth lane between four-storey buildings. Nothing could be reported
+   * until it landed, because the report buttons only render once a
+   * position exists — so the whole voting feature waited on the slowest
+   * possible way to answer the question.
+   *
+   * And it did not need that answer. The eligibility gate is 5 km
+   * (REPORT_MAX_DISTANCE_M). A coarse wifi/cell fix is good to somewhere
+   * between fifty metres and two kilometres, which settles a 5 km question
+   * outright, and it usually returns from the platform's cache in well
+   * under a second.
+   *
+   * Accuracy still matters for ONE thing: `atMandal`, the 100 m quality
+   * hint that weights a report at 1.0 instead of 0.5. That is not lost,
+   * and it does not need a second request here — `syncWatch` starts a
+   * high-accuracy `watchPosition` the moment this resolves, and it
+   * sharpens the fix within seconds. A report sent before then simply
+   * carries the lower weight, honestly: `reportEligibility` already
+   * refuses `atMandal` when accuracy is worse than
+   * AT_MANDAL_MAX_ACCURACY_M, so nothing is asserted that the accuracy
+   * does not support.
+   *
+   * Exactly one request per attempt, as before: `precise` is false on the
+   * first try and true on every retry. So the fast path is fast, a device
+   * where wifi and cell cannot answer still gets the GPS radio a few
+   * seconds later, and the bounded retry budget is unchanged — doubling
+   * the calls would have doubled the battery cost in precisely the case
+   * where acquisition is already struggling.
+   */
+  const mark = markLocationStart();
+
   navigator.geolocation.getCurrentPosition(
-    (pos) =>
+    (pos) => {
+      recordLocationTiming(precise ? 'precise' : 'coarse', mark, pos.coords.accuracy);
       setState({
         status: 'ready',
         position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
         accuracyM: pos.coords.accuracy,
-      }),
-    (error) =>
-      setState(
-        error.code === error.PERMISSION_DENIED
-          ? { status: 'denied' }
-          : { status: 'unavailable' }
-      ),
-    {
-      enableHighAccuracy: true,
-      // A stale-but-recent fix is fine and much faster outdoors.
-      maximumAge: 60_000,
-      timeout: 10_000,
-    }
+      });
+    },
+    (error) => {
+      const denied = error.code === error.PERMISSION_DENIED;
+      recordLocationTiming(denied ? 'denied' : 'failed', mark, null);
+      setState(denied ? { status: 'denied' } : { status: 'unavailable' });
+    },
+    precise
+      ? { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
+      : {
+          enableHighAccuracy: false,
+          // Two minutes of the platform's own cached fix. Enough for a
+          // 5 km gate, and the reason this usually returns without
+          // touching the GPS radio at all.
+          maximumAge: 120_000,
+          timeout: 5_000,
+        }
   );
 }
 

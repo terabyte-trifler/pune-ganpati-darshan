@@ -270,7 +270,31 @@ export function MapCanvas({
       // Closures under the route on purpose: where a planned route meets a
       // closed road, the route must stay visible so the conflict is
       // obvious rather than painted over.
-      addClosureLayers(map);
+      /**
+       * Deferred: everything that is not a mandal.
+       *
+       * Profiling this page on a throttled Pixel 5 put 2264ms in
+       * `(program)` — native MapLibre work, WebGL context, shader
+       * compilation, texture upload — against under 400ms of JavaScript
+       * in total. Micro-optimising our own code cannot touch that; the
+       * only lever is how much the map is asked to build before it first
+       * paints.
+       *
+       * Mandals are the page. Closures, metro and parking are reference
+       * layers somebody consults after the map is up, so they are built
+       * once the browser is idle rather than in the critical path. The
+       * timeout is the fallback for Safari, which has no idle callback.
+       */
+      const whenIdle = (fn: () => void) => {
+        const w = window as unknown as {
+          requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void;
+        };
+        if (typeof w.requestIdleCallback === 'function') {
+          w.requestIdleCallback(fn, { timeout: 2000 });
+        } else {
+          setTimeout(fn, 350);
+        }
+      };
 
       map.addLayer({
         id: 'route-line',
@@ -281,8 +305,20 @@ export function MapCanvas({
       });
 
       // Context layers first, so the mandal pins draw on top of them.
-      addMetroLayers(map);
-      addParkingLayers(map);
+      whenIdle(() => {
+        // The map can be torn down while the callback is pending.
+        if (!mapRef.current) return;
+        addClosureLayers(map);
+        addMetroLayers(map);
+        addParkingLayers(map);
+        // Closures used to be added BEFORE the mandal layers, so they drew
+        // underneath the pins. Adding them later puts them on top, which
+        // would bury the thing the page is about — so the mandal layers
+        // are lifted back to the front once the reference layers land.
+        for (const id of ['clusters', 'cluster-count', 'mandals']) {
+          if (map.getLayer(id)) map.moveLayer(id);
+        }
+      });
 
       // A cluster is several mandals, so it is drawn as a Ganpati too —
       // brass rather than vermilion, and larger the more it holds. It was a
