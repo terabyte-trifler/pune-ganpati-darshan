@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Loader2, RotateCcw, Check, MapPin } from 'lucide-react';
 import { getDeviceId, newRequestId, resetDeviceId } from './device';
+import { WaitReportButtons } from './WaitReportButtons';
 import { applyCrowdStatus, refreshCrowd } from './crowd-store';
 import {
   getCooldownState,
@@ -155,6 +156,12 @@ export function CrowdReportButtons({
   const [reported, setReported] = useState<CrowdLevel | null>(null);
   /** True only during the thank-you window, not for the whole cooldown. */
   const [confirming, setConfirming] = useState(false);
+  /**
+   * Asked once. The follow-up must not reappear after it is answered —
+   * and the confirm panel is transient, so without this it would return
+   * for a second round on the next report.
+   */
+  const [waitAnswered, setWaitAnswered] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   /** Set when the failure is worth offering a retry for; drives the button. */
   const [retryable, setRetryable] = useState<CrowdLevel | null>(null);
@@ -184,11 +191,16 @@ export function CrowdReportButtons({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!confirming) return;
+    // A "30+ min" report leaves a question on screen, and five seconds is
+    // not long enough to read it, decide and tap. The panel holds until
+    // that is answered or dismissed; every other report still clears
+    // itself, because there is nothing there to act on.
+    if (reported === 'long' && !waitAnswered) return;
     timerRef.current = setTimeout(() => setConfirming(false), CONFIRM_MS);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [confirming]);
+  }, [confirming, reported, waitAnswered]);
 
   async function submit(level: CrowdLevel) {
     const deviceId = getDeviceId();
@@ -308,6 +320,34 @@ export function CrowdReportButtons({
           <p className="mt-1 text-[12px] text-[var(--faint)]">
             You can report it again {remainingText(remainingS)}.
           </p>
+        )}
+
+        {/* "30+ min" is the one answer that leaves a question open.
+            Short and Moving are complete: there is nothing more to say
+            about a queue you walked into. "30+" is an open interval, and
+            the difference between half an hour and two hours decides
+            whether somebody comes at all — while the app's own catalogue
+            figures for these mandals were estimated, never timed.
+
+            The person who just tapped it is the only person who knows,
+            and they are holding the phone. So the finer buckets are
+            offered here rather than waiting for the prompt that fires
+            after they leave, which they may never see.
+
+            Only the buckets at or above 30: offering 5 min to somebody
+            who just said 30+ lets them contradict themselves in one
+            breath. A wait report is worth 1.5x a colour, so this is also
+            the strongest signal in the app, asked at the one moment it is
+            easy to answer. */}
+        {reported === 'long' && !waitAnswered && (
+          <div className="mt-3 border-t border-[var(--line)] pt-3">
+            <WaitReportButtons
+              mandalId={mandalId}
+              minMinutes={30}
+              prompt="Roughly how long? It is the most useful thing you can add."
+              onDone={() => setWaitAnswered(true)}
+            />
+          </div>
         )}
       </div>
     );

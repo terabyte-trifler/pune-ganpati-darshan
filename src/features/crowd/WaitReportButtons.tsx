@@ -38,11 +38,24 @@ export function WaitReportButtons({
   mandalId,
   onDone,
   compact = false,
+  minMinutes = 0,
+  prompt,
 }: {
   mandalId: string;
   /** Called after a report lands, so a prompt can dismiss itself. */
   onDone?: (minutes: number) => void;
   compact?: boolean;
+  /**
+   * Hide buckets below this.
+   *
+   * Set to 30 straight after somebody reports "30+ min": offering them
+   * 5 and 10 there would contradict what they just said, and a control
+   * that lets you disagree with yourself in the same breath reads as a
+   * bug rather than a choice.
+   */
+  minMinutes?: number;
+  /** Replaces the default question. */
+  prompt?: string;
 }) {
   const [sending, setSending] = useState<number | null>(null);
   const [sent, setSent] = useState<number | null>(null);
@@ -125,11 +138,11 @@ export function WaitReportButtons({
       {!compact && (
         <p className="flex items-center gap-2 text-[14px] font-semibold text-[var(--chandan)]">
           <Hourglass size={14} aria-hidden="true" className="text-[var(--shendur)]" />
-          How long did you wait?
+          {prompt ?? 'How long did you wait?'}
         </p>
       )}
       <div className={cn('flex flex-wrap gap-1.5', compact ? '' : 'mt-2.5')}>
-        {OPTIONS.map((m) => (
+        {OPTIONS.filter((m) => m >= minMinutes).map((m) => (
           <button
             key={m}
             type="button"
