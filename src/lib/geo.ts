@@ -73,7 +73,11 @@ export function formatDistance(metres: number): string {
   if (!Number.isFinite(metres) || metres < 0) return '—';
   if (metres < 1000) return `${Math.round(metres / 10) * 10} m`;
   const km = metres / 1000;
-  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
+  // A whole number loses its decimal: the report radius is exactly 1 km
+  // and "Reports come from people within 1.0 km" reads like a measurement
+  // when it is a rule.
+  const shown = km < 10 ? km.toFixed(1).replace(/\.0$/, '') : String(Math.round(km));
+  return `${shown} km`;
 }
 
 /** "6 min" / "1 hr 42 min" */
