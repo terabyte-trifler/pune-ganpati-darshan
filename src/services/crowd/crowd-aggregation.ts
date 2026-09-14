@@ -908,6 +908,49 @@ export function aggregateMandal(
     }
   }
 
+  /**
+   * A reported wait time sets a FLOOR on the colour.
+   *
+   * Dagdusheth read "Moving" above "People waited about 30 min" on
+   * festival day: two wait reports argued heavy at 1.5 each, three colour
+   * taps argued moving, and the argmax went to the taps. Both numbers
+   * were then shown together, contradicting each other on the same card.
+   *
+   * The median is the only measured quantity in this whole feature —
+   * minutes somebody stood there, given afterwards — while a colour is a
+   * judgement about a queue somebody was looking at. So where they
+   * disagree, the measurement decides how bad it may be called.
+   *
+   * It raises and never lowers, and that asymmetry is the point. A single
+   * visitor who walked straight in must not talk a heavy queue down to
+   * short for everyone behind them; the errors are not the same size.
+   * Understating a queue sends somebody into it.
+   *
+   * Only waits from the last half-life count toward the floor, and the
+   * first version of this missed that: an eighty-minute-old wait of
+   * forty-five minutes has decayed to a sixth of its weight in the
+   * scoring, and would still have pinned the mandal red against two fresh
+   * reports saying the queue had cleared. A floor that ignores decay is a
+   * floor that outlives the queue it describes.
+   *
+   * The DISPLAYED median still spans the full window, and that is not a
+   * contradiction: "people waited about 45 min" is past tense and true,
+   * beside a colour describing now.
+   */
+  const recentWaits = breakdown.waits
+    .filter((w) => w.ageMinutes <= FRESHNESS_HALF_LIFE_MINUTES)
+    .map((w) => w.minutes)
+    .sort((a, b) => a - b);
+  if (recentWaits.length > 0) {
+    const mid = Math.floor(recentWaits.length / 2);
+    const median =
+      recentWaits.length % 2
+        ? recentWaits[mid]
+        : Math.round((recentWaits[mid - 1] + recentWaits[mid]) / 2);
+    const floor = levelForWaitMinutes(median);
+    if (SEVERITY[floor] > SEVERITY[winner]) winner = floor;
+  }
+
   const agreement = mass > 0 ? scores[winner] / mass : 0;
   // Agreement is measured over the combined scores — a dwell sample that
   // contradicts the humans should reduce agreement, and therefore

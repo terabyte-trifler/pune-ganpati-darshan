@@ -437,6 +437,48 @@ describe('the report count is safe to display', () => {
   });
 });
 
+describe('a reported wait sets the floor on the colour', () => {
+  const now = Date.parse('2026-09-14T12:00:00.000Z');
+  const at = (m: number) => new Date(now - m * 60_000).toISOString();
+  const rep = (status: CrowdLevel, m: number, dev: number): CrowdReportInput =>
+    ({ mandalId: 'm', status, createdAt: at(m), atMandal: true, deviceSeq: dev });
+
+  it('will not say Moving above "people waited about 30 min"', () => {
+    // The real one, from Dagdusheth on festival day: three colour taps
+    // outvoted two wait reports, and the card then printed both.
+    const taps = [rep('moving', 2, 1), rep('moving', 3, 2), rep('moving', 4, 3)];
+    const waits = [{ minutes: 20, createdAt: at(5) }, { minutes: 40, createdAt: at(6) }];
+    const s = aggregateMandal('m', taps, now, [], waits);
+    expect(s.waitMedianMinutes).toBe(30);
+    expect(s.status).toBe('long');
+  });
+
+  it('raises and never lowers', () => {
+    // One visitor who walked straight in must not talk a heavy queue down
+    // for everybody behind them.
+    const heavy = [rep('long', 2, 1), rep('long', 3, 2), rep('long', 4, 3)];
+    const quick = [{ minutes: 5, createdAt: at(2) }];
+    const s = aggregateMandal('m', heavy, now, [], quick);
+    expect(s.waitMedianMinutes).toBe(5);
+    expect(s.status).toBe('long');
+  });
+
+  it('ignores a wait that has decayed past the queue it described', () => {
+    // Eighty minutes old: worth a sixth of its weight in the scoring, and
+    // it must not pin the mandal red against fresh reports saying the
+    // queue has cleared.
+    const fresh = [rep('short', 1, 1), rep('short', 2, 2)];
+    const stale = [{ minutes: 45, createdAt: at(80) }];
+    expect(aggregateMandal('m', fresh, now, [], stale).status).toBe('short');
+  });
+
+  it('leaves the colour alone when they already agree', () => {
+    const taps = [rep('moving', 2, 1), rep('moving', 3, 2)];
+    const waits = [{ minutes: 15, createdAt: at(4) }];
+    expect(aggregateMandal('m', taps, now, [], waits).status).toBe('moving');
+  });
+});
+
 describe('dwell contributes mass, within limits', () => {
   const now = Date.parse('2026-09-19T15:30:00.000Z');
   const at = (m: number) => new Date(now - m * 60_000).toISOString();

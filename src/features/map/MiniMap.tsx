@@ -253,6 +253,12 @@ export function MiniMap({
               properties: {
                 slug: m.slug,
                 crowd: crowdRef.current[m.id] ?? 'none',
+                // Decides which of two mandals sharing a doorstep draws on
+                // top. Bhausaheb Rangari and Balvikas are 37 m apart and
+                // Kasba and Phani Ali 30 m — closer than a pin is wide, so
+                // without this one of each pair was simply invisible, on
+                // every embedded map as well as the full one.
+                prominence: m.prominence,
               },
             })),
           },
@@ -263,6 +269,9 @@ export function MiniMap({
           source: 'mandals',
           layout: {
             'icon-image': ['concat', 'mini-', ['get', 'crowd']],
+            // Higher draws last, and therefore on top. See the properties
+            // above; the full map uses the same rule.
+            'symbol-sort-key': ['coalesce', ['get', 'prominence'], 0],
             // Near full size: these maps are framed on one mandal or a small
             // cluster of them, so there is room for the mark to read.
             'icon-size': 0.95,
@@ -396,7 +405,11 @@ export function MiniMap({
       features: mandals.map((m) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [m.location.lng, m.location.lat] },
-        properties: { slug: m.slug, crowd: crowdByMandalId[m.id] ?? 'none' },
+        properties: {
+          slug: m.slug,
+          crowd: crowdByMandalId[m.id] ?? 'none',
+          prominence: m.prominence,
+        },
       })),
     });
   }, [crowdByMandalId, mandals, ordered, ready]);
