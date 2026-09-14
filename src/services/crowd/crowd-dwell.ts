@@ -40,11 +40,17 @@ export const DWELL_WINDOW_MINUTES = 90;
  * which is the one claim it is not allowed to make. The shadow table had
  * no way to tell one phone from three; the device key does.
  *
- * Three is still low, deliberately: unlike a crowd report, a dwell sample
- * is not a claim anybody made, so a wrong one costs a reader nothing but
- * a slightly wrong adjective.
+ * Two, following the colour bar down — and it must never sit ABOVE it.
+ * When MIN_DWELL_DEVICES_FOR_STATUS went to two this was still three,
+ * which had the map's stronger claim resting on less evidence than a
+ * sentence on one mandal's page. A colour sends somebody across the city;
+ * prose does not.
+ *
+ * Low, deliberately: unlike a crowd report, a dwell sample is not a claim
+ * anybody made, so a wrong one costs a reader nothing but a slightly
+ * wrong adjective.
  */
-export const MIN_DWELL_SAMPLES = 3;
+export const MIN_DWELL_SAMPLES = 2;
 
 /** Above this share of `queueing`, most people here are stopping. */
 export const STOPPING_SHARE = 0.5;

@@ -467,9 +467,23 @@ describe('dwell contributes mass, within limits', () => {
     expect(s.label).toBe('Observed heavy');
   });
 
-  it('needs three of them, not two', () => {
+  it('speaks on two agreeing devices, and not on one', () => {
+    // The bar is two: thin, but two independent phones behaving the same
+    // way is evidence, where one is an anecdote. At one device the
+    // dominance rule stops existing and the short veto has nobody to
+    // hear from — see MIN_DWELL_DEVICES_FOR_STATUS.
     const two = [dw('queueing', 1, 'a'), dw('queueing', 2, 'b')];
-    expect(aggregateMandal('m', [], now, two).status).toBeNull();
+    expect(aggregateMandal('m', [], now, two).status).toBe('long');
+
+    const one = [dw('queueing', 1, 'a')];
+    expect(aggregateMandal('m', [], now, one).status).toBeNull();
+  });
+
+  it('will not speak when two devices disagree', () => {
+    // One each is a 50% share, under DWELL_DOMINANCE_SHARE. The rule
+    // still does real work at two; at one it could not.
+    const split = [dw('queueing', 1, 'a'), dw('lingering', 2, 'b')];
+    expect(aggregateMandal('m', [], now, split).status).toBeNull();
   });
 
   it('counts devices rather than rows, so one visit is one voice', () => {

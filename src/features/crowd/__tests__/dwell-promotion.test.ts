@@ -95,8 +95,11 @@ describe('the promotion gate', () => {
     expect(dwellConsensus(rising, now)?.level).toBe('long');
   });
 
-  it('needs the minimum devices, and they have to agree', () => {
-    expect(MIN_DWELL_DEVICES_FOR_STATUS).toBeGreaterThanOrEqual(3);
+  it('needs more than one device, and they have to agree', () => {
+    // Never one: at a single device the winner is 100% of itself, so the
+    // dominance rule stops existing, and the short veto works by one
+    // device contradicting another.
+    expect(MIN_DWELL_DEVICES_FOR_STATUS).toBeGreaterThanOrEqual(2);
     expect(DWELL_DOMINANCE_SHARE).toBeGreaterThan(0.5);
   });
 });

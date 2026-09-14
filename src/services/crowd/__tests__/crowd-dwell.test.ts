@@ -20,8 +20,12 @@ const s = (dwell: 'lingering' | 'queueing', minsAgo: number): DwellSample => ({
 describe('summarising dwell', () => {
   it('says nothing on thin evidence', () => {
     expect(summariseDwell([], NOW)).toBeNull();
-    expect(summariseDwell([s('queueing', 1)], NOW)).toBeNull();
-    expect(summariseDwell([s('queueing', 1), s('queueing', 2)], NOW)).toBeNull();
+    // Written against the constant rather than a literal count, so
+    // lowering the bar cannot silently turn this into a test of nothing —
+    // which is exactly what a hard-coded two did when it moved.
+    expect(summariseDwell(
+      Array.from({ length: MIN_DWELL_SAMPLES - 1 }, () => s('queueing', 1)), NOW
+    )).toBeNull();
     expect(summariseDwell(
       Array.from({ length: MIN_DWELL_SAMPLES }, () => s('queueing', 1)), NOW
     )).not.toBeNull();

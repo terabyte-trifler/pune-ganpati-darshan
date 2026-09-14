@@ -122,19 +122,33 @@ export const DWELL_MASS_CAP = 1;
 /**
  * Distinct devices before dwell may colour a mandal with nobody reporting.
  *
- * Three, against the one device a human report needs, and the gap is the
- * point. A report is a claim somebody made; a dwell sample is a phone
- * that stopped, and a phone stops for reasons the app cannot see — the
- * dekhava is good, somebody took a call, somebody is waiting for a
- * friend. One of those is an anecdote. Three independent phones behaving
- * the same way at the same mandal inside ninety minutes is a pattern, and
- * a pattern is the least this is allowed to speak on.
+ * Two, lowered from three on the owner's decision, and the trade is worth
+ * stating plainly. A report is a claim somebody made; a dwell sample is a
+ * phone that stopped, and a phone stops for reasons the app cannot see —
+ * the dekhava is good, somebody took a call, somebody is waiting for a
+ * friend. One of those is an anecdote. Two independent phones behaving
+ * the same way at the same mandal inside ninety minutes is thin evidence,
+ * but it is evidence, and three was producing nothing at all: the city
+ * managed one qualifying sample on day one of the festival.
+ *
+ * What two keeps that one would have thrown away:
+ *
+ *   - The dominance rule still functions. At one device the winner is
+ *     always 100% of itself and DWELL_DOMINANCE_SHARE stops existing.
+ *   - The short veto still has somebody to hear from. It works by one
+ *     device contradicting another, and at one device there is no other.
+ *
+ * That second one is why this did not go to one. An over-optimistic
+ * passive signal sends somebody into a two-hour queue on the app's word;
+ * a pessimistic one costs them a walk. The errors are not the same size,
+ * and at a single device you cannot tell which you are making.
  *
  * Devices, not samples: one visit emits up to three rows (two threshold
  * markers and a final), so a sample count would let one person clear this
- * bar alone. That is the whole reason device_key exists.
+ * bar alone. That is the whole reason device_key exists, and it matters
+ * more at two than it did at three.
  */
-export const MIN_DWELL_DEVICES_FOR_STATUS = 3;
+export const MIN_DWELL_DEVICES_FOR_STATUS = 2;
 
 /**
  * And they have to agree.
