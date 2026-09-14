@@ -95,6 +95,51 @@ export function ParkingRideCard({
         </p>
       )}
 
+      {/* Where to go if it is full.
+          The Traffic Police list says where the spaces are, not whether
+          any are left, and on a festival evening the best spot fills
+          first. Answering that here beats a rider working it out at 9pm
+          while circling. Ordered by how far they are from the spot above,
+          because somebody already standing there wants the nearest hop,
+          not the second-best plan for a journey they have started. */}
+      {choice.alternates.length > 0 && (
+        <div className="mt-3 border-t border-[var(--line)] pt-3">
+          <p className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wide text-[var(--faint)]">
+            <CircleParking size={13} aria-hidden="true" />
+            If it&rsquo;s full
+          </p>
+          <ul className="mt-1.5 flex flex-col gap-1.5">
+            {choice.alternates.map((alt) => (
+              <li key={alt.spot.no} className="flex items-baseline justify-between gap-3">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${alt.spot.lat},${alt.spot.lng}&travelmode=driving`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 text-[13px] text-[var(--chandan)]"
+                >
+                  <span className="font-semibold">{alt.spot.name}</span>
+                  <span className="text-[var(--faint)]">
+                    {' '}· {formatDistance(alt.metresFromChosen)} away
+                  </span>
+                  {alt.approachClosed && (
+                    <span className="block text-[11px] text-[var(--zendu)]">
+                      on a road that closes after 17:00
+                    </span>
+                  )}
+                </a>
+                <span className="shrink-0 text-[12px] text-[var(--faint)]">
+                  {alt.extraWalkMinutes > 0
+                    ? `+${alt.extraWalkMinutes} min walk`
+                    : alt.extraWalkMinutes < 0
+                      ? `${alt.extraWalkMinutes} min walk`
+                      : 'same walk'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <a
         href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}&travelmode=driving`}
         target="_blank"

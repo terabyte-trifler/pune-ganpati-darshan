@@ -133,6 +133,43 @@ export function approachMeetsClosure(origin: LatLng, spot: ParkingSpot): boolean
   );
 }
 
+/**
+ * Somewhere else to leave the vehicle when the first choice is full.
+ *
+ * The plan names one parking, and the Traffic Police list says where the
+ * spaces are, not whether any are left. On a festival evening the honest
+ * assumption is that the best one fills first — so the card has to answer
+ * "and if it is?" before the rider is standing there at 9pm deciding
+ * between circling and giving up.
+ *
+ * Ranked by distance from the chosen spot rather than by whole-journey
+ * score, deliberately: a rider who has already ridden there wants the
+ * nearest place to hop to, not the second-best plan for a journey they
+ * have started.
+ */
+export interface ParkingAlternate {
+  spot: ParkingSpot;
+  /** Straight-line metres from the parking the plan chose. */
+  metresFromChosen: number;
+  /** Walking the whole circuit from HERE instead. */
+  walkMinutes: number;
+  /** What that costs against the chosen spot. Negative means it saves. */
+  extraWalkMinutes: number;
+  /**
+   * This one sits on a road the police close after 17:00.
+   *
+   * It is offered anyway, and the walk figure is honest: a rider standing
+   * at a full parking has already made the approach, so the diversion
+   * that cost this spot the plan is behind them. But arriving at a
+   * barricade is worth being warned about rather than discovering.
+   *
+   * It also explains a fallback that looks better than the winner — one
+   * of these can save eleven minutes of walking and still lose the plan,
+   * because the ride to it was priced as a diversion from the start.
+   */
+  approachClosed: boolean;
+}
+
 export interface ParkingChoice {
   spot: ParkingSpot;
   /** Riding from where the person is now to the parking. */
@@ -151,7 +188,22 @@ export interface ParkingChoice {
   detouredForClosures: boolean;
   /** True when the closures were in force for this plan at all. */
   closuresInForce: boolean;
+  /** Nearest fallbacks, closest first. Empty when there are none. */
+  alternates: ParkingAlternate[];
 }
+
+/** How many fallbacks to offer. Three is a glance; six is a list to read. */
+export const PARKING_ALTERNATES = 3;
+
+/**
+ * Beyond this, a fallback is a different plan rather than a second try.
+ *
+ * A rider standing at a full parking will walk or roll a few hundred
+ * metres to the next one. Sending them two kilometres back the way they
+ * came is not a fallback, it is starting again — and at that point the
+ * honest advice is to re-plan, which the app can already do.
+ */
+const ALTERNATE_MAX_METRES = 1_200;
 
 /**
  * Riding time, from the ride model rather than the walking one.
@@ -200,6 +252,15 @@ export function chooseParking(
   // minutes would let two spots tie on a number the rider never sees.
   let bestSeconds = Infinity;
 
+  /**
+   * Every spot that could be walked from, kept for the fallback list.
+   *
+   * The loop already computes the walk from each candidate and then
+   * throws all but the winner away. The fallbacks need exactly that
+   * discarded work, so it is retained rather than recomputed.
+   */
+  const scored: { spot: ParkingSpot; point: LatLng; walkSeconds: number }[] = [];
+
   for (const spot of candidates) {
     const point: LatLng = { lat: spot.lat, lng: spot.lng };
 
@@ -217,6 +278,7 @@ export function chooseParking(
     // cannot be costed is not a parking we can recommend, so it is skipped
     // rather than scored as though the walk were free.
     if (walk.totalCost === null) continue;
+    scored.push({ spot, point, walkSeconds: walk.totalCost });
 
     const seconds = ride + walk.totalCost;
     if (seconds >= bestSeconds) continue;
@@ -236,8 +298,36 @@ export function chooseParking(
       order: walk.order,
       detouredForClosures: detoured,
       closuresInForce: inForce,
+      // Filled in below, once the winner is known.
+      alternates: [],
     };
   }
+
+  if (!best) return null;
+
+  const chosen: LatLng = { lat: best.spot.lat, lng: best.spot.lng };
+  best.alternates = scored
+    .filter((s) => s.spot.no !== best!.spot.no)
+    .map((s) => ({
+      spot: s.spot,
+      metresFromChosen: haversine(chosen, s.point),
+      walkSeconds: s.walkSeconds,
+    }))
+    .filter((s) => s.metresFromChosen <= ALTERNATE_MAX_METRES)
+    .sort((a, b) => a.metresFromChosen - b.metresFromChosen)
+    .slice(0, PARKING_ALTERNATES)
+    .map((s) => {
+      const walkMinutes = Math.round(s.walkSeconds / 60);
+      return {
+        spot: s.spot,
+        metresFromChosen: s.metresFromChosen,
+        walkMinutes,
+        approachClosed: inForce && isOnClosedRoad(s.spot),
+        // Against the chosen spot's walk, so the rider sees the cost of
+        // the fallback rather than a number needing comparison.
+        extraWalkMinutes: walkMinutes - best!.walkMinutes,
+      };
+    });
 
   return best;
 }

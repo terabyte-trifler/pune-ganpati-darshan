@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { chooseParking, closuresInForce, isOnClosedRoad } from '@/services/parking-plan';
+import {
+  chooseParking, closuresInForce, isOnClosedRoad, PARKING_ALTERNATES,
+} from '@/services/parking-plan';
 import { PARKING } from '@/content/parking';
 import { buildItinerary } from '@/services/itinerary';
 import type { ParkingSpot } from '@/content/parking';
@@ -200,5 +202,56 @@ describe('the evening closures', () => {
 
     const choice = chooseParking(rider, mandals, [acrossLaxmiRd, clear], evening)!;
     expect([1, 2]).toContain(choice.spot.no);
+  });
+});
+
+describe('fallbacks when the parking is full', () => {
+  // Three spots within a few hundred metres of each other, plus one far
+  // enough away that hopping to it is a different journey.
+  const rider = { lat: 18.5000, lng: 73.8500 };
+  const mandals = [mandal('kasba-ganpati')];
+
+  const spot = (no: number, lat: number, lng: number) =>
+    ({ no, name: `P${no}`, sourceName: `P${no}`, lat, lng, kind: 'lot' as const, area: 'test' });
+
+  const near = [
+    spot(1, 18.5150, 73.8560),
+    spot(2, 18.5155, 73.8565),
+    spot(3, 18.5160, 73.8570),
+    spot(4, 18.5165, 73.8575),
+  ];
+  const faraway = spot(9, 18.4600, 73.9200);
+
+  it('offers the nearest other spots, closest first', () => {
+    const choice = chooseParking(rider, mandals, [...near, faraway])!;
+    expect(choice.alternates.length).toBeGreaterThan(0);
+    expect(choice.alternates.length).toBeLessThanOrEqual(PARKING_ALTERNATES);
+
+    const distances = choice.alternates.map((a) => a.metresFromChosen);
+    expect([...distances].sort((a, b) => a - b)).toEqual(distances);
+  });
+
+  it('never offers the spot it just chose', () => {
+    const choice = chooseParking(rider, mandals, near)!;
+    expect(choice.alternates.some((a) => a.spot.no === choice.spot.no)).toBe(false);
+  });
+
+  it('leaves out anything too far to be a second try', () => {
+    // A fallback two kilometres back the way you came is not a fallback,
+    // it is starting again.
+    const choice = chooseParking(rider, mandals, [...near, faraway])!;
+    expect(choice.alternates.some((a) => a.spot.no === faraway.no)).toBe(false);
+  });
+
+  it('says what the fallback costs, against the chosen walk', () => {
+    const choice = chooseParking(rider, mandals, near)!;
+    for (const alt of choice.alternates) {
+      expect(alt.extraWalkMinutes).toBe(alt.walkMinutes - choice.walkMinutes);
+    }
+  });
+
+  it('is empty rather than absent when there is nowhere else', () => {
+    const choice = chooseParking(rider, mandals, [near[0]])!;
+    expect(choice.alternates).toEqual([]);
   });
 });
