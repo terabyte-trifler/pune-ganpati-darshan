@@ -191,6 +191,39 @@ function pinId(crowd: string, manache: boolean, selected: boolean) {
   return `pin-${crowd}${manache ? '-m' : ''}${selected ? '-sel' : ''}`;
 }
 
+/**
+ * The inverse of pinId, and it has to be exact.
+ *
+ * The first version tested `id.includes('-m')` for the Manache flag,
+ * which is also true of "-moving". So `pin-moving` registered an image
+ * called `pin-moving-m`, the map went on asking for `pin-moving`, and
+ * every amber pin in the city drew nothing. It went unnoticed for hours
+ * because at midday the prior says "short" for almost everything, and
+ * only became obvious in the evening when it starts saying "moving".
+ *
+ * Suffixes are stripped from the END, in the order pinId appends them.
+ * Exported so a test can hold both halves to the same contract rather
+ * than trusting a regex.
+ */
+export function parsePinId(id: string): {
+  crowd: (typeof CROWD_KEYS)[number];
+  manache: boolean;
+  selected: boolean;
+} | null {
+  if (!id.startsWith('pin-')) return null;
+  let rest = id.slice('pin-'.length);
+
+  const selected = rest.endsWith('-sel');
+  if (selected) rest = rest.slice(0, -'-sel'.length);
+
+  const manache = rest.endsWith('-m');
+  if (manache) rest = rest.slice(0, -'-m'.length);
+
+  return CROWD_KEYS.includes(rest as (typeof CROWD_KEYS)[number])
+    ? { crowd: rest as (typeof CROWD_KEYS)[number], manache, selected }
+    : null;
+}
+
 async function registerPin(
   map: MapLibreMap,
   crowd: (typeof CROWD_KEYS)[number],
@@ -300,16 +333,9 @@ export function MapCanvas({
      * self-healing rather than a guess about what will be used.
      */
     map.on('styleimagemissing', (e: { id: string }) => {
-      const id = e.id;
-      if (!id.startsWith('pin-') || map.hasImage(id)) return;
-      const manache = id.includes('-m');
-      const selected = id.endsWith('-sel');
-      const crowd = id
-        .slice(4)
-        .replace(/-sel$/, '')
-        .replace(/-m$/, '') as (typeof CROWD_KEYS)[number];
-      if (!CROWD_KEYS.includes(crowd)) return;
-      void registerPin(map, crowd, manache, selected);
+      const parsed = parsePinId(e.id);
+      if (!parsed || map.hasImage(e.id)) return;
+      void registerPin(map, parsed.crowd, parsed.manache, parsed.selected);
     });
 
     map.on('load', async () => {
