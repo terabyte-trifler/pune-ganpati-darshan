@@ -14,6 +14,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
 import { buildMarkerSvg, buildClusterPinSvg, splitPinKey } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
+import { haversine } from '@/lib/geo';
 import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
@@ -64,6 +65,36 @@ function collapseAttribution(container: HTMLElement) {
     ?.classList.remove('maplibregl-compact-show');
 }
 
+/**
+ * Two mandals can share a doorstep, and both have to be findable.
+ *
+ * Kasba is 30 m from Phani Ali and Bhausaheb Rangari 37 m from Balvikas —
+ * closer than a pin is wide at any zoom you would browse at, so one of
+ * each pair was simply invisible. Stacking them by prominence fixed which
+ * one you get when you tap, and made the other one's disappearance
+ * permanent rather than arbitrary. That is not better.
+ *
+ * So the quieter one of a pair is nudged up and to the right while you
+ * are zoomed out, and settles onto its true position as you zoom in past
+ * the point where the two separate on their own. A pin that lies about
+ * where it is would be worse than a hidden one; a pin that is honest the
+ * moment you look closely is not.
+ */
+const COINCIDENT_M = 60;
+const NUDGE_PX = 18;
+/** Past this, 30 m is wider than a pin and nothing needs moving. */
+const NUDGE_UNTIL_ZOOM = 17.5;
+
+function nudgeRank(g: Ganpati, all: Ganpati[]): number {
+  let rank = 0;
+  for (const other of all) {
+    if (other.id === g.id) continue;
+    if (other.prominence <= g.prominence) continue;
+    if (haversine(g.location, other.location) <= COINCIDENT_M) rank += 1;
+  }
+  return rank;
+}
+
 function toFeatureCollection(
   ganpatis: Ganpati[],
   crowd: Record<string, CrowdPinKey> = {}
@@ -80,6 +111,9 @@ function toFeatureCollection(
         // Both feed symbol-sort-key — see stackOrder.
         manacheRank: g.manacheRank ?? 0,
         prominence: g.prominence,
+        // How many better-known mandals are standing on this one's spot.
+        // Zero for all but a handful. See nudgeRank.
+        nudge: nudgeRank(g, ganpatis),
         // Omitted entirely when unknown, so the layer filter can use
         // ['has','crowd'] and unreported mandals simply get no dot.
         ...(crowd[g.id] ? { crowd: crowd[g.id] } : {}),
@@ -424,6 +458,20 @@ export function MapCanvas({
           'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.68, 14, 0.88, 16, 1.05],
           'icon-allow-overlap': true,
           'symbol-sort-key': stackOrder(null),
+          // Lift the quieter of a coincident pair clear until the zoom
+          // separates them honestly. See nudgeRank.
+          'icon-offset': [
+            'step',
+            ['zoom'],
+            [
+              'case',
+              ['>', ['get', 'nudge'], 0],
+              ['literal', [NUDGE_PX, -NUDGE_PX]],
+              ['literal', [0, 0]],
+            ],
+            NUDGE_UNTIL_ZOOM,
+            ['literal', [0, 0]],
+          ],
         },
       });
 

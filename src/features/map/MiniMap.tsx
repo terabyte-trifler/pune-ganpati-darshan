@@ -13,7 +13,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
 import { buildMarkerSvg, buildRouteStopSvg, splitPinKey } from '@/lib/maps/markers';
 import { isWebglAvailable } from '@/lib/maps/webgl';
-import { boundsOf } from '@/lib/geo';
+import { boundsOf, haversine } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
@@ -259,6 +259,17 @@ export function MiniMap({
                 // without this one of each pair was simply invisible, on
                 // every embedded map as well as the full one.
                 prominence: m.prominence,
+                // Same coincident-pair rule as the full map: the quieter
+                // of two mandals sharing a doorstep is lifted clear while
+                // zoomed out. See MapCanvas.
+                nudge: mandals.some(
+                  (o) =>
+                    o.id !== m.id &&
+                    o.prominence > m.prominence &&
+                    haversine(m.location, o.location) <= 60
+                )
+                  ? 1
+                  : 0,
               },
             })),
           },
@@ -272,6 +283,13 @@ export function MiniMap({
             // Higher draws last, and therefore on top. See the properties
             // above; the full map uses the same rule.
             'symbol-sort-key': ['coalesce', ['get', 'prominence'], 0],
+            'icon-offset': [
+              'step',
+              ['zoom'],
+              ['case', ['>', ['get', 'nudge'], 0], ['literal', [18, -18]], ['literal', [0, 0]]],
+              17.5,
+              ['literal', [0, 0]],
+            ],
             // Near full size: these maps are framed on one mandal or a small
             // cluster of them, so there is room for the mark to read.
             'icon-size': 0.95,
