@@ -53,41 +53,31 @@ describe('the radius comes from geometry, not a constant', () => {
 });
 
 describe('zones over the real catalogue', () => {
-  it('admits every mandal except the two that are absorbed', () => {
+  it('admits every mandal it can tell apart, and no others', () => {
     expect(MANDALS.length).toBe(29);
-    expect(ZONES.length).toBe(27);
+    expect(ZONES.length).toBe(25);
   });
 
-  it('gives the zone to the prominent mandal of a too-close pair', () => {
-    // Kasba (prominence 980) is 30 m from Phani Ali (300). No radius
-    // separates them, so Kasba takes the zone and Phani Ali gets none —
-    // rather than the first version's answer, which was to throw away the
-    // gramdaivat to protect a record it is 30 m from.
-    const kasba = zoneOf('kasba-ganpati');
-    expect(kasba).toBeDefined();
+  it('gives a zone to NEITHER of a pair it cannot separate', () => {
+    // Kasba is 30 m from Phani Ali. A zone used to go to the more
+    // prominent of the two, which kept coverage by counting the other
+    // one's visitors as its own — and the only honest reading of Kasba's
+    // dwell was then "Kasba and Phani Ali together", a caveat somebody
+    // eventually forgets. Owner's decision: nobody absorbs anybody, so
+    // both fall out.
+    expect(zoneOf('kasba-ganpati')).toBeUndefined();
     expect(zoneOf('phani-ali-ganesh-mandir')).toBeUndefined();
-    expect(kasba!.absorbs).toContain('phani-ali-ganesh-mandir');
-
-    // And its radius is measured against the nearest mandal that still
-    // has a zone — Bhausaheb Rangari at 255 m — not against the one it
-    // absorbed. That is why it is the full cap and not 10 m.
-    expect(kasba!.radiusM).toBe(PACE_MAX_RADIUS_M);
   });
 
-  it('does the same for Bhausaheb Rangari and Balvikas', () => {
-    const bh = zoneOf('bhau-rangari-ganpati');
-    expect(bh).toBeDefined();
-    expect(bh!.absorbs).toContain('balvikas-mandal');
+  it('does the same for Bhausaheb Rangari and Balvikas, 37 m apart', () => {
+    expect(zoneOf('bhau-rangari-ganpati')).toBeUndefined();
     expect(zoneOf('balvikas-mandal')).toBeUndefined();
-    // Measured against Tambdi Jogeshwari at 118 m, not Balvikas at 37 m.
-    expect(bh!.radiusM).toBeCloseTo(54, 0);
   });
 
-  it('records absorption nowhere else', () => {
-    // Two peers 30 m apart would still both be excluded; absorption is
-    // only for a decisive prominence gap, and only two pairs qualify.
-    const absorbing = ZONES.filter((z) => z.absorbs.length > 0);
-    expect(absorbing).toHaveLength(2);
+  it('absorbs nothing, anywhere', () => {
+    // The field survives so its absence cannot be read as "never
+    // checked", but nothing may populate it.
+    expect(ZONES.every((z) => z.absorbs.length === 0)).toBe(true);
   });
 
   it('includes Dagdusheth, which a flat 75 m radius would have excluded', () => {
@@ -343,11 +333,11 @@ describe('the dwell tracker', () => {
     expect(state).toEqual(initialDwellState);
   });
 
-  it('attributes a dwell at Phani Ali to Kasba, and says so', () => {
-    // The declared cost of absorption. Standing at Phani Ali, 30 m from
-    // Kasba, records dwell against Kasba — because no radius can tell the
-    // two apart and Kasba is 3.3x the prominence. The zone names what it
-    // absorbed so a later comparison reads it as "Kasba and Phani Ali".
+  it('records nothing at all for a mandal it cannot separate', () => {
+    // Standing at Phani Ali, 30 m from Kasba. This used to record dwell
+    // against Kasba — a plausible-looking answer to the wrong question.
+    // Dwell is the weakest lane in the app and the one with no human
+    // behind it: if it cannot say WHERE, it says nothing.
     const phani = ALL.find((g) => g.slug === 'phani-ali-ganesh-mandir')!;
     const pos = { lat: phani.latitude, lng: phani.longitude };
     let state = initialDwellState;
@@ -357,8 +347,6 @@ describe('the dwell tracker', () => {
       state = out.state;
       if (out.emit) emits.push(out.emit);
     }
-    expect(emits.length).toBeGreaterThan(0);
-    for (const e of emits) expect(e.mandalId).toBe('kasba-ganpati');
-    expect(zoneOf('kasba-ganpati')!.absorbs).toContain('phani-ali-ganesh-mandir');
+    expect(emits).toEqual([]);
   });
 });

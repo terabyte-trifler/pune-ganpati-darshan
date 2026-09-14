@@ -117,7 +117,13 @@ function flush() {
         body: payload,
         headers: { 'Content-Type': 'application/json' },
         keepalive: true,
-      });
+        // The catch below only ever caught a synchronous throw. A fetch
+        // that rejects later — a dropped connection in a peth at 9pm,
+        // which is the normal case here — escaped it entirely and became
+        // an unhandled rejection in the console. Harmless to the page and
+        // noisy everywhere else: it surfaced as 29 errors in the test run
+        // the moment anything on a timer started reporting.
+      }).catch(() => {});
     }
   } catch {
     // Analytics must never surface an error to the user.

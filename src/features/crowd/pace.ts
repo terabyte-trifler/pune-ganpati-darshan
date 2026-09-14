@@ -45,28 +45,27 @@ import { haversine, DETOUR_FACTOR, MODE_SPEED_MPS, type LatLng } from '@/lib/geo
  * this excluded all four. That threw away Kasba, which is the gramdaivat
  * and the first of the Manache Paach, to protect a record it is 30 m from.
  *
- * The better answer uses the asymmetry that is already in the data. Kasba
- * carries prominence 980 against Phani Ali's 300; Bhausaheb 720 against
- * Balvikas's 120. A device dwelling in that overlap is far more likely at
- * the prominent one, by roughly that ratio — so where the gap exceeds
- * PACE_DOMINANCE_RATIO the dominant mandal ABSORBS its neighbour: it gets
- * a zone, the neighbour gets none, and the zone records what it absorbed.
+ * An intermediate version used the asymmetry in the data instead: Kasba
+ * carries prominence 980 against Phani Ali's 300, so the dominant mandal
+ * absorbed its neighbour and counted that neighbour's visitors. That is
+ * gone — see below.
  *
- * The radius is then computed against the nearest mandal that still has a
- * zone, which is why Kasba's is 75 m rather than 10 m — its nearest
- * surviving neighbour is Bhausaheb, 255 m away. The no-overlap guarantee
- * between zones is untouched.
+ * Two mandals that no radius can separate BOTH lose their zone. An
+ * earlier version handed the zone to the more prominent of the pair and
+ * let it count the other's visitors, which kept coverage and paid for it
+ * in attribution: a row against Kasba might have described somebody at
+ * Phani Ali, and every comparison, admin screen and later analysis had to
+ * carry "Kasba and Phani Ali together" as a caveat forever.
  *
- * What this costs, stated plainly: dwell recorded for Kasba includes
- * people who were actually at Phani Ali, 30 m away, and the same for
- * Balvikas inside Bhausaheb. That contamination is bounded by the
- * prominence ratio, it is named in `absorbs` on the zone, and any
- * comparison against human reports has to read Kasba's dwell as
- * "Kasba and Phani Ali together". It is not a hidden error; it is a
- * declared one.
+ * Owner's decision, and the cost is real: Kasba, Phani Ali, Bhausaheb
+ * Rangari and Balvikas produce no dwell at all, and Kasba was the second
+ * busiest source of it on festival day. The trade is silence over a
+ * plausible-looking wrong answer — dwell is the weakest lane here and the
+ * only one with no human behind it, so if it cannot say WHERE, it should
+ * not say anything.
  *
- * On the current catalogue this admits 27 of 29 mandals with nothing
- * excluded, Dagdusheth at 65 m and Kasba at 75 m.
+ * On the current catalogue this admits 25 of 29 mandals, Dagdusheth at
+ * 65 m and Tambdi Jogeshwari at 41 m.
  */
 
 /** What the dwell time suggests the device is doing. */
@@ -90,22 +89,11 @@ export const PACE_MAX_RADIUS_M = 75;
  */
 export const PACE_MIN_RADIUS_M = 25;
 
-/**
- * How much more prominent a mandal must be to absorb a too-close
- * neighbour rather than both being excluded.
- *
- * 2.5 is deliberately well clear of the two real cases (3.3x and 6.0x),
- * so this never fires on a pair of peers. Two equally prominent mandals
- * 30 m apart would still both be excluded, which is right: there the
- * overlap genuinely is a coin flip and there is no bigger one to give it
- * to.
- */
-export const PACE_DOMINANCE_RATIO = 2.5;
 
 /**
- * Below this separation no valid radius exists for either mandal, so one
- * of them must absorb the other or both must go. It is twice the smallest
- * usable radius plus the margin, by definition.
+ * Below this separation no valid radius exists for either mandal, so both
+ * lose their zone. It is twice the smallest usable radius plus the
+ * margin, by definition.
  */
 export const PACE_BLOCK_DISTANCE_M = 2 * (PACE_MIN_RADIUS_M + 5);
 
@@ -219,26 +207,36 @@ export function paceZones(mandals: PaceMandal[]): PaceZone[] {
   const between = (a: PaceMandal, b: PaceMandal) =>
     haversine({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng });
 
-  // Pass one: who is absorbed. A mandal surrenders its zone when some
-  // neighbour is too close for any radius to separate them AND is
-  // decisively more prominent. Computed before any radius, because a
-  // surrendered mandal must not influence anyone else's geometry.
-  const absorbedBy = new Map<string, string>();
-  for (const m of mandals) {
-    for (const other of mandals) {
-      if (other.id === m.id) continue;
-      if (between(m, other) >= PACE_BLOCK_DISTANCE_M) continue;
-      if (other.prominence >= PACE_DOMINANCE_RATIO * m.prominence) {
-        absorbedBy.set(m.id, other.id);
-        break;
-      }
-    }
-  }
+  /**
+   * Nobody absorbs anybody. Owner's decision, and it costs real signal.
+   *
+   * A mandal used to surrender its zone to a decisively more prominent
+   * neighbour standing too close to separate, and that neighbour then
+   * counted the surrendered mandal's visitors as its own. It bought
+   * coverage — Kasba kept a 75 m zone by swallowing Phani Ali 30 m away,
+   * and Bhausaheb kept one by swallowing Balvikas at 37 m.
+   *
+   * What it bought it with was attribution. A dwell row against Kasba
+   * might describe somebody standing at Phani Ali, and the only honest
+   * reading of Kasba's dwell was "Kasba and Phani Ali together" — a
+   * caveat that has to be carried by every comparison, every admin
+   * screen and every future analysis, forever, and that one person will
+   * eventually forget.
+   *
+   * So a mandal that cannot be separated from its neighbour now simply
+   * has no zone, and neither does the neighbour. Four mandals lose the
+   * dwell signal outright: Kasba, Phani Ali, Bhausaheb Rangari and
+   * Balvikas. Kasba is the painful one — it produced six dwell devices on
+   * festival day, more than anywhere except Tambdi Jogeshwari.
+   *
+   * The trade is silence over a plausible-looking wrong answer. Dwell is
+   * the weakest lane in the app and the one with no human behind it; if
+   * it cannot say WHERE, it should not say anything.
+   */
+  const live = mandals;
 
-  const live = mandals.filter((m) => !absorbedBy.has(m.id));
-
-  // Pass two: radii, measured only against mandals that still have a
-  // zone. This is what lets Kasba have 75 m instead of 10 m.
+  // Radii, measured against every other mandal, because they all still
+  // count. Two that cannot be separated now both fall out below.
   const zones: PaceZone[] = [];
   for (const m of live) {
     let nearestNeighbourM = Infinity;
@@ -259,9 +257,9 @@ export function paceZones(mandals: PaceMandal[]): PaceZone[] {
       crossingS,
       lingeringS: crossingS * DWELL_LINGERING_MULTIPLE,
       queueingS: crossingS * DWELL_QUEUEING_MULTIPLE,
-      absorbs: [...absorbedBy.entries()]
-        .filter(([, dominant]) => dominant === m.id)
-        .map(([absorbed]) => absorbed),
+      // Always empty now, and kept so the field's absence cannot be
+      // mistaken for "this was never checked". See the note above.
+      absorbs: [],
     });
   }
   return zones;

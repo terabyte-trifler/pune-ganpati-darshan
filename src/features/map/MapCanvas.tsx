@@ -122,9 +122,12 @@ const PIN_RASTER = 3;
  *                 artwork and left it buried, so the app answered "here
  *                 it is" by showing the neighbour.
  *   Manache Paach rank 1 above rank 5, as before.
- *   prominence    the better-known of two neighbours wins, which is the
- *                 same rule the dwell zones already use to decide which
- *                 of a too-close pair absorbs the other.
+ *   prominence    the better-known of two neighbours wins. The dwell
+ *                 zones used the same rule to decide which of a too-close
+ *                 pair took the other's visitors; that is gone, and a
+ *                 pair like this now produces no dwell at all. Drawing
+ *                 still has to choose one, and prominence is still the
+ *                 least arbitrary way to choose.
  */
 function stackOrder(selectedSlug: string | null): ExpressionSpecification {
   return [
