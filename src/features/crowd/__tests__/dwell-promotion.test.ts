@@ -9,6 +9,7 @@ import { dwellDeviceKey } from '@/lib/dwell-key';
 import {
   dwellConsensus, dwellDeviceCount,
   MIN_DWELL_DEVICES_FOR_STATUS, MIN_DWELL_DEVICES_FOR_SHORT, DWELL_DOMINANCE_SHARE,
+  dwellCeilingSeconds, DWELL_CEILING_MIN_MINUTES, DWELL_CEILING_MAX_MINUTES,
   type DwellInput,
 } from '@/services/crowd/crowd-aggregation';
 
@@ -184,6 +185,67 @@ describe('a completed visit can say short — carefully', () => {
   it('reads one device\'s marker and final together, not as two devices', () => {
     const oneVisit = [marker('a', 'lingering', CROSS_SMALL), visit('a', 8 * 60, CROSS_SMALL)];
     expect(dwellConsensus(oneVisit, now)).toBeNull();
+  });
+});
+
+describe('a parked phone is not a queue', () => {
+  const now = Date.parse('2026-09-18T16:00:00.000Z');
+  const row = (key: string, seconds: number, ceiling: number): DwellInput => ({
+    dwell: 'queueing',
+    createdAt: new Date(now - 5 * 60_000).toISOString(),
+    deviceKey: key,
+    dwellSeconds: seconds,
+    isFinal: false,
+    crossingSeconds: 155,
+    maxPlausibleSeconds: ceiling,
+  });
+
+  it('drops a device that has been inside for two hours', () => {
+    // The real one, from Kasba on festival day: 128 minutes inside a
+    // fifty-metre circle, against a curated peak of forty and a reported
+    // median of thirty. Nobody queues there for two hours.
+    const kasbaCeiling = dwellCeilingSeconds(40);
+    const parked = row('parked', 128 * 60, kasbaCeiling);
+    expect(dwellDeviceCount([parked], now)).toBe(0);
+    expect(dwellConsensus([parked], now)).toBeNull();
+  });
+
+  it('drops it before it counts as a device, not after', () => {
+    // The distinction that matters at a one-device bar: an implausible
+    // phone must not be evidence AND must not make up the numbers.
+    const kasbaCeiling = dwellCeilingSeconds(40);
+    const real = row('real', 18 * 60, kasbaCeiling);
+    const parked = row('parked', 128 * 60, kasbaCeiling);
+    expect(dwellDeviceCount([real, parked], now)).toBe(1);
+    expect(dwellConsensus([real, parked], now)?.devices).toBe(1);
+  });
+
+  it('lets Dagdusheth run long, because Dagdusheth does', () => {
+    // Its curated peak is 150 minutes. A 95-minute queue there is real;
+    // the same visit at Kasba is not.
+    const dagdu = dwellCeilingSeconds(150);
+    const kasba = dwellCeilingSeconds(40);
+    expect(dwellDeviceCount([row('a', 95 * 60, dagdu)], now)).toBe(1);
+    expect(dwellDeviceCount([row('a', 95 * 60, kasba)], now)).toBe(0);
+  });
+
+  it('clamps the ceiling at both ends', () => {
+    // A floor for the eleven mandals with no curated figure at all, and a
+    // cap so the largest mandal's allowance cannot run away.
+    expect(dwellCeilingSeconds(null)).toBe(DWELL_CEILING_MIN_MINUTES * 60);
+    expect(dwellCeilingSeconds(5)).toBe(DWELL_CEILING_MIN_MINUTES * 60);
+    expect(dwellCeilingSeconds(150)).toBe(DWELL_CEILING_MAX_MINUTES * 60);
+    expect(dwellCeilingSeconds(1000)).toBe(DWELL_CEILING_MAX_MINUTES * 60);
+  });
+
+  it('leaves rows alone when no ceiling was attached', () => {
+    // Absent means "no ceiling", which is the old behaviour rather than a
+    // silent zero that would discard everything.
+    const noCeiling: DwellInput = {
+      dwell: 'queueing', createdAt: new Date(now - 60_000).toISOString(),
+      deviceKey: 'a', dwellSeconds: 128 * 60, isFinal: false,
+    };
+    expect(dwellDeviceCount([noCeiling], now)).toBe(1);
   });
 });
 

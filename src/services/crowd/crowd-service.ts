@@ -5,7 +5,9 @@ import { features } from '@/lib/env';
 import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
 import { paceZones } from '@/features/crowd/pace';
-import { aggregateSnapshot, aggregateMandal, labelFor } from './crowd-aggregation';
+import {
+  aggregateSnapshot, aggregateMandal, labelFor, dwellCeilingSeconds,
+} from './crowd-aggregation';
 import { summariseDwell, DWELL_WINDOW_MINUTES, type DwellSummary } from './crowd-dwell';
 import {
   scoreBreakdown, ACTIVE_WINDOW_MINUTES,
@@ -92,13 +94,21 @@ async function getKnownMandalIds(): Promise<string[]> {
  * Same geometry the device uses to decide it is inside a zone, from the
  * same pure function, so the two cannot drift apart.
  */
-let crossingCache: { byId: Record<string, number>; at: number } | null = null;
+interface ZoneFacts {
+  /** Seconds to walk clean through the zone. */
+  crossing: number;
+  /** Seconds beyond which a visit is a parked phone, not a queue. */
+  ceiling: number;
+}
 
-async function getCrossingSeconds(): Promise<Record<string, number>> {
+let crossingCache: { byId: Record<string, ZoneFacts>; at: number } | null = null;
+
+async function getZoneFacts(): Promise<Record<string, ZoneFacts>> {
   const now = Date.now();
   if (crossingCache && now - crossingCache.at < MANDAL_ID_TTL_MS) return crossingCache.byId;
   const ganpatis = await getAllGanpatis();
-  const byId: Record<string, number> = {};
+  const peak = new Map(ganpatis.map((g) => [g.id, g.peakDarshanMinutes]));
+  const byId: Record<string, ZoneFacts> = {};
   for (const zone of paceZones(
     ganpatis.map((g) => ({
       id: g.id,
@@ -107,7 +117,12 @@ async function getCrossingSeconds(): Promise<Record<string, number>> {
       prominence: g.prominence,
     }))
   )) {
-    byId[zone.mandalId] = zone.crossingS;
+    byId[zone.mandalId] = {
+      crossing: zone.crossingS,
+      // From the mandal's own curated peak: Dagdusheth may run to two
+      // hours, Kasba may not. See dwellCeilingSeconds.
+      ceiling: dwellCeilingSeconds(peak.get(zone.mandalId) ?? null),
+    };
   }
   crossingCache = { byId, at: now };
   return byId;
@@ -157,7 +172,7 @@ async function readDwellSamples(
       .limit(5_000);
     if (error || !data) return {};
 
-    const crossing = await getCrossingSeconds();
+    const zones = await getZoneFacts();
     const out: Record<string, DwellInput[]> = {};
     for (const row of data) {
       (out[row.mandal_id] ??= []).push({
@@ -166,7 +181,8 @@ async function readDwellSamples(
         deviceKey: row.device_key,
         dwellSeconds: row.dwell_seconds,
         isFinal: row.is_final,
-        crossingSeconds: crossing[row.mandal_id],
+        crossingSeconds: zones[row.mandal_id]?.crossing,
+        maxPlausibleSeconds: zones[row.mandal_id]?.ceiling,
       });
     }
     return out;
@@ -719,7 +735,7 @@ export async function getCrowdExplain(): Promise<{
       .gte('created_at', since)
       .limit(5_000),
     readWaitReports(supabase, ids),
-    getCrossingSeconds(),
+    getZoneFacts(),
   ]);
 
   const { data, error } = reportsResult;
@@ -734,7 +750,8 @@ export async function getCrowdExplain(): Promise<{
       deviceKey: row.device_key,
       dwellSeconds: row.dwell_seconds,
       isFinal: row.is_final,
-      crossingSeconds: explainCrossing[row.mandal_id],
+      crossingSeconds: explainCrossing[row.mandal_id]?.crossing,
+      maxPlausibleSeconds: explainCrossing[row.mandal_id]?.ceiling,
     });
   }
 

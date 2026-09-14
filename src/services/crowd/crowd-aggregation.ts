@@ -161,6 +161,32 @@ export const MIN_DWELL_DEVICES_FOR_STATUS = 1;
 export const MIN_DWELL_DEVICES_FOR_SHORT = 2;
 
 /**
+ * How long a visit may run before it stops being a queue.
+ *
+ * Clamped around the mandal's OWN curated peak wait rather than set flat,
+ * because the mandals differ by an order of magnitude: Dagdusheth's
+ * curated peak is 150 minutes and Kasba's is 40, so one ceiling would
+ * either throw away Dagdusheth's real queues or admit Kasba's parked
+ * phones.
+ *
+ * The floor covers the eleven mandals with no curated figure at all, and
+ * the ceiling stops the largest mandal's allowance running away: two
+ * hours is longer than any darshan queue this catalogue records, so
+ * beyond it the likeliest explanation is a device that lives there.
+ */
+export const DWELL_CEILING_MIN_MINUTES = 60;
+export const DWELL_CEILING_MAX_MINUTES = 120;
+
+export function dwellCeilingSeconds(peakDarshanMinutes: number | null): number {
+  const peak = peakDarshanMinutes ?? 0;
+  const minutes = Math.min(
+    DWELL_CEILING_MAX_MINUTES,
+    Math.max(DWELL_CEILING_MIN_MINUTES, peak)
+  );
+  return minutes * 60;
+}
+
+/**
  * And they have to agree.
  *
  * Two phones queueing and two lingering is not an observation, it is
@@ -240,6 +266,14 @@ export interface DwellInput {
   dwellSeconds?: number;
   /** True for the one row written when a visit is confirmed to have ended. */
   isFinal?: boolean;
+  /**
+   * Beyond this many seconds inside the zone, the row is not a queue.
+   *
+   * Derived per mandal by the service from its curated peak wait — see
+   * dwellCeilingSeconds. Absent means no ceiling, which is the old
+   * behaviour rather than a silent zero.
+   */
+  maxPlausibleSeconds?: number;
   /**
    * Seconds to walk clean through this mandal's zone, from its geometry.
    *
@@ -464,8 +498,33 @@ interface AgedDwell {
   ageMinutes: number;
 }
 
+/**
+ * Rows that describe a parked phone rather than a queue.
+ *
+ * A device sitting inside a zone with the page open keeps accumulating
+ * dwell, and the longer it sits the stronger the evidence it appears to
+ * be. Kasba Peth produced one of these on festival day: a single device
+ * reading 128 minutes inside a fifty-metre circle, against a curated peak
+ * of forty and eleven human reports that evening with a median of thirty.
+ * Nobody queues at Kasba for two hours. Somebody lives there, or works
+ * there, or was sitting in a shop with the app open.
+ *
+ * Dropped rather than downgraded, and dropped BEFORE the device is
+ * counted: a phone we cannot believe should not be evidence of a queue
+ * and should not be a device either. At a one-device bar the difference
+ * is whether a resident's forgotten tab paints a mandal red all evening.
+ */
+function plausible(x: AgedDwell): boolean {
+  const ceiling = x.d.maxPlausibleSeconds;
+  if (typeof ceiling !== 'number' || ceiling <= 0) return true;
+  const seconds = x.d.dwellSeconds;
+  if (typeof seconds !== 'number') return true;
+  return seconds <= ceiling;
+}
+
 /** queueing supersedes lingering: it is the same visit, gone further. */
-function collapseDwellByDevice(fresh: AgedDwell[]): AgedDwell[] {
+function collapseDwellByDevice(all: AgedDwell[]): AgedDwell[] {
+  const fresh = all.filter(plausible);
   const best = new Map<string, AgedDwell>();
   fresh.forEach((x, i) => {
     // A null key cannot be deduplicated, so it is given a key of its own.
@@ -599,7 +658,9 @@ export function dwellConsensus(
      * a reading a human established — that is unchanged — but they may
      * not create one.
      */
-    .filter((x) => typeof x.d.deviceKey === 'string' && x.d.deviceKey.length > 0);
+    .filter((x) => typeof x.d.deviceKey === 'string' && x.d.deviceKey.length > 0)
+    // And drop the parked phones before anything is counted. See plausible().
+    .filter(plausible);
 
   // Group every row by device, rather than keeping one row each: reading
   // a device needs its markers AND its final sample together.
