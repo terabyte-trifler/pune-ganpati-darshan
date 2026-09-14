@@ -701,19 +701,30 @@ export async function getCrowdExplain(): Promise<{
   if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
   const supabase = getSupabaseAdminClient();
 
-  const { data, error } = await supabase.rpc('crowd_active_reports', { p_mandal_ids: ids });
-  if (error || !data) return null;
-
+  /**
+   * Four reads, issued together.
+   *
+   * This was four sequential awaits, which on the admin's slowest page
+   * meant four round trips stacked on top of the two the session check
+   * already costs. None of them depends on another — same fix as the
+   * public snapshot path, which had the same shape.
+   */
   const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
-  const { data: dwellRows } = await supabase
-    .from('crowd_dwell_samples')
-    .select('mandal_id, dwell, dwell_seconds, is_final, created_at, device_key')
-    .in('mandal_id', ids)
-    .gte('created_at', since)
-    .limit(5_000);
+  const [reportsResult, dwellResult, waitByMandal, explainCrossing] = await Promise.all([
+    supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
+    supabase
+      .from('crowd_dwell_samples')
+      .select('mandal_id, dwell, dwell_seconds, is_final, created_at, device_key')
+      .in('mandal_id', ids)
+      .gte('created_at', since)
+      .limit(5_000),
+    readWaitReports(supabase, ids),
+    getCrossingSeconds(),
+  ]);
 
-  const waitByMandal = await readWaitReports(supabase, ids);
-  const explainCrossing = await getCrossingSeconds();
+  const { data, error } = reportsResult;
+  if (error || !data) return null;
+  const dwellRows = dwellResult.data;
   const dwellCounted = process.env.CROWD_DWELL_PUBLIC === '1';
   const dwellByMandal: Record<string, DwellInput[]> = {};
   for (const row of dwellRows ?? []) {

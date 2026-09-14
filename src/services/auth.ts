@@ -2,6 +2,7 @@ import 'server-only';
 
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { resolveIsAdmin } from '@/lib/admin-access';
+import { cache } from 'react';
 
 /**
  * Server-side auth helpers.
@@ -33,7 +34,22 @@ export interface SessionUser {
   isAdmin: boolean;
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * Per-request memoisation.
+ *
+ * Two network hops — `auth.getUser()` revalidates the JWT against the auth
+ * server, then `profiles` is read for the admin flag — and they are
+ * genuinely sequential, because the profile lookup needs the id the first
+ * call returns. Measured at ~125ms each from India and roughly 330ms from
+ * the function region, so every extra call costs most of a second before
+ * a page has fetched anything of its own.
+ *
+ * `cache()` collapses them within one request: a page, its layout and any
+ * server action asking "who is this" share one answer. It does NOT cache
+ * across requests — the revalidation is the security boundary and it
+ * still happens once per request, every request.
+ */
+export const getSessionUser = cache(async function getSessionUser(): Promise<SessionUser | null> {
   const supabase = await getSupabaseServerClient();
   if (!supabase) return null;
 
@@ -60,7 +76,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     // place to get it wrong.
     isAdmin: resolveIsAdmin(email, profile?.is_admin ?? false),
   };
-}
+});
 
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await getSessionUser();

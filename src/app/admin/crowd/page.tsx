@@ -29,20 +29,20 @@ export default async function AdminCrowdPage() {
   if (!user) redirect('/signin?next=/admin/crowd');
   if (!user.isAdmin) redirect('/');
 
-  const [overview, ganpatis, blocks, metrics] = await Promise.all([
+  // The snapshot joins the batch rather than trailing it. It depends on
+  // none of the other four, and a fifth round trip in a row is what an
+  // admin feels as "slow" — none of these queries is itself slow.
+  const [overview, ganpatis, blocks, metrics, snapshotResult] = await Promise.all([
     getCrowdAdminOverview(),
     getAllGanpatis(),
     listDeviceBlocks(),
     Promise.resolve(readCrowdMetrics()),
-  ]);
-
-  let snapshot: CrowdStatus[] = [];
-  try {
-    snapshot = (await getCrowdSnapshot()).statuses;
-  } catch {
     // The console must still render when the crowd read path is down —
     // that is exactly when someone opens it.
-  }
+    getCrowdSnapshot().catch(() => null),
+  ]);
+
+  const snapshot: CrowdStatus[] = snapshotResult?.statuses ?? [];
 
   const nameById = new Map(ganpatis.map((g) => [g.id, g.name]));
   const reported = snapshot

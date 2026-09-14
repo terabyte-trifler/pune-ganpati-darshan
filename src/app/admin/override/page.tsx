@@ -38,14 +38,18 @@ export default async function AdminOverridePage() {
   if (!user) redirect('/signin?next=/admin/override');
   if (!user.isAdmin) redirect('/');
 
-  const [ganpatis, overrides, cooldowns] = await Promise.all([
+  // The snapshot used to be awaited after these three, which made a
+  // fourth round trip out of a read that depends on none of them — and on
+  // top of the two the session check already costs, that is what makes an
+  // admin page feel slow. Nothing here is complex; there was just too
+  // much of it in a row.
+  const [ganpatis, overrides, cooldowns, snapshot] = await Promise.all([
     getAllGanpatis(),
     getActiveOverrides(),
     getOverrideCooldowns(),
+    // The live reading, so the admin corrects what is actually on screen.
+    getCrowdSnapshot().catch(() => null),
   ]);
-
-  // The live reading, so the admin corrects what is actually on screen.
-  const snapshot = await getCrowdSnapshot().catch(() => null);
   const byId = new Map((snapshot?.statuses ?? []).map((s) => [s.mandalId, s]));
 
   const heldCount = Object.keys(overrides).length;
