@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { dwellDeviceKey } from '@/lib/dwell-key';
 import {
   dwellConsensus, dwellDeviceCount,
-  MIN_DWELL_DEVICES_FOR_STATUS, DWELL_DOMINANCE_SHARE,
+  MIN_DWELL_DEVICES_FOR_STATUS, MIN_DWELL_DEVICES_FOR_SHORT, DWELL_DOMINANCE_SHARE,
   type DwellInput,
 } from '@/services/crowd/crowd-aggregation';
 
@@ -95,11 +95,14 @@ describe('the promotion gate', () => {
     expect(dwellConsensus(rising, now)?.level).toBe('long');
   });
 
-  it('needs more than one device, and they have to agree', () => {
-    // Never one: at a single device the winner is 100% of itself, so the
-    // dominance rule stops existing, and the short veto works by one
-    // device contradicting another.
-    expect(MIN_DWELL_DEVICES_FOR_STATUS).toBeGreaterThanOrEqual(2);
+  it('never lets a single device call a mandal short', () => {
+    // The bar is currently one — a festival-night setting — which means
+    // the dominance rule can no longer refuse anything and the short veto
+    // has nobody to do the contradicting. So short carries its own,
+    // higher requirement, and that is the invariant worth pinning: this
+    // may drop to one, but never for `short`.
+    expect(MIN_DWELL_DEVICES_FOR_SHORT).toBeGreaterThanOrEqual(2);
+    expect(MIN_DWELL_DEVICES_FOR_SHORT).toBeGreaterThan(MIN_DWELL_DEVICES_FOR_STATUS - 1);
     expect(DWELL_DOMINANCE_SHARE).toBeGreaterThan(0.5);
   });
 });

@@ -5,6 +5,7 @@ import {
   aggregateMandal,
   aggregateSnapshot,
   confidenceFrom,
+  dwellDeviceCount,
   freshnessWeight,
   labelFor,
   trendFrom,
@@ -467,16 +468,33 @@ describe('dwell contributes mass, within limits', () => {
     expect(s.label).toBe('Observed heavy');
   });
 
-  it('speaks on two agreeing devices, and not on one', () => {
-    // The bar is two: thin, but two independent phones behaving the same
-    // way is evidence, where one is an anecdote. At one device the
-    // dominance rule stops existing and the short veto has nobody to
-    // hear from — see MIN_DWELL_DEVICES_FOR_STATUS.
+  it('speaks on a single device — the festival-night setting', () => {
+    const one = [dw('queueing', 1, 'a')];
+    expect(aggregateMandal('m', [], now, one).status).toBe('long');
+
     const two = [dw('queueing', 1, 'a'), dw('queueing', 2, 'b')];
     expect(aggregateMandal('m', [], now, two).status).toBe('long');
+  });
 
-    const one = [dw('queueing', 1, 'a')];
-    expect(aggregateMandal('m', [], now, one).status).toBeNull();
+  it('will not let one device call a mandal short', () => {
+    // The guard that makes a bar of one survivable. A passer-by enters,
+    // looks, and leaves inside ten minutes — indistinguishable from a
+    // mandal you can walk straight into, and the veto that normally
+    // catches it needs a second device to do the contradicting.
+    const cross = 200;
+    const quick = {
+      dwell: 'lingering' as const,
+      createdAt: at(3),
+      deviceKey: 'a',
+      dwellSeconds: 6 * 60,
+      isFinal: true,
+      crossingSeconds: cross,
+    };
+    expect(aggregateMandal('m', [], now, [quick]).status).toBeNull();
+
+    // Two of them, agreeing, and it speaks.
+    const second = { ...quick, deviceKey: 'b', createdAt: at(2) };
+    expect(aggregateMandal('m', [], now, [quick, second]).status).toBe('short');
   });
 
   it('will not speak when two devices disagree', () => {
@@ -488,9 +506,14 @@ describe('dwell contributes mass, within limits', () => {
 
   it('counts devices rather than rows, so one visit is one voice', () => {
     // A single visit emits a lingering marker, a queueing marker and a
-    // final sample. Three rows, one phone, no reading.
+    // final sample. Three rows, one phone — and at the strongest class it
+    // reached, not three separate opinions arguing with each other.
     const oneVisit = [dw('lingering', 3, 'a'), dw('queueing', 2, 'a'), dw('queueing', 1, 'a')];
-    expect(aggregateMandal('m', [], now, oneVisit).status).toBeNull();
+    const s = aggregateMandal('m', [], now, oneVisit);
+    expect(s.status).toBe('long');
+    expect(s.source).toBe('observed');
+    // One device, however many rows it wrote.
+    expect(dwellDeviceCount(oneVisit, now)).toBe(1);
   });
 
   it('declines when the devices disagree', () => {

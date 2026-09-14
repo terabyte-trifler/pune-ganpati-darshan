@@ -122,33 +122,43 @@ export const DWELL_MASS_CAP = 1;
 /**
  * Distinct devices before dwell may colour a mandal with nobody reporting.
  *
- * Two, lowered from three on the owner's decision, and the trade is worth
- * stating plainly. A report is a claim somebody made; a dwell sample is a
- * phone that stopped, and a phone stops for reasons the app cannot see —
- * the dekhava is good, somebody took a call, somebody is waiting for a
- * friend. One of those is an anecdote. Two independent phones behaving
- * the same way at the same mandal inside ninety minutes is thin evidence,
- * but it is evidence, and three was producing nothing at all: the city
- * managed one qualifying sample on day one of the festival.
+ * ONE, set for the evening of 14 September 2026 on the owner's decision,
+ * down from two. Reverting is this line and a deploy.
  *
- * What two keeps that one would have thrown away:
+ * The case for it, from today's data: by late afternoon six mandals had
+ * dwell in the live window and every one of them had exactly one device,
+ * so the signal was collecting well and publishing nothing. Somebody
+ * spent thirteen and a half minutes inside Tambdi Jogeshwari's
+ * forty-one-metre zone and the app said "estimated".
  *
- *   - The dominance rule still functions. At one device the winner is
- *     always 100% of itself and DWELL_DOMINANCE_SHARE stops existing.
- *   - The short veto still has somebody to hear from. It works by one
- *     device contradicting another, and at one device there is no other.
+ * What one device costs, stated plainly:
  *
- * That second one is why this did not go to one. An over-optimistic
- * passive signal sends somebody into a two-hour queue on the app's word;
- * a pessimistic one costs them a walk. The errors are not the same size,
- * and at a single device you cannot tell which you are making.
+ *   DWELL_DOMINANCE_SHARE stops existing. A single device is always a
+ *   hundred per cent of itself, so the agreement requirement can no
+ *   longer refuse anything.
  *
- * Devices, not samples: one visit emits up to three rows (two threshold
- * markers and a final), so a sample count would let one person clear this
- * bar alone. That is the whole reason device_key exists, and it matters
- * more at two than it did at three.
+ *   The short veto loses its second opinion. It works by one device
+ *   contradicting another — three people strolling past Dagdusheth for
+ *   six minutes look exactly like a short queue until a fourth is seen
+ *   actually queueing.
+ *
+ * The second one is not survivable on its own, so it is handled rather
+ * than accepted: at a single device `short` is refused outright. One
+ * phone may report congestion and may not certify emptiness. That keeps
+ * the asymmetry the whole lane rests on — an over-pessimistic passive
+ * signal costs somebody a walk to another mandal, an over-optimistic one
+ * sends them into a two-hour queue on the app's word.
  */
-export const MIN_DWELL_DEVICES_FOR_STATUS = 2;
+export const MIN_DWELL_DEVICES_FOR_STATUS = 1;
+
+/**
+ * Below this many devices, dwell may not call a mandal short.
+ *
+ * See above. `short` is the one reading a passer-by produces by accident:
+ * they enter, they look, they leave inside ten minutes, and that is
+ * indistinguishable from a mandal you can walk straight into.
+ */
+export const MIN_DWELL_DEVICES_FOR_SHORT = 2;
 
 /**
  * And they have to agree.
@@ -617,6 +627,10 @@ export function dwellConsensus(
 
   // The veto. See the note above.
   if (winner === 'short' && readings.some((r) => r.queued)) return null;
+
+  // And short needs a second opinion, because the veto IS the second
+  // opinion: at one device there is nobody to contradict a passer-by.
+  if (winner === 'short' && total < MIN_DWELL_DEVICES_FOR_SHORT) return null;
 
   const newestAt = fresh.reduce(
     (newest, x) => (Date.parse(x.d.createdAt) > Date.parse(newest) ? x.d.createdAt : newest),

@@ -40,11 +40,18 @@ export const DWELL_WINDOW_MINUTES = 90;
  * which is the one claim it is not allowed to make. The shadow table had
  * no way to tell one phone from three; the device key does.
  *
- * Two, following the colour bar down — and it must never sit ABOVE it.
- * When MIN_DWELL_DEVICES_FOR_STATUS went to two this was still three,
- * which had the map's stronger claim resting on less evidence than a
- * sentence on one mandal's page. A colour sends somebody across the city;
- * prose does not.
+ * Two, and it does NOT follow the colour bar all the way down.
+ *
+ * I had the rule backwards once and the tests caught it. Tying this to
+ * the colour bar seemed right when the bar was three and this was three
+ * — the map's stronger claim should not rest on less evidence than prose.
+ * But the two claims are different in kind, not just in strength.
+ *
+ * A colour says "this mandal looks busy", which one device can support:
+ * a phone stood there for eleven minutes and that is what it saw. The
+ * sentence says "MOST VISITORS near this mandal are stopping", which is a
+ * proportion — and a proportion of one is not a proportion. So when the
+ * colour bar dropped to one for festival night, this stayed at two.
  *
  * Low, deliberately: unlike a crowd report, a dwell sample is not a claim
  * anybody made, so a wrong one costs a reader nothing but a slightly
