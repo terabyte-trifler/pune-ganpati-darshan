@@ -8,6 +8,7 @@ import {
   type GeoJSONSource,
   type MapMouseEvent,
   type ErrorEvent,
+  type ExpressionSpecification,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
@@ -76,8 +77,9 @@ function toFeatureCollection(
         slug: g.slug,
         name: g.name,
         category: g.category,
-        // Negated in symbol-sort-key so rank 1 draws above rank 5.
+        // Both feed symbol-sort-key — see stackOrder.
         manacheRank: g.manacheRank ?? 0,
+        prominence: g.prominence,
         // Omitted entirely when unknown, so the layer filter can use
         // ['has','crowd'] and unreported mandals simply get no dot.
         ...(crowd[g.id] ? { crowd: crowd[g.id] } : {}),
@@ -104,6 +106,40 @@ const PIN_RASTER = 3;
  * selected-or-not, which is sixteen small images registered once — where
  * keying on category as well would have been sixty-four.
  */
+/**
+ * Which pin sits on top when two mandals share a spot.
+ *
+ * Bhausaheb Rangari and Balvikas Mandal are 37 metres apart, which at any
+ * usable zoom is less than the width of a pin — so one of them was simply
+ * under the other, and no amount of tapping found it. Kasba and Phani Ali
+ * are 30 metres apart and have the same problem. Higher sort keys draw
+ * last and therefore on top.
+ *
+ * Three tiers, in order:
+ *
+ *   selected      whatever the person just chose, always. This was the
+ *                 actual bug: selecting a buried mandal changed its
+ *                 artwork and left it buried, so the app answered "here
+ *                 it is" by showing the neighbour.
+ *   Manache Paach rank 1 above rank 5, as before.
+ *   prominence    the better-known of two neighbours wins, which is the
+ *                 same rule the dwell zones already use to decide which
+ *                 of a too-close pair absorbs the other.
+ */
+function stackOrder(selectedSlug: string | null): ExpressionSpecification {
+  return [
+    '+',
+    ['case', ['==', ['get', 'slug'], selectedSlug ?? '\u0000'], 1_000_000, 0],
+    [
+      'case',
+      ['>', ['get', 'manacheRank'], 0],
+      ['*', ['-', 6, ['get', 'manacheRank']], 10_000],
+      0,
+    ],
+    ['coalesce', ['get', 'prominence'], 0],
+  ] as ExpressionSpecification;
+}
+
 const CROWD_KEYS = [
   'none', 'short', 'moving', 'long',
   // Dwell's two, drawn half-filled: nobody reported, but enough devices
@@ -384,7 +420,7 @@ export function MapCanvas({
           // mandals and the mark has to be readable.
           'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.68, 14, 0.88, 16, 1.05],
           'icon-allow-overlap': true,
-          'symbol-sort-key': ['-', 0, ['get', 'manacheRank']],
+          'symbol-sort-key': stackOrder(null),
         },
       });
 
@@ -485,6 +521,9 @@ export function MapCanvas({
       ['case', ['>', ['get', 'manacheRank'], 0], '-m', ''],
       ['case', ['==', ['get', 'slug'], selectedSlug ?? ''], '-sel', ''],
     ]);
+    // And lift it above whatever it is sharing a doorstep with. Changing
+    // only the artwork left a buried pin buried in bigger artwork.
+    map.setLayoutProperty('mandals', 'symbol-sort-key', stackOrder(selectedSlug ?? null));
 
     if (!selectedSlug) return;
     const target = ganpatis.find((g) => g.slug === selectedSlug);
