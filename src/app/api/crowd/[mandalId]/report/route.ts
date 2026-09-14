@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   submitCrowdReport,
-  getCrowdStatus,
+  recomputeMandal,
   clientIpFrom,
 } from '@/services/crowd/crowd-service';
 import { privateJson, timed } from '@/services/crowd/crowd-http';
@@ -96,9 +96,14 @@ export async function POST(
 
     // Hand back the recomputed status so the panel updates the instant the
     // report lands, rather than showing the old consensus until the next
-    // poll. The write already invalidated this mandal, so this read is the
-    // recompute that re-warms the cache for every other reader too.
-    const crowd = await getCrowdStatus(id.data).catch(() => null);
+    // poll.
+    //
+    // ONE mandal, not the city. This used to call getCrowdStatus, which
+    // reads the whole-city snapshot — and the write had just invalidated
+    // this mandal, so the snapshot's "all warm" check failed and all 29
+    // were recomputed before the voter got a reply. That was the bulk of
+    // a 2.04s median vote.
+    const crowd = await recomputeMandal(id.data).catch(() => null);
 
     return privateJson({ ...result, crowd }, 201);
   });

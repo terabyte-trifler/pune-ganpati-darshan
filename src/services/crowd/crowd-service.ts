@@ -292,9 +292,22 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
 
   const startedAt = Date.now();
   const supabase = getSupabaseAdminClient();
-  const { data, error } = await supabase.rpc('crowd_active_reports', {
-    p_mandal_ids: ids,
-  });
+
+  /**
+   * All four lanes at once.
+   *
+   * The reports RPC used to be awaited on its own before the other three
+   * were fetched, which made four sequential round trips out of four
+   * independent queries. They read different tables for the same ids and
+   * none of them needs another's result.
+   */
+  const [reportsResult, dwellSamples, waitSamples, overrides] = await Promise.all([
+    supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
+    readDwellSamples(supabase, ids),
+    readWaitReports(supabase, ids),
+    readOverrides(supabase, ids),
+  ]);
+  const { data, error } = reportsResult;
   recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
 
   if (error || !data) {
@@ -305,14 +318,6 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
     recordCrowdMetric('crowd_error', 1);
     throw new CrowdUnavailableError();
   }
-
-  // The dwell lane, read alongside. Deliberately a separate query and a
-  // separate failure path: if this errors the crowd snapshot must still
-  // be served, because a passive hint failing is not a reason to take
-  // down what people actually reported.
-  const dwellSamples = await readDwellSamples(supabase, ids);
-  const waitSamples = await readWaitReports(supabase, ids);
-  const overrides = await readOverrides(supabase, ids);
 
   const reports: CrowdReportInput[] = data.map((row) => ({
     mandalId: row.mandal_id,
@@ -410,6 +415,76 @@ export async function getCrowdSnapshot(): Promise<CrowdSnapshot> {
       return { ...lastGood, stale: true };
     }
     throw new CrowdUnavailableError();
+  }
+}
+
+/**
+ * Recompute ONE mandal, freshly, and warm its cache entry.
+ *
+ * The vote path's fix. It used to call getCrowdStatus after writing,
+ * which reads the whole-city snapshot — and because the write had just
+ * invalidated that mandal's cache entry, the "every mandal warm" check
+ * failed and the entire city was recomputed from the database before the
+ * voter got a reply. One tap, twenty-nine mandals, four round trips.
+ *
+ * Measured before: 2.04s median for a vote, of which almost all was this.
+ *
+ * So the write path now recomputes only the mandal that changed, with
+ * its four reads issued together, and SETS the result rather than
+ * clearing it — which also means no other reader is pushed into a full
+ * recompute by somebody else's vote.
+ *
+ * Returns null rather than throwing: a vote that was accepted must still
+ * be reported as accepted even if the follow-up read fails. The client
+ * then falls back to its next poll.
+ */
+export async function recomputeMandal(mandalId: string): Promise<CrowdStatus | null> {
+  if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return null;
+  const known = await filterKnownMandalIds([mandalId]);
+  if (known.length === 0) return null;
+
+  try {
+    const supabase = getSupabaseAdminClient();
+    const ids = [mandalId];
+    const startedAt = Date.now();
+
+    const [reportsResult, dwellSamples, waitSamples, overrides] = await Promise.all([
+      supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
+      readDwellSamples(supabase, ids),
+      readWaitReports(supabase, ids),
+      readOverrides(supabase, ids),
+    ]);
+    recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
+
+    const rows = reportsResult.data;
+    if (reportsResult.error || !rows) return null;
+
+    const reports: CrowdReportInput[] = rows.map((row) => ({
+      mandalId: row.mandal_id,
+      status: row.status,
+      createdAt: row.created_at,
+      atMandal: row.at_mandal ?? false,
+      deviceSeq: row.device_seq ?? undefined,
+      deviceAgeSeconds: row.device_age_seconds ?? null,
+    }));
+
+    const computed = aggregateMandal(
+      mandalId,
+      reports,
+      Date.now(),
+      dwellSamples[mandalId] ?? [],
+      waitSamples[mandalId] ?? []
+    );
+    const status = overrides[mandalId]
+      ? applyOverride(computed, overrides[mandalId])
+      : computed;
+
+    // Warm rather than clear. A cleared entry makes the next reader pay
+    // for a full-city recompute; a warm one costs them nothing.
+    await getCrowdCache().set(mandalId, status, CROWD_CACHE_TTL_SECONDS);
+    return status;
+  } catch {
+    return null;
   }
 }
 

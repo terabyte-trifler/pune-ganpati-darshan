@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { submitWaitReport, getCrowdStatus, clientIpFrom } from '@/services/crowd/crowd-service';
+import { submitWaitReport, recomputeMandal, clientIpFrom } from '@/services/crowd/crowd-service';
 import { privateJson, timed } from '@/services/crowd/crowd-http';
 import { mandalIdSchema, deviceIdSchema } from '@/services/crowd/crowd-validation';
 import { rateLimit } from '@/lib/rate-limit';
@@ -86,7 +86,8 @@ export async function POST(
 
     // Hand back the recomputed reading, so the panel updates the moment
     // the report lands rather than at the next poll.
-    const crowd = await getCrowdStatus(id.data).catch(() => null);
+    // One mandal, not the city — see the report route.
+    const crowd = await recomputeMandal(id.data).catch(() => null);
     return privateJson({ ...result, crowd }, 201);
   });
 }

@@ -86,6 +86,25 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
+/**
+ * Run the functions next to the users and the database.
+ *
+ * Vercel's default function region is iad1, Washington DC. Measured on
+ * production before this line existed: every dynamic request entered at
+ * bom1 (Mumbai, ~40ms from Pune) and then executed in iad1 — while
+ * Supabase answers from BOM. So each database round trip crossed the
+ * Pacific twice, at roughly 330ms, and a vote made five of them in
+ * sequence: 2.04s median, against a 300ms target.
+ *
+ * Declared on the root layout, which every route segment inherits, so a
+ * new API route cannot quietly be born in Virginia.
+ *
+ * bom1 rather than a multi-region list on purpose: the database is in one
+ * place, and a function far from Postgres is slower than a function far
+ * from the user — reads are cached at the edge, queries are not.
+ */
+export const preferredRegion = 'bom1';
+
 export const viewport: Viewport = {
   themeColor: '#14100C',
   width: 'device-width',
