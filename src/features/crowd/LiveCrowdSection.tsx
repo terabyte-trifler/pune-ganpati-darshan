@@ -323,8 +323,10 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                   distanceM !== null ? formatDistance(distanceM) : null,
                   // An override reads as a report here, by the owner's
                   // decision: a person went and looked, which is what the
-                  // word means to a visitor. Dwell still says "seen",
-                  // because no person was involved in it at all.
+                  // word means to a visitor. Dwell says "observed",
+                  // because no person was involved in it at all — and
+                  // that one word is the whole of what a visitor needs to
+                  // know about where the reading came from.
                   !rowAgo
                     ? null
                     : source === 'observed'
@@ -390,9 +392,8 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--muted)]">
             {anyObserved && (
               <>
-                <strong className="font-semibold">Observed</strong> rows are what
-                phones near the mandal were seen doing — stopping rather than
-                walking past.{' '}
+                Rows marked <strong className="font-semibold">observed</strong>{' '}
+                come from phones near the mandal rather than from a person.{' '}
               </>
             )}
             {anyEstimated && (

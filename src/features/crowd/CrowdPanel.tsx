@@ -194,13 +194,21 @@ export function CrowdPanel({
             </p>
           )}
 
+          {/* An observed reading says nothing here.
+              It used to add "Nobody has reported this mandal in the last
+              90 minutes", directly under a line already saying the
+              devices were last seen thirteen minutes ago and above a
+              sentence about what those devices did. Three blocks of text
+              for one reading, two of them about the app's own plumbing
+              rather than about the queue. The panel says what was seen
+              and when; how it knows is not the visitor's problem. */}
+          {!observed && (
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
-            {observed
-              ? 'Nobody has reported this mandal in the last 90 minutes. One tap below replaces this with something a person said.'
-              : overridden
-                ? 'Reported by the team rather than by devotees. It stands for half an hour, then live reports take over again.'
-                : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
+            {overridden
+              ? 'Reported by the team rather than by devotees. It stands for half an hour, then live reports take over again.'
+              : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
           </p>
+          )}
         </>
       ) : (
         <>

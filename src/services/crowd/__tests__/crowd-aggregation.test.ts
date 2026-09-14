@@ -465,7 +465,11 @@ describe('dwell contributes mass, within limits', () => {
     expect(s.reportCount).toBe(0);
     // A passive signal never earns more than the lowest confidence.
     expect(s.confidence).toBe('low');
-    expect(s.label).toBe('Observed heavy');
+    // The label is the ordinary word. Provenance lives in `source`, in
+    // the "observed N min ago" line and in the half-filled mark — not in
+    // a label that announces the app's own machinery.
+    expect(s.label).toBe('Heavy');
+    expect(s.source).toBe('observed');
   });
 
   it('speaks on a single device — the festival-night setting', () => {

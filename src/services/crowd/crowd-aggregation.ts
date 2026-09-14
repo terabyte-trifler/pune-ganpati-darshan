@@ -350,28 +350,29 @@ export function trendFrom(
 export function observedLabelFor(level: CrowdLevel): { label: string; detail: string } {
   if (level === 'long') {
     return {
-      label: 'Observed heavy',
+      // The SAME word a reported heavy queue uses. An observed reading no
+      // longer announces its own machinery in the label — "Observed heavy"
+      // beside "observed 10 min ago" said the same thing twice, and the
+      // first half of it was about how the app works rather than about
+      // the queue. Where it came from is carried by the time line and by
+      // the half-filled mark, which is where provenance belongs.
+      label: 'Heavy',
       detail:
         'Phones near this mandal are stopping for longer than any walking ' +
-        'speed explains. Nobody has reported it — that is what devices were ' +
-        'seen doing, and people stop to look as well as to queue.',
+        'speed explains.',
     };
   }
   if (level === 'short') {
     return {
-      label: 'Observed short',
+      label: 'Short',
       detail:
-        'Phones near this mandal are arriving and leaving again within a few ' +
-        'minutes, and none of them stayed long enough to look like a queue. ' +
-        'Nobody has reported it — that is what devices were seen doing.',
+        'Phones near this mandal are arriving and leaving again within a ' +
+        'few minutes.',
     };
   }
   return {
-    label: 'Observed moving',
-    detail:
-      'Phones near this mandal are moving through slower than a clean ' +
-      'walk. Nobody has reported it — that is what devices were seen ' +
-      'doing, not something anyone said.',
+    label: 'Moving',
+    detail: 'Phones near this mandal are moving through slower than a clean walk.',
   };
 }
 
