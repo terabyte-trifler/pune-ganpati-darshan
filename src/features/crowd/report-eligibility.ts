@@ -32,18 +32,31 @@ import type { GeoState } from '@/hooks/useGeolocation';
 /**
  * How far away a report is still accepted.
  *
- * Widened from 1.5 km to 5 km on the owner's decision. The trade is real
- * and worth stating: 5 km covers the whole peth core and most of central
- * Pune, so a report can now come from someone who saw the queue an hour
- * ago on their way home rather than from someone who can see it now.
+ * Tightened to 1 km on the owner's decision, from 5 km. 5 km covered most
+ * of central Pune, so a report could come from somebody who saw the queue
+ * on their way home an hour ago; 1 km is roughly the peth walk, which is
+ * close enough that you could go and look.
  *
- * Two things already contain that. Anything beyond AT_MANDAL_RADIUS_M
- * counts at OFFSITE_WEIGHT, half of a report made at the gate, so the
- * people actually there still outweigh the people who were. And a status
- * needs two devices agreeing inside ninety minutes, which a single distant
- * guess cannot produce on its own.
+ * This number is load-bearing for GPS as well as for trust — see
+ * GATE_MAX_ACCURACY_M. A 5 km question can be settled by a coarse
+ * wifi/cell fix; a 1 km question sometimes cannot.
  */
-export const REPORT_MAX_DISTANCE_M = 5_000;
+export const REPORT_MAX_DISTANCE_M = 1_000;
+
+/**
+ * A fix coarser than this cannot decide a 1 km question.
+ *
+ * Acquisition asks for a coarse fix first, because it returns in under a
+ * second where the GPS radio takes seconds — and at 5 km that was free,
+ * since a fix good to 2 km still answers a 5 km question. At 1 km it is
+ * not free: a phone standing AT the mandal on a 1.5 km fix can compute as
+ * 1.2 km away and be refused.
+ *
+ * So when the fix is this coarse AND the raw distance would refuse, the
+ * answer is not "too far" — it is "ask the GPS radio and decide properly".
+ * The refusal has to be earned by a fix that can support it.
+ */
+export const GATE_MAX_ACCURACY_M = 250;
 
 /** Inside this you are AT the mandal, and the report carries full weight. */
 export const AT_MANDAL_RADIUS_M = 100;
@@ -67,6 +80,11 @@ export type ReportEligibility =
   | { kind: 'no-location'; reason: 'denied' | 'unavailable' }
   /** Located, and genuinely too far. */
   | { kind: 'too-far'; distanceM: number }
+  /**
+   * Too far on a fix too coarse to be sure. Ask for a precise one rather
+   * than refusing somebody who may be standing right there.
+   */
+  | { kind: 'refining'; distanceM: number }
   /** The mandal has no coordinate, so no distance can be computed. */
   | { kind: 'unknown-mandal' };
 
@@ -77,12 +95,12 @@ export type ReportEligibility =
  * decides whose reports the whole tracker is built from — it should be
  * pinned by tests rather than inferred from a rendered button.
  *
- * Distance is compared raw, without widening it by the fix's accuracy.
- * That is deliberate and it is the lenient direction: someone genuinely
- * 1.4 km away on a poor urban fix keeps their report, and someone 1.6 km
- * away is refused. Blocking a real reporter during the festival costs more
- * than admitting a borderline one, whose report is halved anyway for not
- * being at the mandal.
+ * Distance is compared raw, without widening it by the fix's accuracy,
+ * and that leniency runs one way only: a coarse fix inside the radius is
+ * accepted, while a coarse fix outside it is sent to refine rather than
+ * refused. Blocking a real reporter during the festival costs more than
+ * admitting a borderline one, whose report is halved anyway for not being
+ * at the mandal.
  */
 export function reportEligibility(
   geo: GeoState,
@@ -101,7 +119,16 @@ export function reportEligibility(
       return { kind: 'no-location', reason: 'unavailable' };
     case 'ready': {
       const distanceM = haversine(geo.position, mandal);
-      if (distanceM > REPORT_MAX_DISTANCE_M) return { kind: 'too-far', distanceM };
+      if (distanceM > REPORT_MAX_DISTANCE_M) {
+        // Refuse only on a fix good enough to refuse on. Note the
+        // asymmetry, and that it is deliberate: a coarse fix INSIDE the
+        // radius is still allowed, because the lenient direction is the
+        // safe one — a borderline report is halved for not being at the
+        // gate, while a wrongly refused one is lost.
+        return geo.accuracyM > GATE_MAX_ACCURACY_M
+          ? { kind: 'refining', distanceM }
+          : { kind: 'too-far', distanceM };
+      }
       return {
         kind: 'allowed',
         distanceM,

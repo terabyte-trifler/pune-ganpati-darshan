@@ -51,6 +51,10 @@ const AT_RADIUS_M = 120;
  * wrong trade: the shortlist is capped at NEAR_LIMIT anyway, so the cost
  * is at most three cards naming the nearest mandals, and the benefit is
  * that someone who can report can actually find the buttons.
+ *
+ * Tying it to the constant is what makes the tightening back to 1 km free
+ * here: this surface narrows with the rule instead of having to be
+ * remembered separately.
  */
 const NEAR_RADIUS_M = REPORT_MAX_DISTANCE_M;
 

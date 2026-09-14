@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   reportEligibility, REPORT_MAX_DISTANCE_M,
-  AT_MANDAL_RADIUS_M, AT_MANDAL_MAX_ACCURACY_M,
+  AT_MANDAL_RADIUS_M, AT_MANDAL_MAX_ACCURACY_M, GATE_MAX_ACCURACY_M,
 } from '@/features/crowd/report-eligibility';
 import type { GeoState } from '@/hooks/useGeolocation';
 
@@ -28,7 +28,9 @@ describe('report eligibility', () => {
   });
 
   it('allows a report from anywhere inside the radius, at half weight', () => {
-    const e = reportEligibility(ready(northOf(1_200)), MANDAL);
+    // Relative to the constant. Hard-coding 1.2 km made this a test of
+    // nothing the moment the radius was tightened from 5 km to 1 km.
+    const e = reportEligibility(ready(northOf(REPORT_MAX_DISTANCE_M / 2)), MANDAL);
     expect(e.kind).toBe('allowed');
     // Inside the report radius but outside 100 m: worth having, not as much.
     expect(e.kind === 'allowed' && e.atMandal).toBe(false);
@@ -85,10 +87,40 @@ describe('report eligibility', () => {
     expect(reportEligibility(ready(MANDAL), undefined).kind).toBe('unknown-mandal');
   });
 
+  it('will not refuse on a fix too coarse to refuse with', () => {
+    // The case the 1 km radius created. A phone standing AT the mandal on
+    // a 1.5 km urban fix can compute as well outside the radius — so the
+    // answer is "ask the GPS radio", not "you are too far".
+    const e = reportEligibility(
+      ready(northOf(REPORT_MAX_DISTANCE_M + 500), GATE_MAX_ACCURACY_M + 1),
+      MANDAL
+    );
+    expect(e.kind).toBe('refining');
+  });
+
+  it('still refuses outright on a fix good enough to refuse with', () => {
+    const e = reportEligibility(
+      ready(northOf(REPORT_MAX_DISTANCE_M + 500), GATE_MAX_ACCURACY_M - 1),
+      MANDAL
+    );
+    expect(e.kind).toBe('too-far');
+  });
+
+  it('keeps the leniency one-directional', () => {
+    // Coarse and INSIDE the radius is still allowed outright: the safe
+    // direction is admitting a borderline report, which is halved anyway,
+    // rather than losing a real one.
+    const e = reportEligibility(
+      ready(northOf(REPORT_MAX_DISTANCE_M - 50), GATE_MAX_ACCURACY_M + 500),
+      MANDAL
+    );
+    expect(e.kind).toBe('allowed');
+  });
+
   it('never reports allowed without also deciding the weight', () => {
     // Guards a shape mistake: an 'allowed' result missing atMandal would
     // read as falsy and silently halve every report.
-    for (const m of [0, 50, 99, 101, 500, 1_499]) {
+    for (const m of [0, 50, 99, 101, REPORT_MAX_DISTANCE_M / 2, REPORT_MAX_DISTANCE_M - 50]) {
       const e = reportEligibility(ready(northOf(m)), MANDAL);
       expect(e.kind).toBe('allowed');
       expect(typeof (e as { atMandal: boolean }).atMandal).toBe('boolean');

@@ -11,7 +11,9 @@ import {
   subscribeToCooldowns,
 } from './cooldown-store';
 import { useClockMs } from './useCrowd';
-import { useGeolocation, retryLocation, useResolveLocation } from '@/hooks/useGeolocation';
+import {
+  useGeolocation, retryLocation, useResolveLocation, requestPreciseLocation,
+} from '@/hooks/useGeolocation';
 import { formatDistance, type LatLng } from '@/lib/geo';
 import { reportEligibility, REPORT_MAX_DISTANCE_M } from './report-eligibility';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
@@ -129,6 +131,23 @@ export function CrowdReportButtons({
    * someone willing to forge this could mint device ids just as easily.
    */
   const eligibility = reportEligibility(geo, location);
+
+  /**
+   * A coarse fix that lands outside the radius asks the GPS radio once.
+   *
+   * Acquisition prefers a coarse fix because it is fast, and at the old
+   * 5 km gate that cost nothing. At 1 km it can put somebody standing at
+   * the mandal outside the radius, so rather than refuse them, this
+   * escalates
+   * — once per mount, guarded by a ref, because a `watchPosition` that
+   * keeps landing coarse must not turn into a loop of radio requests.
+   */
+  const refined = useRef(false);
+  useEffect(() => {
+    if (eligibility.kind !== 'refining' || refined.current) return;
+    refined.current = true;
+    requestPreciseLocation();
+  }, [eligibility.kind]);
   const atMandal = eligibility.kind === 'allowed' && eligibility.atMandal;
 
   const [submitting, setSubmitting] = useState<CrowdLevel | null>(null);
@@ -316,6 +335,8 @@ export function CrowdReportButtons({
           return eligibility.reason === 'denied'
             ? 'Location is off, so we can’t tell how far away you are. Reports come from people near the mandal.'
             : 'We couldn’t get your location, so we can’t tell how far away you are.';
+        case 'refining':
+          return 'Getting a more precise location — the first fix was too rough to tell how far away you are.';
         case 'too-far':
           return `You’re ${formatDistance(eligibility.distanceM)} away. Reports come from people within ${formatDistance(REPORT_MAX_DISTANCE_M)} — the queue is only worth reporting if you can see it.`;
         case 'unknown-mandal':
