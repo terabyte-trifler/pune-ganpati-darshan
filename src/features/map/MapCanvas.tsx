@@ -528,9 +528,26 @@ export function MapCanvas({
     if (!selectedSlug) return;
     const target = ganpatis.find((g) => g.slug === selectedSlug);
     if (target) {
+      /**
+       * Centre it where it can actually be seen.
+       *
+       * The map centred the selected mandal exactly, and the callout card
+       * and the bottom sheet cover the lower half of the screen — so the
+       * pin was eased precisely into the space behind the card. Selecting
+       * a mandal appeared to do nothing, or worse, appeared to select the
+       * neighbouring pin still visible further up.
+       *
+       * `offset` moves the target away from the container centre, in
+       * pixels, at the end of the animation. A negative y lifts it into
+       * the strip above the card, which is a little under a third of the
+       * viewport. Measured rather than hard-coded, because the sheet is
+       * proportional and a phone in landscape is a different shape.
+       */
+      const lift = Math.round(map.getContainer().clientHeight * 0.22);
       map.easeTo({
         center: [target.location.lng, target.location.lat],
         zoom: Math.max(map.getZoom(), 16),
+        offset: [0, -lift],
         duration: 500,
       });
     }
