@@ -66,6 +66,14 @@ function safeDecode(value: string): string {
 
 export const runtime = 'nodejs';
 
+/**
+ * Next to the database. See the note on the root layout: the default is
+ * iad1, Supabase answers from BOM, and each round trip was costing ~330ms
+ * across the Pacific. Declared per route because the layout-level
+ * declaration is not applied to route handlers.
+ */
+export const preferredRegion = 'bom1';
+
 const EVENT_NAMES = [
   'map_opened', 'ganpati_viewed', 'search_performed', 'search_no_results',
   'directions_clicked', 'favorite_added', 'favorite_removed', 'plan_created',

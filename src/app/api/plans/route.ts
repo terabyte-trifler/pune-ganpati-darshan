@@ -17,6 +17,14 @@ import { toTravelMode } from '@/db/database.types';
 
 export const runtime = 'nodejs';
 
+/**
+ * Next to the database. See the note on the root layout: the default is
+ * iad1, Supabase answers from BOM, and each round trip was costing ~330ms
+ * across the Pacific. Declared per route because the layout-level
+ * declaration is not applied to route handlers.
+ */
+export const preferredRegion = 'bom1';
+
 const bodySchema = z.object({
   title: z.string().min(1).max(120).default('My Darshan'),
   // Retired values are accepted and translated rather than rejected: a tab

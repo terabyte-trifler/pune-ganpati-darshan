@@ -210,16 +210,40 @@ export function MapCanvas({
       new AttributionControl({ compact: true }),
       'bottom-left'
     );
+    /**
+     * Build a pin the moment the style asks for one it does not have.
+     *
+     * Every one of the 36 variants — 9 crowd keys x manache x selected —
+     * used to be rasterised before the source was added, 37 images at 3x
+     * decoded and uploaded to the GPU on the main thread. Measured on a
+     * throttled Pixel 5 that was most of 1.65s of long tasks on this
+     * page, the worst single one 453ms, and almost all of it was wasted:
+     * a map showing two colours and one selection needs about six of
+     * those images, and `selected` variants are needed only once
+     * something is selected.
+     *
+     * MapLibre already tells us exactly which it needs, and asks again on
+     * the next frame, so building on demand is both correct and
+     * self-healing rather than a guess about what will be used.
+     */
+    map.on('styleimagemissing', (e: { id: string }) => {
+      const id = e.id;
+      if (!id.startsWith('pin-') || map.hasImage(id)) return;
+      const manache = id.includes('-m');
+      const selected = id.endsWith('-sel');
+      const crowd = id
+        .slice(4)
+        .replace(/-sel$/, '')
+        .replace(/-m$/, '') as (typeof CROWD_KEYS)[number];
+      if (!CROWD_KEYS.includes(crowd)) return;
+      void registerPin(map, crowd, manache, selected);
+    });
+
     map.on('load', async () => {
       collapseAttribution(map.getContainer());
-      await Promise.all(
-        CROWD_KEYS.flatMap((c) => [
-          registerPin(map, c, false, false),
-          registerPin(map, c, false, true),
-          registerPin(map, c, true, false),
-          registerPin(map, c, true, true),
-        ]).concat(registerClusterPin(map))
-      );
+      // Only the cluster artwork up front: it is drawn immediately at the
+      // default zoom, and there is exactly one of it.
+      await registerClusterPin(map);
 
       map.addSource(SOURCE, {
         type: 'geojson',

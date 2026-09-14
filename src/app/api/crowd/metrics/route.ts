@@ -18,6 +18,14 @@ import { readCrowdMetrics } from '@/services/crowd/crowd-metrics';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/**
+ * Next to the database. See the note on the root layout: the default is
+ * iad1, Supabase answers from BOM, and each round trip was costing ~330ms
+ * across the Pacific. Declared per route because the layout-level
+ * declaration is not applied to route handlers.
+ */
+export const preferredRegion = 'bom1';
+
 function tokenMatches(provided: string, expected: string): boolean {
   const a = Buffer.from(provided);
   const b = Buffer.from(expected);
