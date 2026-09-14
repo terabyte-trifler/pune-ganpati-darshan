@@ -9,7 +9,8 @@ import { env } from '@/lib/env';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { FestivalConfigProvider } from '@/features/crowd/FestivalPhaseProvider';
-import { getFestivalConfig } from '@/services/ganpati';
+import { getAllGanpatis, getFestivalConfig } from '@/services/ganpati';
+import { DwellSignal } from '@/features/crowd/DwellSignal';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -116,19 +117,27 @@ export const viewport: Viewport = {
 };
 
 /**
- * Async for one reason: the festival's dates.
+ * Async for two things: the festival's dates, and where the mandals are.
  *
- * The "usually" prior now colours mandals nobody has reported — on every
- * map, in the tracker and on the cards — and to do that it has to know
- * which day of the festival it is. Fetching the config here means one
- * read per rendered page rather than a prop threaded through four map
- * components, and every page in the app is revalidated rather than
- * per-request, so it costs a query an hour.
+ * The "usually" prior colours mandals nobody has reported, and to do that
+ * it has to know which day of the festival it is. The dwell tracker needs
+ * the mandal coordinates for the same reason it always did.
+ *
+ * Both are fetched here rather than threaded through components, and
+ * together rather than in sequence. Every page in the app is revalidated
+ * rather than rendered per request, so this costs two queries an hour.
  */
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const festival = await getFestivalConfig();
+  const [festival, ganpatis] = await Promise.all([
+    getFestivalConfig(),
+    getAllGanpatis(),
+  ]);
+
+  // Shadow mode, off unless the flag is set. Read on the server so a
+  // build with it off ships no collection at all.
+  const dwellShadow = process.env.CROWD_DWELL_SHADOW === '1';
 
   return (
     <html lang="en" className={`${manrope.variable} ${mukta.variable} ${fraunces.variable}`}>
@@ -146,6 +155,31 @@ export default async function RootLayout({
           {children}
           <SiteFooter />
           <BottomNav />
+          {/* One mount, for the whole app.
+              It ran on /map, then on a mandal page too, and still saw
+              almost nothing: day one of the festival produced a single
+              countable sample in the whole city. The reason is where
+              people actually are — the home screen, the explore grid, a
+              route — and on every one of those the tracker was simply not
+              running.
+
+              Mounting it once here rather than per page also settles the
+              double-counting worry that kept it narrow in the first
+              place: there is exactly one mount, the visit clock lives in
+              module state so navigation does not restart it, and the
+              per-(device, mandal, day) key would collapse duplicates
+              anyway. */}
+          {dwellShadow && (
+            <DwellSignal
+              enabled
+              mandals={ganpatis.map((g) => ({
+                id: g.id,
+                lat: g.location.lat,
+                lng: g.location.lng,
+                prominence: g.prominence,
+              }))}
+            />
+          )}
         </FestivalConfigProvider>
         <ServiceWorkerRegistration />
       </body>
