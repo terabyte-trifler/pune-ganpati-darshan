@@ -334,6 +334,27 @@ export function enforceOneWays(line: [number, number][]): [number, number][] {
  */
 const AGAINST_RUN_M = 25;
 
+/**
+ * How far a drawn line travels the wrong way, in metres.
+ *
+ * The measure a reroute is judged on. Counting how many LANES a line
+ * offends is the wrong question: a retry that drops from two lanes to one
+ * looks like an improvement and can walk three times as far against the
+ * crowd. Cutting holes in the exclusions round each stop exposed exactly
+ * that — the retries were accepted and the total went from 725 m to
+ * 1688 m while the lane count fell.
+ */
+export function againstMetres(line: [number, number][]): number {
+  const at = (c: [number, number]): LatLng => ({ lat: c[1], lng: c[0] });
+  let total = 0;
+  for (let i = 0; i < line.length - 1; i++) {
+    const a = at(line[i]);
+    const b = at(line[i + 1]);
+    if (laneOpposing(a, b)) total += haversine(a, b);
+  }
+  return total;
+}
+
 /** Which one-way stretches a drawn line travels the wrong way. */
 export function violatedLanes(line: [number, number][]) {
   const at = (c: [number, number]): LatLng => ({ lat: c[1], lng: c[0] });
@@ -360,60 +381,66 @@ export function violatedLanes(line: [number, number][]) {
  * Matches the corridor rather than the drawn line. A thin ribbon over the
  * centreline barred the lane and left the alley beside it open, so the
  * router "went round" by slipping down a parallel a few metres away — the
- * same direction the crowd is being kept out of. Barring the corridor is
- * what makes the reroute mean anything.
+ * same direction the crowd is being kept out of.
  */
 const EXCLUDE_HALF_WIDTH_M = 22;
 
 /**
- * How much of each end of a lane to leave open.
+ * How much room to leave a stop that stands inside the corridor.
  *
- * A ribbon drawn over the whole lane swallows the mandals standing on it —
- * Dagdusheth is 1 m from one — and a router cannot snap a start or a
- * finish inside an excluded area, so the request comes back with no path
- * at all rather than a way round. Leaving the ends clear is what turns
- * "impossible" into "363 m round the block".
+ * A router cannot begin or end inside an area it has been told to avoid.
+ * Dagdusheth stands 1 m from Shivaji Road, so a ribbon wide enough to bar
+ * that corridor swallowed the mandal too, and every reroute came back
+ * "No path could be found" — the lane stayed violated because the only
+ * alternative offered was no route at all.
+ *
+ * The bar is cut around each stop instead. What is left still bars the
+ * corridor everywhere a walker would travel ALONG it; what it opens is a
+ * doorway at the mandal, which is where somebody is standing anyway.
  */
-const EXCLUDE_END_GAP_M = 30;
+const EXCLUDE_STOP_GAP_M = 45;
 
-/**
- * A lane as a polygon a router can be told to avoid.
- *
- * Routers cannot be told about a one-way that only exists for twelve
- * days, but every one of them can be told to keep out of an area. Barring
- * the lane in BOTH directions is exactly right for a leg that wanted to
- * go up it: the answer is that it must go round, on streets the router
- * knows and we do not.
- *
- * Ribbon, not a buffer: a few metres either side of the drawn line, which
- * is enough to bar a lane a few metres wide without barring the streets
- * beside it.
- */
-export function laneExclusionPolygon(
-  lane: { path: [number, number][] }
-): Array<[number, number]> {
-  const first = lane.path[0];
-  const last = lane.path[lane.path.length - 1];
-  const a = { lat: first[1], lng: first[0] };
-  const b = { lat: last[1], lng: last[0] };
-
-  const length = haversine(a, b);
-  const t = length > 0 ? Math.min(0.4, EXCLUDE_END_GAP_M / length) : 0;
-  const lerp = (u: number): [number, number] => [
-    first[0] + (last[0] - first[0]) * u,
-    first[1] + (last[1] - first[1]) * u,
-  ];
-  const start = lerp(t);
-  const end = lerp(1 - t);
-
-  const dLng = EXCLUDE_HALF_WIDTH_M / (111_320 * Math.cos((a.lat * Math.PI) / 180));
+/** One ribbon over a run of the lane, as a closed ring. */
+function ribbon(points: [number, number][]): Array<[number, number]> {
+  const lat = points[0][1];
+  const dLng = EXCLUDE_HALF_WIDTH_M / (111_320 * Math.cos((lat * Math.PI) / 180));
   const dLat = EXCLUDE_HALF_WIDTH_M / 111_132;
 
-  return [
-    [start[0] - dLng, start[1] + dLat],
-    [start[0] + dLng, start[1] + dLat],
-    [end[0] + dLng, end[1] - dLat],
-    [end[0] - dLng, end[1] - dLat],
-    [start[0] - dLng, start[1] + dLat],
-  ];
+  const left = points.map(([lng, la]) => [lng - dLng, la + dLat] as [number, number]);
+  const right = points.map(([lng, la]) => [lng + dLng, la - dLat] as [number, number]).reverse();
+  return [...left, ...right, left[0]];
+}
+
+/**
+ * A lane as polygons a router can be told to avoid, with holes at the stops.
+ *
+ * Routers cannot be told about a one-way that exists for twelve days, but
+ * every one of them can be told to keep out of an area. Barring the lane
+ * in both directions is exactly right for a leg that wanted to go up it:
+ * the answer is that it must go round, on streets the router knows and we
+ * do not.
+ */
+export function laneExclusionPolygons(
+  lane: { path: [number, number][] },
+  keepClear: LatLng[] = []
+): Array<Array<[number, number]>> {
+  if (keepClear.length === 0) return [ribbon(lane.path)];
+
+  const blocked = lane.path.map(
+    ([lng, lat]) =>
+      !keepClear.some((p) => haversine(p, { lat, lng }) <= EXCLUDE_STOP_GAP_M)
+  );
+
+  const out: Array<Array<[number, number]>> = [];
+  let run: [number, number][] = [];
+  lane.path.forEach((point, i) => {
+    if (blocked[i]) {
+      run.push(point);
+    } else {
+      if (run.length >= 2) out.push(ribbon(run));
+      run = [];
+    }
+  });
+  if (run.length >= 2) out.push(ribbon(run));
+  return out;
 }

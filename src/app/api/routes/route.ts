@@ -8,7 +8,8 @@ import {
   walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints,
 } from '@/services/pedestrian-graph';
 import {
-  enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygon,
+  enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygons,
+  againstMetres,
 } from '@/services/pedestrian-flow';
 import { isOnFoot, walkedDurationSeconds } from '@/lib/geo';
 import { rateLimit } from '@/lib/rate-limit';
@@ -166,22 +167,47 @@ export async function POST(request: Request) {
    * eventually finds nothing at all.
    */
   if (isOnFoot(mode) && route.ok && route.data.geometry) {
-    const barred = new Map<string, Array<[number, number]>>();
-    let best = { route, count: violatedLanes(route.data.geometry).length };
+    const barred = new Map<string, { path: [number, number][] }>();
+    // Judged on metres walked against the crowd, not on how many lanes
+    // were touched — see againstMetres.
+    let best = { route, against: againstMetres(route.data.geometry) };
 
-    for (let pass = 0; pass < 3 && best.count > 0; pass++) {
+    for (let pass = 0; pass < 3 && best.against > 0; pass++) {
       const geometry = best.route.ok ? best.route.data.geometry : null;
       if (!geometry) break;
-      for (const lane of violatedLanes(geometry)) {
-        barred.set(lane.name, laneExclusionPolygon(lane));
+      for (const lane of violatedLanes(geometry)) barred.set(lane.name, lane);
+
+      /**
+       * Bar the corridor outright first; cut holes only if that fails.
+       *
+       * A solid bar is the stronger instruction and gives the better
+       * answer — 725 m walked against the crowd across the curated routes,
+       * against 1117 m when every exclusion had a gap at each stop, because
+       * a gap is also a way back onto the lane.
+       *
+       * But a router cannot start or finish inside an area it is avoiding,
+       * and Dagdusheth stands 1 m from Shivaji Road — so for those routes a
+       * solid bar returns no path at all and the violation simply stays.
+       * The holed version is the fallback for exactly that case, and it is
+       * still only kept if it walks less against the crowd.
+       */
+      const attempts = [
+        [...barred.values()].flatMap((lane) => laneExclusionPolygons(lane)),
+        [...barred.values()].flatMap((lane) => laneExclusionPolygons(lane, routePoints)),
+      ];
+
+      let improved = false;
+      for (const avoid of attempts) {
+        const retry = await computeRoute(origin, orderedStops, mode, avoid, viaByLeg);
+        if (!retry.ok || !retry.data.geometry) continue;
+        const against = againstMetres(retry.data.geometry);
+        if (against < best.against) {
+          best = { route: retry, against };
+          improved = true;
+          break;
+        }
       }
-
-      const retry = await computeRoute(origin, orderedStops, mode, [...barred.values()], viaByLeg);
-      if (!retry.ok || !retry.data.geometry) break;
-
-      const count = violatedLanes(retry.data.geometry).length;
-      if (count >= best.count) break;
-      best = { route: retry, count };
+      if (!improved) break;
     }
 
     route = best.route;
