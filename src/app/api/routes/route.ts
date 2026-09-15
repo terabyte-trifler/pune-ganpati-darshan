@@ -4,7 +4,7 @@ import { computeRoute, computeRouteMatrix } from '@/lib/maps/routes';
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
-import { walkGeometry, laneWalk } from '@/services/pedestrian-graph';
+import { walkGeometry, laneWalk, spliceLaneLegs } from '@/services/pedestrian-graph';
 import { walkedDurationSeconds } from '@/lib/geo';
 import { penaliseAgainstFlow } from '@/services/pedestrian-flow';
 import { rateLimit } from '@/lib/rate-limit';
@@ -198,22 +198,20 @@ export async function POST(request: Request) {
         0
       )
     ),
-    // On foot the line comes from the lanes, not from the router.
+    // On foot: the lanes where they apply, the router everywhere else.
     //
-    // The router does not know these lanes exist and cannot be told: asked
-    // to go via their vertices the public OSRM returned 1720 m for a walk
-    // the lane graph puts at 305 m, because its pedestrian graph has no
-    // peth alleys and every via snapped out to some road further off.
-    // Between mandals its line is a guess that can run the wrong way up a
-    // lane, which is the one thing the drawn route must never do.
-    //
-    // Legs the lanes say nothing about are drawn straight. That is the
-    // same line the map already draws before anybody taps Optimise, and
-    // an honest straight line beats a confident wrong one.
+    // The lanes always win on the legs they cover — the router does not
+    // know them and can draw the wrong way up one. But they are five short
+    // stretches in the peths, and Kasba to Bhausaheb Rangari touches none
+    // of them; drawing that straight puts a line through the buildings
+    // instead of down Shivaji Road. Falling back to our own straight lines
+    // only when the router gave us nothing at all.
     geometry:
-      mode === 'walk'
-        ? walkGeometry([origin, ...orderedStops])
-        : route.data.geometry,
+      mode !== 'walk'
+        ? route.data.geometry
+        : route.data.geometry
+          ? spliceLaneLegs(route.data.geometry, [origin, ...orderedStops])
+          : walkGeometry([origin, ...orderedStops]),
     provider: route.data.provider,
     durationSource: route.data.durationSource,
     legs: route.data.legs.map((leg, i) =>

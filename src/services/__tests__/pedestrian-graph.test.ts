@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { laneWalk, walkGeometry, touchesLanes } from '@/services/pedestrian-graph';
+import {
+  laneWalk, walkGeometry, touchesLanes, spliceLaneLegs,
+} from '@/services/pedestrian-graph';
 import { haversine, metresToPath, type LatLng } from '@/lib/geo';
 import catalogue from '@/content/catalogue.json';
 
@@ -77,5 +79,65 @@ describe('knowing when the lanes apply at all', () => {
     expect(touchesLanes(DAGDUSHETH)).toBe(true);
     expect(touchesLanes(TULSHIBAUG)).toBe(true);
     expect(touchesLanes({ lat: 18.5074, lng: 73.8077 })).toBe(false);
+  });
+});
+
+describe('keeping the router for everything the lanes do not cover', () => {
+  const KASBA = at('kasba-ganpati');
+  const BHAU_RANGARI = at('bhau-rangari-ganpati');
+
+  it('leaves a leg with no lane exactly as the router drew it', () => {
+    // Neither of these is within reach of a lane, and the walk between
+    // them is a real street. Drawing it straight put a line through the
+    // buildings instead of down Shivaji Road.
+    expect(laneWalk(KASBA, BHAU_RANGARI)).toBeNull();
+
+    // A stand-in for a routed line: several vertices that wander off the
+    // straight line, exactly as a road does.
+    const routed: [number, number][] = [
+      [KASBA.lng, KASBA.lat],
+      [KASBA.lng + 0.0004, KASBA.lat - 0.0005],
+      [KASBA.lng + 0.0002, KASBA.lat - 0.0011],
+      [BHAU_RANGARI.lng, BHAU_RANGARI.lat],
+    ];
+    expect(spliceLaneLegs(routed, [KASBA, BHAU_RANGARI])).toEqual(routed);
+  });
+
+  it('replaces a leg the lanes do cover, however the router drew it', () => {
+    const walk = laneWalk(DAGDUSHETH, TULSHIBAUG)!;
+    // A deliberately wrong routed line: straight across the block.
+    const routed: [number, number][] = [
+      [DAGDUSHETH.lng, DAGDUSHETH.lat],
+      [TULSHIBAUG.lng, TULSHIBAUG.lat],
+    ];
+    const spliced = spliceLaneLegs(routed, [DAGDUSHETH, TULSHIBAUG]);
+    expect(spliced.length).toBe(walk.path.length);
+    expect(metresToPath(JUNCTION, spliced)).toBeLessThan(15);
+  });
+
+  it('keeps the router on one leg and the lane on another', () => {
+    const routed: [number, number][] = [
+      [KASBA.lng, KASBA.lat],
+      [KASBA.lng + 0.0003, KASBA.lat - 0.0008],
+      [DAGDUSHETH.lng, DAGDUSHETH.lat],
+      [TULSHIBAUG.lng, TULSHIBAUG.lat],
+    ];
+    const spliced = spliceLaneLegs(routed, [KASBA, DAGDUSHETH, TULSHIBAUG]);
+    // The router's wandering vertex on the first leg survives...
+    expect(spliced).toContainEqual([KASBA.lng + 0.0003, KASBA.lat - 0.0008]);
+    // ...and the second leg goes round by the junction.
+    expect(metresToPath(JUNCTION, spliced)).toBeLessThan(15);
+  });
+
+  it('never leaves two identical points behind', () => {
+    const routed: [number, number][] = [
+      [DAGDUSHETH.lng, DAGDUSHETH.lat],
+      [TULSHIBAUG.lng, TULSHIBAUG.lat],
+      [JILBYA.lng, JILBYA.lat],
+    ];
+    const spliced = spliceLaneLegs(routed, [DAGDUSHETH, TULSHIBAUG, JILBYA]);
+    for (let i = 1; i < spliced.length; i++) {
+      expect(spliced[i], `duplicate at ${i}`).not.toEqual(spliced[i - 1]);
+    }
   });
 });

@@ -199,3 +199,62 @@ export function walkGeometry(stops: LatLng[]): [number, number][] {
   }
   return line;
 }
+
+/**
+ * A routed line with its lane-covered legs replaced by the lanes.
+ *
+ * Both halves of this are needed and neither is enough alone.
+ *
+ * The router cannot be trusted where the lanes are: it does not know they
+ * exist, cannot be told, and cannot be threaded through them — asked to
+ * go via their vertices the public OSRM returned 1720 m for a walk the
+ * lane graph puts at 305 m, because its pedestrian graph has no peth
+ * alleys. Between mandals its line can run the wrong way up a lane, which
+ * is the one thing a drawn route must never do.
+ *
+ * But the lanes are five short stretches in the peths and the city is
+ * larger than that. Kasba to Bhausaheb Rangari touches none of them, and
+ * drawing it straight puts a line through the buildings instead of down
+ * Shivaji Road. So the router keeps every leg the lanes have no opinion
+ * about, which is most of them.
+ *
+ * Cutting forward-only matters: a walk through the peths passes close to
+ * mandals it has not reached yet, and a nearest-vertex search over the
+ * whole line would cut at the wrong place and turn the route inside out.
+ */
+export function spliceLaneLegs(
+  line: [number, number][],
+  points: LatLng[]
+): [number, number][] {
+  if (line.length < 2 || points.length < 2) return line;
+
+  const nearestFrom = (start: number, p: LatLng): number => {
+    let best = start;
+    let bestD = Infinity;
+    for (let i = start; i < line.length; i++) {
+      const d = haversine(p, { lat: line[i][1], lng: line[i][0] });
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  };
+
+  const cuts: number[] = [0];
+  for (let k = 1; k < points.length; k++) cuts.push(nearestFrom(cuts[k - 1], points[k]));
+  cuts[cuts.length - 1] = line.length - 1;
+
+  const out: [number, number][] = [line[0]];
+  const push = (c: [number, number]) => {
+    const last = out[out.length - 1];
+    if (last[0] !== c[0] || last[1] !== c[1]) out.push(c);
+  };
+
+  for (let k = 1; k < points.length; k++) {
+    const leg = laneWalk(points[k - 1], points[k]);
+    if (leg) {
+      for (const p of leg.path) push([p.lng, p.lat]);
+    } else {
+      for (let i = cuts[k - 1] + 1; i <= cuts[k]; i++) push(line[i]);
+    }
+  }
+  return out;
+}
