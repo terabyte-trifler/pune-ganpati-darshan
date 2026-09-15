@@ -355,6 +355,24 @@ export interface PedestrianLink {
 
 export const PEDESTRIAN_TWO_WAYS: PedestrianLink[] = [
   {
+    // Branches off Shivaji Road at the chowk where the one-way ends — its
+    // start is 1 m from that point. Part of the way back round from
+    // Dagdusheth towards Guruji Talim, as reported: out to Shivaji Road,
+    // Saind Path, Kenjale Chowk, Laxmi Road.
+    //
+    // Recorded as walkable both ways because that is what it was given as;
+    // if it is one-way it belongs in the list above instead, with its
+    // coordinates in the direction the crowd walks.
+    name: 'Saind Path',
+    path: [
+      [73.856671, 18.514679],
+      [73.856805, 18.514762],
+      [73.857026, 18.514861],
+      [73.857105, 18.514884],
+      [73.857146, 18.514922],
+    ],
+  },
+  {
     // Shivaji Road below the chowk by Dagdusheth, on towards Swargate:
     // open both ways on foot. It was part of the one-way above until it
     // was corrected on the ground.
