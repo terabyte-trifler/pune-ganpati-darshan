@@ -318,6 +318,43 @@ async function computeRouteValhalla(
    * Coordinates are rounded into the query the same way the OSRM URLs are,
    * so two people planning the same walk share one cache entry.
    */
+  /**
+   * Valhalla takes at most this many locations in one route request.
+   *
+   * The public instance enforces it, and a request over the line is
+   * refused outright rather than trimmed: "Exceeded max locations: 10".
+   * Four stops with eight lane points threaded between them is twelve, so
+   * every route the lanes actually applied to fell through to OSRM — which
+   * answers a walking request with a car route. The lanes were switching
+   * off the pedestrian router at exactly the places they matter.
+   */
+  const MAX_LOCATIONS = 10;
+
+  /**
+   * Enough lane points to pin the route onto the lane, and no more.
+   *
+   * A through-point's whole job is to make the router pass along the lane;
+   * the router draws the street between them itself. Two per leg does that
+   * as well as eight, and leaves room for the stops.
+   */
+  const MAX_VIA_PER_LEG = 2;
+
+  const thinned = viaByLeg.map((via) => {
+    if (via.length <= MAX_VIA_PER_LEG) return via;
+    const step = (via.length - 1) / (MAX_VIA_PER_LEG - 1);
+    return Array.from({ length: MAX_VIA_PER_LEG }, (_, i) => via[Math.round(i * step)]);
+  });
+
+  // Still too many: give up the via points rather than the request. An
+  // ordering that respects the lanes with a plain line beats no pedestrian
+  // route at all.
+  let budget = MAX_LOCATIONS - points.length;
+  const fitted = thinned.map((via) => {
+    const take = Math.max(0, Math.min(via.length, budget));
+    budget -= take;
+    return via.slice(0, take);
+  });
+
   const round = (p: LatLng, through = false) => ({
     lat: Number(p.lat.toFixed(4)),
     lon: Number(p.lng.toFixed(4)),
@@ -327,7 +364,7 @@ async function computeRouteValhalla(
   const locations: Array<ReturnType<typeof round>> = [];
   points.forEach((p, i) => {
     // The lane points for the leg ARRIVING at this stop go in first.
-    for (const via of viaByLeg[i] ?? []) locations.push(round(via, true));
+    for (const via of fitted[i] ?? []) locations.push(round(via, true));
     locations.push(round(p));
   });
 
