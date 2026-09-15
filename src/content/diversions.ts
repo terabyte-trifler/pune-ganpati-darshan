@@ -392,6 +392,28 @@ export const PEDESTRIAN_TWO_WAYS: PedestrianLink[] = [
     ],
   },
   {
+    // Laxmi Road, west from the top of Kenjale Chowk road to Guruji Talim.
+    // Its start is 2 m from that end and its finish 1 m from the mandal,
+    // so this closes the way back round from Dagdusheth: south down
+    // Shivaji Road, Saind Path, Kenjale Chowk, then west along here.
+    //
+    // Recorded as walkable both ways, as given.
+    name: 'Laxmi Road to Guruji Talim',
+    path: [
+      [73.856891, 18.515758],
+      [73.856659, 18.515716],
+      [73.856356, 18.515678],
+      [73.856287, 18.515669],
+      [73.856205, 18.515645],
+      [73.856158, 18.515631],
+      [73.856029, 18.515590],
+      [73.855866, 18.515504],
+      [73.855524, 18.515281],
+      [73.855198, 18.515070],
+      [73.854999, 18.514995],
+    ],
+  },
+  {
     // Shivaji Road below the chowk by Dagdusheth, on towards Swargate:
     // open both ways on foot. It was part of the one-way above until it
     // was corrected on the ground.
