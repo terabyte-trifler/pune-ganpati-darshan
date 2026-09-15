@@ -63,9 +63,21 @@ export const MODE_SPEED_MPS = {
 
 export type TravelMode = keyof typeof MODE_SPEED_MPS;
 
-/** Rough duration estimate used before Routes API is called. */
+/**
+ * Rough duration estimate used before Routes API is called.
+ *
+ * Takes a STRAIGHT-LINE distance and applies the detour factor, because
+ * nobody walks the straight line. For a distance that is already a
+ * walked path — a routed line, or one of the one-way lanes — use
+ * walkedDurationSeconds instead, or the detour is counted twice.
+ */
 export function estimateDurationSeconds(distanceM: number, mode: TravelMode): number {
   return (distanceM * DETOUR_FACTOR) / MODE_SPEED_MPS[mode];
+}
+
+/** How long a path you have already measured takes to walk. */
+export function walkedDurationSeconds(distanceM: number, mode: TravelMode): number {
+  return distanceM / MODE_SPEED_MPS[mode];
 }
 
 /** "450 m" / "1.2 km" — Indian-English conventions, no trailing zeros. */

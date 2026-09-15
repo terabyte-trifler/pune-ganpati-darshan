@@ -4,6 +4,9 @@ import { computeRoute, computeRouteMatrix } from '@/lib/maps/routes';
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
+import { walkGeometry, laneWalk } from '@/services/pedestrian-graph';
+import { walkedDurationSeconds } from '@/lib/geo';
+import { penaliseAgainstFlow } from '@/services/pedestrian-flow';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
 
@@ -121,6 +124,22 @@ export async function POST(request: Request) {
   /* ---------------- Route geometry + totals ---------------- */
   const route = await computeRoute(origin, orderedStops, mode);
 
+  /**
+   * The lanes override the router on the legs they cover — the line and
+   * the numbers together, or the plan says 716 m beside a line drawn 305 m
+   * long and the reader has to decide which to believe.
+   *
+   * Ours is the truer figure here. The router's is longer because it does
+   * not know the alley exists and goes round; the lane path is the road as
+   * it was reported from the ground.
+   */
+  const laneLegs =
+    mode === 'walk' && route.ok
+      ? orderedStops.map((stop, i) =>
+          laneWalk(i === 0 ? origin : orderedStops[i - 1], stop)
+        )
+      : [];
+
   if (!route.ok) {
     // 'unavailable' means we could not reach any router (offline, or the
     // public OSRM instance is down). Ordering above is still real, so return
@@ -129,7 +148,11 @@ export async function POST(request: Request) {
     if (route.reason === 'unavailable') {
       // Honest degraded response: ordering is real, timings are estimates,
       // and the client labels them as such rather than implying Google data.
-      const matrix = estimateMatrix([origin, ...orderedStops], mode);
+      // Priced the same way the ordering was, so the per-leg times a
+      // visitor reads add up to the order they were given rather than to
+      // a straight line nobody walks.
+      const points = [origin, ...orderedStops];
+      const matrix = penaliseAgainstFlow(estimateMatrix(points, mode), points, mode);
       let durationS = 0;
       const legs: Array<{ distanceM: number; durationS: number }> = [];
       for (let i = 0; i < orderedStops.length; i++) {
@@ -159,11 +182,47 @@ export async function POST(request: Request) {
     order,
     estimated: false,
     optimizedBy,
-    distanceM: route.data.distanceM,
-    durationS: route.data.durationS,
-    geometry: route.data.geometry,
+    distanceM: Math.round(
+      route.data.legs.reduce(
+        (sum, leg, i) => sum + (laneLegs[i]?.metres ?? leg.distanceM),
+        0
+      )
+    ),
+    durationS: Math.round(
+      route.data.legs.reduce(
+        (sum, leg, i) =>
+          sum +
+          (laneLegs[i]
+            ? walkedDurationSeconds(laneLegs[i]!.metres, mode)
+            : leg.durationS),
+        0
+      )
+    ),
+    // On foot the line comes from the lanes, not from the router.
+    //
+    // The router does not know these lanes exist and cannot be told: asked
+    // to go via their vertices the public OSRM returned 1720 m for a walk
+    // the lane graph puts at 305 m, because its pedestrian graph has no
+    // peth alleys and every via snapped out to some road further off.
+    // Between mandals its line is a guess that can run the wrong way up a
+    // lane, which is the one thing the drawn route must never do.
+    //
+    // Legs the lanes say nothing about are drawn straight. That is the
+    // same line the map already draws before anybody taps Optimise, and
+    // an honest straight line beats a confident wrong one.
+    geometry:
+      mode === 'walk'
+        ? walkGeometry([origin, ...orderedStops])
+        : route.data.geometry,
     provider: route.data.provider,
     durationSource: route.data.durationSource,
-    legs: route.data.legs,
+    legs: route.data.legs.map((leg, i) =>
+      laneLegs[i]
+        ? {
+            distanceM: Math.round(laneLegs[i]!.metres),
+            durationS: Math.round(walkedDurationSeconds(laneLegs[i]!.metres, mode)),
+          }
+        : leg
+    ),
   });
 }
