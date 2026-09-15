@@ -392,6 +392,48 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     }
   };
 
+  /**
+   * Fetch the real routed line as soon as the plan settles.
+   *
+   * Every change to a plan clears the last result, and with no routed
+   * geometry the map falls back to our own: lane paths where a lane
+   * applies, and a STRAIGHT LINE everywhere else. Most legs have no lane —
+   * only five of the sixteen mandals round the peths stand on one — so
+   * the usual sight was a plan drawn as darts between mandals until
+   * somebody pressed Optimise.
+   *
+   * Keyed on the SET of stops, the mode and the origin, deliberately the
+   * same shape of key as the local ordering above. The request itself
+   * re-orders the plan, which changes the stop ORDER — so keying on the
+   * ordered list would refetch forever.
+   *
+   * Optimise is still there and still does something: it is how you ask
+   * again after the answer has been thrown away, and it shows the work.
+   */
+  // Held in a ref, and updated in an effect rather than during render, so
+  // the fetch below can call the latest closure without listing it as a
+  // dependency — optimize is rebuilt every render and would refire this.
+  const optimizeRef = useRef(optimize);
+  useEffect(() => {
+    optimizeRef.current = optimize;
+  });
+
+  const lastRoutedSet = useRef<string | null>(null);
+  useEffect(() => {
+    if (sharedSlugs || !hydrated || stops.length < 2) return;
+
+    const key = [
+      [...stops.map((g) => g.slug)].sort().join(','),
+      legMode,
+      origin.lat.toFixed(4),
+      origin.lng.toFixed(4),
+    ].join('|');
+    if (lastRoutedSet.current === key) return;
+    lastRoutedSet.current = key;
+
+    void optimizeRef.current();
+  }, [sharedSlugs, hydrated, stops, legMode, origin]);
+
   const adoptShared = () => {
     if (!sharedSlugs) return;
     replace(sharedSlugs);
