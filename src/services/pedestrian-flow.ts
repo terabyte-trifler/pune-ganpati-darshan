@@ -234,10 +234,29 @@ export function penaliseAgainstFlow(
 }
 
 /**
+ * How opposed a step must be before it counts as going back up a lane.
+ *
+ * Tighter than FLOW_TOLERANCE_DEG, which is used to ask whether a whole
+ * LEG broadly agrees with the crowd and is generous on purpose. This asks
+ * something narrower of a single step of a drawn line: is it retracing
+ * the lane, or merely crossing it?
+ *
+ * At the leg tolerance it could not tell the difference. A step heading
+ * due south down its own lane passes within 6 m of the east-west lane out
+ * of Tulshibaug, 110.1 degrees off that lane's flow — one tenth of a
+ * degree over the leg threshold, and so judged to be walking up a lane it
+ * was only cutting across. Within 45 degrees of directly opposed is a
+ * reversal; 70 degrees off perpendicular is a junction.
+ */
+const AGAINST_STEP_DEG = 135;
+
+/**
  * Whether one step of a drawn line walks a one-way the wrong way.
  *
  * Judged on the step itself rather than on the whole leg, because this is
- * asked of a routed line whose ends may be nowhere near a lane.
+ * asked of a routed line whose ends may be nowhere near a lane. Both ends
+ * of the step have to be in the corridor, not just its middle — a step
+ * that starts on a lane and leaves it is not travelling along it.
  */
 function stepAgainstFlow(a: LatLng, b: LatLng): boolean {
   if (haversine(a, b) < 1) return false;
@@ -246,8 +265,10 @@ function stepAgainstFlow(a: LatLng, b: LatLng): boolean {
 
   return PEDESTRIAN_ONE_WAYS.some((w) => {
     if (metresToPath(mid, w.path) > FLOW_CORRIDOR_M) return false;
+    if (metresToPath(a, w.path) > FLOW_CORRIDOR_M) return false;
+    if (metresToPath(b, w.path) > FLOW_CORRIDOR_M) return false;
     const flow = flowBearingAt(mid, w.path);
-    return flow !== null && bearingDifference(heading, flow) > 180 - FLOW_TOLERANCE_DEG;
+    return flow !== null && bearingDifference(heading, flow) > AGAINST_STEP_DEG;
   });
 }
 
