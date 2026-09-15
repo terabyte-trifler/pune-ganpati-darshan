@@ -56,9 +56,13 @@ const INTERESTS: Array<{ key: Interest; label: string; labelMr?: string }> = [
  * rather than how fast it moves, which is why picking it reveals a station.
  */
 const MODES: Array<{ key: TravelMode; label: string; icon: typeof Footprints }> = [
+  // Metro first, deliberately. It is the one way in that does not add a
+  // vehicle to the peths, it is what the city is asking people to use,
+  // and it changes where a route STARTS rather than how fast it moves —
+  // so it is the choice worth making before the others are considered.
+  { key: 'metro', label: 'Metro', icon: TrainFront },
   { key: 'walk', label: 'Walking', icon: Footprints },
   { key: 'two_wheeler', label: 'Two-wheeler', icon: Bike },
-  { key: 'metro', label: 'Metro', icon: TrainFront },
 ];
 
 export function StartWizard({
