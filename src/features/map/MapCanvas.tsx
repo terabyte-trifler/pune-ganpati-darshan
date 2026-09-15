@@ -20,6 +20,7 @@ import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
+import { addRouteArrows } from '@/lib/maps/route-arrows';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 
@@ -403,6 +404,10 @@ export function MapCanvas({
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': '#E2621B', 'line-width': 4, 'line-opacity': 0.9 },
       });
+
+      // Straight after the line, so the arrows sit on it and still fall
+      // under the mandal pins.
+      addRouteArrows(map);
 
       // Context layers first, so the mandal pins draw on top of them.
       whenIdle(() => {

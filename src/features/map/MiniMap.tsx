@@ -18,6 +18,7 @@ import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
+import { addRouteArrows } from '@/lib/maps/route-arrows';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
@@ -244,6 +245,10 @@ export function MiniMap({
           'line-dasharray': routeGeometry ? [1] : [2, 1.6],
         },
       });
+
+      // Straight after the line, so the arrows sit on it and still fall
+      // under the mandal pins.
+      addRouteArrows(map);
 
       // Unordered maps use category pins; ordered routes use numbered ones so
       // the map matches the stop list.
