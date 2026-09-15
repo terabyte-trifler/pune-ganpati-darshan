@@ -17,6 +17,9 @@ import { boundsOf, haversine } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
+import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
+import { addRouteArrows } from '@/lib/maps/route-arrows';
+import { walkGeometry } from '@/services/pedestrian-graph';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
@@ -224,6 +227,10 @@ export function MiniMap({
       // Parking on every map; closures only where they are the subject.
       addParkingLayers(map);
       if (showClosures) addClosureLayers(map);
+      // Not gated on showClosures: this is not a closure. It is where the
+      // crowd walks one way, and a route map is exactly where a walker
+      // needs to see which way that is before setting off.
+      addPedestrianFlowLayers(map);
 
       map.addLayer({
         id: 'route-line',
@@ -239,6 +246,10 @@ export function MiniMap({
           'line-dasharray': routeGeometry ? [1] : [2, 1.6],
         },
       });
+
+      // Straight after the line, so the arrows sit on it and still fall
+      // under the mandal pins.
+      addRouteArrows(map);
 
       // Unordered maps use category pins; ordered routes use numbered ones so
       // the map matches the stop list.
@@ -438,12 +449,14 @@ export function MiniMap({
     if (!ready || !map) return;
 
     const source = map.getSource('route') as GeoJSONSource | undefined;
-    // With no road geometry, connect the stops directly — drawn dashed above
-    // so it is visibly a connector, not a route we are claiming to know.
+    // With no road geometry, connect the stops — but along the one-way
+    // lanes wherever they apply, rather than straight over the block.
+    // Between Tulshibaug and Dagdusheth the straight line crosses
+    // buildings and a lane nobody may walk up; the walked route goes round.
     const coordinates =
       routeGeometry ??
       (ordered && mandals.length > 1
-        ? mandals.map((m) => [m.location.lng, m.location.lat] as [number, number])
+        ? walkGeometry(mandals.map((m) => ({ lat: m.location.lat, lng: m.location.lng })))
         : []);
 
     source?.setData({

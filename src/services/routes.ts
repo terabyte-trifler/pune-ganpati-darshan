@@ -4,6 +4,7 @@ import { getSupabasePublicClient } from '@/lib/supabase/server';
 import { localRoutes, getLocalRoute, toGanpati } from '@/services/catalogue';
 import { getAllGanpatis } from '@/services/ganpati';
 import { estimateDurationSeconds, haversine, type TravelMode } from '@/lib/geo';
+import { flowsOnRoute, legCostFactor } from '@/services/pedestrian-flow';
 import { toTravelMode } from '@/db/database.types';
 import type { CuratedRoute, TimeOfDay } from '@/types/ganpati';
 
@@ -118,6 +119,14 @@ export interface RouteTotals {
   distanceM: number;
   /** True when at least one stop has no dwell estimate. */
   partialDarshan: boolean;
+  /**
+   * One-way stretches this route walks down, in the order it meets them.
+   *
+   * A curated route's order is fixed, so this is not a planning input —
+   * it is what the walker has to be told before they set off, since the
+   * app cannot re-order the route around it for them.
+   */
+  oneWays: ReturnType<typeof flowsOnRoute>;
 }
 
 export function computeRouteTotals(route: CuratedRoute): RouteTotals {
@@ -128,9 +137,15 @@ export function computeRouteTotals(route: CuratedRoute): RouteTotals {
   for (let i = 0; i < route.stops.length - 1; i++) {
     const a = route.stops[i].ganpati.location;
     const b = route.stops[i + 1].ganpati.location;
-    const d = haversine({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng });
+    const from = { lat: a.lat, lng: a.lng };
+    const to = { lat: b.lat, lng: b.lng };
+    const d = haversine(from, to);
     distanceM += d;
-    travelS += estimateDurationSeconds(d, mode);
+    // A curated route's order is fixed by hand, so it cannot be re-ordered
+    // around the one-way lanes — but its stated walking time should still
+    // be the time the walk actually takes. A leg that runs against the
+    // crowd is a leg that comes round.
+    travelS += estimateDurationSeconds(d, mode) * legCostFactor(from, to, mode);
   }
 
   let darshanS = 0;
@@ -143,6 +158,15 @@ export function computeRouteTotals(route: CuratedRoute): RouteTotals {
 
   return {
     stopCount: route.stops.length,
+    oneWays:
+      mode === 'walk'
+        ? flowsOnRoute(
+            route.stops.map((st) => ({
+              lat: st.ganpati.location.lat,
+              lng: st.ganpati.location.lng,
+            }))
+          )
+        : [],
     darshanS,
     travelS: Math.round(travelS),
     totalS: Math.round(darshanS + travelS),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -29,6 +29,10 @@ import { MetroStationPicker } from './MetroStationPicker';
 import { MetroJourneyCard } from './MetroJourneyCard';
 import { ParkingRideCard } from './ParkingRideCard';
 import { chooseParking } from '@/services/parking-plan';
+import { legModeFor } from '@/services/itinerary';
+import { optimizeLocally } from '@/services/route-optimizer';
+import { flowsOnRoute } from '@/services/pedestrian-flow';
+
 /** Named, because "routed" without a source is a claim with no author. */
 const PROVIDER_NAME: Record<string, string> = {
   ors: 'OpenRouteService',
@@ -232,7 +236,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
    * the riding speed here is what made the old plans claim journeys
    * through barricaded lanes.
    */
-  const legMode: TravelMode = parking ? 'walk' : mode;
+  const legMode: TravelMode = legModeFor(mode);
   const originLabel =
     mode === 'metro'
       ? `${station.name} metro`
@@ -288,6 +292,68 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     [stops, crowdState, pace]
   );
 
+  /**
+   * One-way stretches this walk goes down.
+   *
+   * Computed from the plan's own order, not from the map view: the police
+   * make the crowd one-directional through the narrowest lanes, no router
+   * knows it, and the ordering above has already been priced against it.
+   * All that is left is to say so — a visitor who walks down past
+   * Dagdusheth and expects to come back up the same way cannot.
+   */
+  const oneWays = useMemo(
+    () =>
+      legMode === 'walk' && stops.length > 0
+        ? flowsOnRoute([
+            origin,
+            ...stops.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
+          ])
+        : [],
+    [legMode, origin, stops]
+  );
+
+  /**
+   * Order a newly changed plan without waiting for Optimise.
+   *
+   * Until this, the stops sat in whatever order they were tapped in, and
+   * the line drawn through them followed the lanes only where that
+   * accidental order happened to agree with the crowd. Tapping Optimise
+   * fixed it — but nobody should have to press a button to be told the
+   * way they are allowed to walk.
+   *
+   * It runs on the SET of stops, not their order. Adding or removing a
+   * mandal re-orders the plan; dragging the list to reorder it by hand
+   * does not, because the set has not changed — otherwise this would undo
+   * the drag on the next render, which is a worse bug than the one it
+   * fixes.
+   *
+   * Local and lane-aware: optimizeLocally goes through optimizeOrder, so
+   * the one-way rules apply. No network, and 2 ms for the whole
+   * catalogue, so there is nothing to defer. Tapping Optimise still
+   * upgrades the line to real routed geometry.
+   */
+  const lastOrderedSet = useRef<string | null>(null);
+  useEffect(() => {
+    // A shared plan keeps the order it was shared in. Somebody sent this
+    // sequence deliberately, and re-ordering it on open would quietly
+    // hand the recipient a different walk from the one they were given.
+    if (sharedSlugs || !hydrated || stops.length < 2) return;
+
+    const key = [...stops.map((g) => g.slug)].sort().join('|');
+    if (lastOrderedSet.current === key) return;
+    lastOrderedSet.current = key;
+
+    const { order } = optimizeLocally(
+      origin,
+      stops.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
+      legMode
+    );
+    const next = order.map((i) => stops[i].slug);
+    if (next.some((slug, i) => slug !== stops[i].slug)) {
+      startTransition(() => replace(next));
+    }
+  }, [sharedSlugs, hydrated, stops, origin, legMode, replace]);
+
   const optimize = async () => {
     if (stops.length < 2) return;
     setBusy(true);
@@ -329,6 +395,48 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       setBusy(false);
     }
   };
+
+  /**
+   * Fetch the real routed line as soon as the plan settles.
+   *
+   * Every change to a plan clears the last result, and with no routed
+   * geometry the map falls back to our own: lane paths where a lane
+   * applies, and a STRAIGHT LINE everywhere else. Most legs have no lane —
+   * only five of the sixteen mandals round the peths stand on one — so
+   * the usual sight was a plan drawn as darts between mandals until
+   * somebody pressed Optimise.
+   *
+   * Keyed on the SET of stops, the mode and the origin, deliberately the
+   * same shape of key as the local ordering above. The request itself
+   * re-orders the plan, which changes the stop ORDER — so keying on the
+   * ordered list would refetch forever.
+   *
+   * Optimise is still there and still does something: it is how you ask
+   * again after the answer has been thrown away, and it shows the work.
+   */
+  // Held in a ref, and updated in an effect rather than during render, so
+  // the fetch below can call the latest closure without listing it as a
+  // dependency — optimize is rebuilt every render and would refire this.
+  const optimizeRef = useRef(optimize);
+  useEffect(() => {
+    optimizeRef.current = optimize;
+  });
+
+  const lastRoutedSet = useRef<string | null>(null);
+  useEffect(() => {
+    if (sharedSlugs || !hydrated || stops.length < 2) return;
+
+    const key = [
+      [...stops.map((g) => g.slug)].sort().join(','),
+      legMode,
+      origin.lat.toFixed(4),
+      origin.lng.toFixed(4),
+    ].join('|');
+    if (lastRoutedSet.current === key) return;
+    lastRoutedSet.current = key;
+
+    void optimizeRef.current();
+  }, [sharedSlugs, hydrated, stops, legMode, origin]);
 
   const adoptShared = () => {
     if (!sharedSlugs) return;
@@ -571,6 +679,36 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           Stops are connected in order. Tap Optimise to draw the actual walking
           path along the lanes.
         </p>
+      )}
+
+      {/* The crowd's own direction. Stated once per warning, in the order
+          the walk meets them, and only when the walk actually goes down
+          one — a notice shown to everybody is a notice nobody reads. */}
+      {oneWays.length > 0 && (
+        <div className="surface mt-3 rounded-[var(--radius-card)] border border-[var(--line-strong)] p-3">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--zendu)]">
+            One way on foot
+          </p>
+          <ul className="mt-1.5 space-y-1.5">
+            {oneWays.map((w) => (
+              <li key={w.name} className="text-[13px] leading-snug text-[var(--muted)]">
+                {/* The instruction first, in the words someone standing on
+                    the road can act on. The lane's name is how the map
+                    labels it; it is not what they need to do. */}
+                <span className="font-semibold text-[var(--chandan)]">
+                  Walk {w.heading} <span aria-hidden="true">→</span> {w.towards}
+                </span>
+                <span className="mt-0.5 block text-[var(--faint)]">{w.name}</span>
+                <span className="mt-0.5 block">{w.note}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-[var(--faint)]">
+            Your stops are already ordered to walk with the crowd, not against
+            it. On the map these are the blue lines — the arrows along them
+            point the way you walk.
+          </p>
+        </div>
       )}
 
       {/* ---------------- Summary ---------------- */}

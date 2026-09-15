@@ -45,6 +45,9 @@ const CROWD = [
 
 export const PARKING_PIN = '#6C8AB0';
 export const CLOSURE_INK = '#C8BCA8';
+
+/** Matches lib/maps/pedestrian-flow-layer — open and moving, not shut. */
+export const FLOW_INK = '#7FA8D8';
 const METRO_PURPLE = '#8C6BB1';
 
 export function MapLegend({
@@ -139,6 +142,20 @@ export function MapLegend({
             style={{ borderColor: CLOSURE_INK }}
           />
           Junction on the closure plan — {CLOSURE_JUNCTIONS.length} of them
+        </li>
+        <li className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
+          {/* A solid line with an arrowhead, because the direction is the
+              whole content — the road is open, the crowd on it is not
+              reversible. Nothing else on this legend is blue. */}
+          <span
+            aria-hidden="true"
+            className="flex h-3.5 w-5 shrink-0 items-center text-[10px] font-bold leading-none"
+            style={{ color: FLOW_INK }}
+          >
+            <span className="h-0 w-3.5 border-t-[2px]" style={{ borderColor: FLOW_INK }} />
+            ›
+          </span>
+          One way on foot — arrows point the way to walk
         </li>
       </ul>
 

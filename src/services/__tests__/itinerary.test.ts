@@ -4,8 +4,11 @@ import {
   dwellMinutes,
   type DarshanPace,
   type Interest,
+  DAGDUSHETH_SLUG,
+  legModeFor,
 } from '../itinerary';
 import { localGanpatis } from '@/services/catalogue';
+import { legCostFactor } from '@/services/pedestrian-flow';
 import { PUNE_CENTER } from '@/lib/geo';
 
 const base = {
@@ -206,5 +209,225 @@ describe('temples are not pandals', () => {
       expect(g!.isTemple, `${slug} must not be a temple`).toBe(false);
     }
     expect(slugsOf(['manache'])).toContain('kasba-ganpati');
+  });
+});
+
+/**
+ * The one mandal people ask for by name.
+ *
+ * Every other interest is a category matched by tag or class. This one is
+ * a slug, which is a thing that can stop matching without anything
+ * failing — the button would still render and quietly do nothing — so the
+ * first test here is that it still points at a real mandal.
+ */
+describe('asking for Dagdusheth by name', () => {
+  const dagdusheth = localGanpatis.find((g) => g.slug === DAGDUSHETH_SLUG);
+
+  it('names a mandal that is actually in the catalogue', () => {
+    expect(dagdusheth, `no mandal with slug ${DAGDUSHETH_SLUG}`).toBeDefined();
+  });
+
+  it('is not filtered out as a year-round temple', () => {
+    // It carries a "temple" tag and is open all year, and the builder drops
+    // temples unless they were asked for. If is_temple were ever set on it,
+    // this button would return an empty plan.
+    expect(dagdusheth!.isTemple).toBe(false);
+  });
+
+  it('puts it in the plan', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 240,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    expect(plan.stops.map((s) => s.ganpati.slug)).toContain(DAGDUSHETH_SLUG);
+  });
+
+  it('fills the rest of the time around it rather than stopping at one', () => {
+    // The deliberate difference from every other interest. A six-hour
+    // budget spent on a single mandal is not an answer to "I want to see
+    // Dagdusheth".
+    const plan = buildItinerary({
+      budgetMinutes: 360,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    expect(plan.stops.length).toBeGreaterThan(1);
+  });
+
+  it('still keeps it when combined with another interest', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 300,
+      interests: ['dagdusheth', 'manache'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    const slugs = plan.stops.map((s) => s.ganpati.slug);
+    expect(slugs).toContain(DAGDUSHETH_SLUG);
+    // And the other interest is not crowded out by it.
+    expect(slugs.some((s) => s !== DAGDUSHETH_SLUG)).toBe(true);
+  });
+
+  it('is in the plan at every budget, not only the generous ones', () => {
+    // The bug this replaced: at 90 minutes the plan came back with three
+    // other mandals and no Dagdusheth. It is 47 minutes' walk from the
+    // city centre with a 45-minute queue, so it missed the budget by two
+    // and the greedy loop spent the time on nearer mandals instead —
+    // which is not what somebody who pressed this button asked for.
+    for (const budgetMinutes of [30, 60, 90, 120, 240, 360]) {
+      const plan = buildItinerary({
+        budgetMinutes,
+        interests: ['dagdusheth'],
+        pace: 'balanced',
+        mode: 'walk',
+        origin: { lat: 18.5308, lng: 73.8478 },
+        mandals: localGanpatis,
+      });
+      expect(
+        plan.stops.map((s) => s.ganpati.slug),
+        `budget ${budgetMinutes} dropped it`
+      ).toContain(DAGDUSHETH_SLUG);
+    }
+  });
+
+  it('says the plan runs over rather than quietly substituting', () => {
+    // An hour is not enough for Dagdusheth. The honest answer is the one
+    // mandal they asked for and a total that admits it, not a different
+    // mandal that fits.
+    const plan = buildItinerary({
+      budgetMinutes: 60,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    expect(plan.stops).toHaveLength(1);
+    expect(plan.stops[0].ganpati.slug).toBe(DAGDUSHETH_SLUG);
+    expect(plan.totalMinutes).toBeGreaterThan(plan.budgetMinutes);
+  });
+
+  it('does not appear twice when the budget is generous', () => {
+    // It is seeded before the greedy loop, so it also has to be taken out
+    // of the candidate list.
+    const plan = buildItinerary({
+      budgetMinutes: 360,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    const slugs = plan.stops.map((s) => s.ganpati.slug);
+    expect(slugs.filter((x) => x === DAGDUSHETH_SLUG)).toHaveLength(1);
+  });
+
+  it('does not leak into a plan that did not ask for it', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 90,
+      interests: ['historic'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    for (const s of plan.stops) expect(s.ganpati.category).toBe('historic');
+  });
+});
+
+/**
+ * A two-wheeler is ridden to the parking and no further.
+ *
+ * The peth core is barricaded through the festival. Everything after the
+ * parking is on foot, which means it is subject to the one-way lanes and
+ * to walking speed — and, crucially, it stays that way even when no
+ * parking spot could be chosen.
+ */
+describe('once the vehicle is parked', () => {
+  it('walks between mandals whether or not a parking was found', () => {
+    expect(legModeFor('two_wheeler')).toBe('walk');
+  });
+
+  it('leaves the other modes alone', () => {
+    expect(legModeFor('walk')).toBe('walk');
+    expect(legModeFor('metro')).toBe('metro');
+  });
+
+  it('never prices a two-wheeler plan at riding speed between stops', () => {
+    // The regression this replaced: the leg mode was decided by whether a
+    // parking had been chosen, so a rider who had not granted location got
+    // their whole darshan priced as a ride through closed lanes. The two
+    // plans below differ only in origin, and both must be walked.
+    const peths = { lat: 18.5160, lng: 73.8560 };
+    const build = (origin: typeof peths) =>
+      buildItinerary({
+        budgetMinutes: 240,
+        interests: ['manache'],
+        pace: 'balanced',
+        mode: 'two_wheeler',
+        origin,
+        mandals: localGanpatis,
+      });
+
+    const fromPeths = build(peths);
+    // Same stops on foot cost the same whichever way the plan was reached.
+    const onFoot = buildItinerary({
+      budgetMinutes: 240,
+      interests: ['manache'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: peths,
+      mandals: localGanpatis,
+    });
+
+    expect(fromPeths.stops.length).toBeGreaterThan(0);
+    // Riding speed is over three times walking speed, so a plan priced as
+    // a ride would have a travel figure a fraction of the walked one.
+    expect(fromPeths.travelMinutes).toBeGreaterThan(onFoot.travelMinutes / 2);
+  });
+});
+
+/**
+ * A stop can only be reached the way the crowd allows.
+ *
+ * Tulshibaug is the clearest case in the catalogue: two one-way lanes
+ * leave it and one arrives, so the only legal approach is down from
+ * Guruji Talim. A six-hour two-wheeler plan used to arrive there from
+ * Mandai — the leg was priced as though nothing were wrong, because the
+ * graph was only consulted when BOTH stops stood on the lane network and
+ * Mandai is 189 m off it.
+ */
+describe('arriving at a mandal the crowd allows', () => {
+  it('never walks into a stop against the lane it stands on', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 360,
+      interests: ['manache', 'famous'],
+      pace: 'balanced',
+      mode: 'two_wheeler',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+
+    const at = (g: { location: { lat: number; lng: number } }) => ({
+      lat: g.location.lat,
+      lng: g.location.lng,
+    });
+
+    for (let i = 1; i < plan.stops.length; i++) {
+      const from = at(plan.stops[i - 1].ganpati);
+      const to = at(plan.stops[i].ganpati);
+      expect(
+        legCostFactor(from, to, 'walk'),
+        `${plan.stops[i - 1].ganpati.slug} -> ${plan.stops[i].ganpati.slug} arrives illegally`
+      ).toBeLessThan(4);
+    }
   });
 });

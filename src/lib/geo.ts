@@ -63,9 +63,38 @@ export const MODE_SPEED_MPS = {
 
 export type TravelMode = keyof typeof MODE_SPEED_MPS;
 
-/** Rough duration estimate used before Routes API is called. */
+/**
+ * Whether the legs between mandals are walked in this mode.
+ *
+ * Both 'walk' and 'metro' are, and everything that depends on walking has
+ * to say so the same way. Metro decides where a route begins and ends;
+ * the stops in between are on foot at walking speed, which is why its
+ * speed above is 1.1 and why it asks the router for a pedestrian costing.
+ *
+ * It was missed in three separate `mode === 'walk'` checks, so a metro
+ * visitor's route ignored the one-way lanes entirely — ordering, pricing
+ * and the drawn line alike. A two-wheeler reaches walking through
+ * legModeFor once the vehicle is parked, so it is not named here.
+ */
+export function isOnFoot(mode: TravelMode): boolean {
+  return mode === 'walk' || mode === 'metro';
+}
+
+/**
+ * Rough duration estimate used before Routes API is called.
+ *
+ * Takes a STRAIGHT-LINE distance and applies the detour factor, because
+ * nobody walks the straight line. For a distance that is already a
+ * walked path — a routed line, or one of the one-way lanes — use
+ * walkedDurationSeconds instead, or the detour is counted twice.
+ */
 export function estimateDurationSeconds(distanceM: number, mode: TravelMode): number {
   return (distanceM * DETOUR_FACTOR) / MODE_SPEED_MPS[mode];
+}
+
+/** How long a path you have already measured takes to walk. */
+export function walkedDurationSeconds(distanceM: number, mode: TravelMode): number {
+  return distanceM / MODE_SPEED_MPS[mode];
 }
 
 /** "450 m" / "1.2 km" — Indian-English conventions, no trailing zeros. */
@@ -219,4 +248,27 @@ export function rideSpeedMps(roadDistanceM: number): number {
 export function estimateRideSeconds(straightLineM: number): number {
   const road = straightLineM * RIDE_DETOUR_FACTOR;
   return road / rideSpeedMps(road);
+}
+
+
+/**
+ * Compass bearing from one point to another, in degrees.
+ *
+ * Needed because a walk has a direction and a distance does not. The
+ * pedestrian one-ways are the only place in this app where going from A
+ * to B costs something different from going from B to A.
+ */
+export function bearingDeg(from: LatLng, to: LatLng): number {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const dLng = toRad(to.lng - from.lng);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return (((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360;
+}
+
+/** Smallest angle between two bearings, 0 (same way) to 180 (opposed). */
+export function bearingDifference(a: number, b: number): number {
+  return Math.abs(((a - b + 540) % 360) - 180);
 }

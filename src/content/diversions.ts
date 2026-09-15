@@ -98,3 +98,272 @@ export const CLOSURE_JUNCTIONS: ClosureJunction[] = [
   { no: 11, name: "Rajaram Pool", sourceName: "11. Rajaram pool", lat: 18.487762, lng: 73.828912 },
   { no: 12, name: "Power House Chowk", sourceName: "12.Power house chowk", lat: 18.519409, lng: 73.868306 },
 ];
+
+
+/**
+ * Stretches the crowd may only walk one way.
+ *
+ * Separate from ROAD_CLOSURES because it is a different kind of rule for a
+ * different person. A closure is about vehicles; this is the police making
+ * the darshan crowd itself flow in one direction, which is how a lane a
+ * few metres wide carries lakhs of people without a crush.
+ *
+ * It is the constraint a walking route has to respect, and the one thing
+ * a straight-line planner will get wrong by default: the distance between
+ * two mandals is the same in both directions, but the walk is not.
+ *
+ * Reported from the ground rather than read off the police map, which
+ * draws these stretches as plain closures where it shows them at all.
+ */
+/**
+ * A stretch the police make the crowd walk one way during the festival.
+ *
+ * Not an OSM one-way and not a vehicle restriction — these exist for the
+ * twelve days, apply to people on foot, and no router knows about them.
+ *
+ * Two stretches can share the same `note`: the pair below run down the
+ * same road above Dagdusheth and fork below it, so they are two lines on
+ * a map but one thing to tell a walker. Anything showing these to a
+ * visitor should therefore deduplicate on `note`, not on `name`.
+ */
+export interface PedestrianOneWay {
+  name: string;
+  /** Said to the walker, in their words. */
+  note: string;
+  /**
+   * Where this lane leads, and the compass word for getting there.
+   *
+   * Both are for somebody standing on the road rather than reading a
+   * plan. A line on a map with arrows along it answers "which way does
+   * this go"; it does not answer "which way do I go", which is the
+   * question a walker in a crowd actually has. The destination names
+   * something they can see or ask for, and the heading survives the
+   * moment they turn the phone round.
+   *
+   * `heading` must agree with the drawn path — a test derives it from
+   * the geometry and compares, so a wrong word cannot ship.
+   */
+  towards: string;
+  heading: 'north' | 'south' | 'east' | 'west';
+  /**
+   * [lng, lat] pairs along the stretch, in the direction the crowd walks.
+   *
+   * There is deliberately no bearing stored beside this. Direction is read
+   * off the path segment nearest the walker, because these lanes turn —
+   * one of them by 81°, which is the road and not an artefact of drawing
+   * it — and a single stored bearing is wrong for half of such a stretch
+   * while disagreeing with nothing that could flag it. When the bearings
+   * were kept by hand the longest stretch's was 27° out from its own
+   * geometry.
+   */
+  path: [number, number][];
+}
+
+export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
+  {
+    // Shivaji Road, one way only as far as the chowk by Dagdusheth. It
+    // was drawn 139 m further, all the way to Gotiram Bhaiya chowk, which
+    // put a one-way rule on a stretch that is two-way on foot — see
+    // PEDESTRIAN_TWO_WAYS below for the part that was taken off it.
+    name: 'Shaniwar Wada chowk down Shivaji Road',
+    towards: 'Dagdusheth',
+    heading: 'south',
+    note:
+      'The crowd here walks one way, southwards down Shivaji Road as far ' +
+      'as the chowk by Dagdusheth. You will not be able to walk back up ' +
+      'it — plan to come out another way.',
+    path: [
+      [73.855224, 18.521510],
+      [73.855249, 18.521402],
+      [73.855284, 18.521347],
+      [73.855364, 18.521174],
+      [73.855415, 18.521048],
+      [73.855433, 18.521006],
+      [73.855384, 18.521016],
+      [73.855353, 18.520984],
+      [73.855384, 18.520967],
+      [73.855409, 18.520942],
+      [73.855444, 18.520872],
+      [73.855529, 18.520744],
+      [73.855601, 18.520679],
+      [73.855703, 18.520612],
+      [73.855828, 18.520491],
+      [73.855966, 18.520335],
+      [73.856003, 18.520287],
+      [73.856029, 18.520305],
+      [73.856037, 18.520295],
+      [73.856056, 18.520266],
+      [73.856110, 18.520182],
+      [73.856128, 18.520092],
+      [73.856148, 18.519723],
+      [73.856175, 18.519213],
+      [73.856208, 18.518649],
+      [73.856214, 18.518542],
+      [73.856214, 18.518509],
+      [73.856216, 18.518342],
+      [73.856221, 18.518182],
+      [73.856232, 18.517810],
+      [73.856241, 18.517501],
+      [73.856244, 18.517409],
+      [73.856246, 18.517266],
+      [73.856253, 18.516935],
+      [73.856254, 18.516866],
+      [73.856255, 18.516817],
+      [73.856260, 18.516286],
+      [73.856270, 18.516061],
+      [73.856275, 18.515947],
+      [73.856283, 18.515741],
+      [73.856287, 18.515669],
+      [73.856322, 18.515332],
+      [73.856381, 18.515132],
+      [73.856467, 18.514962],
+      [73.856596, 18.514790],
+      [73.856683, 18.514685],
+    ],
+  },
+  {
+    // Starts 42 m from Guruji Talim and ends 2 m from Tulshibaug. The
+    // two lanes that used to feed this junction were corrected to two-way
+    // and removed; this one was not, so the way down to Tulshibaug is
+    // still one-directional even though the approaches are not.
+    name: 'Guruji Talim to Tulshibaug',
+    towards: 'Tulshibaug',
+    heading: 'south',
+    note:
+      'The crowd walks one way here, southwards out of Guruji Talim ' +
+      'towards Tulshibaug. You will not be able to come back north up it.',
+    path: [
+      [73.855054, 18.514987],
+      [73.855000, 18.514974],
+      [73.855011, 18.514956],
+      [73.855183, 18.514704],
+      [73.855249, 18.514156],
+      [73.855309, 18.514183],
+    ],
+  },
+  {
+    // Picks up exactly where the exit lane ends, at Tulshibaug, and runs
+    // on past Jilbya Maruti — 16 m from its far end. The turn partway
+    // along is the road itself, not an artefact of how it was drawn, so
+    // it is kept as given and the direction is read per segment.
+    name: 'Tulshibaug to Jilbya Maruti',
+    towards: 'Jilbya Maruti',
+    heading: 'south',
+    note:
+      'The crowd walks one way here, on south past Tulshibaug towards ' +
+      'Jilbya Maruti. You will not be able to come back north up it — ' +
+      'keep going and come round.',
+    path: [
+      [73.855309, 18.514183],
+      [73.855249, 18.514156],
+      [73.855030, 18.514141],
+      [73.855033, 18.514094],
+      [73.855074, 18.513509],
+      [73.855063, 18.513405],
+    ],
+  },
+  {
+    // The second way out of Tulshibaug: east, back to the main
+    // north-south lane, which its far end comes within 58 m of. Named for
+    // that rejoining rather than for a mandal — the nearest at the east
+    // end is Hutatma Babu Genu at 57 m, too far to say the lane ends
+    // there.
+    name: 'Tulshibaug east to the main lane',
+    towards: 'the main lane',
+    heading: 'east',
+    note:
+      'The crowd walks one way here, eastwards out of Tulshibaug back ' +
+      'towards the main lane. You will not be able to come back west ' +
+      'along it into Tulshibaug — come round the other way.',
+    path: [
+      [73.855305, 18.514183],
+      [73.855390, 18.514166],
+      [73.855638, 18.514194],
+      [73.855878, 18.514247],
+      [73.855945, 18.514269],
+      [73.856226, 18.514414],
+      [73.856215, 18.514388],
+    ],
+  },
+  {
+    name: 'Dagdusheth to Gotiram Bhaiya chowk',
+    towards: 'Gotiram Bhaiya chowk',
+    heading: 'south',
+    note:
+      'The crowd walks one way here, southwards away from Dagdusheth ' +
+      'towards Gotiram Bhaiya chowk. You will not be able to walk back ' +
+      'up it.',
+    path: [
+      [73.856379, 18.515222],
+      [73.856322, 18.515332],
+      [73.856307, 18.514934],
+      [73.856299, 18.514723],
+      [73.856281, 18.514616],
+      [73.856226, 18.514414],
+      [73.856227, 18.514382],
+      [73.856194, 18.514325],
+      [73.856171, 18.513551],
+    ],
+  },
+];
+
+/**
+ * Walkable stretches that are NOT one-way, and are drawn nowhere.
+ *
+ * These exist only so the route planner knows the road is there.
+ *
+ * The branch below was reported as one-way in both halves and then
+ * corrected on the ground to two-way, so its two one-way entries were
+ * deleted — and with them went the app's only knowledge that a road
+ * connects Dagdusheth to Guruji Talim at all. The planner could then
+ * find no walk from Tulshibaug back up to Dagdusheth, so it drew a
+ * straight line over the block and priced the leg as if you could fly it.
+ *
+ * "Two-way" is not the same as "absent". Nothing renders from this list —
+ * an unmarked road is the normal case and marking them all would bury the
+ * few that carry an instruction — but the graph walks it.
+ */
+export interface PedestrianLink {
+  name: string;
+  path: [number, number][];
+}
+
+export const PEDESTRIAN_TWO_WAYS: PedestrianLink[] = [
+  {
+    // Shivaji Road below the chowk by Dagdusheth, on towards Swargate:
+    // open both ways on foot. It was part of the one-way above until it
+    // was corrected on the ground.
+    name: 'Shivaji Road towards Swargate',
+    path: [
+      [73.856683, 18.514685],
+      [73.856899, 18.514362],
+      [73.857034, 18.514115],
+      [73.857150, 18.513898],
+      [73.857285, 18.513540],
+    ],
+  },
+  {
+    // Reported two-way end to end, from the west end at
+    // 18.514498, 73.853786 through the Guruji Talim junction to the
+    // Dagdusheth end at 18.515611, 73.856306.
+    name: 'Guruji Talim branch',
+    path: [
+      [73.853786, 18.514498],
+      [73.854011, 18.514541],
+      [73.854143, 18.514572],
+      [73.854369, 18.514656],
+      [73.854437, 18.514697],
+      [73.854492, 18.514723],
+      [73.854903, 18.514964],
+      [73.854980, 18.515008],
+      [73.855198, 18.515070],
+      [73.855524, 18.515281],
+      [73.855866, 18.515504],
+      [73.856029, 18.515590],
+      [73.856158, 18.515631],
+      [73.856205, 18.515645],
+      [73.856287, 18.515669],
+      [73.856306, 18.515611],
+    ],
+  },
+];

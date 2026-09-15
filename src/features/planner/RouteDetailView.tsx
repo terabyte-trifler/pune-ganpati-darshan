@@ -16,6 +16,7 @@ import { useLiveRouteTime } from '@/features/crowd/useLiveRouteTime';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { CuratedRoute } from '@/types/ganpati';
+import type { RouteTotals } from '@/services/routes';
 
 /**
  * A curated route: the map and the stop list, kept in sync.
@@ -28,7 +29,7 @@ export function RouteDetailView({
   route, totals,
 }: {
   route: CuratedRoute;
-  totals: { stopCount: number; darshanS: number; travelS: number; totalS: number; distanceM: number; partialDarshan: boolean };
+  totals: RouteTotals;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const { replace } = usePlan();
@@ -72,6 +73,33 @@ export function RouteDetailView({
       <p className="mt-1.5 text-[12px] text-[var(--faint)]">
         Stops are shown in walking order. Tap a number to see which mandal it is.
       </p>
+
+      {/* The crowd's own direction. A curated route's order is fixed by
+          hand, so unlike a plan the app cannot re-order it around these —
+          which makes saying so before somebody sets off the whole of what
+          it can do here. */}
+      {totals.oneWays.length > 0 && (
+        <div className="surface mt-3 rounded-[var(--radius-card)] border border-[var(--line-strong)] p-3">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--zendu)]">
+            One way on foot
+          </p>
+          <ul className="mt-1.5 space-y-1.5">
+            {totals.oneWays.map((w) => (
+              <li key={w.name} className="text-[13px] leading-snug text-[var(--muted)]">
+                <span className="font-semibold text-[var(--chandan)]">
+                  Walk {w.heading} <span aria-hidden="true">→</span> {w.towards}
+                </span>
+                <span className="mt-0.5 block text-[var(--faint)]">{w.name}</span>
+                <span className="mt-0.5 block">{w.note}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-[var(--faint)]">
+            This route walks these stretches the way the crowd does. On the map
+            they are the blue lines, and the arrows point the way you walk.
+          </p>
+        </div>
+      )}
 
       {/* ---------------- Where to get off ---------------- */}
       {anchor && (

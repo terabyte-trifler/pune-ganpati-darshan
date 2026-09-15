@@ -19,6 +19,8 @@ import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
+import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
+import { addRouteArrows } from '@/lib/maps/route-arrows';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 
@@ -403,11 +405,16 @@ export function MapCanvas({
         paint: { 'line-color': '#E2621B', 'line-width': 4, 'line-opacity': 0.9 },
       });
 
+      // Straight after the line, so the arrows sit on it and still fall
+      // under the mandal pins.
+      addRouteArrows(map);
+
       // Context layers first, so the mandal pins draw on top of them.
       whenIdle(() => {
         // The map can be torn down while the callback is pending.
         if (!mapRef.current) return;
         addClosureLayers(map);
+        addPedestrianFlowLayers(map);
         addMetroLayers(map);
         addParkingLayers(map);
         // Closures used to be added BEFORE the mandal layers, so they drew

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { CircleParking, ExternalLink, Navigation, TriangleAlert, Ban, MapPin } from 'lucide-react';
+import { CircleParking, ExternalLink, Navigation, TriangleAlert, Ban, MapPin, ArrowDown } from 'lucide-react';
 import { PARKING, PARKING_SOURCE } from '@/content/parking';
 import {
   ROAD_CLOSURES, CLOSURE_JUNCTIONS, CLOSURE_LAYER_TITLE, LINE_7_NOTE,
+  PEDESTRIAN_ONE_WAYS,
 } from '@/content/diversions';
 import { getAllGanpatis } from '@/services/ganpati';
 import { haversine, formatDistance } from '@/lib/geo';
@@ -82,6 +83,7 @@ export default async function ParkingPage() {
           {[
             ['#parking', `Parking (${PARKING.length})`],
             ['#closures', `Closed roads (${ROAD_CLOSURES.length})`],
+            ['#one-way', `One way on foot (${PEDESTRIAN_ONE_WAYS.length})`],
             ['#junctions', `Junctions (${CLOSURE_JUNCTIONS.length})`],
           ].map(([href, label]) => (
             <a
@@ -249,6 +251,42 @@ export default async function ParkingPage() {
             </li>
           ))}
         </ul>
+
+        {/* ---------------- One way on foot ---------------- */}
+        <h2
+          id="one-way"
+          className="font-display mt-10 flex scroll-mt-6 items-center gap-2 text-[21px] font-bold text-[var(--chandan)]"
+        >
+          <ArrowDown size={19} aria-hidden="true" className="shrink-0 text-[#7FA8D8]" />
+          One way on foot
+        </h2>
+        <p className="prose-measure mt-1.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          These are not closed roads. They are open, and full — the crowd on
+          them is made to move in one direction so a lane a few metres wide can
+          carry lakhs of people. Walk with it and you will move. Try to come
+          back up and you will not be let through. On the maps they are the
+          blue lines, and the arrows along them point the way you walk.
+        </p>
+        <ul className="mt-3 flex flex-col gap-1.5">
+          {PEDESTRIAN_ONE_WAYS.map((w) => (
+            <li
+              key={w.name}
+              className="rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3.5 py-2.5"
+            >
+              <p className="text-[14.5px] font-semibold leading-snug text-[var(--chandan)]">
+                Walk {w.heading} <span aria-hidden="true">→</span> {w.towards}
+              </p>
+              <p className="mt-0.5 text-[12px] text-[var(--faint)]">{w.name}</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--muted)]">
+                {w.note}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <p className="prose-measure mt-2 text-[12.5px] leading-relaxed text-[var(--faint)]">
+          Build my route already knows. A walking plan is ordered to go down
+          these stretches rather than up them, so the way out is onward.
+        </p>
 
         {/* ---------------- Junctions ---------------- */}
         <h2

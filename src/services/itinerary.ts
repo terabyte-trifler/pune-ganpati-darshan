@@ -5,6 +5,8 @@ import {
   type TravelMode,
 } from '@/lib/geo';
 import { optimizeLocally } from '@/services/route-optimizer';
+import { flowsOnRoute, legCostFactor } from '@/services/pedestrian-flow';
+import type { PedestrianOneWay } from '@/content/diversions';
 import { chooseParking, type ParkingChoice } from './parking-plan';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
@@ -28,7 +30,34 @@ export type Interest =
   | 'dekhava'
   | 'historic'
   | 'temple'
+  | 'dagdusheth'
   | 'surprise';
+
+/**
+ * The one mandal people ask for by name.
+ *
+ * Every other interest is a category. This one is a single mandal,
+ * because it is the one visitors arrive in Pune already intending to see
+ * — and picking "The famous ones" and hoping is not the same as asking.
+ *
+ * A slug in the source is a thing that can silently stop matching, so a
+ * test asserts this resolves against the catalogue. If it ever does not,
+ * the button would still render and quietly do nothing.
+ */
+export const DAGDUSHETH_SLUG = 'dagdusheth-halwai-ganpati';
+
+/**
+ * What everything else is worth when Dagdusheth is asked for.
+ *
+ * Above zero on purpose, and this is the one place an interest behaves
+ * unlike the others. Picking "Historic mandals" alone should give you
+ * historic mandals and nothing else. Picking one named mandal alone and
+ * getting a six-hour plan with a single stop in it is not an answer —
+ * so the rest of the city stays eligible at a low weight, and the budget
+ * fills around Dagdusheth once Dagdusheth is secured. Any other interest
+ * picked alongside outranks this, because the score is a max.
+ */
+const AROUND_DAGDUSHETH_SCORE = 0.35;
 
 export interface ItineraryRequest {
   /** Total time available, in minutes. */
@@ -73,6 +102,14 @@ export interface Itinerary {
    * plan is one ride and then a walk — see services/parking-plan.
    */
   parking: ParkingChoice | null;
+  /**
+   * One-way stretches this walk goes down, in the order it meets them.
+   *
+   * Deduplicated by warning rather than by stretch: two of them are the
+   * same road above the fork, and a walker told twice stops reading.
+   * Empty for a plan that never touches one — which is most of the city.
+   */
+  oneWays: PedestrianOneWay[];
 }
 
 /**
@@ -139,6 +176,8 @@ const INTEREST_TAGS: Record<Interest, string[]> = {
   dekhava: ['dekhava', 'decoration', 'night'],
   historic: ['historic', 'heritage', 'early-mandal', 'talim', 'tilak'],
   temple: ['temple', 'park', 'family'],
+  // Matched by slug, not by tag — it is one mandal, not a kind of mandal.
+  dagdusheth: [],
   surprise: [],
 };
 
@@ -170,6 +209,9 @@ function interestScore(g: Ganpati, interests: Interest[]): number {
   if (interests.length === 0 || interests.includes('surprise')) return 0.5;
 
   let best = 0;
+  if (interests.includes('dagdusheth')) {
+    best = g.slug === DAGDUSHETH_SLUG ? 1 : AROUND_DAGDUSHETH_SCORE;
+  }
   for (const interest of interests) {
     if (interest === 'manache' && g.category === 'maanache') best = Math.max(best, 1);
     if (interest === 'famous' && g.category === 'famous') best = Math.max(best, 0.9);
@@ -211,9 +253,12 @@ function costOf(
 
   let travelSeconds = 0;
   let previous = origin;
+  const legMode = legModeFor(mode);
   for (const g of ordered) {
     const point = { lat: g.location.lat, lng: g.location.lng };
-    travelSeconds += estimateDurationSeconds(haversine(previous, point), mode);
+    travelSeconds +=
+      estimateDurationSeconds(haversine(previous, point), legMode) *
+      legCostFactor(previous, point, legMode);
     previous = point;
   }
 
@@ -223,6 +268,25 @@ function costOf(
     0
   );
   return { travel, darshan, total: travel + darshan };
+}
+
+/**
+ * How the legs between mandals are actually travelled.
+ *
+ * On a two-wheeler: walked, always. The peth core is barricaded through
+ * the festival, so once the vehicle is parked the rest is on foot —
+ * whether or not a parking spot could be picked.
+ *
+ * That last clause is the point. This used to be `parking ? 'walk' :
+ * mode`, which quietly made the mode depend on whether we happened to
+ * find somewhere to park. A rider who had not granted location, or whose
+ * stops matched no parking candidate, got their whole plan priced and
+ * routed as a RIDE between mandals — through lanes the police have
+ * closed, at riding speed, and with none of the one-way rules applied,
+ * since those only run for walking.
+ */
+export function legModeFor(mode: TravelMode): TravelMode {
+  return mode === 'two_wheeler' ? 'walk' : mode;
 }
 
 /** Orders a set of stops for the shortest walk from the origin. */
@@ -240,7 +304,7 @@ function order(mandals: Ganpati[], origin: LatLng, mode: TravelMode): Ganpati[] 
   const result = optimizeLocally(
     origin,
     mandals.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
-    mode
+    legModeFor(mode)
   );
   return result.order.map((i) => mandals[i]);
 }
@@ -261,13 +325,35 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
 
   const templesWanted = allowsTemples(interests);
 
+  /**
+   * A mandal asked for by name goes in before the budget is spent.
+   *
+   * Without this the greedy loop treats it as one more candidate, and a
+   * candidate that does not fit is skipped. Asking for Dagdusheth on a
+   * ninety-minute budget produced a plan of three other mandals and no
+   * Dagdusheth: it is forty-seven minutes' walk from the city centre with
+   * a forty-five minute queue, so it missed by two minutes and the time
+   * quietly went to nearer mandals instead.
+   *
+   * That is the wrong answer to a request made by name. Fewer stops
+   * around it is a trade a visitor can accept; not being taken there at
+   * all is not what they asked for. If it does not fit even alone, it is
+   * still the plan — the totals say plainly that it runs over, which is
+   * the honest thing to show somebody who has an hour and wants
+   * Dagdusheth.
+   */
+  const pinned = interests.includes('dagdusheth')
+    ? mandals.filter((g) => g.slug === DAGDUSHETH_SLUG)
+    : [];
+
   const candidates = mandals
     .filter((g) => !g.isTemple || templesWanted)
+    .filter((g) => !pinned.some((p) => p.id === g.id))
     .map((g) => ({ g, score: interestScore(g, interests) }))
     .filter((c) => c.score > 0)
     .sort((a, b) => b.score - a.score || b.g.prominence - a.g.prominence);
 
-  const chosen: Ganpati[] = [];
+  const chosen: Ganpati[] = [...pinned];
   const skipped: Ganpati[] = [];
 
   for (const { g } of candidates) {
@@ -289,19 +375,22 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
   // two-wheeler the legs start at the parking and are walked, because that
   // is the journey the plan actually describes.
   const stops: ItineraryStop[] = [];
-  const legMode: TravelMode = parking ? 'walk' : mode;
+  const legMode: TravelMode = legModeFor(mode);
   let previous: LatLng = parking
     ? { lat: parking.spot.lat, lng: parking.spot.lng }
     : origin;
+  const walked: LatLng[] = [previous];
   for (const g of finalOrder) {
     const point = { lat: g.location.lat, lng: g.location.lng };
+    walked.push(point);
     stops.push({
       ganpati: g,
       // Same call the budget was spent against, so the per-stop numbers add
       // up to the total the user was shown rather than drifting from it.
       darshanMinutes: dwellMinutes(g, pace, crowdByMandalId[g.id]),
       travelMinutesFromPrevious: Math.round(
-        estimateDurationSeconds(haversine(previous, point), legMode) / 60
+        (estimateDurationSeconds(haversine(previous, point), legMode) *
+          legCostFactor(previous, point, legMode)) / 60
       ),
       crowd: crowdByMandalId[g.id] ?? null,
     });
@@ -318,5 +407,8 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
     hasUnknownDwell: finalOrder.some((g) => g.darshanMinutes == null),
     crowdAdjusted: finalOrder.some((g) => crowdByMandalId[g.id] != null),
     parking,
+    // Only on foot. A rider's leg to the parking is on the road network,
+    // where the closures speak instead.
+    oneWays: legMode === 'walk' ? flowsOnRoute(walked) : [],
   };
 }

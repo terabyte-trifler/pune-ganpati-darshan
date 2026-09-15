@@ -42,6 +42,10 @@ const BUDGETS = [
 
 const INTERESTS: Array<{ key: Interest; label: string; labelMr?: string }> = [
   { key: 'manache', label: 'मानाचे गणपती', labelMr: 'yes' },
+  // The one mandal people ask for by name, so it gets its own button
+  // rather than being hidden inside "the famous ones". Named as the
+  // mandal names itself.
+  { key: 'dagdusheth', label: 'श्रीमंत दगडूशेठ', labelMr: 'yes' },
   { key: 'famous', label: 'The famous ones' },
   { key: 'dekhava', label: 'Dekhava & light shows' },
   { key: 'historic', label: 'Historic mandals' },
