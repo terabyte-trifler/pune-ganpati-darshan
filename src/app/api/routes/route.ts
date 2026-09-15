@@ -268,26 +268,55 @@ export async function POST(request: Request) {
 
     let changed = false;
     for (let k = 0; k < legGeometry.length; k++) {
-      const offending = violatedLanes(legGeometry[k]);
-      if (offending.length === 0) continue;
+      if (violatedLanes(legGeometry[k]).length === 0) continue;
 
       const from = routePoints[k];
       const to = routePoints[k + 1];
-      const before = againstMetres(legGeometry[k]);
+      let best = { against: againstMetres(legGeometry[k]), leg: null as null | { geometry: [number, number][]; distanceM: number; durationS: number } };
+      const barred = new Map<string, { path: [number, number][] }>();
 
-      for (const keepClear of [[], [from, to]]) {
-        const leg = await computeRoute(from, [to], mode,
-          offending.flatMap((lane) => laneExclusionPolygons(lane, keepClear)));
-        if (!leg.ok || !leg.data.geometry) continue;
-        if (againstMetres(leg.data.geometry) >= before) continue;
+      /**
+       * Take the cleanest answer, not the first improvement, and keep
+       * asking while the leg is still dirty.
+       *
+       * This took the first attempt that was any better and stopped. On
+       * the first leg of great-peth-circuit that meant settling for 70 m
+       * against when a wholly clean line existed — and barring one lane
+       * pushes a leg onto another, so a pass that only half-helps still
+       * tells you what to bar next.
+       */
+      for (let pass = 0; pass < 3 && best.against > 0; pass++) {
+        const source = best.leg?.geometry ?? legGeometry[k];
+        const before = barred.size;
+        for (const lane of violatedLanes(source)) barred.set(lane.name, lane);
+        if (barred.size === before && pass > 0) break;
 
-        legGeometry[k] = leg.data.geometry;
+        for (const keepClear of [[], [from, to]]) {
+          const attempt = await computeRoute(from, [to], mode,
+            [...barred.values()].flatMap((lane) => laneExclusionPolygons(lane, keepClear)));
+          if (!attempt.ok || !attempt.data.geometry) continue;
+
+          const against = againstMetres(attempt.data.geometry);
+          if (against < best.against) {
+            best = {
+              against,
+              leg: {
+                geometry: attempt.data.geometry,
+                distanceM: attempt.data.distanceM,
+                durationS: attempt.data.durationS,
+              },
+            };
+          }
+        }
+      }
+
+      if (best.leg) {
+        legGeometry[k] = best.leg.geometry;
         route.data.legs[k] = {
-          distanceM: leg.data.distanceM,
-          durationS: leg.data.durationS,
+          distanceM: best.leg.distanceM,
+          durationS: best.leg.durationS,
         };
         changed = true;
-        break;
       }
     }
 
