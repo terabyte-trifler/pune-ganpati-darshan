@@ -171,8 +171,9 @@ export async function POST(request: Request) {
     // Judged on metres walked against the crowd, not on how many lanes
     // were touched — see againstMetres.
     let best = { route, against: againstMetres(route.data.geometry) };
+    let startedAt = best.against;
 
-    for (let pass = 0; pass < 3 && best.against > 0; pass++) {
+    for (let pass = 0; pass < 4 && best.against > 0; pass++) {
       const geometry = best.route.ok ? best.route.data.geometry : null;
       if (!geometry) break;
       for (const lane of violatedLanes(geometry)) barred.set(lane.name, lane);
@@ -196,18 +197,41 @@ export async function POST(request: Request) {
         [...barred.values()].flatMap((lane) => laneExclusionPolygons(lane, routePoints)),
       ];
 
-      let improved = false;
+      /**
+       * Learn from a pass that did not help, rather than giving up on it.
+       *
+       * Barring one corridor pushes the walk onto another. Dagdusheth back
+       * to Guruji Talim is the case that showed it: barring Shivaji Road
+       * sent the router west through the Tulshibaug lanes the wrong way —
+       * 267 m with 205 m against, where going up Shivaji Road was 223 m
+       * with 65 m. Neither attempt improved, so the loop stopped and kept
+       * the original.
+       *
+       * The route it was reaching for is the one reported from the ground:
+       * out to Shivaji Road, along Saind Path, round by Kenjale Chowk and
+       * up Laxmi Road. Getting there needs the lanes it broke on the way
+       * barred too, so each pass now adds whatever the attempts offended
+       * and tries again, keeping the best seen rather than the last.
+       */
+      let offended = false;
       for (const avoid of attempts) {
         const retry = await computeRoute(origin, orderedStops, mode, avoid, viaByLeg);
         if (!retry.ok || !retry.data.geometry) continue;
+
         const against = againstMetres(retry.data.geometry);
-        if (against < best.against) {
-          best = { route: retry, against };
-          improved = true;
-          break;
+        if (against < best.against) best = { route: retry, against };
+
+        for (const lane of violatedLanes(retry.data.geometry)) {
+          if (!barred.has(lane.name)) {
+            barred.set(lane.name, lane);
+            offended = true;
+          }
         }
       }
-      if (!improved) break;
+      // Nothing new to bar and nothing better found: this is as far as the
+      // exclusions can take it.
+      if (!offended && best.against === startedAt) break;
+      startedAt = best.against;
     }
 
     route = best.route;

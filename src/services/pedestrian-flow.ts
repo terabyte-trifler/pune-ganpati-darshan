@@ -430,8 +430,21 @@ const EXCLUDE_HALF_WIDTH_M = 22;
  * The bar is cut around each stop instead. What is left still bars the
  * corridor everywhere a walker would travel ALONG it; what it opens is a
  * doorway at the mandal, which is where somebody is standing anyway.
+ *
+ * The doorway is exactly the ribbon's own width, and the figure was
+ * measured rather than picked. From Dagdusheth back to Guruji Talim —
+ * reported as a walk that has to go out to Shivaji Road, along Saind
+ * Path, round by Kenjale Chowk and up Laxmi Road — the router returns:
+ *
+ *   45 m gap   218 m   still slipping north through the hole
+ *   30 m       218 m   same
+ *   22 m       334 m   the way round
+ *   18 m       no path, the doorway too tight to stand in
+ *
+ * Wide enough to snap a stop out of the bar, narrow enough that walking
+ * up the lane is not a way through it.
  */
-const EXCLUDE_STOP_GAP_M = 45;
+const EXCLUDE_STOP_GAP_M = EXCLUDE_HALF_WIDTH_M;
 
 /** One ribbon over a run of the lane, as a closed ring. */
 function ribbon(points: [number, number][]): Array<[number, number]> {
