@@ -169,7 +169,19 @@ function cacheableCoords(points: LatLng[], dp: number): string {
 export async function computeRoute(
   origin: LatLng,
   stops: LatLng[],
-  mode: TravelMode
+  mode: TravelMode,
+  /**
+   * Areas the route must keep out of, as [lng, lat] rings.
+   *
+   * Used for the festival one-way lanes: a router cannot be told that a
+   * lane runs one way for twelve days, but it can be told to stay out of
+   * an area, and barring the lane in both directions is the right answer
+   * for a walk that wanted to go up it — it has to go round, on streets
+   * the router knows and we do not.
+   *
+   * OSRM has no equivalent, so a request that needs one skips it.
+   */
+  avoid: Array<Array<[number, number]>> = []
 ): Promise<RoutesResult<ComputedRoute>> {
   if (stops.length === 0) return { ok: false, reason: 'no-route' };
   const points = [origin, ...stops];
@@ -192,10 +204,14 @@ export async function computeRoute(
   for (const attempt of VALHALLA_COSTING[mode]
     ? [computeRouteValhalla, computeRouteOrs]
     : [computeRouteOrs]) {
-    const result = await attempt(points, mode);
+    const result = await attempt(points, mode, avoid);
     if (result.ok) return result;
     // Fall through rather than failing outright.
   }
+  // OSRM cannot be told to avoid anything, so a request that depends on
+  // an exclusion gives up rather than quietly returning the route the
+  // exclusion existed to prevent.
+  if (avoid.length > 0) return { ok: false, reason: 'no-route' };
   return computeRouteOsrm(points, mode);
 }
 
@@ -253,7 +269,8 @@ function decodePolyline6(encoded: string): [number, number][] {
 
 async function computeRouteValhalla(
   points: LatLng[],
-  mode: TravelMode
+  mode: TravelMode,
+  avoid: Array<Array<[number, number]>> = []
 ): Promise<RoutesResult<ComputedRoute>> {
   const costing = VALHALLA_COSTING[mode];
   if (!costing) return { ok: false, reason: 'unavailable' };
@@ -278,6 +295,7 @@ async function computeRouteValhalla(
     })),
     costing,
     directions_options: { units: 'kilometers' },
+    ...(avoid.length > 0 ? { exclude_polygons: avoid } : {}),
   });
 
   let response: Response;
@@ -388,7 +406,8 @@ async function computeRouteOsrm(
 
 async function computeRouteOrs(
   points: LatLng[],
-  mode: TravelMode
+  mode: TravelMode,
+  avoid: Array<Array<[number, number]>> = []
 ): Promise<RoutesResult<ComputedRoute>> {
   // No key, or it already told us it is out for the day.
   if (!ORS_KEY || Date.now() < orsBlockedUntil) {
@@ -400,7 +419,19 @@ async function computeRouteOrs(
     response = await fetchJson(`${ORS_URL}/${ORS_PROFILE[mode]}/geojson`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: ORS_KEY! },
-      body: JSON.stringify({ coordinates: points.map((p) => [p.lng, p.lat]) }),
+      body: JSON.stringify({
+        coordinates: points.map((p) => [p.lng, p.lat]),
+        ...(avoid.length > 0
+          ? {
+              options: {
+                avoid_polygons: {
+                  type: 'MultiPolygon',
+                  coordinates: avoid.map((ring) => [ring]),
+                },
+              },
+            }
+          : {}),
+      }),
     });
   } catch {
     return { ok: false, reason: 'unavailable' };

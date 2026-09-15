@@ -5,7 +5,9 @@ import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import { walkGeometry, laneWalk, spliceLaneLegs } from '@/services/pedestrian-graph';
-import { enforceOneWays, penaliseAgainstFlow } from '@/services/pedestrian-flow';
+import {
+  enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygon,
+} from '@/services/pedestrian-flow';
 import { isOnFoot, walkedDurationSeconds } from '@/lib/geo';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
@@ -122,7 +124,49 @@ export async function POST(request: Request) {
   const orderedStops = order.map((i) => stops[i]);
 
   /* ---------------- Route geometry + totals ---------------- */
-  const route = await computeRoute(origin, orderedStops, mode);
+  let route = await computeRoute(origin, orderedStops, mode);
+
+  /**
+   * If the routed line walks a lane the wrong way, ask again without it.
+   *
+   * The router does not know these lanes and cannot be told — but every
+   * router can be told to keep out of an area, and barring a lane in both
+   * directions is the right answer for a walk that wanted to go up it: it
+   * has to go round, on streets the router knows and we do not.
+   *
+   * This is what makes the rule hold for legs neither of whose ends
+   * stands on a lane. Our own graph cannot reroute those; it is 1.3 km of
+   * disconnected stretches with no surrounding network, so before this
+   * they were simply left going the wrong way.
+   *
+   * It iterates because barring one lane can push the route onto another —
+   * the first attempt cleared two and offended a third. Each pass adds
+   * what the last one broke, and the best answer seen is kept rather than
+   * insisting on a perfect one: fewer violations is a better route even
+   * when it is not yet a clean one, and a router asked to avoid too much
+   * eventually finds nothing at all.
+   */
+  if (isOnFoot(mode) && route.ok && route.data.geometry) {
+    const barred = new Map<string, Array<[number, number]>>();
+    let best = { route, count: violatedLanes(route.data.geometry).length };
+
+    for (let pass = 0; pass < 3 && best.count > 0; pass++) {
+      const geometry = best.route.ok ? best.route.data.geometry : null;
+      if (!geometry) break;
+      for (const lane of violatedLanes(geometry)) {
+        barred.set(lane.name, laneExclusionPolygon(lane));
+      }
+
+      const retry = await computeRoute(origin, orderedStops, mode, [...barred.values()]);
+      if (!retry.ok || !retry.data.geometry) break;
+
+      const count = violatedLanes(retry.data.geometry).length;
+      if (count >= best.count) break;
+      best = { route: retry, count };
+    }
+
+    route = best.route;
+  }
 
   /**
    * The lanes override the router on the legs they cover — the line and
@@ -132,6 +176,9 @@ export async function POST(request: Request) {
    * Ours is the truer figure here. The router's is longer because it does
    * not know the alley exists and goes round; the lane path is the road as
    * it was reported from the ground.
+   *
+   * Computed after the exclusion passes above, so it describes whichever
+   * route actually survived them.
    */
   const laneLegs =
     isOnFoot(mode) && route.ok

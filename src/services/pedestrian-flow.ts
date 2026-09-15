@@ -330,3 +330,83 @@ export function enforceOneWays(line: [number, number][]): [number, number][] {
 
   return out;
 }
+
+/** Which one-way stretches a drawn line travels the wrong way. */
+export function violatedLanes(line: [number, number][]) {
+  const at = (c: [number, number]): LatLng => ({ lat: c[1], lng: c[0] });
+  const hit = new Set<string>();
+
+  for (let i = 0; i < line.length - 1; i++) {
+    const a = at(line[i]);
+    const b = at(line[i + 1]);
+    if (haversine(a, b) < 1) continue;
+    const mid = { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
+    const heading = bearingDeg(a, b);
+
+    for (const w of PEDESTRIAN_ONE_WAYS) {
+      if (metresToPath(mid, w.path) > FLOW_CORRIDOR_M) continue;
+      if (metresToPath(a, w.path) > FLOW_CORRIDOR_M) continue;
+      if (metresToPath(b, w.path) > FLOW_CORRIDOR_M) continue;
+      const flow = flowBearingAt(mid, w.path);
+      if (flow !== null && bearingDifference(heading, flow) > AGAINST_STEP_DEG) hit.add(w.name);
+    }
+  }
+
+  return PEDESTRIAN_ONE_WAYS.filter((w) => hit.has(w.name));
+}
+
+/** Half-width of an exclusion ribbon, in metres. */
+const EXCLUDE_HALF_WIDTH_M = 5;
+
+/**
+ * How much of each end of a lane to leave open.
+ *
+ * A ribbon drawn over the whole lane swallows the mandals standing on it —
+ * Dagdusheth is 1 m from one — and a router cannot snap a start or a
+ * finish inside an excluded area, so the request comes back with no path
+ * at all rather than a way round. Leaving the ends clear is what turns
+ * "impossible" into "363 m round the block".
+ */
+const EXCLUDE_END_GAP_M = 30;
+
+/**
+ * A lane as a polygon a router can be told to avoid.
+ *
+ * Routers cannot be told about a one-way that only exists for twelve
+ * days, but every one of them can be told to keep out of an area. Barring
+ * the lane in BOTH directions is exactly right for a leg that wanted to
+ * go up it: the answer is that it must go round, on streets the router
+ * knows and we do not.
+ *
+ * Ribbon, not a buffer: a few metres either side of the drawn line, which
+ * is enough to bar a lane a few metres wide without barring the streets
+ * beside it.
+ */
+export function laneExclusionPolygon(
+  lane: { path: [number, number][] }
+): Array<[number, number]> {
+  const first = lane.path[0];
+  const last = lane.path[lane.path.length - 1];
+  const a = { lat: first[1], lng: first[0] };
+  const b = { lat: last[1], lng: last[0] };
+
+  const length = haversine(a, b);
+  const t = length > 0 ? Math.min(0.4, EXCLUDE_END_GAP_M / length) : 0;
+  const lerp = (u: number): [number, number] => [
+    first[0] + (last[0] - first[0]) * u,
+    first[1] + (last[1] - first[1]) * u,
+  ];
+  const start = lerp(t);
+  const end = lerp(1 - t);
+
+  const dLng = EXCLUDE_HALF_WIDTH_M / (111_320 * Math.cos((a.lat * Math.PI) / 180));
+  const dLat = EXCLUDE_HALF_WIDTH_M / 111_132;
+
+  return [
+    [start[0] - dLng, start[1] + dLat],
+    [start[0] + dLng, start[1] + dLat],
+    [end[0] + dLng, end[1] - dLat],
+    [end[0] - dLng, end[1] - dLat],
+    [start[0] - dLng, start[1] + dLat],
+  ];
+}
