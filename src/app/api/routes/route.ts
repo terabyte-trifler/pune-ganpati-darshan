@@ -240,13 +240,19 @@ export async function POST(request: Request) {
   /**
    * Fix the offending legs one at a time, not the whole route at once.
    *
-   * Everything above bars a lane for the ENTIRE route, and a one-way is
-   * not a property of a route — it is a property of a direction. Shivaji
-   * Road is legal southbound and illegal northbound, so barring it to fix
-   * the leg that walks up it also bars the legs that legitimately walk
-   * down it. The retry then measures the whole route as worse and keeps
-   * the original, which is why a walk from Bhausaheb Rangari to Kasba
-   * kept its 126 m up the one-way however many passes it was given.
+   * A one-way belongs to a road and to a direction along it — both, and
+   * that is the whole difficulty. The road is fixed; which way a walk uses
+   * it is not, and a plan can use the same road twice in opposite
+   * directions.
+   *
+   * Everything above bars a lane for the ENTIRE plan, so barring Shivaji
+   * Road to fix the leg walking up it also bars the legs legitimately
+   * walking down it. The retry then measures the whole plan as worse and
+   * keeps the original, which is why a walk from Bhausaheb Rangari to
+   * Kasba kept its 126 m up the one-way however many passes it was given.
+   *
+   * The lane data is where the road and its direction live. What has to be
+   * decided leg by leg is only whether THIS leg travels it the wrong way.
    *
    * Each leg is asked separately, with only the lanes that leg offends
    * barred, and only legs that offend pay for a request. A leg is kept
