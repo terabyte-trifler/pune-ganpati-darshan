@@ -186,7 +186,7 @@ describe('station data', () => {
 
   it('sends the southern mandals to Swargate rather than across the river', () => {
     // Sarasbaug was going to Deccan Gymkhana, 1.9 km away over the river,
-    // because Mandai is exit-only and nothing else was closer. Swargate is
+    // because Mandai is return-only and nothing else was closer. Swargate is
     // 533 m from it and is the terminus of the same line Mandai is on.
     const sarasbaug = { lat: 18.500881, lng: 73.85295 };
     expect(nearestStation(sarasbaug)?.station.id).toBe('swargate');

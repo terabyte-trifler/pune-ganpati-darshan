@@ -202,8 +202,8 @@ export function MetroJourneyCard({
             className="mt-0.5 shrink-0 text-[var(--zendu)]"
           />
           <span>
-            {blocked.station.name} is nearer, but you can&rsquo;t get off there —
-            it&rsquo;s exit-only during the festival.
+            {blocked.station.name} is nearer, but keep it for the way back —
+            during the festival you can&rsquo;t get off there.
           </span>
         </p>
       )}

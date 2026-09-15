@@ -173,8 +173,9 @@ export const METRO_STATIONS: MetroStation[] = [
     exitNote:
       'Comes up on Shivaji Road. Kasba Ganpati — the first of the Manache ' +
       'Paach — is about 350 m away, so the ceremonial order starts here. ' +
-      'It is also the arrival station for the Budhwar Peth mandals now ' +
-      'that Mandai is exit-only, though Dagdusheth is a 770 m walk down.',
+      'It is also the arrival station for the Budhwar Peth mandals, since ' +
+      'Mandai is best kept for the way back, though Dagdusheth is a 770 m ' +
+      'walk down.',
   },
   {
     id: 'mandai',
@@ -188,14 +189,14 @@ export const METRO_STATIONS: MetroStation[] = [
     tier: 'primary',
     canAlight: false,
     alightNote:
-      'Mandai runs one way during the festival: you can board here to go ' +
-      'home, but trains do not let passengers off. Get off at Kasba Peth ' +
-      'and walk down instead — Tulshibaug is about 900 m from there.',
+      'Use Mandai for the way back, not to arrive — during the festival ' +
+      'you cannot get off here. Get off at Kasba Peth and walk down ' +
+      'instead; Tulshibaug is about 900 m from there.',
     exitNote:
-      'Mahatma Phule Mandai. Boarding only during the festival — this is ' +
-      'where you catch the train back, not where you arrive. Closest ' +
-      'station to the Mandai and Tulshibaug mandals, which is exactly why ' +
-      'its being one-way costs so much.',
+      'Mahatma Phule Mandai. Best used on the way back: this is where you ' +
+      'catch the train home, not where you arrive. It is the closest ' +
+      'station to the Mandai and Tulshibaug mandals, which is what makes ' +
+      'it so useful at the end of an evening.',
   },
   {
     id: 'swargate',
@@ -213,8 +214,8 @@ export const METRO_STATIONS: MetroStation[] = [
     exitNote:
       'The Purple Line’s southern end, under the bus stand. Sarasbaug and ' +
       'Hira Bagh are the closest mandals — both around 500 m — and it is ' +
-      'the nearest station you can arrive at for the Sadashiv Peth ' +
-      'mandals now that Mandai is exit-only.',
+      'the nearest station to arrive at for the Sadashiv Peth mandals, ' +
+      'with Mandai kept for the way back.',
   },
   {
     id: 'sambhaji-udyan',

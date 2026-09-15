@@ -39,7 +39,7 @@ describe('metro layer', () => {
     expect(names).not.toContain('Ramwadi');
   });
 
-  it('marks the exit-only station so it cannot be drawn as an arrival', () => {
+  it('marks the return-only station so it cannot be drawn as an arrival', () => {
     const fc = metroFeatureCollection();
     const mandai = fc.features.find((f) => f.properties?.name === 'Mandai');
     expect(mandai?.properties?.canAlight).toBe(false);

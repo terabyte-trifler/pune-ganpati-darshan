@@ -26,7 +26,7 @@ export const METRO_SOURCE = 'metro-stations';
 
 const METRO_MIN_ZOOM = { primary: 11.5, secondary: 13.5 } as const;
 
-/** The map's own ground, used to draw an exit-only station hollow. */
+/** The map's own ground, used to draw a return-only station hollow. */
 const GROUND = '#14100C';
 
 export function metroFeatureCollection(): GeoJSON.FeatureCollection {
@@ -123,7 +123,7 @@ export function addMetroLayers(map: MapLibreMap): void {
           'case',
           ['get', 'canAlight'],
           ['get', 'name'],
-          ['concat', ['get', 'name'], ' (exit only)'],
+          ['concat', ['get', 'name'], ' (return only)'],
         ],
         'text-font': ['Noto Sans Bold'],
         'text-size': 10,
