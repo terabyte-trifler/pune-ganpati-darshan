@@ -225,18 +225,34 @@ async function computeRouteValhalla(
   const costing = VALHALLA_COSTING[mode];
   if (!costing) return { ok: false, reason: 'unavailable' };
 
+  /**
+   * Asked as a GET, not the POST the docs lead with.
+   *
+   * Next's Data Cache does not cache POST, and an uncached router call is
+   * the thing ROUTER_CACHE_SECONDS exists to prevent: during the festival
+   * thousands of people build routes around the same handful of mandals,
+   * and almost every request re-asks a question already answered. As a
+   * POST this would have gone to OpenStreetMap's public instance every
+   * single time somebody tapped Optimise.
+   *
+   * Coordinates are rounded into the query the same way the OSRM URLs are,
+   * so two people planning the same walk share one cache entry.
+   */
+  const query = JSON.stringify({
+    locations: points.map((p) => ({
+      lat: Number(p.lat.toFixed(4)),
+      lon: Number(p.lng.toFixed(4)),
+    })),
+    costing,
+    directions_options: { units: 'kilometers' },
+  });
+
   let response: Response;
   try {
-    response = await fetchJson(`${VALHALLA_URL}/route`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        locations: points.map((p) => ({ lat: p.lat, lon: p.lng })),
-        costing,
-        directions_options: { units: 'kilometers' },
-      }),
-      next: { revalidate: ROUTER_CACHE_SECONDS },
-    });
+    response = await fetchJson(
+      `${VALHALLA_URL}/route?json=${encodeURIComponent(query)}`,
+      { next: { revalidate: ROUTER_CACHE_SECONDS } }
+    );
   } catch {
     return { ok: false, reason: 'unavailable' };
   }
