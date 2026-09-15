@@ -118,6 +118,19 @@ describe('a leg that runs against the crowd', () => {
       .toBe('Tulshibaug to Jilbya Maruti');
   });
 
+  it('treats Tulshibaug as a fork, with two ways out and none back in', () => {
+    // Two lanes leave Tulshibaug — south to Jilbya Maruti and east to the
+    // main lane — and the exit lane from Guruji Talim arrives there. A
+    // walker can leave it two ways and return by neither.
+    const out = ['Tulshibaug to Jilbya Maruti', 'Tulshibaug east to the main lane'];
+    const TULSHIBAUG_END = { lat: 18.514183, lng: 73.855305 };
+    for (const name of out) {
+      expect(metresToPath(TULSHIBAUG_END, byName(name).path)).toBeLessThan(10);
+    }
+    expect(metresToPath(TULSHIBAUG_END, byName('Guruji Talim to Tulshibaug').path))
+      .toBeLessThan(10);
+  });
+
   it('leaves the rest of the city alone', () => {
     const shivajinagar = { lat: 18.5308, lng: 73.8478 };
     const kothrud = { lat: 18.5074, lng: 73.8077 };

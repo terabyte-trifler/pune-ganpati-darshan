@@ -228,6 +228,22 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
+    // The second way out of Tulshibaug: east, back to the main
+    // north-south lane, which its far end comes within 58 m of. Named for
+    // that rejoining rather than for a mandal — the nearest at the east
+    // end is Hutatma Babu Genu at 57 m, too far to say the lane ends
+    // there.
+    name: 'Tulshibaug east to the main lane',
+    note:
+      'The crowd walks one way here, eastwards out of Tulshibaug back ' +
+      'towards the main lane. You will not be able to come back west ' +
+      'along it into Tulshibaug — come round the other way.',
+    path: [
+      [73.855305, 18.514183],
+      [73.856215, 18.514388],
+    ],
+  },
+  {
     name: 'Dagdusheth to Gotiram Bhaiya chowk',
     note:
       'The crowd here walks one way, southwards past Dagdusheth towards ' +
