@@ -12,7 +12,9 @@ import {
  * Re-exported so callers and tests have one place to look. The graph
  * owns these, because the graph is what has to walk them.
  */
-export { flowBearingAt, stepAgainstFlow, FLOW_CORRIDOR_M } from '@/services/pedestrian-graph';
+export {
+  flowBearingAt, stepAgainstFlow, FLOW_CORRIDOR_M, STEP_CORRIDOR_M,
+} from '@/services/pedestrian-graph';
 
 /**
  * The crowd only flows one way down some lanes, and a route has to know.
@@ -352,8 +354,16 @@ export function violatedLanes(line: [number, number][]) {
   return PEDESTRIAN_ONE_WAYS.filter((w) => (against.get(w.name) ?? 0) >= AGAINST_RUN_M);
 }
 
-/** Half-width of an exclusion ribbon, in metres. */
-const EXCLUDE_HALF_WIDTH_M = 5;
+/**
+ * Half-width of an exclusion ribbon, in metres.
+ *
+ * Matches the corridor rather than the drawn line. A thin ribbon over the
+ * centreline barred the lane and left the alley beside it open, so the
+ * router "went round" by slipping down a parallel a few metres away — the
+ * same direction the crowd is being kept out of. Barring the corridor is
+ * what makes the reroute mean anything.
+ */
+const EXCLUDE_HALF_WIDTH_M = 22;
 
 /**
  * How much of each end of a lane to leave open.

@@ -23,8 +23,37 @@ import { haversine, type LatLng } from '@/lib/geo';
  * precisely the bypass the lanes exist to prevent.
  */
 
-/** How far from a lane a step still counts as being on it. */
+/**
+ * How far from a lane a step still counts as being ON it.
+ *
+ * Two different questions want two different answers here.
+ *
+ * FLOW_CORRIDOR_M is the coarse one: does this LEG, between two mandals,
+ * use this lane? It has to tolerate a mandal standing off the road —
+ * Guruji Talim is 20 m from its own lane — so it is generous.
+ */
 export const FLOW_CORRIDOR_M = 45;
+
+/**
+ * How far from a lane a single drawn STEP counts as being on it.
+ *
+ * Wide on purpose, and it was briefly narrowed to 20 m by mistake.
+ *
+ * The evidence for narrowing looked good: bar the lane, ask the router
+ * again, and five of ten flagged stretches came back the SAME LENGTH —
+ * so the walk was on a parallel alley, not the lane, and at 20 m those
+ * stopped being flagged.
+ *
+ * That was the wrong conclusion. The one-way is a crowd-control measure
+ * over a corridor, not a property of one line on a map: if the police
+ * send the crowd south through these lanes, the alley running beside one
+ * is not a way to come back north. Reported from the ground, and it is
+ * the reason the alleys are there to be caught.
+ *
+ * So a step within this distance of a lane is on that lane's corridor,
+ * and subject to it.
+ */
+export const STEP_CORRIDOR_M = 45;
 
 /**
  * How opposed one step must be before it counts as going back up a lane.
@@ -86,10 +115,10 @@ export function laneOpposing(a: LatLng, b: LatLng) {
     .map((w) => ({ w, d: metresToPath(mid, w.path) }))
     .sort((x, y) => x.d - y.d)[0];
 
-  if (!nearest || nearest.d > FLOW_CORRIDOR_M) return null;
+  if (!nearest || nearest.d > STEP_CORRIDOR_M) return null;
   const { w } = nearest;
-  if (metresToPath(a, w.path) > FLOW_CORRIDOR_M) return null;
-  if (metresToPath(b, w.path) > FLOW_CORRIDOR_M) return null;
+  if (metresToPath(a, w.path) > STEP_CORRIDOR_M) return null;
+  if (metresToPath(b, w.path) > STEP_CORRIDOR_M) return null;
 
   const flow = flowBearingAt(mid, w.path);
   if (flow === null) return null;

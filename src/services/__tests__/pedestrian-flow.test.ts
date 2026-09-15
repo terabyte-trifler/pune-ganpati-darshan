@@ -398,9 +398,15 @@ describe('every mode whose legs are walked', () => {
     expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'two_wheeler')).toBe(1);
   });
 
-  it('orders a metro plan the way the crowd allows', () => {
+  it('orders a metro plan exactly as it orders a walking one', () => {
+    // The point of this test is that metro legs get the lane treatment at
+    // all. It used to assert a specific order, which only held while the
+    // two directions were priced differently; both are impassable now, so
+    // the order between them is a tie and asserting one was asserting
+    // nothing. What must hold is that metro and walk agree.
     const station = { lat: 18.5195, lng: 73.8556 };
-    expect(optimizeLocally(station, [TULSHIBAUG, DAGDUSHETH], 'metro').order)
-      .toEqual([1, 0]);
+    const stops = [TULSHIBAUG, DAGDUSHETH, GURUJI_TALIM];
+    expect(optimizeLocally(station, stops, 'metro').order)
+      .toEqual(optimizeLocally(station, stops, 'walk').order);
   });
 });
