@@ -563,6 +563,68 @@ async function computeRouteOrs(
  */
 export const MAX_MATRIX_POINTS = 10;
 
+/**
+ * Valhalla's pedestrian matrix, for the modes that are walked.
+ *
+ * The table below it asks OSRM for /table/v1/driving, because the public
+ * demo has no foot profile — so the order of a WALK was being decided by
+ * car distances. Around these one-ways that is not a small difference: a
+ * car must go round where a person may not, and may go where a person is
+ * sent the other way.
+ *
+ * Its own limit is 100 PAIRS rather than 100 locations, which is ten
+ * points square — the same cap MAX_MATRIX_POINTS already imposes, so
+ * nothing new is refused. Asked as a GET so the answer caches, like the
+ * route request.
+ */
+async function computeMatrixValhalla(
+  points: LatLng[],
+  mode: TravelMode
+): Promise<RoutesResult<number[][]>> {
+  const costing = VALHALLA_COSTING[mode];
+  if (!costing) return { ok: false, reason: 'unavailable' };
+
+  const locations = points.map((p) => ({
+    lat: Number(p.lat.toFixed(3)),
+    lon: Number(p.lng.toFixed(3)),
+  }));
+  const query = JSON.stringify({
+    sources: locations,
+    targets: locations,
+    costing,
+    units: 'kilometers',
+  });
+
+  let response: Response;
+  try {
+    response = await fetchJson(
+      `${VALHALLA_URL}/sources_to_targets?json=${encodeURIComponent(query)}`,
+      { next: { revalidate: ROUTER_CACHE_SECONDS } }
+    );
+  } catch {
+    return { ok: false, reason: 'unavailable' };
+  }
+  if (!response.ok) return { ok: false, reason: 'unavailable' };
+
+  const body = (await response.json().catch(() => null)) as {
+    sources_to_targets?: Array<Array<{ time?: number | null }>>;
+  } | null;
+
+  const rows = body?.sources_to_targets;
+  if (!rows?.length) return { ok: false, reason: 'no-route' };
+
+  // A null time means the pair is unreachable on foot. Infinity makes the
+  // solver treat it as impassable rather than silently costing it zero.
+  const matrix = rows.map((row) =>
+    row.map((cell) =>
+      cell?.time === null || cell?.time === undefined
+        ? Number.POSITIVE_INFINITY
+        : cell.time
+    )
+  );
+  return { ok: true, data: matrix };
+}
+
 export async function computeRouteMatrix(
   points: LatLng[],
   mode: TravelMode
@@ -572,6 +634,13 @@ export async function computeRouteMatrix(
       ok: false, reason: 'request-failed', status: 400,
       detail: `Matrix limited to ${MAX_MATRIX_POINTS} points`,
     };
+  }
+
+  // On foot, ask something that walks. OSRM below is the backstop, and it
+  // answers a foot request with a car.
+  if (VALHALLA_COSTING[mode]) {
+    const walked = await computeMatrixValhalla(points, mode);
+    if (walked.ok) return walked;
   }
 
   const coords = cacheableCoords(points, 3);
