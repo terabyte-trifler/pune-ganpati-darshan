@@ -274,6 +274,60 @@ describe('asking for Dagdusheth by name', () => {
     expect(slugs.some((s) => s !== DAGDUSHETH_SLUG)).toBe(true);
   });
 
+  it('is in the plan at every budget, not only the generous ones', () => {
+    // The bug this replaced: at 90 minutes the plan came back with three
+    // other mandals and no Dagdusheth. It is 47 minutes' walk from the
+    // city centre with a 45-minute queue, so it missed the budget by two
+    // and the greedy loop spent the time on nearer mandals instead —
+    // which is not what somebody who pressed this button asked for.
+    for (const budgetMinutes of [30, 60, 90, 120, 240, 360]) {
+      const plan = buildItinerary({
+        budgetMinutes,
+        interests: ['dagdusheth'],
+        pace: 'balanced',
+        mode: 'walk',
+        origin: { lat: 18.5308, lng: 73.8478 },
+        mandals: localGanpatis,
+      });
+      expect(
+        plan.stops.map((s) => s.ganpati.slug),
+        `budget ${budgetMinutes} dropped it`
+      ).toContain(DAGDUSHETH_SLUG);
+    }
+  });
+
+  it('says the plan runs over rather than quietly substituting', () => {
+    // An hour is not enough for Dagdusheth. The honest answer is the one
+    // mandal they asked for and a total that admits it, not a different
+    // mandal that fits.
+    const plan = buildItinerary({
+      budgetMinutes: 60,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    expect(plan.stops).toHaveLength(1);
+    expect(plan.stops[0].ganpati.slug).toBe(DAGDUSHETH_SLUG);
+    expect(plan.totalMinutes).toBeGreaterThan(plan.budgetMinutes);
+  });
+
+  it('does not appear twice when the budget is generous', () => {
+    // It is seeded before the greedy loop, so it also has to be taken out
+    // of the candidate list.
+    const plan = buildItinerary({
+      budgetMinutes: 360,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    const slugs = plan.stops.map((s) => s.ganpati.slug);
+    expect(slugs.filter((x) => x === DAGDUSHETH_SLUG)).toHaveLength(1);
+  });
+
   it('does not leak into a plan that did not ask for it', () => {
     const plan = buildItinerary({
       budgetMinutes: 90,

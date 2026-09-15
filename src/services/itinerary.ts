@@ -303,13 +303,35 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
 
   const templesWanted = allowsTemples(interests);
 
+  /**
+   * A mandal asked for by name goes in before the budget is spent.
+   *
+   * Without this the greedy loop treats it as one more candidate, and a
+   * candidate that does not fit is skipped. Asking for Dagdusheth on a
+   * ninety-minute budget produced a plan of three other mandals and no
+   * Dagdusheth: it is forty-seven minutes' walk from the city centre with
+   * a forty-five minute queue, so it missed by two minutes and the time
+   * quietly went to nearer mandals instead.
+   *
+   * That is the wrong answer to a request made by name. Fewer stops
+   * around it is a trade a visitor can accept; not being taken there at
+   * all is not what they asked for. If it does not fit even alone, it is
+   * still the plan — the totals say plainly that it runs over, which is
+   * the honest thing to show somebody who has an hour and wants
+   * Dagdusheth.
+   */
+  const pinned = interests.includes('dagdusheth')
+    ? mandals.filter((g) => g.slug === DAGDUSHETH_SLUG)
+    : [];
+
   const candidates = mandals
     .filter((g) => !g.isTemple || templesWanted)
+    .filter((g) => !pinned.some((p) => p.id === g.id))
     .map((g) => ({ g, score: interestScore(g, interests) }))
     .filter((c) => c.score > 0)
     .sort((a, b) => b.score - a.score || b.g.prominence - a.g.prominence);
 
-  const chosen: Ganpati[] = [];
+  const chosen: Ganpati[] = [...pinned];
   const skipped: Ganpati[] = [];
 
   for (const { g } of candidates) {
