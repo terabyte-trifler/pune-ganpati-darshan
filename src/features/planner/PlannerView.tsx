@@ -30,6 +30,13 @@ import { MetroJourneyCard } from './MetroJourneyCard';
 import { ParkingRideCard } from './ParkingRideCard';
 import { chooseParking } from '@/services/parking-plan';
 import { flowsOnRoute } from '@/services/pedestrian-flow';
+
+/** Named, because "routed" without a source is a claim with no author. */
+const PROVIDER_NAME: Record<string, string> = {
+  ors: 'OpenRouteService',
+  valhalla: 'Valhalla',
+  osrm: 'OSRM',
+};
 import { stationForRoute, returnStation, stationById, PRIMARY_STATIONS } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -641,7 +648,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
               {isEstimate
                 ? 'estimated'
                 : result?.durationSource === 'provider'
-                  ? `routed · ${result.provider === 'ors' ? 'OpenRouteService' : 'OSRM'}`
+                  ? `routed · ${PROVIDER_NAME[result.provider ?? ''] ?? 'router'}`
                   : 'from routed distance'}
             </p>
             {crowdAdjusted && (
