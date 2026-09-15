@@ -5,6 +5,7 @@ import {
   type DarshanPace,
   type Interest,
   DAGDUSHETH_SLUG,
+  legModeFor,
 } from '../itinerary';
 import { localGanpatis } from '@/services/catalogue';
 import { PUNE_CENTER } from '@/lib/geo';
@@ -338,5 +339,57 @@ describe('asking for Dagdusheth by name', () => {
       mandals: localGanpatis,
     });
     for (const s of plan.stops) expect(s.ganpati.category).toBe('historic');
+  });
+});
+
+/**
+ * A two-wheeler is ridden to the parking and no further.
+ *
+ * The peth core is barricaded through the festival. Everything after the
+ * parking is on foot, which means it is subject to the one-way lanes and
+ * to walking speed — and, crucially, it stays that way even when no
+ * parking spot could be chosen.
+ */
+describe('once the vehicle is parked', () => {
+  it('walks between mandals whether or not a parking was found', () => {
+    expect(legModeFor('two_wheeler')).toBe('walk');
+  });
+
+  it('leaves the other modes alone', () => {
+    expect(legModeFor('walk')).toBe('walk');
+    expect(legModeFor('metro')).toBe('metro');
+  });
+
+  it('never prices a two-wheeler plan at riding speed between stops', () => {
+    // The regression this replaced: the leg mode was decided by whether a
+    // parking had been chosen, so a rider who had not granted location got
+    // their whole darshan priced as a ride through closed lanes. The two
+    // plans below differ only in origin, and both must be walked.
+    const peths = { lat: 18.5160, lng: 73.8560 };
+    const build = (origin: typeof peths) =>
+      buildItinerary({
+        budgetMinutes: 240,
+        interests: ['manache'],
+        pace: 'balanced',
+        mode: 'two_wheeler',
+        origin,
+        mandals: localGanpatis,
+      });
+
+    const fromPeths = build(peths);
+    // Same stops on foot cost the same whichever way the plan was reached.
+    const onFoot = buildItinerary({
+      budgetMinutes: 240,
+      interests: ['manache'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: peths,
+      mandals: localGanpatis,
+    });
+
+    expect(fromPeths.stops.length).toBeGreaterThan(0);
+    // Riding speed is over three times walking speed, so a plan priced as
+    // a ride would have a travel figure a fraction of the walked one.
+    expect(fromPeths.travelMinutes).toBeGreaterThan(onFoot.travelMinutes / 2);
   });
 });

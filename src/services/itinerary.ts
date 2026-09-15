@@ -253,9 +253,12 @@ function costOf(
 
   let travelSeconds = 0;
   let previous = origin;
+  const legMode = legModeFor(mode);
   for (const g of ordered) {
     const point = { lat: g.location.lat, lng: g.location.lng };
-    travelSeconds += estimateDurationSeconds(haversine(previous, point), mode);
+    travelSeconds +=
+      estimateDurationSeconds(haversine(previous, point), legMode) *
+      legCostFactor(previous, point, legMode);
     previous = point;
   }
 
@@ -265,6 +268,25 @@ function costOf(
     0
   );
   return { travel, darshan, total: travel + darshan };
+}
+
+/**
+ * How the legs between mandals are actually travelled.
+ *
+ * On a two-wheeler: walked, always. The peth core is barricaded through
+ * the festival, so once the vehicle is parked the rest is on foot —
+ * whether or not a parking spot could be picked.
+ *
+ * That last clause is the point. This used to be `parking ? 'walk' :
+ * mode`, which quietly made the mode depend on whether we happened to
+ * find somewhere to park. A rider who had not granted location, or whose
+ * stops matched no parking candidate, got their whole plan priced and
+ * routed as a RIDE between mandals — through lanes the police have
+ * closed, at riding speed, and with none of the one-way rules applied,
+ * since those only run for walking.
+ */
+export function legModeFor(mode: TravelMode): TravelMode {
+  return mode === 'two_wheeler' ? 'walk' : mode;
 }
 
 /** Orders a set of stops for the shortest walk from the origin. */
@@ -282,7 +304,7 @@ function order(mandals: Ganpati[], origin: LatLng, mode: TravelMode): Ganpati[] 
   const result = optimizeLocally(
     origin,
     mandals.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
-    mode
+    legModeFor(mode)
   );
   return result.order.map((i) => mandals[i]);
 }
@@ -353,7 +375,7 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
   // two-wheeler the legs start at the parking and are walked, because that
   // is the journey the plan actually describes.
   const stops: ItineraryStop[] = [];
-  const legMode: TravelMode = parking ? 'walk' : mode;
+  const legMode: TravelMode = legModeFor(mode);
   let previous: LatLng = parking
     ? { lat: parking.spot.lat, lng: parking.spot.lng }
     : origin;

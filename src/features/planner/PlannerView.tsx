@@ -29,6 +29,7 @@ import { MetroStationPicker } from './MetroStationPicker';
 import { MetroJourneyCard } from './MetroJourneyCard';
 import { ParkingRideCard } from './ParkingRideCard';
 import { chooseParking } from '@/services/parking-plan';
+import { legModeFor } from '@/services/itinerary';
 import { flowsOnRoute } from '@/services/pedestrian-flow';
 
 /** Named, because "routed" without a source is a claim with no author. */
@@ -230,7 +231,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
    * the riding speed here is what made the old plans claim journeys
    * through barricaded lanes.
    */
-  const legMode: TravelMode = parking ? 'walk' : mode;
+  const legMode: TravelMode = legModeFor(mode);
   const originLabel =
     mode === 'metro'
       ? `${station.name} metro`
