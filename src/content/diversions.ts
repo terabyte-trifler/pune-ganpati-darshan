@@ -166,36 +166,6 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
-    // Branches west off the main lane just above Dagdusheth. Named for
-    // Guruji Talim because that is the mandal it runs past — 41 m off it,
-    // measured against the catalogue, and the landmark a walker will
-    // actually recognise from the road.
-    name: 'Dagdusheth to Guruji Talim',
-    note:
-      'The crowd leaves the main lane westwards here, towards Guruji ' +
-      'Talim. You will not be able to come back east along it to ' +
-      'Dagdusheth — plan to rejoin further on.',
-    path: [
-      [73.856293, 18.515627],
-      [73.855047, 18.515006],
-    ],
-  },
-  {
-    // Runs INTO the same point the westward branch above ends at, from
-    // the other side — the two converge on Guruji Talim, 20 m off this
-    // one. Nothing in the catalogue sits at its west end, so it is named
-    // by the direction it goes rather than by a landmark we cannot check.
-    name: 'West approach to Guruji Talim',
-    note:
-      'The crowd walks one way here, eastwards towards Guruji Talim. ' +
-      'You will not be able to come back west along it — plan to leave ' +
-      'by another lane.',
-    path: [
-      [73.853770, 18.514505],
-      [73.855047, 18.515006],
-    ],
-  },
-  {
     // The way OUT of the junction the two lanes above converge on. Its
     // start is 2 m from where both of them end and 42 m from Guruji
     // Talim; its end is 2 m from Tulshibaug. With this the crowd's path

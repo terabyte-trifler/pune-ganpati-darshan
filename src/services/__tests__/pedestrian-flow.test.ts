@@ -48,8 +48,8 @@ describe('the catalogue these rules are written against', () => {
     expect(metresToPath(DAGDUSHETH, southward)).toBeLessThan(FLOW_CORRIDOR_M);
     expect(metresToPath(HUTATMA, southward)).toBeLessThan(FLOW_CORRIDOR_M);
 
-    const westward = byName('Dagdusheth to Guruji Talim').path;
-    expect(metresToPath(GURUJI_TALIM, westward)).toBeLessThan(FLOW_CORRIDOR_M);
+    const exit = byName('Guruji Talim to Tulshibaug').path;
+    expect(metresToPath(TULSHIBAUG, exit)).toBeLessThan(FLOW_CORRIDOR_M);
   });
 });
 
@@ -70,15 +70,20 @@ describe('a leg that runs against the crowd', () => {
     expect(legAgainstFlow(TULSHIBAUG, DAGDUSHETH)).toBeNull();
   });
 
-  it('is named walking east from Guruji Talim back towards Dagdusheth', () => {
-    // The westward branch. A separate lane from the southward flow, with
-    // its own bearing and its own warning.
-    const w = legAgainstFlow(GURUJI_TALIM, DAGDUSHETH);
-    expect(w?.name).toMatch(/Guruji Talim/);
-  });
-
-  it('is not named walking west out to Guruji Talim', () => {
+  it('leaves the branch between Dagdusheth and Guruji Talim open both ways', () => {
+    // This ran as two one-way lanes through the Guruji Talim junction
+    // until it was corrected on the ground: the whole 293 m of it, from
+    // the west end at 18.514498, 73.853786 to the Dagdusheth end at
+    // 18.515611, 73.856306, is two-way. Held here so it cannot quietly
+    // come back — an ordering that sends people the long way round a
+    // road they can simply walk up is worse than no rule at all.
     expect(legAgainstFlow(DAGDUSHETH, GURUJI_TALIM)).toBeNull();
+    expect(legAgainstFlow(GURUJI_TALIM, DAGDUSHETH)).toBeNull();
+
+    const westEnd = { lat: 18.514498, lng: 73.853786 };
+    const dagdushethEnd = { lat: 18.515611, lng: 73.856306 };
+    expect(legAgainstFlow(westEnd, dagdushethEnd)).toBeNull();
+    expect(legAgainstFlow(dagdushethEnd, westEnd)).toBeNull();
   });
 
   it('sends walkers south out of Guruji Talim, not back north into it', () => {
@@ -89,19 +94,6 @@ describe('a leg that runs against the crowd', () => {
     expect(legAgainstFlow(GURUJI_TALIM, TULSHIBAUG)).toBeNull();
     expect(legAgainstFlow(TULSHIBAUG, GURUJI_TALIM)?.name)
       .toBe('Guruji Talim to Tulshibaug');
-  });
-
-  it('closes the junction the two westward lanes converge on', () => {
-    // Two lanes point into it and one points out. If an inbound lane is
-    // ever added without an outbound one, the app can route people to a
-    // junction it cannot route them out of — so the shape is asserted.
-    const into = ['Dagdusheth to Guruji Talim', 'West approach to Guruji Talim'].map(byName);
-    const outOf = [byName('Guruji Talim to Tulshibaug')];
-    // Every one of them touches the same point, within a junction's width.
-    const junction = { lat: 18.515006, lng: 73.855047 };
-    for (const w of [...into, ...outOf]) {
-      expect(metresToPath(junction, w.path)).toBeLessThan(10);
-    }
   });
 
   it('follows a lane that turns, rather than averaging across the turn', () => {
@@ -120,7 +112,7 @@ describe('a leg that runs against the crowd', () => {
 
   it('treats Tulshibaug as a fork, with two ways out and none back in', () => {
     // Two lanes leave Tulshibaug — south to Jilbya Maruti and east to the
-    // main lane — and the exit lane from Guruji Talim arrives there. A
+    // main lane — and the lane down from Guruji Talim arrives there. A
     // walker can leave it two ways and return by neither.
     const out = ['Tulshibaug to Jilbya Maruti', 'Tulshibaug east to the main lane'];
     const TULSHIBAUG_END = { lat: 18.514183, lng: 73.855305 };
@@ -150,9 +142,14 @@ describe('what the walker is told', () => {
     expect(flowsOnRoute([DAGDUSHETH, TULSHIBAUG])).toEqual([]);
   });
 
-  it('warns separately about the westward branch', () => {
-    const flows = flowsOnRoute([DAGDUSHETH, GURUJI_TALIM]);
-    expect(flows.map((f) => f.name)).toEqual(['Dagdusheth to Guruji Talim']);
+  it('says nothing about the branch out to Guruji Talim, which is two-way', () => {
+    expect(flowsOnRoute([DAGDUSHETH, GURUJI_TALIM])).toEqual([]);
+    expect(flowsOnRoute([GURUJI_TALIM, DAGDUSHETH])).toEqual([]);
+  });
+
+  it('still warns about the lane down from Guruji Talim to Tulshibaug', () => {
+    const flows = flowsOnRoute([GURUJI_TALIM, TULSHIBAUG]);
+    expect(flows.map((f) => f.name)).toEqual(['Guruji Talim to Tulshibaug']);
   });
 
   it('gives the two directions two different warnings', () => {
