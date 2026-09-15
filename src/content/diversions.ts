@@ -160,6 +160,22 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
+    // Branches west off the main lane just above Dagdusheth. Named for
+    // Guruji Talim because that is the mandal it runs past — 41 m off it,
+    // measured against the catalogue, and the landmark a walker will
+    // actually recognise from the road.
+    name: 'Dagdusheth to Guruji Talim',
+    bearingDeg: 242,
+    note:
+      'The crowd leaves the main lane westwards here, towards Guruji ' +
+      'Talim. You will not be able to come back east along it to ' +
+      'Dagdusheth — plan to rejoin further on.',
+    path: [
+      [73.856293, 18.515627],
+      [73.855047, 18.515006],
+    ],
+  },
+  {
     name: 'Dagdusheth to Gotiram Bhaiya chowk',
     bearingDeg: 187,
     note:

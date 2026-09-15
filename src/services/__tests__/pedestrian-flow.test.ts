@@ -28,14 +28,20 @@ const at = (slug: string): LatLng => {
 const DAGDUSHETH = at('dagdusheth-halwai-ganpati');
 const HUTATMA = at('hutatma-babu-genu-mandal');
 const TULSHIBAUG = at('tulshibaug-ganpati');
+// 41 m off the lane that branches west out of the main flow above
+// Dagdusheth — the nearest mandal to it, and the one a walker steers by.
+const GURUJI_TALIM = at('guruji-talim');
 
 describe('the catalogue these rules are written against', () => {
   it('still has both mandals sitting on the one-way stretch', () => {
     // If a coordinate is corrected and one of these walks out of the
     // corridor, every expectation below becomes a test of nothing.
-    const stretch = PEDESTRIAN_ONE_WAYS[1].path;
-    expect(metresToPath(DAGDUSHETH, stretch)).toBeLessThan(FLOW_CORRIDOR_M);
-    expect(metresToPath(HUTATMA, stretch)).toBeLessThan(FLOW_CORRIDOR_M);
+    const southward = PEDESTRIAN_ONE_WAYS.find((w) => w.bearingDeg === 187)!.path;
+    expect(metresToPath(DAGDUSHETH, southward)).toBeLessThan(FLOW_CORRIDOR_M);
+    expect(metresToPath(HUTATMA, southward)).toBeLessThan(FLOW_CORRIDOR_M);
+
+    const westward = PEDESTRIAN_ONE_WAYS.find((w) => w.bearingDeg === 242)!.path;
+    expect(metresToPath(GURUJI_TALIM, westward)).toBeLessThan(FLOW_CORRIDOR_M);
   });
 });
 
@@ -54,6 +60,17 @@ describe('a leg that runs against the crowd', () => {
     // charged for walking up it.
     expect(legAgainstFlow(DAGDUSHETH, TULSHIBAUG)).toBeNull();
     expect(legAgainstFlow(TULSHIBAUG, DAGDUSHETH)).toBeNull();
+  });
+
+  it('is named walking east from Guruji Talim back towards Dagdusheth', () => {
+    // The westward branch. A separate lane from the southward flow, with
+    // its own bearing and its own warning.
+    const w = legAgainstFlow(GURUJI_TALIM, DAGDUSHETH);
+    expect(w?.name).toMatch(/Guruji Talim/);
+  });
+
+  it('is not named walking west out to Guruji Talim', () => {
+    expect(legAgainstFlow(DAGDUSHETH, GURUJI_TALIM)).toBeNull();
   });
 
   it('leaves the rest of the city alone', () => {
@@ -75,6 +92,19 @@ describe('what the walker is told', () => {
     expect(flowsOnRoute([DAGDUSHETH, TULSHIBAUG])).toEqual([]);
   });
 
+  it('warns separately about the westward branch', () => {
+    const flows = flowsOnRoute([DAGDUSHETH, GURUJI_TALIM]);
+    expect(flows.map((f) => f.name)).toEqual(['Dagdusheth to Guruji Talim']);
+  });
+
+  it('gives the two directions two different warnings', () => {
+    // The southward pair share a note on purpose — one road above the
+    // fork. The westward branch is a different road and must not be
+    // folded into that warning by the deduplication.
+    const notes = new Set(PEDESTRIAN_ONE_WAYS.map((w) => w.note));
+    expect(notes.size).toBe(2);
+  });
+
   it('never repeats a warning, however many legs run along it', () => {
     // Both stretches cover this leg — they are one road above the fork —
     // and the walker must be told once, not twice.
@@ -83,9 +113,13 @@ describe('what the walker is told', () => {
     expect(flows).toHaveLength(1);
   });
 
-  it('carries a note that warns you cannot come back up', () => {
+  it('carries a note that warns you cannot come back', () => {
+    // Worded per direction — "back up" for the southward lanes, "back
+    // east" for the westward branch — so this asserts on the substance
+    // every one of them has to carry, not on one lane's phrasing.
     for (const w of PEDESTRIAN_ONE_WAYS) {
-      expect(w.note).toMatch(/not be able to walk back|route out is onward/i);
+      expect(w.note).toMatch(/not be able to (walk|come) back/i);
+      expect(w.note).toMatch(/one way|leaves the main lane/i);
     }
   });
 });
