@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { computeRoute, computeRouteMatrix } from '@/lib/maps/routes';
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
+import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
 
@@ -33,19 +34,18 @@ const pointSchema = z.object({
 /**
  * As many stops as a saved plan can hold.
  *
- * This used to be MAX_MATRIX_POINTS - 1, which is 9, and it was wrong in a
- * way that showed up as a mystery: the planner puts no limit on a darshan,
- * so adding a tenth mandal and tapping Optimise returned a bare
- * "Invalid request" with nothing to act on.
- *
- * The matrix limit is a property of ONE routing provider's table endpoint,
- * not of this request. Above ten points computeRouteMatrix declines and the
- * handler already orders the stops locally and labels the result
+ * The matrix limit is a property of ONE routing provider's table
+ * endpoint, not of this request. Above ten points computeRouteMatrix
+ * declines and the handler orders the stops locally, labelling the result
  * 'local-estimate' — the same honest degrade it does when the router is
- * unreachable. The schema was rejecting requests before that path could
- * run. 20 matches the cap on a shared plan, so the two agree.
+ * unreachable. A schema cap below that just rejects the request before
+ * the degrade can run.
+ *
+ * So the cap comes from the catalogue: see lib/plan-limits. Somebody
+ * planning every mandal in the city on one night is doing the thing this
+ * app is for.
  */
-const MAX_STOPS = 20;
+const MAX_STOPS = MAX_PLAN_STOPS;
 
 const bodySchema = z.object({
   origin: pointSchema,
