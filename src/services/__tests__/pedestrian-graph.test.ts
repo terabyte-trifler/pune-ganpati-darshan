@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  laneWalk, walkGeometry, touchesLanes, spliceLaneLegs,
+  laneWalk, walkGeometry, touchesLanes, spliceLaneLegs, laneExitsFrom,
 } from '@/services/pedestrian-graph';
 import { haversine, metresToPath, type LatLng } from '@/lib/geo';
+import { legCostFactor } from '@/services/pedestrian-flow';
 import catalogue from '@/content/catalogue.json';
 
 /**
@@ -203,5 +204,45 @@ describe('joining a lane where you actually stand', () => {
   it('counts a mandal beside a lane as on it', () => {
     // touchesLanes measures to the lanes, not to their corners.
     expect(touchesLanes(HUTATMA)).toBe(true);
+  });
+});
+
+/**
+ * You cannot turn round at Tulshibaug.
+ *
+ * Reported in as many words: no U-turn there in any direction — you go on
+ * towards Jilbya Maruti, or you take the right lane. A stop standing on
+ * the lane network can only be left the ways the crowd leaves it, and
+ * before this the planner was free to walk back out the way it came in.
+ */
+describe('leaving a stop the way the crowd leaves it', () => {
+  const TAMBDI = at('tambdi-jogeshwari');
+  const KASBA = at('kasba-ganpati');
+
+  it('knows the ways out of Tulshibaug', () => {
+    const exits = laneExitsFrom(TULSHIBAUG);
+    expect(exits).toHaveLength(2);
+    // On towards Jilbya Maruti, and the lane east.
+    expect(exits.some((b) => Math.abs(b - 245) < 20)).toBe(true);
+    expect(exits.some((b) => Math.abs(b - 102) < 20)).toBe(true);
+  });
+
+  it('refuses to send a walker back north out of Tulshibaug', () => {
+    for (const north of [DAGDUSHETH, TAMBDI, KASBA, GURUJI_TALIM]) {
+      expect(
+        legCostFactor(TULSHIBAUG, north, 'walk'),
+        'a U-turn out of Tulshibaug'
+      ).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it('still allows the two ways the crowd does leave', () => {
+    expect(legCostFactor(TULSHIBAUG, JILBYA, 'walk')).toBeLessThan(2);
+    expect(legCostFactor(TULSHIBAUG, at('hutatma-babu-genu-mandal'), 'walk')).toBeLessThan(2);
+  });
+
+  it('leaves somewhere no lane starts completely alone', () => {
+    // Most of the city. A stop with no lane leaving it has no constraint.
+    expect(laneExitsFrom({ lat: 18.5074, lng: 73.8077 })).toHaveLength(0);
   });
 });

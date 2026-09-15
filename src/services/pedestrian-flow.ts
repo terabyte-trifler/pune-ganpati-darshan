@@ -1,6 +1,7 @@
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
 import {
   laneWalk, touchesLanes, flowBearingAt, stepAgainstFlow, laneOpposing,
+  laneExitsFrom,
   FLOW_CORRIDOR_M,
 } from '@/services/pedestrian-graph';
 import {
@@ -198,9 +199,21 @@ function along(a: LatLng, b: LatLng, t: number): LatLng {
   return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
 }
 
+/**
+ * How far off a permitted exit still counts as taking it.
+ *
+ * The next mandal is rarely straight down the lane, so there is slack —
+ * but not so much that heading back the way the crowd came counts as
+ * taking one of the exits. Tulshibaug's two are 245 and 102 degrees, and
+ * at 90 degrees of slack a departure north-east to Kasba was creeping in
+ * on the strength of being 80 degrees off the eastern one.
+ */
+const EXIT_TOLERANCE_DEG = 70;
+
 function graphCostFactor(from: LatLng, to: LatLng): number {
   const straight = haversine(from, to);
   let suspect = 1;
+
 
   // Arriving at, or leaving, a stop against the lane it stands on.
   if (straight > 0) {
@@ -210,8 +223,28 @@ function graphCostFactor(from: LatLng, to: LatLng): number {
     }
   }
 
+  /**
+   * Leaving a stop by a way the crowd does not leave it.
+   *
+   * Asked only when the graph found no legal walk, and that order matters:
+   * a leg the lanes DO route is permitted by definition, and checking the
+   * departure bearing first would have blocked Tulshibaug to Hutatma,
+   * which is a legal 145 m walk down a lane.
+   */
+  const laneRoute = touchesLanes(from) && touchesLanes(to) ? laneWalk(from, to) : null;
+  if (!laneRoute && straight > 0) {
+    const exits = laneExitsFrom(from);
+    const heading = bearingDeg(from, to);
+    if (
+      exits.length > 0 &&
+      !exits.some((e) => bearingDifference(heading, e) <= EXIT_TOLERANCE_DEG)
+    ) {
+      return NO_ROUTE_FACTOR;
+    }
+  }
+
   if (!touchesLanes(from) || !touchesLanes(to)) return suspect;
-  const walk = laneWalk(from, to);
+  const walk = laneRoute;
   if (!walk) return NO_ROUTE_FACTOR;
   return Math.max(suspect, straight > 0 ? walk.metres / straight : 1);
 }

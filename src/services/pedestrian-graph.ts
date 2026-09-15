@@ -480,3 +480,28 @@ export function spliceLaneLegs(
 export function laneViaPoints(from: LatLng, to: LatLng): LatLng[] {
   return laneWalk(from, to)?.path.slice(1, -1) ?? [];
 }
+
+/**
+ * The directions you are allowed to leave a place in.
+ *
+ * A stop standing on the lane network cannot be left just any way. The
+ * crowd arrives along one lane and departs along another, and turning
+ * round is the one thing the whole arrangement exists to stop — reported
+ * of Tulshibaug in as many words: you cannot take a U-turn there in any
+ * direction, you go on towards Jilbya Maruti or you take the right lane
+ * towards Bajirao Road.
+ *
+ * Returns the bearing of every lane that STARTS at this point, which is
+ * to say every way out of it. Empty for somewhere no lane leaves, which
+ * is most of the city and means no constraint.
+ */
+export function laneExitsFrom(point: LatLng): number[] {
+  const out: number[] = [];
+  for (const lane of PEDESTRIAN_ONE_WAYS) {
+    const head = { lat: lane.path[0][1], lng: lane.path[0][0] };
+    if (haversine(point, head) > JOIN_M) continue;
+    const next = { lat: lane.path[1][1], lng: lane.path[1][0] };
+    out.push(bearingDeg(head, next));
+  }
+  return out;
+}
