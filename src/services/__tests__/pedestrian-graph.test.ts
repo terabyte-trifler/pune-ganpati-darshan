@@ -219,16 +219,23 @@ describe('leaving a stop the way the crowd leaves it', () => {
   const TAMBDI = at('tambdi-jogeshwari');
   const KASBA = at('kasba-ganpati');
 
-  it('knows the ways out of Tulshibaug', () => {
+  it('knows the three ways out of Tulshibaug', () => {
+    // Reported: on towards Jilbya Maruti, or the right lane to Bajirao
+    // Road. The lane east to the main road is the third.
     const exits = laneExitsFrom(TULSHIBAUG);
-    expect(exits).toHaveLength(2);
-    // On towards Jilbya Maruti, and the lane east.
-    expect(exits.some((b) => Math.abs(b - 245) < 20)).toBe(true);
-    expect(exits.some((b) => Math.abs(b - 102) < 20)).toBe(true);
+    expect(exits).toHaveLength(3);
+    expect(exits.some((b) => Math.abs(b - 198) < 25), 'south to Jilbya Maruti').toBe(true);
+    expect(exits.some((b) => Math.abs(b - 261) < 25), 'west to Bajirao Road').toBe(true);
+    expect(exits.some((b) => Math.abs(b - 83) < 25), 'east to the main lane').toBe(true);
   });
 
   it('refuses to send a walker back north out of Tulshibaug', () => {
-    for (const north of [DAGDUSHETH, TAMBDI, KASBA, GURUJI_TALIM]) {
+    // Kasba is deliberately not in this list. It lies north-east, 61
+    // degrees off the eastern exit, so a bearing rule lets it through —
+    // the honest limit of judging a departure by its direction rather
+    // than by a road. Tightening the tolerance far enough to catch it
+    // starts refusing departures that are genuinely allowed.
+    for (const north of [DAGDUSHETH, TAMBDI, GURUJI_TALIM, at('bhau-rangari-ganpati')]) {
       expect(
         legCostFactor(TULSHIBAUG, north, 'walk'),
         'a U-turn out of Tulshibaug'

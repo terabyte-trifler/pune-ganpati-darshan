@@ -263,7 +263,32 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
-    // The second way out of Tulshibaug: east, back to the main
+    // The internal road out of Tulshibaug, west to Bajirao Road. The
+    // third way out, and the "right lane" a walker coming down from
+    // Guruji Talim would take.
+    name: 'Tulshibaug to Bajirao Road',
+    towards: 'Bajirao Road',
+    heading: 'west',
+    note:
+      'The crowd walks one way here, west out of Tulshibaug towards ' +
+      'Bajirao Road. You will not be able to come back east along it — ' +
+      'there is no turning round at Tulshibaug.',
+    path: [
+      [73.855305, 18.514183],
+      [73.855249, 18.514156],
+      [73.855030, 18.514141],
+      [73.854898, 18.514122],
+      [73.854787, 18.514091],
+      [73.854676, 18.514061],
+      [73.854574, 18.514049],
+      [73.854402, 18.514028],
+      [73.854381, 18.514025],
+      [73.854130, 18.514022],
+      [73.853847, 18.513999],
+    ],
+  },
+  {
+    // Another way out of Tulshibaug: east, back to the main
     // north-south lane, which its far end comes within 58 m of. Named for
     // that rejoining rather than for a mandal — the nearest at the east
     // end is Hutatma Babu Genu at 57 m, too far to say the lane ends

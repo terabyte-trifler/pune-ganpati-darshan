@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { penaliseAgainstFlow } from '@/services/pedestrian-flow';
 import {
   optimizeOrder,
   optimizeLocally,
@@ -111,7 +112,13 @@ describe('route optimizer', () => {
       { lat: 18.5148, lng: 73.8551 }, // Tulshibaug
       { lat: 18.5126, lng: 73.8489 }, // Kesariwada
     ];
-    const matrix = estimateMatrix([origin, ...manache], 'walk');
+    // Priced the same way optimizeLocally prices it. estimateMatrix is
+    // plain distance now — the one-way penalty lives in optimizeOrder — so
+    // comparing an optimised cost against a raw one was comparing two
+    // different scales, and the comparison flipped as soon as the optimum
+    // legitimately used a penalised leg.
+    const points = [origin, ...manache];
+    const matrix = penaliseAgainstFlow(estimateMatrix(points, 'walk'), points, 'walk');
     const optimized = optimizeLocally(origin, manache, 'walk');
 
     const byLatitude = [...manache.keys()].sort(

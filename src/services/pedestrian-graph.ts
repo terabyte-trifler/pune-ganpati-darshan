@@ -359,9 +359,23 @@ export function laneWalk(from: LatLng, to: LatLng): LaneWalk | null {
     }
   }
 
+  /**
+   * The finish has to be somewhere the walk ARRIVED at, not somewhere it
+   * merely stepped onto.
+   *
+   * prev[id] === -1 means this node was reached by a join and nothing
+   * else — so a path ending there is two straight hops through one point,
+   * which is a way of stepping onto the network and off again without
+   * walking any of it. Those hops are shorter than the lane they skip, so
+   * Dijkstra prefers them: the walk from Guruji Talim to Tulshibaug came
+   * back as 98 m of nothing against 96 m straight, and was then thrown out
+   * by the chain-length guard rather than falling back to the 117 m walk
+   * down the lane that was sitting right there.
+   */
   let finish = -1;
   let total = Infinity;
   for (const [id, join] of endCost) {
+    if (prev[id] === -1) continue;
     const candidate = dist[id] + join;
     if (candidate < total) { total = candidate; finish = id; }
   }
@@ -494,14 +508,30 @@ export function laneViaPoints(from: LatLng, to: LatLng): LatLng[] {
  * Returns the bearing of every lane that STARTS at this point, which is
  * to say every way out of it. Empty for somewhere no lane leaves, which
  * is most of the city and means no constraint.
+ *
+ * Measured over the lane's first EXIT_BEARING_M rather than its first
+ * pair of points. The lanes are snapped to the real roads now, so a lane
+ * can open with a two-metre jog in one direction before committing to
+ * another — and reading that jog as the way out gave Guruji Talim an exit
+ * bearing of 256 degrees for a lane that runs south, which then blocked
+ * the walk down it.
  */
 export function laneExitsFrom(point: LatLng): number[] {
   const out: number[] = [];
   for (const lane of PEDESTRIAN_ONE_WAYS) {
     const head = { lat: lane.path[0][1], lng: lane.path[0][0] };
     if (haversine(point, head) > JOIN_M) continue;
-    const next = { lat: lane.path[1][1], lng: lane.path[1][0] };
-    out.push(bearingDeg(head, next));
+
+    // Walk along the lane until it has actually gone somewhere.
+    let far = { lat: lane.path[1][1], lng: lane.path[1][0] };
+    for (const [lng, lat] of lane.path.slice(1)) {
+      far = { lat, lng };
+      if (haversine(head, far) >= EXIT_BEARING_M) break;
+    }
+    out.push(bearingDeg(head, far));
   }
   return out;
 }
+
+/** How far along a lane to look before calling it a direction. */
+const EXIT_BEARING_M = 40;
