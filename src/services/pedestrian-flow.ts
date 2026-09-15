@@ -51,6 +51,60 @@ function sample(a: LatLng, b: LatLng, steps = 12): LatLng[] {
 }
 
 /**
+ * The direction the crowd moves at one point on a stretch.
+ *
+ * Read off the nearest segment of the drawn path, not from a number
+ * stored beside it. These lanes bend — one of them turns 81° in the
+ * middle — and a single bearing for a whole stretch is wrong for half of
+ * it, in a way nothing can catch because the number and the geometry are
+ * maintained by hand in two places.
+ *
+ * Paths are a handful of points, so the linear scan is cheaper than the
+ * bookkeeping that would avoid it.
+ */
+export function flowBearingAt(point: LatLng, path: [number, number][]): number | null {
+  let best = Infinity;
+  let bearing: number | null = null;
+  for (let i = 0; i < path.length - 1; i++) {
+    const pair: [number, number][] = [path[i], path[i + 1]];
+    const d = metresToPath(point, pair);
+    if (d < best) {
+      best = d;
+      bearing = bearingDeg(
+        { lat: path[i][1], lng: path[i][0] },
+        { lat: path[i + 1][1], lng: path[i + 1][0] }
+      );
+    }
+  }
+  return bearing;
+}
+
+/** Middle value, so one sample taken at a bend cannot decide a leg. */
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+/**
+ * How far a leg's heading departs from the crowd's, along a stretch.
+ *
+ * Compared segment by segment and then taken at the median: a leg that
+ * rounds a bend disagrees sharply with one segment and agrees with the
+ * next, and neither of those alone describes the walk.
+ */
+function departureFromFlow(
+  heading: number,
+  samples: LatLng[],
+  path: [number, number][]
+): number {
+  const diffs = samples
+    .map((p) => flowBearingAt(p, path))
+    .filter((b): b is number => b !== null)
+    .map((b) => bearingDifference(heading, b));
+  return diffs.length === 0 ? 0 : median(diffs);
+}
+
+/**
  * Whether a leg travels ALONG a stretch rather than merely touching it.
  *
  * Every sampled point has to sit in the corridor, not just one. Almost
@@ -77,7 +131,7 @@ export function legAgainstFlow(from: LatLng, to: LatLng) {
   return (
     PEDESTRIAN_ONE_WAYS.find((w) => {
       if (!runsAlong(middle, w.path)) return false;
-      return bearingDifference(heading, w.bearingDeg) > 180 - FLOW_TOLERANCE_DEG;
+      return departureFromFlow(heading, middle, w.path) > 180 - FLOW_TOLERANCE_DEG;
     }) ?? null
   );
 }
@@ -94,7 +148,7 @@ export function flowsOnRoute(points: LatLng[]): typeof PEDESTRIAN_ONE_WAYS {
       // above the fork, and a walker should be told once.
       if (seen.has(w.note)) continue;
       if (runsAlong(middle, w.path) &&
-          bearingDifference(heading, w.bearingDeg) <= FLOW_TOLERANCE_DEG) {
+          departureFromFlow(heading, middle, w.path) <= FLOW_TOLERANCE_DEG) {
         seen.add(w.note);
         out.push(w);
       }

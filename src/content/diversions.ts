@@ -112,9 +112,8 @@ export const CLOSURE_JUNCTIONS: ClosureJunction[] = [
  * a straight-line planner will get wrong by default: the distance between
  * two mandals is the same in both directions, but the walk is not.
  *
- * `bearingDeg` is the compass direction people are permitted to walk.
  * Reported from the ground rather than read off the police map, which
- * draws this stretch as a plain closure.
+ * draws these stretches as plain closures where it shows them at all.
  */
 /**
  * A stretch the police make the crowd walk one way during the festival.
@@ -129,18 +128,25 @@ export const CLOSURE_JUNCTIONS: ClosureJunction[] = [
  */
 export interface PedestrianOneWay {
   name: string;
-  /** Compass bearing of permitted walking, in degrees. */
-  bearingDeg: number;
   /** Said to the walker, in their words. */
   note: string;
-  /** [lng, lat] pairs along the stretch. */
+  /**
+   * [lng, lat] pairs along the stretch, in the direction the crowd walks.
+   *
+   * There is deliberately no bearing stored beside this. Direction is read
+   * off the path segment nearest the walker, because these lanes turn —
+   * one of them by 81°, which is the road and not an artefact of drawing
+   * it — and a single stored bearing is wrong for half of such a stretch
+   * while disagreeing with nothing that could flag it. When the bearings
+   * were kept by hand the longest stretch's was 27° out from its own
+   * geometry.
+   */
   path: [number, number][];
 }
 
 export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
   {
     name: 'Shaniwar Wada chowk to Gotiram Bhaiya chowk',
-    bearingDeg: 166,
     note:
       'The crowd here walks one way, southwards past Dagdusheth towards ' +
       'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
@@ -165,7 +171,6 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     // measured against the catalogue, and the landmark a walker will
     // actually recognise from the road.
     name: 'Dagdusheth to Guruji Talim',
-    bearingDeg: 242,
     note:
       'The crowd leaves the main lane westwards here, towards Guruji ' +
       'Talim. You will not be able to come back east along it to ' +
@@ -181,7 +186,6 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     // one. Nothing in the catalogue sits at its west end, so it is named
     // by the direction it goes rather than by a landmark we cannot check.
     name: 'West approach to Guruji Talim',
-    bearingDeg: 68,
     note:
       'The crowd walks one way here, eastwards towards Guruji Talim. ' +
       'You will not be able to come back west along it — plan to leave ' +
@@ -198,7 +202,6 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     // through that junction is closed: in from Dagdusheth, in from the
     // west, out southwards to Tulshibaug.
     name: 'Guruji Talim to Tulshibaug',
-    bearingDeg: 163,
     note:
       'The crowd walks one way here, southwards out of Guruji Talim ' +
       'towards Tulshibaug. You will not be able to come back north up ' +
@@ -209,8 +212,23 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
+    // Picks up exactly where the exit lane ends, at Tulshibaug, and runs
+    // on past Jilbya Maruti — 16 m from its far end. The turn partway
+    // along is the road itself, not an artefact of how it was drawn, so
+    // it is kept as given and the direction is read per segment.
+    name: 'Tulshibaug to Jilbya Maruti',
+    note:
+      'The crowd walks one way here, on south past Tulshibaug towards ' +
+      'Jilbya Maruti. You will not be able to come back north up it — ' +
+      'keep going and come round.',
+    path: [
+      [73.855309, 18.514183],
+      [73.855024, 18.514126],
+      [73.855063, 18.513405],
+    ],
+  },
+  {
     name: 'Dagdusheth to Gotiram Bhaiya chowk',
-    bearingDeg: 187,
     note:
       'The crowd here walks one way, southwards past Dagdusheth towards ' +
       'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +

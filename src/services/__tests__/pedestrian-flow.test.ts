@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  legAgainstFlow, flowsOnRoute, penaliseAgainstFlow,
+  legAgainstFlow, flowsOnRoute, penaliseAgainstFlow, flowBearingAt,
   FLOW_CORRIDOR_M, AGAINST_FLOW_FACTOR,
 } from '@/services/pedestrian-flow';
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
@@ -17,6 +17,12 @@ import catalogue from '@/content/catalogue.json';
  * against real mandals on the real stretches rather than invented points.
  */
 
+const byName = (name: string) => {
+  const w = PEDESTRIAN_ONE_WAYS.find((x) => x.name === name);
+  if (!w) throw new Error(`no one-way named ${name}`);
+  return w;
+};
+
 const at = (slug: string): LatLng => {
   const g = (catalogue.ganpatis as Array<{ slug: string; latitude: number; longitude: number }>)
     .find((x) => x.slug === slug);
@@ -31,16 +37,18 @@ const TULSHIBAUG = at('tulshibaug-ganpati');
 // 41 m off the lane that branches west out of the main flow above
 // Dagdusheth — the nearest mandal to it, and the one a walker steers by.
 const GURUJI_TALIM = at('guruji-talim');
+// 16 m from the far end of the lane that runs on south past Tulshibaug.
+const JILBYA_MARUTI = at('jilbya-maruti-mandal');
 
 describe('the catalogue these rules are written against', () => {
   it('still has both mandals sitting on the one-way stretch', () => {
     // If a coordinate is corrected and one of these walks out of the
     // corridor, every expectation below becomes a test of nothing.
-    const southward = PEDESTRIAN_ONE_WAYS.find((w) => w.bearingDeg === 187)!.path;
+    const southward = byName('Dagdusheth to Gotiram Bhaiya chowk').path;
     expect(metresToPath(DAGDUSHETH, southward)).toBeLessThan(FLOW_CORRIDOR_M);
     expect(metresToPath(HUTATMA, southward)).toBeLessThan(FLOW_CORRIDOR_M);
 
-    const westward = PEDESTRIAN_ONE_WAYS.find((w) => w.bearingDeg === 242)!.path;
+    const westward = byName('Dagdusheth to Guruji Talim').path;
     expect(metresToPath(GURUJI_TALIM, westward)).toBeLessThan(FLOW_CORRIDOR_M);
   });
 });
@@ -87,15 +95,27 @@ describe('a leg that runs against the crowd', () => {
     // Two lanes point into it and one points out. If an inbound lane is
     // ever added without an outbound one, the app can route people to a
     // junction it cannot route them out of — so the shape is asserted.
-    const into = PEDESTRIAN_ONE_WAYS.filter((w) => [242, 68].includes(w.bearingDeg));
-    const outOf = PEDESTRIAN_ONE_WAYS.filter((w) => w.bearingDeg === 163);
-    expect(into).toHaveLength(2);
-    expect(outOf).toHaveLength(1);
+    const into = ['Dagdusheth to Guruji Talim', 'West approach to Guruji Talim'].map(byName);
+    const outOf = [byName('Guruji Talim to Tulshibaug')];
     // Every one of them touches the same point, within a junction's width.
     const junction = { lat: 18.515006, lng: 73.855047 };
     for (const w of [...into, ...outOf]) {
       expect(metresToPath(junction, w.path)).toBeLessThan(10);
     }
+  });
+
+  it('follows a lane that turns, rather than averaging across the turn', () => {
+    // This one bends 81° partway along — that is the road, not the way it
+    // was drawn. A single bearing for the whole stretch would be wrong for
+    // one half of it, so direction is read off the nearest segment.
+    const lane = byName('Tulshibaug to Jilbya Maruti');
+    const first = flowBearingAt({ lat: 18.514155, lng: 73.855167 }, lane.path)!;
+    const second = flowBearingAt({ lat: 18.513766, lng: 73.855044 }, lane.path)!;
+    expect(Math.abs(first - second)).toBeGreaterThan(45);
+
+    expect(legAgainstFlow(TULSHIBAUG, JILBYA_MARUTI)).toBeNull();
+    expect(legAgainstFlow(JILBYA_MARUTI, TULSHIBAUG)?.name)
+      .toBe('Tulshibaug to Jilbya Maruti');
   });
 
   it('leaves the rest of the city alone', () => {
