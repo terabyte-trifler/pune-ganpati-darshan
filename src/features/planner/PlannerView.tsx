@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -30,6 +30,7 @@ import { MetroJourneyCard } from './MetroJourneyCard';
 import { ParkingRideCard } from './ParkingRideCard';
 import { chooseParking } from '@/services/parking-plan';
 import { legModeFor } from '@/services/itinerary';
+import { optimizeLocally } from '@/services/route-optimizer';
 import { flowsOnRoute } from '@/services/pedestrian-flow';
 
 /** Named, because "routed" without a source is a claim with no author. */
@@ -306,6 +307,48 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
         : [],
     [legMode, origin, stops]
   );
+
+  /**
+   * Order a newly changed plan without waiting for Optimise.
+   *
+   * Until this, the stops sat in whatever order they were tapped in, and
+   * the line drawn through them followed the lanes only where that
+   * accidental order happened to agree with the crowd. Tapping Optimise
+   * fixed it — but nobody should have to press a button to be told the
+   * way they are allowed to walk.
+   *
+   * It runs on the SET of stops, not their order. Adding or removing a
+   * mandal re-orders the plan; dragging the list to reorder it by hand
+   * does not, because the set has not changed — otherwise this would undo
+   * the drag on the next render, which is a worse bug than the one it
+   * fixes.
+   *
+   * Local and lane-aware: optimizeLocally goes through optimizeOrder, so
+   * the one-way rules apply. No network, and 2 ms for the whole
+   * catalogue, so there is nothing to defer. Tapping Optimise still
+   * upgrades the line to real routed geometry.
+   */
+  const lastOrderedSet = useRef<string | null>(null);
+  useEffect(() => {
+    // A shared plan keeps the order it was shared in. Somebody sent this
+    // sequence deliberately, and re-ordering it on open would quietly
+    // hand the recipient a different walk from the one they were given.
+    if (sharedSlugs || !hydrated || stops.length < 2) return;
+
+    const key = [...stops.map((g) => g.slug)].sort().join('|');
+    if (lastOrderedSet.current === key) return;
+    lastOrderedSet.current = key;
+
+    const { order } = optimizeLocally(
+      origin,
+      stops.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
+      legMode
+    );
+    const next = order.map((i) => stops[i].slug);
+    if (next.some((slug, i) => slug !== stops[i].slug)) {
+      startTransition(() => replace(next));
+    }
+  }, [sharedSlugs, hydrated, stops, origin, legMode, replace]);
 
   const optimize = async () => {
     if (stops.length < 2) return;
