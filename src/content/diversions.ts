@@ -161,13 +161,17 @@ export interface PedestrianOneWay {
 
 export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
   {
-    name: 'Shaniwar Wada chowk to Gotiram Bhaiya chowk',
-    towards: 'Gotiram Bhaiya chowk',
+    // Shivaji Road, one way only as far as the chowk by Dagdusheth. It
+    // was drawn 139 m further, all the way to Gotiram Bhaiya chowk, which
+    // put a one-way rule on a stretch that is two-way on foot — see
+    // PEDESTRIAN_TWO_WAYS below for the part that was taken off it.
+    name: 'Shaniwar Wada chowk down Shivaji Road',
+    towards: 'Dagdusheth',
     heading: 'south',
     note:
-      'The crowd here walks one way, southwards past Dagdusheth towards ' +
-      'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
-      'plan to come out another way.',
+      'The crowd here walks one way, southwards down Shivaji Road as far ' +
+      'as the chowk by Dagdusheth. You will not be able to walk back up ' +
+      'it — plan to come out another way.',
     path: [
       [73.855224, 18.521510],
       [73.855506, 18.520907],
@@ -177,9 +181,7 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
       [73.856284, 18.516875],
       [73.856260, 18.515933],
       [73.856395, 18.515150],
-      [73.856687, 18.514650],
-      [73.857095, 18.514035],
-      [73.857285, 18.513540],
+      [73.856683, 18.514685],
     ],
   },
   {
@@ -239,9 +241,9 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     towards: 'Gotiram Bhaiya chowk',
     heading: 'south',
     note:
-      'The crowd here walks one way, southwards past Dagdusheth towards ' +
-      'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
-      'plan to come out another way.',
+      'The crowd walks one way here, southwards away from Dagdusheth ' +
+      'towards Gotiram Bhaiya chowk. You will not be able to walk back ' +
+      'up it.',
     path: [
       [73.856379, 18.515222],
       [73.856171, 18.513551],
@@ -271,6 +273,17 @@ export interface PedestrianLink {
 }
 
 export const PEDESTRIAN_TWO_WAYS: PedestrianLink[] = [
+  {
+    // Shivaji Road below the chowk by Dagdusheth, on towards Swargate:
+    // open both ways on foot. It was part of the one-way above until it
+    // was corrected on the ground.
+    name: 'Shivaji Road towards Swargate',
+    path: [
+      [73.856683, 18.514685],
+      [73.857095, 18.514035],
+      [73.857285, 18.513540],
+    ],
+  },
   {
     // Reported two-way end to end, from the west end at
     // 18.514498, 73.853786 through the Guruji Talim junction to the

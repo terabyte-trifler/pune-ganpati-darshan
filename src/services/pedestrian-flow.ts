@@ -151,8 +151,17 @@ export function flowsOnRoute(points: LatLng[]): typeof PEDESTRIAN_ONE_WAYS {
  * Not Infinity for the second case. People do get between these two
  * mandals; they just cannot do it the short way, and calling the leg
  * impassable would drop the stop out of the plan rather than reorder it.
+ *
+ * Twelve rather than four because four was not enough to change anybody's
+ * mind. These stretches are 90 m to 160 m long, so four times a short leg
+ * is still cheaper than the detour that avoids it, and a six-hour plan
+ * cheerfully walked Tulshibaug to Guruji Talim the wrong way up a lane
+ * rather than swap two stops. The figure can be this blunt precisely
+ * because it is rare and certain: thirteen legs of the four hundred and
+ * sixty-two round the peths, every one of them proved unwalkable by the
+ * graph rather than guessed at from a straight line.
  */
-const NO_ROUTE_FACTOR = 4;
+const NO_ROUTE_FACTOR = 12;
 
 /**
  * How much of the straight line counts as arriving, or as setting off.
@@ -167,6 +176,19 @@ const NO_ROUTE_FACTOR = 4;
  * when BOTH stops stood on the network, and Mandai is 189 m off it — so
  * the leg was priced as though nothing were wrong, and the optimiser had
  * no reason to put Guruji Talim before Tulshibaug.
+ *
+ * But this is INFERRED from the straight line, not read off a real path,
+ * and it must not be priced as if it were certain. Charging it as
+ * impassable made 56 of 462 legs round the peths impassable — including
+ * Dagdusheth to Kasba and Tulshibaug to Kasba, which are ordinary walks
+ * up ordinary streets that merely start beside a southbound lane. The
+ * optimiser then scattered the plan to avoid them, which is how the whole
+ * order came out shuffled.
+ *
+ * So: the graph's verdict, where it has one, is certain and costs
+ * NO_ROUTE_FACTOR. This is a suspicion and costs the ordinary
+ * against-the-flow factor — enough to prefer a legal order, not enough to
+ * tear one up.
  */
 const APPROACH_M = 40;
 
@@ -176,22 +198,20 @@ function along(a: LatLng, b: LatLng, t: number): LatLng {
 
 function graphCostFactor(from: LatLng, to: LatLng): number {
   const straight = haversine(from, to);
+  let suspect = 1;
 
   // Arriving at, or leaving, a stop against the lane it stands on.
   if (straight > 0) {
     const t = Math.min(0.5, APPROACH_M / straight);
     if (touchesLanes(to) && laneOpposing(along(from, to, 1 - t), to)) {
-      return NO_ROUTE_FACTOR;
-    }
-    if (touchesLanes(from) && laneOpposing(from, along(from, to, t))) {
-      return NO_ROUTE_FACTOR;
+      suspect = AGAINST_FLOW_FACTOR;
     }
   }
 
-  if (!touchesLanes(from) || !touchesLanes(to)) return 1;
+  if (!touchesLanes(from) || !touchesLanes(to)) return suspect;
   const walk = laneWalk(from, to);
   if (!walk) return NO_ROUTE_FACTOR;
-  return straight > 0 ? Math.max(1, walk.metres / straight) : 1;
+  return Math.max(suspect, straight > 0 ? walk.metres / straight : 1);
 }
 
 /**

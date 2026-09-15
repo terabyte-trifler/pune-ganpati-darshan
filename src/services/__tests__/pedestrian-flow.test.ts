@@ -154,14 +154,13 @@ describe('what the walker is told', () => {
     expect(flows.map((f) => f.name)).toEqual(['Guruji Talim to Tulshibaug']);
   });
 
-  it('gives the two directions two different warnings', () => {
-    // The southward pair share a note on purpose — one road above the
-    // fork. The westward branch is a different road and must not be
-    // folded into that warning by the deduplication.
-    // One shared note for the two southward stretches (one road above the
-    // fork); every other lane carries its own.
+  it('gives every stretch a warning of its own', () => {
+    // Two of these used to share a note, when one ran down past the other
+    // to the same chowk. Shivaji Road is now cut short at the chowk by
+    // Dagdusheth — the rest of it is two-way on foot — so they end in
+    // different places and say different things.
     const notes = new Set(PEDESTRIAN_ONE_WAYS.map((w) => w.note));
-    expect(notes.size).toBe(PEDESTRIAN_ONE_WAYS.length - 1);
+    expect(notes.size).toBe(PEDESTRIAN_ONE_WAYS.length);
   });
 
   it('never repeats a warning, however many legs run along it', () => {
