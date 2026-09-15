@@ -73,12 +73,29 @@ describe('a leg that runs against the crowd', () => {
     expect(legAgainstFlow(DAGDUSHETH, GURUJI_TALIM)).toBeNull();
   });
 
-  it('does not charge the leg out to Tulshibaug on either branch', () => {
-    // Tulshibaug sits 86 m off both westward lanes, and the straight leg
-    // to it leaves the corridor partway along. Charging it would be a
-    // guess about streets the app cannot see.
+  it('sends walkers south out of Guruji Talim, not back north into it', () => {
+    // The exit lane closes this junction: in from Dagdusheth, in from the
+    // west, out southwards to Tulshibaug. Until that lane was known this
+    // pair went uncharged, because the straight leg between them left the
+    // corridor partway along — it now runs inside it the whole way.
     expect(legAgainstFlow(GURUJI_TALIM, TULSHIBAUG)).toBeNull();
-    expect(legAgainstFlow(TULSHIBAUG, GURUJI_TALIM)).toBeNull();
+    expect(legAgainstFlow(TULSHIBAUG, GURUJI_TALIM)?.name)
+      .toBe('Guruji Talim to Tulshibaug');
+  });
+
+  it('closes the junction the two westward lanes converge on', () => {
+    // Two lanes point into it and one points out. If an inbound lane is
+    // ever added without an outbound one, the app can route people to a
+    // junction it cannot route them out of — so the shape is asserted.
+    const into = PEDESTRIAN_ONE_WAYS.filter((w) => [242, 68].includes(w.bearingDeg));
+    const outOf = PEDESTRIAN_ONE_WAYS.filter((w) => w.bearingDeg === 163);
+    expect(into).toHaveLength(2);
+    expect(outOf).toHaveLength(1);
+    // Every one of them touches the same point, within a junction's width.
+    const junction = { lat: 18.515006, lng: 73.855047 };
+    for (const w of [...into, ...outOf]) {
+      expect(metresToPath(junction, w.path)).toBeLessThan(10);
+    }
   });
 
   it('leaves the rest of the city alone', () => {
@@ -109,6 +126,8 @@ describe('what the walker is told', () => {
     // The southward pair share a note on purpose — one road above the
     // fork. The westward branch is a different road and must not be
     // folded into that warning by the deduplication.
+    // One shared note for the two southward stretches (one road above the
+    // fork); every other lane carries its own.
     const notes = new Set(PEDESTRIAN_ONE_WAYS.map((w) => w.note));
     expect(notes.size).toBe(PEDESTRIAN_ONE_WAYS.length - 1);
   });

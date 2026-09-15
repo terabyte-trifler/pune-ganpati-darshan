@@ -192,6 +192,23 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
+    // The way OUT of the junction the two lanes above converge on. Its
+    // start is 2 m from where both of them end and 42 m from Guruji
+    // Talim; its end is 2 m from Tulshibaug. With this the crowd's path
+    // through that junction is closed: in from Dagdusheth, in from the
+    // west, out southwards to Tulshibaug.
+    name: 'Guruji Talim to Tulshibaug',
+    bearingDeg: 163,
+    note:
+      'The crowd walks one way here, southwards out of Guruji Talim ' +
+      'towards Tulshibaug. You will not be able to come back north up ' +
+      'it — this is the way out of that junction, not a way in.',
+    path: [
+      [73.855054, 18.514987],
+      [73.855309, 18.514183],
+    ],
+  },
+  {
     name: 'Dagdusheth to Gotiram Bhaiya chowk',
     bearingDeg: 187,
     note:
