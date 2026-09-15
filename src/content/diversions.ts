@@ -98,3 +98,77 @@ export const CLOSURE_JUNCTIONS: ClosureJunction[] = [
   { no: 11, name: "Rajaram Pool", sourceName: "11. Rajaram pool", lat: 18.487762, lng: 73.828912 },
   { no: 12, name: "Power House Chowk", sourceName: "12.Power house chowk", lat: 18.519409, lng: 73.868306 },
 ];
+
+
+/**
+ * Stretches the crowd may only walk one way.
+ *
+ * Separate from ROAD_CLOSURES because it is a different kind of rule for a
+ * different person. A closure is about vehicles; this is the police making
+ * the darshan crowd itself flow in one direction, which is how a lane a
+ * few metres wide carries lakhs of people without a crush.
+ *
+ * It is the constraint a walking route has to respect, and the one thing
+ * a straight-line planner will get wrong by default: the distance between
+ * two mandals is the same in both directions, but the walk is not.
+ *
+ * `bearingDeg` is the compass direction people are permitted to walk.
+ * Reported from the ground rather than read off the police map, which
+ * draws this stretch as a plain closure.
+ */
+/**
+ * A stretch the police make the crowd walk one way during the festival.
+ *
+ * Not an OSM one-way and not a vehicle restriction — these exist for the
+ * twelve days, apply to people on foot, and no router knows about them.
+ *
+ * Two stretches can share the same `note`: the pair below run down the
+ * same road above Dagdusheth and fork below it, so they are two lines on
+ * a map but one thing to tell a walker. Anything showing these to a
+ * visitor should therefore deduplicate on `note`, not on `name`.
+ */
+export interface PedestrianOneWay {
+  name: string;
+  /** Compass bearing of permitted walking, in degrees. */
+  bearingDeg: number;
+  /** Said to the walker, in their words. */
+  note: string;
+  /** [lng, lat] pairs along the stretch. */
+  path: [number, number][];
+}
+
+export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
+  {
+    name: 'Shaniwar Wada chowk to Gotiram Bhaiya chowk',
+    bearingDeg: 166,
+    note:
+      'The crowd here walks one way, southwards past Dagdusheth towards ' +
+      'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
+      'plan to come out another way.',
+    path: [
+      [73.855224, 18.521510],
+      [73.855506, 18.520907],
+      [73.856096, 18.520256],
+      [73.856214, 18.519137],
+      [73.856284, 18.518221],
+      [73.856284, 18.516875],
+      [73.856260, 18.515933],
+      [73.856395, 18.515150],
+      [73.856687, 18.514650],
+      [73.857095, 18.514035],
+      [73.857285, 18.513540],
+    ],
+  },
+  {
+    name: 'Dagdusheth to Gotiram Bhaiya chowk',
+    bearingDeg: 187,
+    note:
+      'The crowd here walks one way, southwards past Dagdusheth towards ' +
+      'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
+      'plan to come out another way.',
+    path: [
+      [73.856379, 18.515222],
+      [73.856171, 18.513551],
+    ],
+  },
+];

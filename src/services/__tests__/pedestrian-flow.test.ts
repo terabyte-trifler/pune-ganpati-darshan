@@ -1,0 +1,140 @@
+import { describe, it, expect } from 'vitest';
+import {
+  legAgainstFlow, flowsOnRoute, penaliseAgainstFlow,
+  FLOW_CORRIDOR_M, AGAINST_FLOW_FACTOR,
+} from '@/services/pedestrian-flow';
+import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
+import { estimateMatrix, optimizeLocally } from '@/services/route-optimizer';
+import { haversine, metresToPath, type LatLng } from '@/lib/geo';
+import catalogue from '@/content/catalogue.json';
+
+/**
+ * Walking against the crowd.
+ *
+ * The police make two stretches one-directional during the festival, and
+ * no router knows it — these are not OSM one-ways, they exist for twelve
+ * days. So the app prices them itself, and everything below is checked
+ * against real mandals on the real stretches rather than invented points.
+ */
+
+const at = (slug: string): LatLng => {
+  const g = (catalogue.ganpatis as Array<{ slug: string; latitude: number; longitude: number }>)
+    .find((x) => x.slug === slug);
+  if (!g) throw new Error(`no mandal ${slug}`);
+  return { lat: g.latitude, lng: g.longitude };
+};
+
+// Both sit on the Dagdusheth → Gotiram Bhaiya stretch: 1 m and 14 m off it.
+const DAGDUSHETH = at('dagdusheth-halwai-ganpati');
+const HUTATMA = at('hutatma-babu-genu-mandal');
+const TULSHIBAUG = at('tulshibaug-ganpati');
+
+describe('the catalogue these rules are written against', () => {
+  it('still has both mandals sitting on the one-way stretch', () => {
+    // If a coordinate is corrected and one of these walks out of the
+    // corridor, every expectation below becomes a test of nothing.
+    const stretch = PEDESTRIAN_ONE_WAYS[1].path;
+    expect(metresToPath(DAGDUSHETH, stretch)).toBeLessThan(FLOW_CORRIDOR_M);
+    expect(metresToPath(HUTATMA, stretch)).toBeLessThan(FLOW_CORRIDOR_M);
+  });
+});
+
+describe('a leg that runs against the crowd', () => {
+  it('is named, walking north from Hutatma back up to Dagdusheth', () => {
+    expect(legAgainstFlow(HUTATMA, DAGDUSHETH)).not.toBeNull();
+  });
+
+  it('is not named walking the other way, with the crowd', () => {
+    expect(legAgainstFlow(DAGDUSHETH, HUTATMA)).toBeNull();
+  });
+
+  it('is not named for a leg that merely starts on the stretch', () => {
+    // Dagdusheth to Tulshibaug leaves westwards. It touches the lane at one
+    // end — which is true of most legs in the peths — and must not be
+    // charged for walking up it.
+    expect(legAgainstFlow(DAGDUSHETH, TULSHIBAUG)).toBeNull();
+    expect(legAgainstFlow(TULSHIBAUG, DAGDUSHETH)).toBeNull();
+  });
+
+  it('leaves the rest of the city alone', () => {
+    const shivajinagar = { lat: 18.5308, lng: 73.8478 };
+    const kothrud = { lat: 18.5074, lng: 73.8077 };
+    expect(legAgainstFlow(shivajinagar, kothrud)).toBeNull();
+    expect(legAgainstFlow(kothrud, shivajinagar)).toBeNull();
+  });
+});
+
+describe('what the walker is told', () => {
+  it('names a stretch the route actually walks down', () => {
+    const flows = flowsOnRoute([DAGDUSHETH, HUTATMA]);
+    expect(flows).not.toHaveLength(0);
+    expect(flows[0].note).toMatch(/one way/i);
+  });
+
+  it('says nothing about a stretch the route walks away from', () => {
+    expect(flowsOnRoute([DAGDUSHETH, TULSHIBAUG])).toEqual([]);
+  });
+
+  it('never repeats a warning, however many legs run along it', () => {
+    // Both stretches cover this leg — they are one road above the fork —
+    // and the walker must be told once, not twice.
+    const flows = flowsOnRoute([DAGDUSHETH, HUTATMA, DAGDUSHETH, HUTATMA]);
+    expect(new Set(flows.map((f) => f.note)).size).toBe(flows.length);
+    expect(flows).toHaveLength(1);
+  });
+
+  it('carries a note that warns you cannot come back up', () => {
+    for (const w of PEDESTRIAN_ONE_WAYS) {
+      expect(w.note).toMatch(/not be able to walk back|route out is onward/i);
+    }
+  });
+});
+
+describe('the cost matrix', () => {
+  it('is asymmetric on foot where the flow is', () => {
+    const pts = [DAGDUSHETH, HUTATMA];
+    const m = estimateMatrix(pts, 'walk');
+    expect(m[1][0]).toBeGreaterThan(m[0][1]);
+    expect(m[1][0] / m[0][1]).toBeCloseTo(AGAINST_FLOW_FACTOR, 5);
+  });
+
+  it('is left symmetric for a rider', () => {
+    // The crowd flow is a pedestrian measure. A two-wheeler is on the
+    // diverted road network, and the closures already speak for that.
+    const m = estimateMatrix([DAGDUSHETH, HUTATMA], 'two_wheeler');
+    expect(m[1][0]).toBeCloseTo(m[0][1], 5);
+  });
+
+  it('never invents a cost for an impassable leg', () => {
+    const blocked = [[0, Infinity], [Infinity, 0]];
+    const out = penaliseAgainstFlow(blocked, [DAGDUSHETH, HUTATMA], 'walk');
+    expect(out[1][0]).toBe(Infinity);
+  });
+
+  it('leaves the diagonal at zero', () => {
+    const m = estimateMatrix([DAGDUSHETH, HUTATMA], 'walk');
+    expect(m[0][0]).toBe(0);
+    expect(m[1][1]).toBe(0);
+  });
+});
+
+describe('the ordering a visitor actually gets', () => {
+  it('sends them down the lane, not up it', () => {
+    // Arriving from Shivajinagar, the same two mandals either way round.
+    // Straight-line distance cannot separate the orderings; the flow can.
+    const origin = { lat: 18.5308, lng: 73.8478 };
+    const stops = [HUTATMA, DAGDUSHETH];
+    const { order } = optimizeLocally(origin, stops, 'walk');
+    expect(order).toEqual([1, 0]); // Dagdusheth first, then south to Hutatma
+  });
+
+  it('would have gone the other way without the flow', () => {
+    // The guard on the test above: nearest-first from the north picks
+    // Dagdusheth anyway only if the flow is doing the work. Check that the
+    // raw geometry genuinely leaves the question open.
+    const origin = { lat: 18.5308, lng: 73.8478 };
+    const toDagdu = haversine(origin, DAGDUSHETH);
+    const toHutatma = haversine(origin, HUTATMA);
+    expect(Math.abs(toDagdu - toHutatma)).toBeLessThan(300);
+  });
+});

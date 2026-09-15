@@ -29,6 +29,7 @@ import { MetroStationPicker } from './MetroStationPicker';
 import { MetroJourneyCard } from './MetroJourneyCard';
 import { ParkingRideCard } from './ParkingRideCard';
 import { chooseParking } from '@/services/parking-plan';
+import { flowsOnRoute } from '@/services/pedestrian-flow';
 import { stationForRoute, returnStation, stationById, PRIMARY_STATIONS } from '@/lib/metro';
 import { trackEvent } from '@/services/analytics';
 import type { Ganpati, TravelMode } from '@/types/ganpati';
@@ -276,6 +277,26 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
         0
       ),
     [stops, crowdState, pace]
+  );
+
+  /**
+   * One-way stretches this walk goes down.
+   *
+   * Computed from the plan's own order, not from the map view: the police
+   * make the crowd one-directional through the narrowest lanes, no router
+   * knows it, and the ordering above has already been priced against it.
+   * All that is left is to say so — a visitor who walks down past
+   * Dagdusheth and expects to come back up the same way cannot.
+   */
+  const oneWays = useMemo(
+    () =>
+      legMode === 'walk' && stops.length > 0
+        ? flowsOnRoute([
+            origin,
+            ...stops.map((g) => ({ lat: g.location.lat, lng: g.location.lng })),
+          ])
+        : [],
+    [legMode, origin, stops]
   );
 
   const optimize = async () => {
@@ -561,6 +582,27 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           Stops are connected in order. Tap Optimise to draw the actual walking
           path along the lanes.
         </p>
+      )}
+
+      {/* The crowd's own direction. Stated once per warning, in the order
+          the walk meets them, and only when the walk actually goes down
+          one — a notice shown to everybody is a notice nobody reads. */}
+      {oneWays.length > 0 && (
+        <div className="surface mt-3 rounded-[var(--radius-card)] border border-[var(--line-strong)] p-3">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--zendu)]">
+            One way on foot
+          </p>
+          <ul className="mt-1.5 space-y-1.5">
+            {oneWays.map((w) => (
+              <li key={w.name} className="text-[13px] leading-snug text-[var(--muted)]">
+                <span className="text-[var(--chandan)]">{w.name}.</span> {w.note}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-[var(--faint)]">
+            Your stops are already ordered to walk with the crowd, not against it.
+          </p>
+        </div>
       )}
 
       {/* ---------------- Summary ---------------- */}

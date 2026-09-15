@@ -1,4 +1,5 @@
 import { haversine, estimateDurationSeconds, type LatLng, type TravelMode } from '@/lib/geo';
+import { penaliseAgainstFlow } from '@/services/pedestrian-flow';
 
 /**
  * Darshan route ordering.
@@ -22,13 +23,20 @@ import { haversine, estimateDurationSeconds, type LatLng, type TravelMode } from
 
 export const EXACT_SOLVE_LIMIT = 8;
 
-/** Local fallback matrix — no network, used when Routes is unavailable. */
+/**
+ * Local fallback matrix — no network, used when Routes is unavailable.
+ *
+ * Walking costs are asymmetric where the police make the crowd flow one
+ * way: the same hundred metres is a walk in one direction and a detour in
+ * the other, so the solver is told the truth rather than a straight line.
+ */
 export function estimateMatrix(points: LatLng[], mode: TravelMode): number[][] {
-  return points.map((from) =>
+  const raw = points.map((from) =>
     points.map((to) =>
       from === to ? 0 : estimateDurationSeconds(haversine(from, to), mode)
     )
   );
+  return penaliseAgainstFlow(raw, points, mode);
 }
 
 function pathCost(order: number[], matrix: number[][]): number {

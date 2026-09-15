@@ -17,6 +17,7 @@ import { boundsOf, haversine } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
+import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
@@ -224,6 +225,10 @@ export function MiniMap({
       // Parking on every map; closures only where they are the subject.
       addParkingLayers(map);
       if (showClosures) addClosureLayers(map);
+      // Not gated on showClosures: this is not a closure. It is where the
+      // crowd walks one way, and a route map is exactly where a walker
+      // needs to see which way that is before setting off.
+      addPedestrianFlowLayers(map);
 
       map.addLayer({
         id: 'route-line',

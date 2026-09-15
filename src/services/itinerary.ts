@@ -5,6 +5,8 @@ import {
   type TravelMode,
 } from '@/lib/geo';
 import { optimizeLocally } from '@/services/route-optimizer';
+import { flowsOnRoute, legCostFactor } from '@/services/pedestrian-flow';
+import type { PedestrianOneWay } from '@/content/diversions';
 import { chooseParking, type ParkingChoice } from './parking-plan';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
@@ -73,6 +75,14 @@ export interface Itinerary {
    * plan is one ride and then a walk — see services/parking-plan.
    */
   parking: ParkingChoice | null;
+  /**
+   * One-way stretches this walk goes down, in the order it meets them.
+   *
+   * Deduplicated by warning rather than by stretch: two of them are the
+   * same road above the fork, and a walker told twice stops reading.
+   * Empty for a plan that never touches one — which is most of the city.
+   */
+  oneWays: PedestrianOneWay[];
 }
 
 /**
@@ -293,15 +303,18 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
   let previous: LatLng = parking
     ? { lat: parking.spot.lat, lng: parking.spot.lng }
     : origin;
+  const walked: LatLng[] = [previous];
   for (const g of finalOrder) {
     const point = { lat: g.location.lat, lng: g.location.lng };
+    walked.push(point);
     stops.push({
       ganpati: g,
       // Same call the budget was spent against, so the per-stop numbers add
       // up to the total the user was shown rather than drifting from it.
       darshanMinutes: dwellMinutes(g, pace, crowdByMandalId[g.id]),
       travelMinutesFromPrevious: Math.round(
-        estimateDurationSeconds(haversine(previous, point), legMode) / 60
+        (estimateDurationSeconds(haversine(previous, point), legMode) *
+          legCostFactor(previous, point, legMode)) / 60
       ),
       crowd: crowdByMandalId[g.id] ?? null,
     });
@@ -318,5 +331,8 @@ export function buildItinerary(request: ItineraryRequest): Itinerary {
     hasUnknownDwell: finalOrder.some((g) => g.darshanMinutes == null),
     crowdAdjusted: finalOrder.some((g) => crowdByMandalId[g.id] != null),
     parking,
+    // Only on foot. A rider's leg to the parking is on the road network,
+    // where the closures speak instead.
+    oneWays: legMode === 'walk' ? flowsOnRoute(walked) : [],
   };
 }

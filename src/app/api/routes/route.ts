@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { computeRoute, computeRouteMatrix } from '@/lib/maps/routes';
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
+import { penaliseAgainstFlow } from '@/services/pedestrian-flow';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
 
@@ -103,7 +104,12 @@ export async function POST(request: Request) {
     // never call Google once per candidate ordering.
     const matrix = await computeRouteMatrix(points, mode);
     if (matrix.ok) {
-      order = optimizeOrder(stops.length, matrix.data).order;
+      // Google walks these lanes in both directions; the police do not.
+      // The festival flow is re-priced on top of whatever the router said.
+      order = optimizeOrder(
+        stops.length,
+        penaliseAgainstFlow(matrix.data, points, mode)
+      ).order;
       optimizedBy = 'routes-matrix';
     } else {
       // Routes unavailable: still order the stops sensibly rather than
