@@ -73,6 +73,14 @@ describe('a leg that runs against the crowd', () => {
     expect(legAgainstFlow(DAGDUSHETH, GURUJI_TALIM)).toBeNull();
   });
 
+  it('does not charge the leg out to Tulshibaug on either branch', () => {
+    // Tulshibaug sits 86 m off both westward lanes, and the straight leg
+    // to it leaves the corridor partway along. Charging it would be a
+    // guess about streets the app cannot see.
+    expect(legAgainstFlow(GURUJI_TALIM, TULSHIBAUG)).toBeNull();
+    expect(legAgainstFlow(TULSHIBAUG, GURUJI_TALIM)).toBeNull();
+  });
+
   it('leaves the rest of the city alone', () => {
     const shivajinagar = { lat: 18.5308, lng: 73.8478 };
     const kothrud = { lat: 18.5074, lng: 73.8077 };
@@ -102,7 +110,7 @@ describe('what the walker is told', () => {
     // fork. The westward branch is a different road and must not be
     // folded into that warning by the deduplication.
     const notes = new Set(PEDESTRIAN_ONE_WAYS.map((w) => w.note));
-    expect(notes.size).toBe(2);
+    expect(notes.size).toBe(PEDESTRIAN_ONE_WAYS.length - 1);
   });
 
   it('never repeats a warning, however many legs run along it', () => {

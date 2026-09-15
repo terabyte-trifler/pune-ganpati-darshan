@@ -176,6 +176,22 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
+    // Runs INTO the same point the westward branch above ends at, from
+    // the other side — the two converge on Guruji Talim, 20 m off this
+    // one. Nothing in the catalogue sits at its west end, so it is named
+    // by the direction it goes rather than by a landmark we cannot check.
+    name: 'West approach to Guruji Talim',
+    bearingDeg: 68,
+    note:
+      'The crowd walks one way here, eastwards towards Guruji Talim. ' +
+      'You will not be able to come back west along it — plan to leave ' +
+      'by another lane.',
+    path: [
+      [73.853770, 18.514505],
+      [73.855047, 18.515006],
+    ],
+  },
+  {
     name: 'Dagdusheth to Gotiram Bhaiya chowk',
     bearingDeg: 187,
     note:
