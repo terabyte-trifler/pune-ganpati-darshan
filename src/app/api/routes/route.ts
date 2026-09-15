@@ -4,7 +4,9 @@ import { computeRoute, computeRouteMatrix } from '@/lib/maps/routes';
 import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
-import { walkGeometry, laneWalk, spliceLaneLegs } from '@/services/pedestrian-graph';
+import {
+  walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints,
+} from '@/services/pedestrian-graph';
 import {
   enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygon,
 } from '@/services/pedestrian-flow';
@@ -124,7 +126,24 @@ export async function POST(request: Request) {
   const orderedStops = order.map((i) => stops[i]);
 
   /* ---------------- Route geometry + totals ---------------- */
-  let route = await computeRoute(origin, orderedStops, mode);
+  /**
+   * The lane points each leg must pass through.
+   *
+   * This is what makes the orange line sit on the blue one. Before it, the
+   * route merely avoided walking a lane the wrong way; it had no reason to
+   * walk one the right way, so it took whatever street was shortest and
+   * the lanes went unused beside it.
+   *
+   * Indexed by arriving stop, so viaByLeg[i] belongs to the walk into
+   * orderedStops[i-1]. Empty for legs the lanes say nothing about, which
+   * is most of them.
+   */
+  const routePoints = [origin, ...orderedStops];
+  const viaByLeg = isOnFoot(mode)
+    ? routePoints.map((p, i) => (i === 0 ? [] : laneViaPoints(routePoints[i - 1], p)))
+    : [];
+
+  let route = await computeRoute(origin, orderedStops, mode, [], viaByLeg);
 
   /**
    * If the routed line walks a lane the wrong way, ask again without it.
@@ -157,7 +176,7 @@ export async function POST(request: Request) {
         barred.set(lane.name, laneExclusionPolygon(lane));
       }
 
-      const retry = await computeRoute(origin, orderedStops, mode, [...barred.values()]);
+      const retry = await computeRoute(origin, orderedStops, mode, [...barred.values()], viaByLeg);
       if (!retry.ok || !retry.data.geometry) break;
 
       const count = violatedLanes(retry.data.geometry).length;

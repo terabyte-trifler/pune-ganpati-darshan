@@ -181,7 +181,21 @@ export async function computeRoute(
    *
    * OSRM has no equivalent, so a request that needs one skips it.
    */
-  avoid: Array<Array<[number, number]>> = []
+  avoid: Array<Array<[number, number]>> = [],
+  /**
+   * Points the route must pass through on each leg, leg by leg.
+   *
+   * `viaByLeg[i]` belongs to the walk from stop i-1 to stop i, origin
+   * counting as stop 0. Used for the festival lanes: a router that must
+   * pass through a lane draws that lane, on the real streets it knows.
+   *
+   * Only Valhalla is given these, and only as "through" locations, which
+   * it passes without stopping and WITHOUT starting a new leg — so the
+   * legs it returns still line up one-to-one with the stops a visitor
+   * chose. Handing the same points to a router that treats every location
+   * as a stop would silently renumber every leg in the plan.
+   */
+  viaByLeg: LatLng[][] = []
 ): Promise<RoutesResult<ComputedRoute>> {
   if (stops.length === 0) return { ok: false, reason: 'no-route' };
   const points = [origin, ...stops];
@@ -201,10 +215,12 @@ export async function computeRoute(
    * Valhalla is not asked. Rider requests are also much rarer, so 200 a
    * day goes further there.
    */
-  for (const attempt of VALHALLA_COSTING[mode]
-    ? [computeRouteValhalla, computeRouteOrs]
-    : [computeRouteOrs]) {
-    const result = await attempt(points, mode, avoid);
+  if (VALHALLA_COSTING[mode]) {
+    const result = await computeRouteValhalla(points, mode, avoid, viaByLeg);
+    if (result.ok) return result;
+  }
+  {
+    const result = await computeRouteOrs(points, mode, avoid);
     if (result.ok) return result;
     // Fall through rather than failing outright.
   }
@@ -270,7 +286,21 @@ function decodePolyline6(encoded: string): [number, number][] {
 async function computeRouteValhalla(
   points: LatLng[],
   mode: TravelMode,
-  avoid: Array<Array<[number, number]>> = []
+  avoid: Array<Array<[number, number]>> = [],
+  /**
+   * Points the route must pass through on each leg, leg by leg.
+   *
+   * `viaByLeg[i]` belongs to the walk from stop i-1 to stop i, origin
+   * counting as stop 0. Used for the festival lanes: a router that must
+   * pass through a lane draws that lane, on the real streets it knows.
+   *
+   * Only Valhalla is given these, and only as "through" locations, which
+   * it passes without stopping and WITHOUT starting a new leg — so the
+   * legs it returns still line up one-to-one with the stops a visitor
+   * chose. Handing the same points to a router that treats every location
+   * as a stop would silently renumber every leg in the plan.
+   */
+  viaByLeg: LatLng[][] = []
 ): Promise<RoutesResult<ComputedRoute>> {
   const costing = VALHALLA_COSTING[mode];
   if (!costing) return { ok: false, reason: 'unavailable' };
@@ -288,11 +318,21 @@ async function computeRouteValhalla(
    * Coordinates are rounded into the query the same way the OSRM URLs are,
    * so two people planning the same walk share one cache entry.
    */
+  const round = (p: LatLng, through = false) => ({
+    lat: Number(p.lat.toFixed(4)),
+    lon: Number(p.lng.toFixed(4)),
+    ...(through ? { type: 'through' as const } : {}),
+  });
+
+  const locations: Array<ReturnType<typeof round>> = [];
+  points.forEach((p, i) => {
+    // The lane points for the leg ARRIVING at this stop go in first.
+    for (const via of viaByLeg[i] ?? []) locations.push(round(via, true));
+    locations.push(round(p));
+  });
+
   const query = JSON.stringify({
-    locations: points.map((p) => ({
-      lat: Number(p.lat.toFixed(4)),
-      lon: Number(p.lng.toFixed(4)),
-    })),
+    locations,
     costing,
     directions_options: { units: 'kilometers' },
     ...(avoid.length > 0 ? { exclude_polygons: avoid } : {}),
@@ -407,6 +447,9 @@ async function computeRouteOsrm(
 async function computeRouteOrs(
   points: LatLng[],
   mode: TravelMode,
+  // No lane through-points: ORS treats every coordinate as a stop, so
+  // they would renumber the legs. The geometry pass in /api/routes still
+  // puts the lanes into whatever line it returns.
   avoid: Array<Array<[number, number]>> = []
 ): Promise<RoutesResult<ComputedRoute>> {
   // No key, or it already told us it is out for the day.

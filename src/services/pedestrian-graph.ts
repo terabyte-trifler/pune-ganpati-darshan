@@ -436,3 +436,18 @@ export function spliceLaneLegs(
   }
   return out;
 }
+
+/**
+ * The lane's own points to send a router through, for one leg.
+ *
+ * Empty when the lanes have nothing to say about this leg, which is most
+ * of them. Otherwise these are the interior points of the legal walk —
+ * the ends are the stops themselves and the router already has those.
+ *
+ * Handing these to a router as through-points is what makes the orange
+ * line sit on the blue one: the router still draws real streets, but it
+ * must pass through the lane on the way, so it draws the lane.
+ */
+export function laneViaPoints(from: LatLng, to: LatLng): LatLng[] {
+  return laneWalk(from, to)?.path.slice(1, -1) ?? [];
+}
