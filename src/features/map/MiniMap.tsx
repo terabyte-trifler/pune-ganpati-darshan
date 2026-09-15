@@ -19,6 +19,7 @@ import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
+import { walkGeometry } from '@/services/pedestrian-graph';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
@@ -448,12 +449,14 @@ export function MiniMap({
     if (!ready || !map) return;
 
     const source = map.getSource('route') as GeoJSONSource | undefined;
-    // With no road geometry, connect the stops directly — drawn dashed above
-    // so it is visibly a connector, not a route we are claiming to know.
+    // With no road geometry, connect the stops — but along the one-way
+    // lanes wherever they apply, rather than straight over the block.
+    // Between Tulshibaug and Dagdusheth the straight line crosses
+    // buildings and a lane nobody may walk up; the walked route goes round.
     const coordinates =
       routeGeometry ??
       (ordered && mandals.length > 1
-        ? mandals.map((m) => [m.location.lng, m.location.lat] as [number, number])
+        ? walkGeometry(mandals.map((m) => ({ lat: m.location.lat, lng: m.location.lng })))
         : []);
 
     source?.setData({

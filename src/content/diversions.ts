@@ -248,3 +248,38 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
 ];
+
+/**
+ * Walkable stretches that are NOT one-way, and are drawn nowhere.
+ *
+ * These exist only so the route planner knows the road is there.
+ *
+ * The branch below was reported as one-way in both halves and then
+ * corrected on the ground to two-way, so its two one-way entries were
+ * deleted — and with them went the app's only knowledge that a road
+ * connects Dagdusheth to Guruji Talim at all. The planner could then
+ * find no walk from Tulshibaug back up to Dagdusheth, so it drew a
+ * straight line over the block and priced the leg as if you could fly it.
+ *
+ * "Two-way" is not the same as "absent". Nothing renders from this list —
+ * an unmarked road is the normal case and marking them all would bury the
+ * few that carry an instruction — but the graph walks it.
+ */
+export interface PedestrianLink {
+  name: string;
+  path: [number, number][];
+}
+
+export const PEDESTRIAN_TWO_WAYS: PedestrianLink[] = [
+  {
+    // Reported two-way end to end, from the west end at
+    // 18.514498, 73.853786 through the Guruji Talim junction to the
+    // Dagdusheth end at 18.515611, 73.856306.
+    name: 'Guruji Talim branch',
+    path: [
+      [73.853786, 18.514498],
+      [73.855047, 18.515006],
+      [73.856306, 18.515611],
+    ],
+  },
+];

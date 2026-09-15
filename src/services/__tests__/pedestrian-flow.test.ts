@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  legAgainstFlow, flowsOnRoute, penaliseAgainstFlow, flowBearingAt,
+  legAgainstFlow, flowsOnRoute, penaliseAgainstFlow, flowBearingAt, legCostFactor,
   FLOW_CORRIDOR_M, AGAINST_FLOW_FACTOR,
 } from '@/services/pedestrian-flow';
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
 import { estimateMatrix, optimizeLocally, optimizeOrder } from '@/services/route-optimizer';
 import { haversine, metresToPath, bearingDeg, type LatLng } from '@/lib/geo';
+import { laneWalk } from '@/services/pedestrian-graph';
 import catalogue from '@/content/catalogue.json';
 
 /**
@@ -231,8 +232,12 @@ describe('the cost matrix', () => {
   it('is asymmetric on foot once the flow is priced in', () => {
     const pts = [DAGDUSHETH, HUTATMA];
     const m = penaliseAgainstFlow(estimateMatrix(pts, 'walk'), pts, 'walk');
+    // Asserted as a property, not as one constant. The gap is now set by
+    // whichever rule has more to say — the corridor's flat factor, or the
+    // graph's real walked length — and pinning the exact number would
+    // make the test a restatement of the implementation.
     expect(m[1][0]).toBeGreaterThan(m[0][1]);
-    expect(m[1][0] / m[0][1]).toBeCloseTo(AGAINST_FLOW_FACTOR, 5);
+    expect(m[1][0] / m[0][1]).toBeGreaterThanOrEqual(AGAINST_FLOW_FACTOR);
   });
 
   it('is left symmetric for a rider', () => {
@@ -277,6 +282,42 @@ describe('the flow cannot be bypassed', () => {
     // And on a two-wheeler the same flat matrix leaves the order alone,
     // because the lanes are a pedestrian measure.
     expect(optimizeOrder(points, flat, 'two_wheeler').totalCost).toBe(200);
+  });
+});
+
+describe('a leg whose straight line touches no lane at all', () => {
+  /**
+   * The case the corridor rule cannot see, and the one that was actually
+   * wrong on the map: Tulshibaug to Dagdusheth is 149 m apart with no
+   * lane under the line between them, because the line cuts the block.
+   * The real walk has to go round on lanes that run one way.
+   */
+  it('costs Dagdusheth to Tulshibaug at what walking it really takes', () => {
+    const walk = laneWalk(DAGDUSHETH, TULSHIBAUG)!;
+    expect(walk).not.toBeNull();
+    // West along the two-way branch, then south down the one-way lane.
+    expect(walk.metres).toBeGreaterThan(haversine(DAGDUSHETH, TULSHIBAUG));
+    expect(legCostFactor(DAGDUSHETH, TULSHIBAUG, 'walk')).toBeGreaterThan(1.5);
+  });
+
+  it('finds no walk at all in the other direction', () => {
+    // Out of Tulshibaug the lanes go south and east, and the main lane
+    // runs south. There is no way back up to Dagdusheth.
+    expect(laneWalk(TULSHIBAUG, DAGDUSHETH)).toBeNull();
+    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'walk'))
+      .toBeGreaterThan(legCostFactor(DAGDUSHETH, TULSHIBAUG, 'walk'));
+  });
+
+  it('puts Dagdusheth before Tulshibaug in a plan containing both', () => {
+    // The whole point. Arriving from Shivajinagar, these two in either
+    // input order come back the way the crowd allows.
+    const origin = { lat: 18.5308, lng: 73.8478 };
+    const stops = [TULSHIBAUG, DAGDUSHETH];
+    expect(optimizeLocally(origin, stops, 'walk').order).toEqual([1, 0]);
+  });
+
+  it('leaves a rider alone, who is on the road network', () => {
+    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'two_wheeler')).toBe(1);
   });
 });
 

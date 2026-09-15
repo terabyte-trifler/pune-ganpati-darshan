@@ -1,6 +1,7 @@
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
+import { laneWalk, touchesLanes } from '@/services/pedestrian-graph';
 import {
-  bearingDeg, bearingDifference, metresToPath,
+  bearingDeg, bearingDifference, metresToPath, haversine,
   type LatLng, type TravelMode,
 } from '@/lib/geo';
 
@@ -158,6 +159,38 @@ export function flowsOnRoute(points: LatLng[]): typeof PEDESTRIAN_ONE_WAYS {
 }
 
 /**
+ * What a leg costs when the lane network has an opinion about it.
+ *
+ * The corridor rule above only ever sees the straight line between two
+ * stops, which misses the case that matters most: a leg whose straight
+ * line lies on no lane at all, because it cuts across the block, but
+ * whose real walk has to go round on lanes that only run one way.
+ * Tulshibaug to Dagdusheth is exactly that — 149 m as the crow flies, on
+ * no lane, and no legal walk in that direction whatsoever.
+ *
+ *   a route exists  -> what it really costs, which is its length over the
+ *                      straight line (Dagdusheth to Tulshibaug is 305 m
+ *                      of walking for 149 m of separation)
+ *   none exists     -> NO_ROUTE_FACTOR, so the optimiser turns the pair
+ *                      round rather than sending somebody up a lane the
+ *                      police will not let them up
+ *   not on the network -> 1, which is nearly every leg in the city
+ *
+ * Not Infinity for the second case. People do get between these two
+ * mandals; they just cannot do it the short way, and calling the leg
+ * impassable would drop the stop out of the plan rather than reorder it.
+ */
+const NO_ROUTE_FACTOR = 4;
+
+function graphCostFactor(from: LatLng, to: LatLng): number {
+  if (!touchesLanes(from) || !touchesLanes(to)) return 1;
+  const walk = laneWalk(from, to);
+  if (!walk) return NO_ROUTE_FACTOR;
+  const straight = haversine(from, to);
+  return straight > 0 ? Math.max(1, walk.metres / straight) : 1;
+}
+
+/**
  * What one leg costs relative to its straight-line time.
  *
  * Exported so a plan's per-leg minutes come from the same rule the
@@ -166,7 +199,13 @@ export function flowsOnRoute(points: LatLng[]): typeof PEDESTRIAN_ONE_WAYS {
  */
 export function legCostFactor(from: LatLng, to: LatLng, mode: TravelMode): number {
   if (mode !== 'walk') return 1;
-  return legAgainstFlow(from, to) ? AGAINST_FLOW_FACTOR : 1;
+  // Whichever rule has more to say. The corridor catches a leg that runs
+  // straight up a lane; the graph catches one that never touches a lane
+  // but has to go round on them.
+  return Math.max(
+    legAgainstFlow(from, to) ? AGAINST_FLOW_FACTOR : 1,
+    graphCostFactor(from, to)
+  );
 }
 
 /**
@@ -187,9 +226,9 @@ export function penaliseAgainstFlow(
   if (mode !== 'walk') return matrix;
   return matrix.map((row, i) =>
     row.map((cost, j) =>
-      i === j || !Number.isFinite(cost) || !legAgainstFlow(points[i], points[j])
+      i === j || !Number.isFinite(cost)
         ? cost
-        : cost * AGAINST_FLOW_FACTOR
+        : cost * legCostFactor(points[i], points[j], mode)
     )
   );
 }
