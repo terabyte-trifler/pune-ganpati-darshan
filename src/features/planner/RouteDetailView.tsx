@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, ListPlus, Eye, DoorOpen, Clock } from 'lucide-react';
 import { MiniMap } from '@/features/map/MiniMapLoader';
@@ -56,6 +56,58 @@ export function RouteDetailView({
   const live = useLiveRouteTime(mandals, totals.darshanS);
   const darshanS = live.darshanS;
 
+  /**
+   * The routed walking line for a curated route.
+   *
+   * Without this the map drew straight connectors between the stops and
+   * nothing else — the planner fetched a real path and a curated route
+   * never did, so every one of these pages was joining dots. It shows
+   * worst on the metro route, where the stops are far enough apart that a
+   * straight line crosses whole blocks.
+   *
+   * optimize is false on purpose: a curated route's order is set by hand
+   * and is not ours to change. This asks only for the path through it.
+   */
+  const [geometry, setGeometry] = useState<[number, number][] | null>(null);
+  const asked = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (mandals.length < 2) return;
+    const key = `${route.slug}|${route.mode}`;
+    if (asked.current === key) return;
+    asked.current = key;
+
+    const points = mandals.map((m) => ({ lat: m.location.lat, lng: m.location.lng }));
+    let live = true;
+    fetch('/api/routes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        origin: points[0],
+        stops: points.slice(1),
+        mode: route.mode,
+        optimize: false,
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (live && data?.geometry) setGeometry(data.geometry);
+      })
+      .catch(() => {
+        // The dashed connectors stay. A curated route still reads without
+        // its line, and a failed fetch is not worth an error beside it.
+      });
+
+    return () => {
+      live = false;
+    };
+    // Keyed on the route, not on `mandals`: that array is rebuilt every
+    // render, so listing it re-ran this effect, and the cleanup then
+    // cancelled the fetch it had just started — the guard above stopped a
+    // second attempt, so the line never arrived at all.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.slug, route.mode]);
+
   const useThisRoute = () => {
     replace(mandals.map((m) => m.slug));
     trackEvent('plan_created', { props: { source: 'curated', route: route.slug } });
@@ -66,12 +118,15 @@ export function RouteDetailView({
       <MiniMap
         mandals={mandals}
         ordered
+        routeGeometry={geometry}
         selectedSlug={selected}
         onSelect={setSelected}
         className="h-64 w-full sm:h-80"
       />
       <p className="mt-1.5 text-[12px] text-[var(--faint)]">
-        Stops are shown in walking order. Tap a number to see which mandal it is.
+        {geometry
+          ? 'The line is the walking path, along the lanes where the crowd is sent one way.'
+          : 'Stops are shown in walking order. Tap a number to see which mandal it is.'}
       </p>
 
       {/* The crowd's own direction. A curated route's order is fixed by
