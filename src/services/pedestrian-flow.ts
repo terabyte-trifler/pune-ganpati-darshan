@@ -1,9 +1,18 @@
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
-import { laneWalk, touchesLanes } from '@/services/pedestrian-graph';
+import {
+  laneWalk, touchesLanes, flowBearingAt, stepAgainstFlow, laneOpposing,
+  FLOW_CORRIDOR_M,
+} from '@/services/pedestrian-graph';
 import {
   bearingDeg, bearingDifference, metresToPath, haversine, isOnFoot,
   type LatLng, type TravelMode,
 } from '@/lib/geo';
+
+/**
+ * Re-exported so callers and tests have one place to look. The graph
+ * owns these, because the graph is what has to walk them.
+ */
+export { flowBearingAt, stepAgainstFlow, FLOW_CORRIDOR_M } from '@/services/pedestrian-graph';
 
 /**
  * The crowd only flows one way down some lanes, and a route has to know.
@@ -22,14 +31,6 @@ import {
  * the two-wheeler side, and for the same reason.
  */
 
-/**
- * How far from the stretch a leg still counts as using it.
- *
- * These lanes are narrow and the mandals sit on them, so this is tighter
- * than the vehicle corridor: at 150 m every leg in the peth core would
- * match something.
- */
-export const FLOW_CORRIDOR_M = 45;
 
 /**
  * How far off the permitted bearing still counts as "with the flow".
@@ -49,35 +50,6 @@ function sample(a: LatLng, b: LatLng, steps = 12): LatLng[] {
     lat: a.lat + ((b.lat - a.lat) * i) / steps,
     lng: a.lng + ((b.lng - a.lng) * i) / steps,
   }));
-}
-
-/**
- * The direction the crowd moves at one point on a stretch.
- *
- * Read off the nearest segment of the drawn path, not from a number
- * stored beside it. These lanes bend — one of them turns 81° in the
- * middle — and a single bearing for a whole stretch is wrong for half of
- * it, in a way nothing can catch because the number and the geometry are
- * maintained by hand in two places.
- *
- * Paths are a handful of points, so the linear scan is cheaper than the
- * bookkeeping that would avoid it.
- */
-export function flowBearingAt(point: LatLng, path: [number, number][]): number | null {
-  let best = Infinity;
-  let bearing: number | null = null;
-  for (let i = 0; i < path.length - 1; i++) {
-    const pair: [number, number][] = [path[i], path[i + 1]];
-    const d = metresToPath(point, pair);
-    if (d < best) {
-      best = d;
-      bearing = bearingDeg(
-        { lat: path[i][1], lng: path[i][0] },
-        { lat: path[i + 1][1], lng: path[i + 1][0] }
-      );
-    }
-  }
-  return bearing;
 }
 
 /** Middle value, so one sample taken at a bend cannot decide a leg. */
@@ -182,11 +154,43 @@ export function flowsOnRoute(points: LatLng[]): typeof PEDESTRIAN_ONE_WAYS {
  */
 const NO_ROUTE_FACTOR = 4;
 
+/**
+ * How much of the straight line counts as arriving, or as setting off.
+ *
+ * A stop on a lane can only be reached from the directions that lane
+ * allows. Tulshibaug is the clearest case: two lanes leave it and one
+ * arrives, so the only legal approach is down from Guruji Talim, and a
+ * plan that reaches it from Mandai or from Dagdusheth is walking up a
+ * one-way whatever the router draws.
+ *
+ * The ordering could not see that. graphCostFactor asked the graph only
+ * when BOTH stops stood on the network, and Mandai is 189 m off it — so
+ * the leg was priced as though nothing were wrong, and the optimiser had
+ * no reason to put Guruji Talim before Tulshibaug.
+ */
+const APPROACH_M = 40;
+
+function along(a: LatLng, b: LatLng, t: number): LatLng {
+  return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+}
+
 function graphCostFactor(from: LatLng, to: LatLng): number {
+  const straight = haversine(from, to);
+
+  // Arriving at, or leaving, a stop against the lane it stands on.
+  if (straight > 0) {
+    const t = Math.min(0.5, APPROACH_M / straight);
+    if (touchesLanes(to) && laneOpposing(along(from, to, 1 - t), to)) {
+      return NO_ROUTE_FACTOR;
+    }
+    if (touchesLanes(from) && laneOpposing(from, along(from, to, t))) {
+      return NO_ROUTE_FACTOR;
+    }
+  }
+
   if (!touchesLanes(from) || !touchesLanes(to)) return 1;
   const walk = laneWalk(from, to);
   if (!walk) return NO_ROUTE_FACTOR;
-  const straight = haversine(from, to);
   return straight > 0 ? Math.max(1, walk.metres / straight) : 1;
 }
 
@@ -231,45 +235,6 @@ export function penaliseAgainstFlow(
         : cost * legCostFactor(points[i], points[j], mode)
     )
   );
-}
-
-/**
- * How opposed a step must be before it counts as going back up a lane.
- *
- * Tighter than FLOW_TOLERANCE_DEG, which is used to ask whether a whole
- * LEG broadly agrees with the crowd and is generous on purpose. This asks
- * something narrower of a single step of a drawn line: is it retracing
- * the lane, or merely crossing it?
- *
- * At the leg tolerance it could not tell the difference. A step heading
- * due south down its own lane passes within 6 m of the east-west lane out
- * of Tulshibaug, 110.1 degrees off that lane's flow — one tenth of a
- * degree over the leg threshold, and so judged to be walking up a lane it
- * was only cutting across. Within 45 degrees of directly opposed is a
- * reversal; 70 degrees off perpendicular is a junction.
- */
-const AGAINST_STEP_DEG = 135;
-
-/**
- * Whether one step of a drawn line walks a one-way the wrong way.
- *
- * Judged on the step itself rather than on the whole leg, because this is
- * asked of a routed line whose ends may be nowhere near a lane. Both ends
- * of the step have to be in the corridor, not just its middle — a step
- * that starts on a lane and leaves it is not travelling along it.
- */
-function stepAgainstFlow(a: LatLng, b: LatLng): boolean {
-  if (haversine(a, b) < 1) return false;
-  const mid = { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
-  const heading = bearingDeg(a, b);
-
-  return PEDESTRIAN_ONE_WAYS.some((w) => {
-    if (metresToPath(mid, w.path) > FLOW_CORRIDOR_M) return false;
-    if (metresToPath(a, w.path) > FLOW_CORRIDOR_M) return false;
-    if (metresToPath(b, w.path) > FLOW_CORRIDOR_M) return false;
-    const flow = flowBearingAt(mid, w.path);
-    return flow !== null && bearingDifference(heading, flow) > AGAINST_STEP_DEG;
-  });
 }
 
 /**
@@ -331,28 +296,40 @@ export function enforceOneWays(line: [number, number][]): [number, number][] {
   return out;
 }
 
+/**
+ * How far a line must travel the wrong way before it counts.
+ *
+ * Measured in metres rather than in steps, because a step is not a unit
+ * of anything: a mandal standing a few metres off the end of its lane
+ * makes the last step to its doorway point back up that lane, and a
+ * per-step rule called the whole of Guruji Talim to Tulshibaug a
+ * violation — the one direction that lane permits.
+ *
+ * Distance cannot be fooled either way round. Nine metres to a doorway
+ * stays below it however the router chops the line up, and fifty metres
+ * up the middle of a lane stays above it even when split into ten steps
+ * of five.
+ */
+const AGAINST_RUN_M = 25;
+
 /** Which one-way stretches a drawn line travels the wrong way. */
 export function violatedLanes(line: [number, number][]) {
   const at = (c: [number, number]): LatLng => ({ lat: c[1], lng: c[0] });
-  const hit = new Set<string>();
+  const against = new Map<string, number>();
 
   for (let i = 0; i < line.length - 1; i++) {
     const a = at(line[i]);
     const b = at(line[i + 1]);
-    if (haversine(a, b) < 1) continue;
-    const mid = { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
-    const heading = bearingDeg(a, b);
-
-    for (const w of PEDESTRIAN_ONE_WAYS) {
-      if (metresToPath(mid, w.path) > FLOW_CORRIDOR_M) continue;
-      if (metresToPath(a, w.path) > FLOW_CORRIDOR_M) continue;
-      if (metresToPath(b, w.path) > FLOW_CORRIDOR_M) continue;
-      const flow = flowBearingAt(mid, w.path);
-      if (flow !== null && bearingDifference(heading, flow) > AGAINST_STEP_DEG) hit.add(w.name);
-    }
+    const metres = haversine(a, b);
+    if (metres < 1) continue;
+    // Attributed to one lane — its nearest — for the reason laneOpposing
+    // explains: two of these stretches leave Tulshibaug from the same
+    // point in opposite directions.
+    const w = laneOpposing(a, b);
+    if (w) against.set(w.name, (against.get(w.name) ?? 0) + metres);
   }
 
-  return PEDESTRIAN_ONE_WAYS.filter((w) => hit.has(w.name));
+  return PEDESTRIAN_ONE_WAYS.filter((w) => (against.get(w.name) ?? 0) >= AGAINST_RUN_M);
 }
 
 /** Half-width of an exclusion ribbon, in metres. */

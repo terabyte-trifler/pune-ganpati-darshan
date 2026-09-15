@@ -1,4 +1,5 @@
 import { PEDESTRIAN_ONE_WAYS, PEDESTRIAN_TWO_WAYS } from '@/content/diversions';
+import { bearingDeg, bearingDifference, metresToPath } from '@/lib/geo';
 import { haversine, type LatLng } from '@/lib/geo';
 
 /**
@@ -21,6 +22,79 @@ import { haversine, type LatLng } from '@/lib/geo';
  * let the search hop off a lane, round its length, and back on, which is
  * precisely the bypass the lanes exist to prevent.
  */
+
+/** How far from a lane a step still counts as being on it. */
+export const FLOW_CORRIDOR_M = 45;
+
+/**
+ * How opposed one step must be before it counts as going back up a lane.
+ *
+ * Within 45 degrees of directly opposed is retracing; 70 degrees off
+ * perpendicular is a junction being crossed.
+ */
+export const AGAINST_STEP_DEG = 135;
+
+/**
+ * The direction the crowd moves at one point on a stretch.
+ *
+ * Read off the nearest segment of the drawn path, because these lanes
+ * bend — one of them by 81 degrees — and a single bearing for a whole
+ * stretch is wrong for half of it.
+ */
+export function flowBearingAt(point: LatLng, path: [number, number][]): number | null {
+  let best = Infinity;
+  let bearing: number | null = null;
+  for (let i = 0; i < path.length - 1; i++) {
+    const pair: [number, number][] = [path[i], path[i + 1]];
+    const d = metresToPath(point, pair);
+    if (d < best) {
+      best = d;
+      bearing = bearingDeg(
+        { lat: path[i][1], lng: path[i][0] },
+        { lat: path[i + 1][1], lng: path[i + 1][0] }
+      );
+    }
+  }
+  return bearing;
+}
+
+/**
+ * Whether walking straight from a to b goes back up a one-way.
+ *
+ * Both ends have to be in the corridor, not just the middle — a step that
+ * starts on a lane and leaves it is not travelling along it.
+ */
+export function stepAgainstFlow(a: LatLng, b: LatLng): boolean {
+  return laneOpposing(a, b) !== null;
+}
+
+/**
+ * The one-way stretch a step is travelling the wrong way, if any.
+ *
+ * A step is judged against the NEAREST lane and no other. Two of these
+ * stretches leave Tulshibaug from the same point in opposite directions —
+ * one east, one west and then south — so within a few metres of that
+ * corner every step down one of them is opposed to the other. Attributing
+ * a step to one lane is what separates "walking back up this lane" from
+ * "leaving the lane beside it".
+ */
+export function laneOpposing(a: LatLng, b: LatLng) {
+  if (haversine(a, b) < 1) return null;
+  const mid = { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
+
+  const nearest = PEDESTRIAN_ONE_WAYS
+    .map((w) => ({ w, d: metresToPath(mid, w.path) }))
+    .sort((x, y) => x.d - y.d)[0];
+
+  if (!nearest || nearest.d > FLOW_CORRIDOR_M) return null;
+  const { w } = nearest;
+  if (metresToPath(a, w.path) > FLOW_CORRIDOR_M) return null;
+  if (metresToPath(b, w.path) > FLOW_CORRIDOR_M) return null;
+
+  const flow = flowBearingAt(mid, w.path);
+  if (flow === null) return null;
+  return bearingDifference(bearingDeg(a, b), flow) > AGAINST_STEP_DEG ? w : null;
+}
 
 /** Two vertices this close are the same junction. */
 const SAME_NODE_M = 12;
@@ -137,13 +211,39 @@ function withEndpoints(from: LatLng, to: LatLng) {
   const nodes = [...base.nodes];
   const out = base.out.map((edges) => [...edges]);
 
-  const addJoin = (p: LatLng): Array<{ id: number; metres: number }> => {
+  /**
+   * Stepping on or off a lane is a walk, and the lanes apply to it.
+   *
+   * A join used to be an unchecked straight hop, which is how the walk
+   * from Dagdusheth to Tulshibaug came to start with 50 m at bearing 332 —
+   * due north, straight up the southbound lane — to reach the two-way
+   * branch that begins just past it. Our own path was walking a one-way in
+   * reverse, and it was our own rule that let it.
+   *
+   * `outbound` is which way the walk crosses the join: away from the stop
+   * when it is the start of the leg, towards it when it is the end.
+   *
+   * Very short hops are exempt, and have to be. Tulshibaug stands 9 m off
+   * the end of its own lane, so the last step to its doorway points back
+   * up that lane and was read as walking the wrong way — which cut
+   * Tulshibaug off the network entirely. Nine metres to a doorway is
+   * stepping off a lane; fifty up the middle of one is not.
+   */
+  const JOIN_CHECK_MIN_M = 25;
+  const addJoin = (
+    p: LatLng,
+    outbound: boolean
+  ): Array<{ id: number; metres: number }> => {
+    const allowed = (node: LatLng) =>
+      haversine(p, node) < JOIN_CHECK_MIN_M ||
+      (outbound ? !stepAgainstFlow(p, node) : !stepAgainstFlow(node, p));
+
     const joins: Array<{ id: number; metres: number }> = [];
 
     // Existing vertices within reach.
     for (const n of nodes.slice(0, base.nodes.length)) {
       const d = haversine(p, n.point);
-      if (d <= JOIN_M) joins.push({ id: n.id, metres: d });
+      if (d <= JOIN_M && allowed(n.point)) joins.push({ id: n.id, metres: d });
     }
 
     // And a fresh node on any segment that passes closer than those.
@@ -154,6 +254,8 @@ function withEndpoints(from: LatLng, to: LatLng) {
         // Already standing on a vertex of this segment; nothing to add.
         if (haversine(point, base.nodes[u].point) < SAME_NODE_M) continue;
         if (haversine(point, base.nodes[edge.to].point) < SAME_NODE_M) continue;
+
+        if (!allowed(point)) continue;
 
         const id = nodes.length;
         nodes.push({ id, point });
@@ -166,8 +268,8 @@ function withEndpoints(from: LatLng, to: LatLng) {
     return joins.sort((a, b) => a.metres - b.metres);
   };
 
-  const starts = addJoin(from);
-  const ends = addJoin(to);
+  const starts = addJoin(from, true);
+  const ends = addJoin(to, false);
   return { nodes, out, starts, ends };
 }
 

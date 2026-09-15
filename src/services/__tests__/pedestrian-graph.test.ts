@@ -23,32 +23,64 @@ const at = (slug: string): LatLng => {
 const DAGDUSHETH = at('dagdusheth-halwai-ganpati');
 const TULSHIBAUG = at('tulshibaug-ganpati');
 const JILBYA = at('jilbya-maruti-mandal');
+const GURUJI_TALIM = at('guruji-talim');
 /** Where the westward branch meets the lane down to Tulshibaug. */
 const JUNCTION: LatLng = { lat: 18.514987, lng: 73.855054 };
 
-describe('walking Dagdusheth to Tulshibaug', () => {
-  it('goes round on the lanes rather than straight across the block', () => {
-    const walk = laneWalk(DAGDUSHETH, TULSHIBAUG)!;
+describe('walking Guruji Talim to Tulshibaug', () => {
+  it('goes down the lane rather than straight across the block', () => {
+    const walk = laneWalk(GURUJI_TALIM, TULSHIBAUG)!;
     expect(walk).not.toBeNull();
-    expect(walk.metres).toBeGreaterThan(haversine(DAGDUSHETH, TULSHIBAUG));
-    // Through the junction, which is the whole shape of the detour.
+    expect(walk.metres).toBeGreaterThan(haversine(GURUJI_TALIM, TULSHIBAUG));
     expect(metresToPath(JUNCTION, walk.path.map((p) => [p.lng, p.lat]))).toBeLessThan(15);
   });
 
   it('cannot be walked the other way at all', () => {
-    expect(laneWalk(TULSHIBAUG, DAGDUSHETH)).toBeNull();
+    expect(laneWalk(TULSHIBAUG, GURUJI_TALIM)).toBeNull();
   });
 
   it('starts and ends at the stops themselves, not at lane vertices', () => {
-    const walk = laneWalk(DAGDUSHETH, TULSHIBAUG)!;
-    expect(walk.path[0]).toEqual(DAGDUSHETH);
+    const walk = laneWalk(GURUJI_TALIM, TULSHIBAUG)!;
+    expect(walk.path[0]).toEqual(GURUJI_TALIM);
     expect(walk.path[walk.path.length - 1]).toEqual(TULSHIBAUG);
+  });
+});
+
+describe('Dagdusheth and Tulshibaug are not connected by any legal walk', () => {
+  /**
+   * These tests used to assert the opposite, and were wrong.
+   *
+   * The lane graph offered a 284 m walk between them, and its first step
+   * was 50 m at bearing 332 — due north, straight up the southbound lane —
+   * to reach the two-way branch that begins just past Dagdusheth. Joining
+   * the network was an unchecked straight hop, so our own path walked a
+   * one-way in reverse and our own tests blessed it.
+   *
+   * With joins subject to the lanes, neither direction has a legal walk in
+   * the data we hold. That is the honest answer: the cost falls to
+   * NO_ROUTE_FACTOR, the ordering puts the pair the other way round, and
+   * the drawn line comes from the router, which knows streets we do not.
+   */
+  it('has no lane walk in either direction', () => {
+    expect(laneWalk(DAGDUSHETH, TULSHIBAUG)).toBeNull();
+    expect(laneWalk(TULSHIBAUG, DAGDUSHETH)).toBeNull();
+  });
+
+  it('never starts a walk by going back up a lane', () => {
+    // The specific shape of the bug: a first step heading north out of
+    // Dagdusheth, where the crowd only goes south.
+    for (const to of [TULSHIBAUG, JILBYA, at('guruji-talim')]) {
+      const walk = laneWalk(DAGDUSHETH, to);
+      if (!walk) continue;
+      expect(walk.path[1].lat, 'first step goes north out of Dagdusheth')
+        .toBeLessThanOrEqual(DAGDUSHETH.lat + 0.0002);
+    }
   });
 });
 
 describe('the line drawn for a whole walk', () => {
   it('follows the lanes instead of joining the stops directly', () => {
-    const stops = [DAGDUSHETH, TULSHIBAUG, JILBYA];
+    const stops = [GURUJI_TALIM, TULSHIBAUG, JILBYA];
     const line = walkGeometry(stops);
     expect(line.length).toBeGreaterThan(stops.length);
     expect(metresToPath(JUNCTION, line)).toBeLessThan(15);
@@ -57,7 +89,7 @@ describe('the line drawn for a whole walk', () => {
   it('never repeats a point, so every segment has a direction', () => {
     // A zero-length segment has no bearing, and the arrowhead placed on it
     // would point at nothing.
-    const line = walkGeometry([DAGDUSHETH, TULSHIBAUG, JILBYA]);
+    const line = walkGeometry([GURUJI_TALIM, TULSHIBAUG, JILBYA]);
     for (let i = 1; i < line.length; i++) {
       expect(line[i], `duplicate point at ${i}`).not.toEqual(line[i - 1]);
     }
@@ -104,13 +136,13 @@ describe('keeping the router for everything the lanes do not cover', () => {
   });
 
   it('replaces a leg the lanes do cover, however the router drew it', () => {
-    const walk = laneWalk(DAGDUSHETH, TULSHIBAUG)!;
+    const walk = laneWalk(GURUJI_TALIM, TULSHIBAUG)!;
     // A deliberately wrong routed line: straight across the block.
     const routed: [number, number][] = [
-      [DAGDUSHETH.lng, DAGDUSHETH.lat],
+      [GURUJI_TALIM.lng, GURUJI_TALIM.lat],
       [TULSHIBAUG.lng, TULSHIBAUG.lat],
     ];
-    const spliced = spliceLaneLegs(routed, [DAGDUSHETH, TULSHIBAUG]);
+    const spliced = spliceLaneLegs(routed, [GURUJI_TALIM, TULSHIBAUG]);
     expect(spliced.length).toBe(walk.path.length);
     expect(metresToPath(JUNCTION, spliced)).toBeLessThan(15);
   });
@@ -119,10 +151,10 @@ describe('keeping the router for everything the lanes do not cover', () => {
     const routed: [number, number][] = [
       [KASBA.lng, KASBA.lat],
       [KASBA.lng + 0.0003, KASBA.lat - 0.0008],
-      [DAGDUSHETH.lng, DAGDUSHETH.lat],
+      [GURUJI_TALIM.lng, GURUJI_TALIM.lat],
       [TULSHIBAUG.lng, TULSHIBAUG.lat],
     ];
-    const spliced = spliceLaneLegs(routed, [KASBA, DAGDUSHETH, TULSHIBAUG]);
+    const spliced = spliceLaneLegs(routed, [KASBA, GURUJI_TALIM, TULSHIBAUG]);
     // The router's wandering vertex on the first leg survives...
     expect(spliced).toContainEqual([KASBA.lng + 0.0003, KASBA.lat - 0.0008]);
     // ...and the second leg goes round by the junction.
@@ -131,11 +163,11 @@ describe('keeping the router for everything the lanes do not cover', () => {
 
   it('never leaves two identical points behind', () => {
     const routed: [number, number][] = [
-      [DAGDUSHETH.lng, DAGDUSHETH.lat],
+      [GURUJI_TALIM.lng, GURUJI_TALIM.lat],
       [TULSHIBAUG.lng, TULSHIBAUG.lat],
       [JILBYA.lng, JILBYA.lat],
     ];
-    const spliced = spliceLaneLegs(routed, [DAGDUSHETH, TULSHIBAUG, JILBYA]);
+    const spliced = spliceLaneLegs(routed, [GURUJI_TALIM, TULSHIBAUG, JILBYA]);
     for (let i = 1; i < spliced.length; i++) {
       expect(spliced[i], `duplicate at ${i}`).not.toEqual(spliced[i - 1]);
     }

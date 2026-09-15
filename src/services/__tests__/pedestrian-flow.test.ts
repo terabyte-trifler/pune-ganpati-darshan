@@ -293,20 +293,24 @@ describe('a leg whose straight line touches no lane at all', () => {
    * lane under the line between them, because the line cuts the block.
    * The real walk has to go round on lanes that run one way.
    */
-  it('costs Dagdusheth to Tulshibaug at what walking it really takes', () => {
-    const walk = laneWalk(DAGDUSHETH, TULSHIBAUG)!;
+  it('costs a lane walk at what walking it really takes', () => {
+    const walk = laneWalk(GURUJI_TALIM, TULSHIBAUG)!;
     expect(walk).not.toBeNull();
-    // West along the two-way branch, then south down the one-way lane.
-    expect(walk.metres).toBeGreaterThan(haversine(DAGDUSHETH, TULSHIBAUG));
-    expect(legCostFactor(DAGDUSHETH, TULSHIBAUG, 'walk')).toBeGreaterThan(1.5);
+    expect(walk.metres).toBeGreaterThan(haversine(GURUJI_TALIM, TULSHIBAUG));
+    expect(legCostFactor(GURUJI_TALIM, TULSHIBAUG, 'walk')).toBeGreaterThan(1);
   });
 
-  it('finds no walk at all in the other direction', () => {
-    // Out of Tulshibaug the lanes go south and east, and the main lane
-    // runs south. There is no way back up to Dagdusheth.
+  it('charges both directions between Dagdusheth and Tulshibaug', () => {
+    // Neither way is walkable on the lanes we hold: the only connection is
+    // the two-way branch, and it begins 50 m NORTH of Dagdusheth, up a
+    // lane the crowd only comes down. An earlier version of this test
+    // asserted a 284 m walk between them — the graph was joining that
+    // branch with an unchecked straight hop, which is to say walking a
+    // one-way in reverse.
+    expect(laneWalk(DAGDUSHETH, TULSHIBAUG)).toBeNull();
     expect(laneWalk(TULSHIBAUG, DAGDUSHETH)).toBeNull();
-    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'walk'))
-      .toBeGreaterThan(legCostFactor(DAGDUSHETH, TULSHIBAUG, 'walk'));
+    expect(legCostFactor(DAGDUSHETH, TULSHIBAUG, 'walk')).toBeGreaterThan(1.5);
+    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'walk')).toBeGreaterThan(1.5);
   });
 
   it('puts Dagdusheth before Tulshibaug in a plan containing both', () => {

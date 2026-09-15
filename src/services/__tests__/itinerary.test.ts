@@ -8,6 +8,7 @@ import {
   legModeFor,
 } from '../itinerary';
 import { localGanpatis } from '@/services/catalogue';
+import { legCostFactor } from '@/services/pedestrian-flow';
 import { PUNE_CENTER } from '@/lib/geo';
 
 const base = {
@@ -391,5 +392,42 @@ describe('once the vehicle is parked', () => {
     // Riding speed is over three times walking speed, so a plan priced as
     // a ride would have a travel figure a fraction of the walked one.
     expect(fromPeths.travelMinutes).toBeGreaterThan(onFoot.travelMinutes / 2);
+  });
+});
+
+/**
+ * A stop can only be reached the way the crowd allows.
+ *
+ * Tulshibaug is the clearest case in the catalogue: two one-way lanes
+ * leave it and one arrives, so the only legal approach is down from
+ * Guruji Talim. A six-hour two-wheeler plan used to arrive there from
+ * Mandai — the leg was priced as though nothing were wrong, because the
+ * graph was only consulted when BOTH stops stood on the lane network and
+ * Mandai is 189 m off it.
+ */
+describe('arriving at a mandal the crowd allows', () => {
+  it('never walks into a stop against the lane it stands on', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 360,
+      interests: ['manache', 'famous'],
+      pace: 'balanced',
+      mode: 'two_wheeler',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+
+    const at = (g: { location: { lat: number; lng: number } }) => ({
+      lat: g.location.lat,
+      lng: g.location.lng,
+    });
+
+    for (let i = 1; i < plan.stops.length; i++) {
+      const from = at(plan.stops[i - 1].ganpati);
+      const to = at(plan.stops[i].ganpati);
+      expect(
+        legCostFactor(from, to, 'walk'),
+        `${plan.stops[i - 1].ganpati.slug} -> ${plan.stops[i].ganpati.slug} arrives illegally`
+      ).toBeLessThan(4);
+    }
   });
 });
