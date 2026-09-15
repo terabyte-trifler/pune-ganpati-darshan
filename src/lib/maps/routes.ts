@@ -6,15 +6,20 @@ import type { TravelMode } from '@/types/ganpati';
 /**
  * Road routing, server-side only.
  *
- * Two providers, both free:
+ * Three providers, all free, tried in that order:
  *
- *  - **OSRM** (default). No API key, no account. The public demo server at
- *    router.project-osrm.org is fine for development but is explicitly not
- *    for production use, so `ROUTING_OSRM_URL` points at your own instance
- *    when you have one.
- *  - **OpenRouteService** (optional). Set `OPENROUTESERVICE_API_KEY` for a
- *    hosted service with an actual quota and uptime commitment; it also has
- *    better two-wheeler modelling for India.
+ *  - **OpenRouteService** (optional, best). Set `OPENROUTESERVICE_API_KEY`
+ *    for a hosted service with an actual quota and uptime commitment; it
+ *    also has better two-wheeler modelling for India.
+ *  - **Valhalla** (on foot). The only one of the three whose free public
+ *    instance genuinely models walking, which matters more here than
+ *    anywhere else: the orange line on the map IS the walking route, and
+ *    OSRM's demo answers every foot request with a car route. Between
+ *    Kasba and Bhausaheb Rangari that is 462 m of driving round the block
+ *    against 368 m of walking — the car cannot use the lanes a person can.
+ *  - **OSRM** (last). No API key, no account, and the public demo hosts
+ *    only the car profile — see below. Still the right answer for a
+ *    two-wheeler, and the backstop when the others are unreachable.
  *
  * If neither is reachable the caller falls back to local haversine estimates,
  * which are clearly labelled as estimates in the UI — a wrong number
@@ -22,6 +27,23 @@ import type { TravelMode } from '@/types/ganpati';
  */
 
 const OSRM_URL = process.env.ROUTING_OSRM_URL ?? 'https://router.project-osrm.org';
+
+/**
+ * Valhalla, used for the modes that are walked.
+ *
+ * The default is OpenStreetMap's own public instance, which is offered for
+ * light use — fine for a normal day, not something to point a festival
+ * night at. `ROUTING_VALHALLA_URL` should point at your own instance, or
+ * set an OpenRouteService key so this is never reached.
+ */
+const VALHALLA_URL =
+  process.env.ROUTING_VALHALLA_URL ?? 'https://valhalla1.openstreetmap.de';
+
+/** Modes Valhalla is asked about. A two-wheeler stays with the others. */
+const VALHALLA_COSTING: Partial<Record<TravelMode, string>> = {
+  walk: 'pedestrian',
+  metro: 'pedestrian',
+};
 
 /**
  * Whether the configured OSRM deployment actually serves per-mode profiles.
@@ -75,7 +97,7 @@ export interface ComputedRoute {
   /** GeoJSON LineString coordinates ([lng, lat]) for drawing the route. */
   geometry: [number, number][] | null;
   legs: RouteLeg[];
-  provider: 'osrm' | 'ors';
+  provider: 'osrm' | 'ors' | 'valhalla';
   /**
    * Where the time came from. 'provider' means the router modelled this
    * travel mode; 'derived' means only the distance is routed and the time
@@ -152,12 +174,159 @@ export async function computeRoute(
   if (stops.length === 0) return { ok: false, reason: 'no-route' };
   const points = [origin, ...stops];
 
-  if (ORS_KEY) {
-    const result = await computeRouteOrs(points, mode);
+  /**
+   * Valhalla first on foot; OpenRouteService first for a rider.
+   *
+   * Not a quality judgement — a quota one. This key's own headers put ORS
+   * directions at 200 a day, which is 200 taps of Optimise across every
+   * visitor before it starts refusing. A festival night spends that in
+   * minutes, and spending it on walking is the wrong place: Valhalla
+   * models pedestrians too, is not on a per-key day count, and on the
+   * Kasba to Bhausaheb Rangari leg returns 368 m against ORS's 427 m.
+   *
+   * ORS keeps the two-wheeler, where it is the only one of the three that
+   * models the mode at all — OSRM's demo would answer with a car and
+   * Valhalla is not asked. Rider requests are also much rarer, so 200 a
+   * day goes further there.
+   */
+  for (const attempt of VALHALLA_COSTING[mode]
+    ? [computeRouteValhalla, computeRouteOrs]
+    : [computeRouteOrs]) {
+    const result = await attempt(points, mode);
     if (result.ok) return result;
-    // Fall through to OSRM rather than failing outright.
+    // Fall through rather than failing outright.
   }
   return computeRouteOsrm(points, mode);
+}
+
+/**
+ * When ORS said it was out of quota, and when it says it will be back.
+ *
+ * Without this, every request after the day's two-hundredth pays a full
+ * round trip to be told no before falling through — on the one night the
+ * latency matters most. The reset comes from the provider's own header
+ * rather than from a guess about the window, and the whole thing is
+ * per-instance and in memory: losing it on a deploy costs one wasted
+ * call, which is not worth a store.
+ */
+let orsBlockedUntil = 0;
+
+function noteOrsRateLimit(response: Response): void {
+  if (response.status !== 429) return;
+  const reset = Number(response.headers.get('x-ratelimit-reset'));
+  orsBlockedUntil = Number.isFinite(reset) && reset > 0
+    ? reset * 1000
+    : Date.now() + 60 * 60 * 1000;
+}
+
+/**
+ * Valhalla's encoded polyline, which is the Google algorithm at 1e6.
+ *
+ * Precision six, not the five almost every decoder assumes — at five the
+ * line comes out a hundred times too small and lands off the coast of
+ * Africa, which is at least a failure you notice immediately.
+ */
+function decodePolyline6(encoded: string): [number, number][] {
+  const out: [number, number][] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+
+  while (index < encoded.length) {
+    for (const axis of ['lat', 'lng'] as const) {
+      let result = 0;
+      let shift = 0;
+      let byte: number;
+      do {
+        byte = encoded.charCodeAt(index++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
+      } while (byte >= 0x20);
+      const delta = result & 1 ? ~(result >> 1) : result >> 1;
+      if (axis === 'lat') lat += delta;
+      else lng += delta;
+    }
+    out.push([lng / 1e6, lat / 1e6]);
+  }
+  return out;
+}
+
+async function computeRouteValhalla(
+  points: LatLng[],
+  mode: TravelMode
+): Promise<RoutesResult<ComputedRoute>> {
+  const costing = VALHALLA_COSTING[mode];
+  if (!costing) return { ok: false, reason: 'unavailable' };
+
+  /**
+   * Asked as a GET, not the POST the docs lead with.
+   *
+   * Next's Data Cache does not cache POST, and an uncached router call is
+   * the thing ROUTER_CACHE_SECONDS exists to prevent: during the festival
+   * thousands of people build routes around the same handful of mandals,
+   * and almost every request re-asks a question already answered. As a
+   * POST this would have gone to OpenStreetMap's public instance every
+   * single time somebody tapped Optimise.
+   *
+   * Coordinates are rounded into the query the same way the OSRM URLs are,
+   * so two people planning the same walk share one cache entry.
+   */
+  const query = JSON.stringify({
+    locations: points.map((p) => ({
+      lat: Number(p.lat.toFixed(4)),
+      lon: Number(p.lng.toFixed(4)),
+    })),
+    costing,
+    directions_options: { units: 'kilometers' },
+  });
+
+  let response: Response;
+  try {
+    response = await fetchJson(
+      `${VALHALLA_URL}/route?json=${encodeURIComponent(query)}`,
+      { next: { revalidate: ROUTER_CACHE_SECONDS } }
+    );
+  } catch {
+    return { ok: false, reason: 'unavailable' };
+  }
+
+  if (!response.ok) return { ok: false, reason: 'unavailable' };
+
+  const body = (await response.json().catch(() => null)) as {
+    trip?: {
+      legs?: Array<{ summary?: { length?: number; time?: number }; shape?: string }>;
+      summary?: { length?: number; time?: number };
+    };
+  } | null;
+
+  const trip = body?.trip;
+  if (!trip?.legs?.length) return { ok: false, reason: 'no-route' };
+
+  const geometry: [number, number][] = [];
+  const legs = trip.legs.map((leg) => {
+    for (const point of decodePolyline6(leg.shape ?? '')) {
+      const last = geometry[geometry.length - 1];
+      if (!last || last[0] !== point[0] || last[1] !== point[1]) geometry.push(point);
+    }
+    // Valhalla reports kilometres because that is what we asked for.
+    return {
+      distanceM: Math.round((leg.summary?.length ?? 0) * 1000),
+      durationS: Math.round(leg.summary?.time ?? 0),
+    };
+  });
+
+  return {
+    ok: true,
+    data: {
+      distanceM: Math.round((trip.summary?.length ?? 0) * 1000),
+      durationS: Math.round(trip.summary?.time ?? 0),
+      geometry: geometry.length > 1 ? geometry : null,
+      legs,
+      provider: 'valhalla',
+      // Unlike OSRM's demo, this one really did model walking.
+      durationSource: 'provider',
+    },
+  };
 }
 
 async function computeRouteOsrm(
@@ -221,6 +390,11 @@ async function computeRouteOrs(
   points: LatLng[],
   mode: TravelMode
 ): Promise<RoutesResult<ComputedRoute>> {
+  // No key, or it already told us it is out for the day.
+  if (!ORS_KEY || Date.now() < orsBlockedUntil) {
+    return { ok: false, reason: 'unavailable' };
+  }
+
   let response: Response;
   try {
     response = await fetchJson(`${ORS_URL}/${ORS_PROFILE[mode]}/geojson`, {
@@ -232,6 +406,7 @@ async function computeRouteOrs(
     return { ok: false, reason: 'unavailable' };
   }
   if (!response.ok) {
+    noteOrsRateLimit(response);
     return {
       ok: false, reason: 'request-failed', status: response.status,
       detail: (await response.text()).slice(0, 200),
