@@ -174,16 +174,49 @@ export async function computeRoute(
   if (stops.length === 0) return { ok: false, reason: 'no-route' };
   const points = [origin, ...stops];
 
-  if (ORS_KEY) {
-    const result = await computeRouteOrs(points, mode);
+  /**
+   * Valhalla first on foot; OpenRouteService first for a rider.
+   *
+   * Not a quality judgement — a quota one. This key's own headers put ORS
+   * directions at 200 a day, which is 200 taps of Optimise across every
+   * visitor before it starts refusing. A festival night spends that in
+   * minutes, and spending it on walking is the wrong place: Valhalla
+   * models pedestrians too, is not on a per-key day count, and on the
+   * Kasba to Bhausaheb Rangari leg returns 368 m against ORS's 427 m.
+   *
+   * ORS keeps the two-wheeler, where it is the only one of the three that
+   * models the mode at all — OSRM's demo would answer with a car and
+   * Valhalla is not asked. Rider requests are also much rarer, so 200 a
+   * day goes further there.
+   */
+  for (const attempt of VALHALLA_COSTING[mode]
+    ? [computeRouteValhalla, computeRouteOrs]
+    : [computeRouteOrs]) {
+    const result = await attempt(points, mode);
     if (result.ok) return result;
     // Fall through rather than failing outright.
   }
-  if (VALHALLA_COSTING[mode]) {
-    const result = await computeRouteValhalla(points, mode);
-    if (result.ok) return result;
-  }
   return computeRouteOsrm(points, mode);
+}
+
+/**
+ * When ORS said it was out of quota, and when it says it will be back.
+ *
+ * Without this, every request after the day's two-hundredth pays a full
+ * round trip to be told no before falling through — on the one night the
+ * latency matters most. The reset comes from the provider's own header
+ * rather than from a guess about the window, and the whole thing is
+ * per-instance and in memory: losing it on a deploy costs one wasted
+ * call, which is not worth a store.
+ */
+let orsBlockedUntil = 0;
+
+function noteOrsRateLimit(response: Response): void {
+  if (response.status !== 429) return;
+  const reset = Number(response.headers.get('x-ratelimit-reset'));
+  orsBlockedUntil = Number.isFinite(reset) && reset > 0
+    ? reset * 1000
+    : Date.now() + 60 * 60 * 1000;
 }
 
 /**
@@ -357,6 +390,11 @@ async function computeRouteOrs(
   points: LatLng[],
   mode: TravelMode
 ): Promise<RoutesResult<ComputedRoute>> {
+  // No key, or it already told us it is out for the day.
+  if (!ORS_KEY || Date.now() < orsBlockedUntil) {
+    return { ok: false, reason: 'unavailable' };
+  }
+
   let response: Response;
   try {
     response = await fetchJson(`${ORS_URL}/${ORS_PROFILE[mode]}/geojson`, {
@@ -368,6 +406,7 @@ async function computeRouteOrs(
     return { ok: false, reason: 'unavailable' };
   }
   if (!response.ok) {
+    noteOrsRateLimit(response);
     return {
       ok: false, reason: 'request-failed', status: response.status,
       detail: (await response.text()).slice(0, 200),
