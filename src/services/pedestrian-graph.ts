@@ -535,3 +535,26 @@ export function laneExitsFrom(point: LatLng): number[] {
 
 /** How far along a lane to look before calling it a direction. */
 const EXIT_BEARING_M = 40;
+
+/**
+ * Where each stop falls on a drawn line, as indices into it.
+ *
+ * Forward-only, for the reason spliceLaneLegs gives: a walk through the
+ * peths passes close to mandals it has not reached yet, and searching the
+ * whole line for the nearest vertex would cut in the wrong place and turn
+ * the route inside out.
+ */
+export function cutAtStops(line: [number, number][], points: LatLng[]): number[] {
+  const cuts = [0];
+  for (let k = 1; k < points.length; k++) {
+    let best = cuts[k - 1];
+    let bestD = Infinity;
+    for (let i = cuts[k - 1]; i < line.length; i++) {
+      const d = haversine(points[k], { lat: line[i][1], lng: line[i][0] });
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    cuts.push(best);
+  }
+  cuts[cuts.length - 1] = line.length - 1;
+  return cuts;
+}

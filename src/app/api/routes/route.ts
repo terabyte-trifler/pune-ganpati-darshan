@@ -5,7 +5,7 @@ import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import {
-  walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints,
+  walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints, cutAtStops,
 } from '@/services/pedestrian-graph';
 import {
   enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygons,
@@ -235,6 +235,68 @@ export async function POST(request: Request) {
     }
 
     route = best.route;
+  }
+
+  /**
+   * Fix the offending legs one at a time, not the whole route at once.
+   *
+   * Everything above bars a lane for the ENTIRE route, and a one-way is
+   * not a property of a route — it is a property of a direction. Shivaji
+   * Road is legal southbound and illegal northbound, so barring it to fix
+   * the leg that walks up it also bars the legs that legitimately walk
+   * down it. The retry then measures the whole route as worse and keeps
+   * the original, which is why a walk from Bhausaheb Rangari to Kasba
+   * kept its 126 m up the one-way however many passes it was given.
+   *
+   * Each leg is asked separately, with only the lanes that leg offends
+   * barred, and only legs that offend pay for a request. A leg is kept
+   * only if it comes back walking less against the crowd; a leg that has
+   * no legal alternative keeps the line it had.
+   */
+  if (isOnFoot(mode) && route.ok && route.data.geometry) {
+    const line = route.data.geometry;
+    const cuts = cutAtStops(line, routePoints);
+    const legGeometry = routePoints.slice(1).map((_, k) =>
+      line.slice(cuts[k], cuts[k + 1] + 1)
+    );
+
+    let changed = false;
+    for (let k = 0; k < legGeometry.length; k++) {
+      const offending = violatedLanes(legGeometry[k]);
+      if (offending.length === 0) continue;
+
+      const from = routePoints[k];
+      const to = routePoints[k + 1];
+      const before = againstMetres(legGeometry[k]);
+
+      for (const keepClear of [[], [from, to]]) {
+        const leg = await computeRoute(from, [to], mode,
+          offending.flatMap((lane) => laneExclusionPolygons(lane, keepClear)));
+        if (!leg.ok || !leg.data.geometry) continue;
+        if (againstMetres(leg.data.geometry) >= before) continue;
+
+        legGeometry[k] = leg.data.geometry;
+        route.data.legs[k] = {
+          distanceM: leg.data.distanceM,
+          durationS: leg.data.durationS,
+        };
+        changed = true;
+        break;
+      }
+    }
+
+    if (changed) {
+      const stitched: [number, number][] = [];
+      for (const leg of legGeometry) {
+        for (const point of leg) {
+          const last = stitched[stitched.length - 1];
+          if (!last || last[0] !== point[0] || last[1] !== point[1]) stitched.push(point);
+        }
+      }
+      route.data.geometry = stitched;
+      route.data.distanceM = route.data.legs.reduce((sum, l) => sum + l.distanceM, 0);
+      route.data.durationS = route.data.legs.reduce((sum, l) => sum + l.durationS, 0);
+    }
   }
 
   /**
