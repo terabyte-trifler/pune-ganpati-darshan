@@ -217,7 +217,6 @@ describe('joining a lane where you actually stand', () => {
  */
 describe('leaving a stop the way the crowd leaves it', () => {
   const TAMBDI = at('tambdi-jogeshwari');
-  const KASBA = at('kasba-ganpati');
 
   it('knows the three ways out of Tulshibaug', () => {
     // Reported: on towards Jilbya Maruti, or the right lane to Bajirao

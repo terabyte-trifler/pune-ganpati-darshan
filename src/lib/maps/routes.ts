@@ -368,53 +368,87 @@ async function computeRouteValhalla(
     locations.push(round(p));
   });
 
-  const query = JSON.stringify({
-    locations,
-    costing,
-    directions_options: { units: 'kilometers' },
-    ...(avoid.length > 0 ? { exclude_polygons: avoid } : {}),
-  });
-
-  let response: Response;
-  try {
-    response = await fetchJson(
-      `${VALHALLA_URL}/route?json=${encodeURIComponent(query)}`,
-      { next: { revalidate: ROUTER_CACHE_SECONDS } }
-    );
-  } catch {
-    return { ok: false, reason: 'unavailable' };
+  /**
+   * Split a long route into requests Valhalla will accept, then stitch.
+   *
+   * The limit is ten locations, and a route over it is refused outright —
+   * so an eleven-stop walk fell through to OSRM and came back as a car
+   * route. great-peth-circuit was 7765 m of driving against roughly 5 km
+   * of walking, which was most of the inflation across the curated set.
+   *
+   * Chunks are cut at STOPS, never at a lane through-point, and share the
+   * stop they meet at: that stop is the end of one request and the start
+   * of the next, so the legs concatenate one-to-one with the stops a
+   * visitor chose and the shapes join without a gap.
+   */
+  const chunks: Array<typeof locations> = [];
+  if (locations.length <= MAX_LOCATIONS) {
+    chunks.push(locations);
+  } else {
+    let start = 0;
+    while (start < locations.length - 1) {
+      let end = Math.min(start + MAX_LOCATIONS - 1, locations.length - 1);
+      // Walk back to a stop: a through-point cannot end a request.
+      while (end > start + 1 && locations[end].type === 'through') end--;
+      chunks.push(locations.slice(start, end + 1));
+      start = end;
+    }
   }
 
-  if (!response.ok) return { ok: false, reason: 'unavailable' };
-
-  const body = (await response.json().catch(() => null)) as {
-    trip?: {
-      legs?: Array<{ summary?: { length?: number; time?: number }; shape?: string }>;
-      summary?: { length?: number; time?: number };
-    };
-  } | null;
-
-  const trip = body?.trip;
-  if (!trip?.legs?.length) return { ok: false, reason: 'no-route' };
-
   const geometry: [number, number][] = [];
-  const legs = trip.legs.map((leg) => {
-    for (const point of decodePolyline6(leg.shape ?? '')) {
-      const last = geometry[geometry.length - 1];
-      if (!last || last[0] !== point[0] || last[1] !== point[1]) geometry.push(point);
+  const legs: RouteLeg[] = [];
+  let distanceM = 0;
+  let durationS = 0;
+
+  for (const chunk of chunks) {
+    const query = JSON.stringify({
+      locations: chunk,
+      costing,
+      directions_options: { units: 'kilometers' },
+      ...(avoid.length > 0 ? { exclude_polygons: avoid } : {}),
+    });
+
+    let response: Response;
+    try {
+      response = await fetchJson(
+        `${VALHALLA_URL}/route?json=${encodeURIComponent(query)}`,
+        { next: { revalidate: ROUTER_CACHE_SECONDS } }
+      );
+    } catch {
+      return { ok: false, reason: 'unavailable' };
     }
-    // Valhalla reports kilometres because that is what we asked for.
-    return {
-      distanceM: Math.round((leg.summary?.length ?? 0) * 1000),
-      durationS: Math.round(leg.summary?.time ?? 0),
-    };
-  });
+    if (!response.ok) return { ok: false, reason: 'unavailable' };
+
+    const body = (await response.json().catch(() => null)) as {
+      trip?: {
+        legs?: Array<{ summary?: { length?: number; time?: number }; shape?: string }>;
+        summary?: { length?: number; time?: number };
+      };
+    } | null;
+
+    const trip = body?.trip;
+    if (!trip?.legs?.length) return { ok: false, reason: 'no-route' };
+
+    distanceM += Math.round((trip.summary?.length ?? 0) * 1000);
+    durationS += Math.round(trip.summary?.time ?? 0);
+
+    for (const leg of trip.legs) {
+      for (const point of decodePolyline6(leg.shape ?? '')) {
+        const last = geometry[geometry.length - 1];
+        if (!last || last[0] !== point[0] || last[1] !== point[1]) geometry.push(point);
+      }
+      legs.push({
+        distanceM: Math.round((leg.summary?.length ?? 0) * 1000),
+        durationS: Math.round(leg.summary?.time ?? 0),
+      });
+    }
+  }
 
   return {
     ok: true,
     data: {
-      distanceM: Math.round((trip.summary?.length ?? 0) * 1000),
-      durationS: Math.round(trip.summary?.time ?? 0),
+      distanceM,
+      durationS,
       geometry: geometry.length > 1 ? geometry : null,
       legs,
       provider: 'valhalla',
