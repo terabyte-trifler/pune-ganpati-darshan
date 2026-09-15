@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   legAgainstFlow, flowsOnRoute, penaliseAgainstFlow, flowBearingAt, legCostFactor,
+  enforceOneWays,
   FLOW_CORRIDOR_M, AGAINST_FLOW_FACTOR,
 } from '@/services/pedestrian-flow';
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
@@ -339,5 +340,41 @@ describe('the ordering a visitor actually gets', () => {
     const toDagdu = haversine(origin, DAGDUSHETH);
     const toHutatma = haversine(origin, HUTATMA);
     expect(Math.abs(toDagdu - toHutatma)).toBeLessThan(300);
+  });
+});
+
+describe('making a drawn line obey the one-ways', () => {
+  const lane = PEDESTRIAN_ONE_WAYS.find((w) => w.name === 'Dagdusheth to Gotiram Bhaiya chowk')!;
+
+  it('leaves a line that already goes the right way exactly as it was', () => {
+    // Southwards down the lane, which is the way the crowd walks.
+    const withFlow: [number, number][] = [...lane.path];
+    expect(enforceOneWays(withFlow)).toEqual(withFlow);
+  });
+
+  it('leaves a line nowhere near a lane alone', () => {
+    const away: [number, number][] = [
+      [73.8077, 18.5074],
+      [73.8100, 18.5090],
+      [73.8150, 18.5120],
+    ];
+    expect(enforceOneWays(away)).toEqual(away);
+  });
+
+  it('does not mangle a run it cannot legally replace', () => {
+    // Northwards up the lane. There is no legal way back up it, and no
+    // alternative anywhere in the data — so the honest thing is to leave
+    // the line as the router drew it rather than invent one. What fixes
+    // this leg is the ORDERING, which is tested separately.
+    const against: [number, number][] = [...lane.path].reverse();
+    const out = enforceOneWays(against);
+    expect(out[0]).toEqual(against[0]);
+    expect(out[out.length - 1]).toEqual(against[against.length - 1]);
+  });
+
+  it('never leaves two identical points behind', () => {
+    const doubled: [number, number][] = [...lane.path, lane.path[lane.path.length - 1]];
+    const out = enforceOneWays(doubled);
+    for (let i = 1; i < out.length; i++) expect(out[i]).not.toEqual(out[i - 1]);
   });
 });

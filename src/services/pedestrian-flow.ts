@@ -232,3 +232,80 @@ export function penaliseAgainstFlow(
     )
   );
 }
+
+/**
+ * Whether one step of a drawn line walks a one-way the wrong way.
+ *
+ * Judged on the step itself rather than on the whole leg, because this is
+ * asked of a routed line whose ends may be nowhere near a lane.
+ */
+function stepAgainstFlow(a: LatLng, b: LatLng): boolean {
+  if (haversine(a, b) < 1) return false;
+  const mid = { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
+  const heading = bearingDeg(a, b);
+
+  return PEDESTRIAN_ONE_WAYS.some((w) => {
+    if (metresToPath(mid, w.path) > FLOW_CORRIDOR_M) return false;
+    const flow = flowBearingAt(mid, w.path);
+    return flow !== null && bearingDifference(heading, flow) > 180 - FLOW_TOLERANCE_DEG;
+  });
+}
+
+/**
+ * Take a routed line and make it obey the one-ways.
+ *
+ * The lane rules used to apply only when BOTH ends of a leg stood on the
+ * network — and only five of the sixteen mandals round the peths do, so
+ * 230 of 240 possible legs never consulted a lane at all. A leg from
+ * Kasba to Jilbya Maruti runs down the middle of one without either end
+ * being on it, and the router, which knows nothing about any of this,
+ * was free to draw it going up.
+ *
+ * Widening the rule instead was tried and reverted: letting a walk join
+ * the network from further off lets it hop off a lane, round its length
+ * and back on, which defeats the one-way outright — the tests caught
+ * Tulshibaug to Dagdusheth becoming walkable that way.
+ *
+ * So the question is asked of the line rather than of the leg. Where the
+ * routed line itself travels a lane the wrong way, that run is replaced
+ * with a legal walk between the same two points. Everything either side
+ * stays exactly as the router drew it, which keeps real streets for the
+ * approach instead of inventing straight ones.
+ *
+ * A run with no legal replacement is left alone. That is not a drawing
+ * problem to solve here — it means the stops are in an order the crowd
+ * does not allow, which is the ordering's job, and the route card says so.
+ */
+export function enforceOneWays(line: [number, number][]): [number, number][] {
+  if (line.length < 2) return line;
+  const at = (c: [number, number]): LatLng => ({ lat: c[1], lng: c[0] });
+
+  const out: [number, number][] = [line[0]];
+  const push = (c: [number, number]) => {
+    const last = out[out.length - 1];
+    if (last[0] !== c[0] || last[1] !== c[1]) out.push(c);
+  };
+
+  let i = 0;
+  while (i < line.length - 1) {
+    if (!stepAgainstFlow(at(line[i]), at(line[i + 1]))) {
+      push(line[i + 1]);
+      i++;
+      continue;
+    }
+
+    // The whole run of steps that keeps going the wrong way.
+    let j = i + 1;
+    while (j < line.length - 1 && stepAgainstFlow(at(line[j]), at(line[j + 1]))) j++;
+
+    const legal = laneWalk(at(line[i]), at(line[j]));
+    if (legal) {
+      for (const p of legal.path) push([p.lng, p.lat]);
+    } else {
+      for (let k = i + 1; k <= j; k++) push(line[k]);
+    }
+    i = j;
+  }
+
+  return out;
+}

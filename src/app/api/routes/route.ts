@@ -5,8 +5,8 @@ import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import { walkGeometry, laneWalk, spliceLaneLegs } from '@/services/pedestrian-graph';
+import { enforceOneWays, penaliseAgainstFlow } from '@/services/pedestrian-flow';
 import { walkedDurationSeconds } from '@/lib/geo';
-import { penaliseAgainstFlow } from '@/services/pedestrian-flow';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
 
@@ -206,12 +206,20 @@ export async function POST(request: Request) {
     // of them; drawing that straight puts a line through the buildings
     // instead of down Shivaji Road. Falling back to our own straight lines
     // only when the router gave us nothing at all.
+    // On foot: the lanes where they apply, the router everywhere else,
+    // and then a final pass that makes whatever is left obey the one-ways.
+    // The splice only fires when both ends of a leg stand on the network,
+    // which five of sixteen peth mandals do; enforceOneWays catches the
+    // rest — a leg that merely PASSES along a lane without either end
+    // being on it.
     geometry:
       mode !== 'walk'
         ? route.data.geometry
-        : route.data.geometry
-          ? spliceLaneLegs(route.data.geometry, [origin, ...orderedStops])
-          : walkGeometry([origin, ...orderedStops]),
+        : enforceOneWays(
+            route.data.geometry
+              ? spliceLaneLegs(route.data.geometry, [origin, ...orderedStops])
+              : walkGeometry([origin, ...orderedStops])
+          ),
     provider: route.data.provider,
     durationSource: route.data.durationSource,
     legs: route.data.legs.map((leg, i) =>
