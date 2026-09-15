@@ -595,12 +595,21 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
           <ul className="mt-1.5 space-y-1.5">
             {oneWays.map((w) => (
               <li key={w.name} className="text-[13px] leading-snug text-[var(--muted)]">
-                <span className="text-[var(--chandan)]">{w.name}.</span> {w.note}
+                {/* The instruction first, in the words someone standing on
+                    the road can act on. The lane's name is how the map
+                    labels it; it is not what they need to do. */}
+                <span className="font-semibold text-[var(--chandan)]">
+                  Walk {w.heading} <span aria-hidden="true">→</span> {w.towards}
+                </span>
+                <span className="mt-0.5 block text-[var(--faint)]">{w.name}</span>
+                <span className="mt-0.5 block">{w.note}</span>
               </li>
             ))}
           </ul>
           <p className="mt-2 text-[11px] text-[var(--faint)]">
-            Your stops are already ordered to walk with the crowd, not against it.
+            Your stops are already ordered to walk with the crowd, not against
+            it. On the map these are the blue lines — the arrows along them
+            point the way you walk.
           </p>
         </div>
       )}

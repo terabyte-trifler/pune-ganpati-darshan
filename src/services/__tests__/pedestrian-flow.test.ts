@@ -5,7 +5,7 @@ import {
 } from '@/services/pedestrian-flow';
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
 import { estimateMatrix, optimizeLocally } from '@/services/route-optimizer';
-import { haversine, metresToPath, type LatLng } from '@/lib/geo';
+import { haversine, metresToPath, bearingDeg, type LatLng } from '@/lib/geo';
 import catalogue from '@/content/catalogue.json';
 
 /**
@@ -177,6 +177,44 @@ describe('what the walker is told', () => {
     for (const w of PEDESTRIAN_ONE_WAYS) {
       expect(w.note).toMatch(/not be able to (walk|come) back/i);
       expect(w.note).toMatch(/one way|leaves the main lane/i);
+    }
+  });
+});
+
+describe('telling a walker which way to go', () => {
+  /** The compass word the drawn path actually points in. */
+  const headingOf = (w: { path: [number, number][] }) => {
+    const [a] = w.path;
+    const b = w.path[w.path.length - 1];
+    const deg = bearingDeg({ lat: a[1], lng: a[0] }, { lat: b[1], lng: b[0] });
+    if (deg >= 315 || deg < 45) return 'north';
+    if (deg < 135) return 'east';
+    if (deg < 225) return 'south';
+    return 'west';
+  };
+
+  it('states a heading that matches the road as drawn', () => {
+    // The word is written by hand and the line is not. This is what stops
+    // the two from disagreeing — a lane labelled "walk south" that runs
+    // north is worse than an unlabelled one, because a walker in a crowd
+    // will act on it.
+    for (const w of PEDESTRIAN_ONE_WAYS) {
+      expect(w.heading).toBe(headingOf(w));
+    }
+  });
+
+  it('names a destination a walker can see or ask for', () => {
+    for (const w of PEDESTRIAN_ONE_WAYS) {
+      expect(w.towards.length).toBeGreaterThan(0);
+      // The destination is the far end of the lane, so it must not be the
+      // place the walker is leaving.
+      expect(w.name.startsWith(w.towards)).toBe(false);
+    }
+  });
+
+  it('repeats the heading in the note, so the two cannot drift apart', () => {
+    for (const w of PEDESTRIAN_ONE_WAYS) {
+      expect(w.note.toLowerCase()).toContain(w.heading);
     }
   });
 });

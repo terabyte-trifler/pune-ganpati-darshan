@@ -1,5 +1,6 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
+import { haversine } from '@/lib/geo';
 
 /**
  * The stretches where the crowd itself walks one way.
@@ -29,6 +30,7 @@ import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
  */
 
 export const FLOW_SOURCE_ID = 'pedestrian-one-ways';
+export const FLOW_LABEL_SOURCE_ID = 'pedestrian-one-way-labels';
 
 /** Cool cobalt: neither the route's vermilion nor the closure's bone. */
 const FLOW_COLOR = '#7FA8D8';
@@ -49,8 +51,63 @@ export function flowFeatureCollection(): GeoJSON.FeatureCollection {
     type: 'FeatureCollection',
     features: PEDESTRIAN_ONE_WAYS.map((w) => ({
       type: 'Feature',
-      properties: { name: w.name, note: w.note, arrows: '›  ›  ›' },
+      properties: {
+        name: w.name,
+        note: w.note,
+        arrows: '›  ›  ›',
+        // Named, not generic. "One way on foot" tells a walker the rule;
+        // it does not tell them where this lane goes, which is the part
+        // they can act on while standing in a crowd. Kept short so it
+        // survives collision against the pins in the peth cluster —
+        // a label that is culled says nothing at all.
+        label: `One way to ${w.towards}`,
+      },
       geometry: { type: 'LineString', coordinates: w.path },
+    })),
+  };
+}
+
+/**
+ * The point halfway along a stretch, by distance walked.
+ *
+ * Not the middle of the coordinate list — one of these lanes turns, and
+ * its two segments are 31 m and 80 m, so the list's midpoint sits in the
+ * corner rather than halfway down the walk.
+ */
+function midpoint(path: [number, number][]): [number, number] {
+  const at = (i: number) => ({ lat: path[i][1], lng: path[i][0] });
+  const legs = path.slice(1).map((_, i) => haversine(at(i), at(i + 1)));
+  let remaining = legs.reduce((a, b) => a + b, 0) / 2;
+  for (let i = 0; i < legs.length; i++) {
+    if (remaining > legs[i]) { remaining -= legs[i]; continue; }
+    const t = legs[i] === 0 ? 0 : remaining / legs[i];
+    return [
+      path[i][0] + (path[i + 1][0] - path[i][0]) * t,
+      path[i][1] + (path[i + 1][1] - path[i][1]) * t,
+    ];
+  }
+  return path[path.length - 1];
+}
+
+/**
+ * Label anchors, as points rather than along the line.
+ *
+ * Line placement cannot label these. At zoom 16 a metre is about 2.3
+ * pixels here, so a 93 m lane is 41 pixels long — shorter than the word
+ * "Tulshibaug", let alone a sentence. MapLibre will not place a label it
+ * cannot fit along the geometry, so four of the five stretches silently
+ * had no label at any zoom, and the shortest lanes are exactly the ones
+ * in the tightest part of the walk.
+ *
+ * Anchored at the midpoint, the label is free of the line's length.
+ */
+export function flowLabelFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: PEDESTRIAN_ONE_WAYS.map((w) => ({
+      type: 'Feature',
+      properties: { label: `One way to ${w.towards}` },
+      geometry: { type: 'Point', coordinates: midpoint(w.path) },
     })),
   };
 }
@@ -67,6 +124,10 @@ export function addPedestrianFlowLayers(map: MapLibreMap): void {
   map.addSource(FLOW_SOURCE_ID, {
     type: 'geojson',
     data: flowFeatureCollection(),
+  });
+  map.addSource(FLOW_LABEL_SOURCE_ID, {
+    type: 'geojson',
+    data: flowLabelFeatureCollection(),
   });
 
   map.addLayer({
@@ -112,6 +173,12 @@ export function addPedestrianFlowLayers(map: MapLibreMap): void {
       // See the note above: an upright-corrected arrow is a wrong arrow.
       'text-keep-upright': false,
       'text-allow-overlap': true,
+      // And they must not reserve space either. `allow-overlap` alone only
+      // lets a symbol ignore what is already placed — it still blocks what
+      // comes after, and the arrows run the whole length of the line at 70
+      // px apart. That silently culled the destination label on every
+      // stretch, because line-center puts it straight on top of an arrow.
+      'text-ignore-placement': true,
       'symbol-spacing': 70,
     },
     paint: {
@@ -125,22 +192,26 @@ export function addPedestrianFlowLayers(map: MapLibreMap): void {
   map.addLayer({
     id: 'flow-line-label',
     type: 'symbol',
-    source: FLOW_SOURCE_ID,
+    source: FLOW_LABEL_SOURCE_ID,
     minzoom: 15,
     layout: {
-      'symbol-placement': 'line',
-      'text-field': 'One way on foot',
+      'text-field': ['get', 'label'],
       'text-font': ['Noto Sans Bold'],
-      'text-size': 9.5,
-      'text-letter-spacing': 0.05,
-      'text-offset': [0, 1.2],
-      'symbol-spacing': 320,
+      'text-size': 10.5,
+      'text-letter-spacing': 0.02,
+      'text-max-width': 9,
+      'text-padding': 2,
+      // Let it move rather than disappear. Five of these sit within a few
+      // hundred metres of each other in the peths, and a label dropped for
+      // want of one position is a stretch left unnamed.
+      'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+      'text-radial-offset': 0.9,
+      'text-justify': 'auto',
     },
     paint: {
       'text-color': FLOW_COLOR,
       'text-halo-color': '#14100C',
-      'text-halo-width': 1.4,
-      'text-opacity': 0.85,
+      'text-halo-width': 1.8,
     },
   });
 }

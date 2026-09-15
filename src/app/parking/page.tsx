@@ -264,7 +264,8 @@ export default async function ParkingPage() {
           These are not closed roads. They are open, and full — the crowd on
           them is made to move in one direction so a lane a few metres wide can
           carry lakhs of people. Walk with it and you will move. Try to come
-          back up and you will not be let through.
+          back up and you will not be let through. On the maps they are the
+          blue lines, and the arrows along them point the way you walk.
         </p>
         <ul className="mt-3 flex flex-col gap-1.5">
           {PEDESTRIAN_ONE_WAYS.map((w) => (
@@ -273,9 +274,10 @@ export default async function ParkingPage() {
               className="rounded-[var(--radius-field)] border border-[var(--line)] bg-[var(--dhoop)] px-3.5 py-2.5"
             >
               <p className="text-[14.5px] font-semibold leading-snug text-[var(--chandan)]">
-                {w.name}
+                Walk {w.heading} <span aria-hidden="true">→</span> {w.towards}
               </p>
-              <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--muted)]">
+              <p className="mt-0.5 text-[12px] text-[var(--faint)]">{w.name}</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-[var(--muted)]">
                 {w.note}
               </p>
             </li>

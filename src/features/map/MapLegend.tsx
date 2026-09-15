@@ -1,6 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { PARKING, PARKING_SOURCE } from '@/content/parking';
-import { ROAD_CLOSURES, CLOSURE_JUNCTIONS, PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
+import { ROAD_CLOSURES, CLOSURE_JUNCTIONS } from '@/content/diversions';
 
 /**
  * What every symbol on a map in this app means.
@@ -155,7 +155,7 @@ export function MapLegend({
             <span className="h-0 w-3.5 border-t-[2px]" style={{ borderColor: FLOW_INK }} />
             ›
           </span>
-          One way on foot — {PEDESTRIAN_ONE_WAYS.length} stretches
+          One way on foot — arrows point the way to walk
         </li>
       </ul>
 

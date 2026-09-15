@@ -131,6 +131,21 @@ export interface PedestrianOneWay {
   /** Said to the walker, in their words. */
   note: string;
   /**
+   * Where this lane leads, and the compass word for getting there.
+   *
+   * Both are for somebody standing on the road rather than reading a
+   * plan. A line on a map with arrows along it answers "which way does
+   * this go"; it does not answer "which way do I go", which is the
+   * question a walker in a crowd actually has. The destination names
+   * something they can see or ask for, and the heading survives the
+   * moment they turn the phone round.
+   *
+   * `heading` must agree with the drawn path — a test derives it from
+   * the geometry and compares, so a wrong word cannot ship.
+   */
+  towards: string;
+  heading: 'north' | 'south' | 'east' | 'west';
+  /**
    * [lng, lat] pairs along the stretch, in the direction the crowd walks.
    *
    * There is deliberately no bearing stored beside this. Direction is read
@@ -147,6 +162,8 @@ export interface PedestrianOneWay {
 export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
   {
     name: 'Shaniwar Wada chowk to Gotiram Bhaiya chowk',
+    towards: 'Gotiram Bhaiya chowk',
+    heading: 'south',
     note:
       'The crowd here walks one way, southwards past Dagdusheth towards ' +
       'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
@@ -166,16 +183,16 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     ],
   },
   {
-    // The way OUT of the junction the two lanes above converge on. Its
-    // start is 2 m from where both of them end and 42 m from Guruji
-    // Talim; its end is 2 m from Tulshibaug. With this the crowd's path
-    // through that junction is closed: in from Dagdusheth, in from the
-    // west, out southwards to Tulshibaug.
+    // Starts 42 m from Guruji Talim and ends 2 m from Tulshibaug. The
+    // two lanes that used to feed this junction were corrected to two-way
+    // and removed; this one was not, so the way down to Tulshibaug is
+    // still one-directional even though the approaches are not.
     name: 'Guruji Talim to Tulshibaug',
+    towards: 'Tulshibaug',
+    heading: 'south',
     note:
       'The crowd walks one way here, southwards out of Guruji Talim ' +
-      'towards Tulshibaug. You will not be able to come back north up ' +
-      'it — this is the way out of that junction, not a way in.',
+      'towards Tulshibaug. You will not be able to come back north up it.',
     path: [
       [73.855054, 18.514987],
       [73.855309, 18.514183],
@@ -187,6 +204,8 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     // along is the road itself, not an artefact of how it was drawn, so
     // it is kept as given and the direction is read per segment.
     name: 'Tulshibaug to Jilbya Maruti',
+    towards: 'Jilbya Maruti',
+    heading: 'south',
     note:
       'The crowd walks one way here, on south past Tulshibaug towards ' +
       'Jilbya Maruti. You will not be able to come back north up it — ' +
@@ -204,6 +223,8 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
     // end is Hutatma Babu Genu at 57 m, too far to say the lane ends
     // there.
     name: 'Tulshibaug east to the main lane',
+    towards: 'the main lane',
+    heading: 'east',
     note:
       'The crowd walks one way here, eastwards out of Tulshibaug back ' +
       'towards the main lane. You will not be able to come back west ' +
@@ -215,6 +236,8 @@ export const PEDESTRIAN_ONE_WAYS: PedestrianOneWay[] = [
   },
   {
     name: 'Dagdusheth to Gotiram Bhaiya chowk',
+    towards: 'Gotiram Bhaiya chowk',
+    heading: 'south',
     note:
       'The crowd here walks one way, southwards past Dagdusheth towards ' +
       'Gotiram Bhaiya chowk. You will not be able to walk back up it — ' +
