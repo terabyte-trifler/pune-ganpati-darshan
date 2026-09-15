@@ -159,7 +159,7 @@ export function MetroStationPicker({
           />
           <span>
             <strong className="font-semibold text-[var(--chandan)]">
-              No getting off at {s.name}.
+              Avoid {s.name} if you are coming for darshan.
             </strong>{' '}
             {s.alightNote}
           </span>

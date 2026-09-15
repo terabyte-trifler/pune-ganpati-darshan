@@ -106,7 +106,8 @@ export function MapLegend({
             className="h-2.5 w-2.5 shrink-0 rounded-full border-[1.5px]"
             style={{ borderColor: METRO_PURPLE }}
           />
-          Hollow — best for the way back, marked &ldquo;return only&rdquo;
+          Hollow — passengers coming for darshan should avoid it; use it
+          on the way home
         </li>
       </ul>
 

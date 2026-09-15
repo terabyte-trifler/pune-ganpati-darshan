@@ -189,14 +189,15 @@ export const METRO_STATIONS: MetroStation[] = [
     tier: 'primary',
     canAlight: false,
     alightNote:
-      'Use Mandai for the way back, not to arrive — during the festival ' +
-      'you cannot get off here. Get off at Kasba Peth and walk down ' +
-      'instead; Tulshibaug is about 900 m from there.',
+      'Passengers coming for darshan should avoid it — during the ' +
+      'festival you cannot get off here. Get off at Kasba Peth and walk ' +
+      'down instead; Tulshibaug is about 900 m from there. Mandai is the ' +
+      'station to use on the way home.',
     exitNote:
-      'Mahatma Phule Mandai. Best used on the way back: this is where you ' +
-      'catch the train home, not where you arrive. It is the closest ' +
-      'station to the Mandai and Tulshibaug mandals, which is what makes ' +
-      'it so useful at the end of an evening.',
+      'Mahatma Phule Mandai. Passengers coming for darshan should avoid ' +
+      'it — you cannot get off here during the festival. It is the ' +
+      'station to use on the way home, and being closest to the Mandai ' +
+      'and Tulshibaug mandals, it is the best place to end an evening.',
   },
   {
     id: 'swargate',
