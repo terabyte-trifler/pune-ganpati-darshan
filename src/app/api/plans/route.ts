@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { features } from '@/lib/env';
 import { rateLimit, sharedRateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
+import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 
 /**
  * Persists a darshan plan and returns a short share id.
@@ -34,7 +35,9 @@ const bodySchema = z.object({
     .enum(['walk', 'two_wheeler', 'metro', 'drive', 'transit'])
     .default('walk')
     .transform(toTravelMode),
-  slugs: z.array(z.string().regex(/^[a-z0-9-]+$/)).min(1).max(20),
+  // Same ceiling as /api/routes, from the same place — a plan you can
+  // build is a plan you must be able to share.
+  slugs: z.array(z.string().regex(/^[a-z0-9-]+$/)).min(1).max(MAX_PLAN_STOPS),
   origin: z.object({
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180),
