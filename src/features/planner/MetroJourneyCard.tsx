@@ -202,9 +202,8 @@ export function MetroJourneyCard({
             className="mt-0.5 shrink-0 text-[var(--zendu)]"
           />
           <span>
-            {blocked.station.name} is nearer, but passengers coming for darshan
-            should avoid it — you can&rsquo;t get off there during the festival.
-            Use it on the way home.
+            {blocked.station.name} is nearer, but during the festival it serves
+            the journey home. Arriving for darshan, please use the station above.
           </span>
         </p>
       )}

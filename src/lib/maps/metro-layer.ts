@@ -38,11 +38,12 @@ export function metroFeatureCollection(): GeoJSON.FeatureCollection {
         name: s.name,
         tier: s.tier,
         color: LINE_COLOR[primaryLine(s)],
-        // Drawn hollow. A station you cannot get off at is not the same
-        // kind of thing as one you can, and colouring them identically
-        // would send people towards the platform the app is steering them
-        // away from — Mandai is the nearest station to most of the
-        // southern peths and is boarding-only during the festival.
+        // Drawn hollow. A station that serves only the journey home is not
+        // the same kind of thing as one you arrive at, and colouring them
+        // identically would send people to the platform the app is
+        // steering them away from — Mandai is the nearest station to most
+        // of the southern peths, which is exactly why the distinction has
+        // to be visible at a glance.
         canAlight: s.canAlight,
       },
       geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
@@ -123,7 +124,7 @@ export function addMetroLayers(map: MapLibreMap): void {
           'case',
           ['get', 'canAlight'],
           ['get', 'name'],
-          ['concat', ['get', 'name'], ' (return only)'],
+          ['concat', ['get', 'name'], ' (for the way home)'],
         ],
         'text-font': ['Noto Sans Bold'],
         'text-size': 10,

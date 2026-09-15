@@ -256,7 +256,7 @@ export const GUIDE_EN: GuideContent = {
         'Map is the second button on the bottom bar. Every mandal in the app is on it, drawn in the colour of its queue this minute, along with the metro stations.',
       dos: [
         'The pin colour is the live queue: green, yellow, red, or grey for not yet reported.',
-        'Metro stations are marked too. Mandai is drawn hollow — passengers coming for darshan should avoid it, because you cannot get off there during the festival. Use it on the way home.',
+        'Metro stations are marked too. Mandai is drawn hollow because during the festival it serves the journey home — arriving for darshan, use Kasba Peth.',
         'Tap any pin and its card slides up with the crowd, the distance from you, and the same three report buttons.',
         'Tap “View Ganpati” on that card for the full page.',
         'The chips at the top — Nearby, मानाचे गणपती, Famous, Historic — narrow it down.',
@@ -610,7 +610,7 @@ export const GUIDE_MR: GuideContent = {
         'खालच्या पट्टीवर Map हे दुसरे बटण आहे. अ‍ॅपमधले प्रत्येक मंडळ त्यावर आहे, या क्षणीच्या रांगेच्या रंगात, आणि सोबत मेट्रो स्थानकेही.',
       dos: [
         'पिनाचा रंग म्हणजे आत्ताची रांग: हिरवा, पिवळा, लाल, किंवा अजून न कळवलेल्यासाठी करडा.',
-        'मेट्रो स्थानकेही दाखवली आहेत. मंडई पोकळ काढली आहे — दर्शनासाठी येणाऱ्यांनी ती टाळावी, कारण उत्सवात तिथे उतरता येत नाही. परतताना वापरा.',
+        'मेट्रो स्थानकेही दाखवली आहेत. मंडई पोकळ काढली आहे, कारण उत्सवात ती परतीच्या प्रवासासाठी आहे — दर्शनाला येताना कसबा पेठ वापरा.',
         'कोणत्याही पिनावर दाबा आणि त्याचे कार्ड वर येते — गर्दी, तुमच्यापासूनचे अंतर, आणि तीच तीन बटणे.',
         'त्या कार्डावरील “View Ganpati” दाबा आणि पूर्ण पेज उघडेल.',
         'वरच्या चिप्स — Nearby, मानाचे गणपती, Famous, Historic — यादी कमी करतात.',

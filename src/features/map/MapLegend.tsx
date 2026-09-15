@@ -106,8 +106,7 @@ export function MapLegend({
             className="h-2.5 w-2.5 shrink-0 rounded-full border-[1.5px]"
             style={{ borderColor: METRO_PURPLE }}
           />
-          Hollow — passengers coming for darshan should avoid it; use it
-          on the way home
+          Hollow — for the journey home; arrive at a filled station
         </li>
       </ul>
 
