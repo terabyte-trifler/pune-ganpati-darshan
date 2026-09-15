@@ -1,4 +1,5 @@
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
+import { LANE_AGAINST_PAIRS } from '@/content/lane-against';
 import {
   laneWalk, touchesLanes, flowBearingAt, stepAgainstFlow, laneOpposing,
   laneExitsFrom,
@@ -256,12 +257,77 @@ function graphCostFactor(from: LatLng, to: LatLng): number {
  * ordering was made against — a route that shows 3 minutes for a leg it
  * priced at 5 has quietly stopped describing itself.
  */
+/**
+ * How close a leg end has to stand to a mandal to be that mandal.
+ *
+ * The table is keyed by coordinates rather than slugs because the
+ * optimiser is handed points, not stops — it never learns which mandal a
+ * point is. Tight, because the mandals in the peths stand 76 m apart at
+ * the closest and a leg must not inherit its neighbour's verdict.
+ */
+const PAIR_MATCH_M = 25;
+
+/**
+ * What a metre walked against the crowd is worth, as a share of the leg.
+ *
+ * A leg that spends all of itself going the wrong way costs this many
+ * times what it looks like; one that clips a lane for a tenth of its
+ * length costs a tenth of that. Proportional rather than a flat verdict,
+ * because the difference between 12 m against and 353 m is the whole
+ * decision — a solver told only "this pair is bad" will trade a short
+ * wrong stretch for a long one and think it has improved.
+ *
+ * Four is enough to outweigh any ordinary detour in the peths, where the
+ * mandals sit within a few hundred metres of each other, without being
+ * so large that a leg with a short unavoidable stretch stops the plan
+ * from being ordered at all.
+ */
+const AGAINST_METRE_WEIGHT = 4;
+
+/**
+ * How far this walk runs against the crowd, from the sweep.
+ *
+ * See content/lane-against. Every pair in the peths was routed through
+ * this app's own pipeline, so a pair with no entry is one that came back
+ * clean — not one that was never asked.
+ */
+function measuredAgainstM(from: LatLng, to: LatLng): number {
+  const pair = LANE_AGAINST_PAIRS.find(
+    (p) =>
+      haversine(from, p.fromAt) <= PAIR_MATCH_M &&
+      haversine(to, p.toAt) <= PAIR_MATCH_M
+  );
+  return pair ? pair.againstM : 0;
+}
+
 export function legCostFactor(from: LatLng, to: LatLng, mode: TravelMode): number {
   if (!isOnFoot(mode)) return 1;
+
+  /**
+   * The measured sweep can only make a leg dearer, never cheaper.
+   *
+   * It was tempting to let it settle the leg outright — it routed the walk
+   * for real, where everything else here reasons from the straight line.
+   * But the rules below carry things the sweep cannot see. Tulshibaug is
+   * the case that showed it: you cannot turn round there, reported in as
+   * many words, and that is a property of the junction rather than of any
+   * corridor a routed line passes through. Measuring the line back out of
+   * it finds only the 76 m that happen to lie inside a lane, and letting
+   * that number win would have quietly overruled what was reported from
+   * the ground with something derived from it.
+   *
+   * So it joins the others rather than replacing them, and the dearest
+   * verdict is the one that counts.
+   */
+  const against = measuredAgainstM(from, to);
+  const straight = haversine(from, to);
+  const share = straight > 0 ? Math.min(against / straight, 1) : against > 0 ? 1 : 0;
+
   // Whichever rule has more to say. The corridor catches a leg that runs
   // straight up a lane; the graph catches one that never touches a lane
   // but has to go round on them.
   return Math.max(
+    1 + share * AGAINST_METRE_WEIGHT,
     legAgainstFlow(from, to) ? AGAINST_FLOW_FACTOR : 1,
     graphCostFactor(from, to)
   );

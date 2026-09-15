@@ -9,6 +9,8 @@ import { estimateMatrix, optimizeLocally, optimizeOrder } from '@/services/route
 import { haversine, metresToPath, bearingDeg, type LatLng } from '@/lib/geo';
 import { laneWalk } from '@/services/pedestrian-graph';
 import catalogue from '@/content/catalogue.json';
+import { LANE_AGAINST_PAIRS } from '@/content/lane-against';
+import { localGanpatis } from '@/services/catalogue';
 
 /**
  * Walking against the crowd.
@@ -408,5 +410,95 @@ describe('every mode whose legs are walked', () => {
     const stops = [TULSHIBAUG, DAGDUSHETH, GURUJI_TALIM];
     expect(optimizeLocally(station, stops, 'metro').order)
       .toEqual(optimizeLocally(station, stops, 'walk').order);
+  });
+});
+
+describe('pairs measured walking against the crowd', () => {
+  const pair = (from: string, to: string) =>
+    LANE_AGAINST_PAIRS.find((p) => p.from === from && p.to === to)!;
+
+  it('prices a leg by how much of it runs the wrong way', () => {
+    const { fromAt, toAt } = pair('dagdusheth-halwai-ganpati', 'bhau-rangari-ganpati');
+    expect(legCostFactor(fromAt, toAt, 'walk')).toBeGreaterThan(2);
+  });
+
+  /**
+   * The point of the whole table. Dagdusheth then Bhau Rangari walks back
+   * up Shivaji Road; Bhau Rangari then Dagdusheth is the same two mandals
+   * with the crowd, and is clean.
+   */
+  it('leaves the same pair walked with the crowd alone', () => {
+    const { fromAt, toAt } = pair('dagdusheth-halwai-ganpati', 'bhau-rangari-ganpati');
+    expect(legCostFactor(toAt, fromAt, 'walk')).toBeLessThan(2);
+  });
+
+  /**
+   * A flat verdict would call these two legs equally bad and let the
+   * solver swap a short wrong stretch for a long one. The whole reason
+   * the table stores metres is so it cannot.
+   *
+   * Only the legs this rule actually decides are compared. A leg can be
+   * dearer than its metres suggest because some other rule calls it
+   * impassable outright — Tulshibaug's U-turn, say — and that is the
+   * design, not a counter-example.
+   */
+  it('prefers the shorter wrong stretch when it cannot avoid one', () => {
+    const priced = LANE_AGAINST_PAIRS.map((p) => {
+      const share = Math.min(p.againstM / haversine(p.fromAt, p.toAt), 1);
+      return {
+        share,
+        factor: legCostFactor(p.fromAt, p.toAt, 'walk'),
+        byMetres: 1 + share * 4,
+      };
+    }).filter((p) => Math.abs(p.factor - p.byMetres) < 0.01);
+
+    expect(priced.length).toBeGreaterThan(20);
+    const sorted = [...priced].sort((a, b) => a.share - b.share);
+    for (let i = 1; i < sorted.length; i++) {
+      expect(sorted[i].factor).toBeGreaterThanOrEqual(sorted[i - 1].factor);
+    }
+    expect(sorted[sorted.length - 1].factor).toBeGreaterThan(sorted[0].factor * 2);
+  });
+
+  it('turns a two-stop plan round rather than walking it backwards', () => {
+    const { fromAt, toAt } = pair('dagdusheth-halwai-ganpati', 'bhau-rangari-ganpati');
+    // Starting north of both, so distance alone would take Dagdusheth first.
+    const origin = { lat: 18.5185, lng: 73.8553 };
+    const { order } = optimizeLocally(origin, [fromAt, toAt], 'walk');
+    expect(order).toEqual([1, 0]);
+  });
+
+  it('never makes a plan unorderable', () => {
+    const both = LANE_AGAINST_PAIRS.filter((p) =>
+      LANE_AGAINST_PAIRS.some((q) => q.from === p.to && q.to === p.from)
+    );
+    expect(both.length).toBeGreaterThan(0);
+    for (const p of both) {
+      expect(optimizeLocally(p.fromAt, [p.toAt], 'walk').reachable).toBe(true);
+    }
+  });
+
+  it('does not tar a neighbouring mandal with the same verdict', () => {
+    // Every listed end is at least PAIR_MATCH_M from any other mandal, or
+    // the table would leak onto legs it was never measured for.
+    const ends = LANE_AGAINST_PAIRS.flatMap((p) => [
+      [p.from, p.fromAt] as const,
+      [p.to, p.toAt] as const,
+    ]);
+    for (const [slug, at] of ends) {
+      for (const [other, otherAt] of ends) {
+        if (other === slug) continue;
+        expect(haversine(at, otherAt)).toBeGreaterThan(25);
+      }
+    }
+  });
+
+  it('is derived from mandals that are actually in the catalogue', () => {
+    const slugs = new Set(localGanpatis.map((g) => g.slug));
+    for (const p of LANE_AGAINST_PAIRS) {
+      expect(slugs.has(p.from)).toBe(true);
+      expect(slugs.has(p.to)).toBe(true);
+      expect(p.againstM).toBeGreaterThanOrEqual(25);
+    }
   });
 });
