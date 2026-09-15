@@ -4,7 +4,7 @@ import {
   FLOW_CORRIDOR_M, AGAINST_FLOW_FACTOR,
 } from '@/services/pedestrian-flow';
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
-import { estimateMatrix, optimizeLocally } from '@/services/route-optimizer';
+import { estimateMatrix, optimizeLocally, optimizeOrder } from '@/services/route-optimizer';
 import { haversine, metresToPath, bearingDeg, type LatLng } from '@/lib/geo';
 import catalogue from '@/content/catalogue.json';
 
@@ -220,9 +220,17 @@ describe('telling a walker which way to go', () => {
 });
 
 describe('the cost matrix', () => {
-  it('is asymmetric on foot where the flow is', () => {
+  it('leaves estimateMatrix itself as plain distance', () => {
+    // The penalty deliberately does NOT live here. It lives in
+    // optimizeOrder, which every ordering goes through — including the
+    // one built from Google's matrix, which never touches this function.
+    const m = estimateMatrix([DAGDUSHETH, HUTATMA], 'walk');
+    expect(m[1][0]).toBeCloseTo(m[0][1], 5);
+  });
+
+  it('is asymmetric on foot once the flow is priced in', () => {
     const pts = [DAGDUSHETH, HUTATMA];
-    const m = estimateMatrix(pts, 'walk');
+    const m = penaliseAgainstFlow(estimateMatrix(pts, 'walk'), pts, 'walk');
     expect(m[1][0]).toBeGreaterThan(m[0][1]);
     expect(m[1][0] / m[0][1]).toBeCloseTo(AGAINST_FLOW_FACTOR, 5);
   });
@@ -230,7 +238,8 @@ describe('the cost matrix', () => {
   it('is left symmetric for a rider', () => {
     // The crowd flow is a pedestrian measure. A two-wheeler is on the
     // diverted road network, and the closures already speak for that.
-    const m = estimateMatrix([DAGDUSHETH, HUTATMA], 'two_wheeler');
+    const pts = [DAGDUSHETH, HUTATMA];
+    const m = penaliseAgainstFlow(estimateMatrix(pts, 'two_wheeler'), pts, 'two_wheeler');
     expect(m[1][0]).toBeCloseTo(m[0][1], 5);
   });
 
@@ -241,9 +250,33 @@ describe('the cost matrix', () => {
   });
 
   it('leaves the diagonal at zero', () => {
-    const m = estimateMatrix([DAGDUSHETH, HUTATMA], 'walk');
+    const pts = [DAGDUSHETH, HUTATMA];
+    const m = penaliseAgainstFlow(estimateMatrix(pts, 'walk'), pts, 'walk');
     expect(m[0][0]).toBe(0);
     expect(m[1][1]).toBe(0);
+  });
+});
+
+describe('the flow cannot be bypassed', () => {
+  it('is priced by optimizeOrder itself, whatever matrix it is handed', () => {
+    // The guard on the whole design. A caller that builds a matrix some
+    // third way — Google's, a cached one, a hand-rolled one — still gets
+    // an ordering that respects the lanes, because the pricing is in the
+    // orderer rather than in one particular matrix builder.
+    const origin = { lat: 18.5308, lng: 73.8478 };
+    const points = [origin, HUTATMA, DAGDUSHETH];
+
+    // A matrix that knows nothing about any of this: every leg costs the
+    // same, so nothing but the flow can decide the order.
+    const flat = points.map((_, i) => points.map((__, j) => (i === j ? 0 : 100)));
+
+    const { order } = optimizeOrder(points, flat, 'walk');
+    // Dagdusheth first, then south to Hutatma — with the crowd.
+    expect(order).toEqual([1, 0]);
+
+    // And on a two-wheeler the same flat matrix leaves the order alone,
+    // because the lanes are a pedestrian measure.
+    expect(optimizeOrder(points, flat, 'two_wheeler').totalCost).toBe(200);
   });
 });
 

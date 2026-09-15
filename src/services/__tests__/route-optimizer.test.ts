@@ -28,6 +28,17 @@ function bruteForce(matrix: number[][]): number {
   return best;
 }
 
+/**
+ * Points for the abstract-matrix cases below.
+ *
+ * optimizeOrder now prices the one-way lanes itself, so it has to be told
+ * where the stops are. These sit well outside the peths, where no lane
+ * applies, which keeps the hand-written matrices meaning exactly what
+ * they say — the flow rules have their own tests.
+ */
+const awayFromTheLanes = (n: number): LatLng[] =>
+  Array.from({ length: n }, (_, i) => ({ lat: 18.44 + i * 0.01, lng: 73.78 + i * 0.01 }));
+
 describe('route optimizer', () => {
   it('returns the exact optimum for small routes', () => {
     // Deliberately adversarial: input order is the WORST order.
@@ -37,7 +48,7 @@ describe('route optimizer', () => {
       [2, 8, 0, 7],
       [9, 3, 7, 0],
     ];
-    const result = optimizeOrder(3, matrix);
+    const result = optimizeOrder(awayFromTheLanes(4), matrix, 'walk');
     expect(result.method).toBe('exact');
     expect(result.totalCost!).toBeCloseTo(bruteForce(matrix), 6);
   });
@@ -45,12 +56,16 @@ describe('route optimizer', () => {
   it('matches brute force across randomised instances', () => {
     for (let trial = 0; trial < 25; trial++) {
       const n = 4 + (trial % 4); // 4..7 stops
+      // Placed away from the peths on purpose. Random points inside them
+      // land on the one-way lanes, and the solver would then be costing a
+      // priced matrix while brute force costs the raw one — the test
+      // would fail for a reason that has nothing to do with the solver.
       const pts: LatLng[] = Array.from({ length: n + 1 }, () => ({
-        lat: 18.5 + Math.random() * 0.02,
-        lng: 73.84 + Math.random() * 0.03,
+        lat: 18.42 + Math.random() * 0.02,
+        lng: 73.76 + Math.random() * 0.03,
       }));
       const matrix = estimateMatrix(pts, 'walk');
-      const result = optimizeOrder(n, matrix);
+      const result = optimizeOrder(pts, matrix, 'walk');
       expect(result.totalCost!).toBeCloseTo(bruteForce(matrix), 4);
     }
   });
@@ -117,7 +132,7 @@ describe('route optimizer', () => {
       [5, 0, Infinity],
       [1, Infinity, 0],
     ];
-    const result = optimizeOrder(2, matrix);
+    const result = optimizeOrder(awayFromTheLanes(3), matrix, 'walk');
 
     // The cost is unknown, not zero and not Infinity — so nothing can
     // render "Infinity" or NaN into the UI.
@@ -134,7 +149,7 @@ describe('route optimizer', () => {
       [2, 8, 0, 7],
       [9, 3, 7, 0],
     ];
-    const result = optimizeOrder(3, matrix);
+    const result = optimizeOrder(awayFromTheLanes(4), matrix, 'walk');
     expect(result.reachable).toBe(true);
     expect(result.totalCost).toBeGreaterThan(0);
   });

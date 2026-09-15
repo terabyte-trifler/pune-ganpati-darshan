@@ -26,17 +26,16 @@ export const EXACT_SOLVE_LIMIT = 8;
 /**
  * Local fallback matrix — no network, used when Routes is unavailable.
  *
- * Walking costs are asymmetric where the police make the crowd flow one
- * way: the same hundred metres is a walk in one direction and a detour in
- * the other, so the solver is told the truth rather than a straight line.
+ * Straight-line cost only. The one-way penalty is NOT applied here: it
+ * belongs to optimizeOrder, which every ordering goes through, so a
+ * matrix that came from Google gets priced by the same rule as this one.
  */
 export function estimateMatrix(points: LatLng[], mode: TravelMode): number[][] {
-  const raw = points.map((from) =>
+  return points.map((from) =>
     points.map((to) =>
       from === to ? 0 : estimateDurationSeconds(haversine(from, to), mode)
     )
   );
-  return penaliseAgainstFlow(raw, points, mode);
 }
 
 function pathCost(order: number[], matrix: number[][]): number {
@@ -191,12 +190,30 @@ export interface OptimizeResult {
 
 /**
  * Order `stops` for the shortest journey starting at `origin`.
- * `matrix` is over [origin, ...stops] — index 0 is the origin.
+ *
+ * `points` is [origin, ...stops] and `matrix` is over the same list, so
+ * index 0 is the origin in both.
+ *
+ * The points and the mode are required rather than optional, and that is
+ * the point of them. Walking through the peths is not symmetric — the
+ * police make the crowd one-directional through the narrowest lanes — and
+ * the penalty for that used to live in two places that each had to
+ * remember: estimateMatrix, and the branch in /api/routes that uses
+ * Google's matrix instead. Either could be bypassed by a caller building
+ * a matrix some third way, and nothing would have failed; the route would
+ * just quietly send people up a lane they cannot walk up.
+ *
+ * So it lives here, where every ordering in the app goes through, and the
+ * signature makes it impossible to ask for an order without saying what
+ * is being ordered and how it is travelled.
  */
 export function optimizeOrder(
-  stopCount: number,
-  matrix: number[][]
+  points: LatLng[],
+  rawMatrix: number[][],
+  mode: TravelMode
 ): OptimizeResult {
+  const stopCount = points.length - 1;
+  const matrix = penaliseAgainstFlow(rawMatrix, points, mode);
   if (stopCount <= 1) {
     const cost = stopCount === 1 ? matrix[0][1] : 0;
     const reachable = Number.isFinite(cost);
@@ -233,6 +250,6 @@ export function optimizeLocally(
   stops: LatLng[],
   mode: TravelMode
 ): OptimizeResult {
-  const matrix = estimateMatrix([origin, ...stops], mode);
-  return optimizeOrder(stops.length, matrix);
+  const points = [origin, ...stops];
+  return optimizeOrder(points, estimateMatrix(points, mode), mode);
 }
