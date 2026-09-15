@@ -1,3 +1,4 @@
+import { LANE_DETOURS } from '@/content/lane-detours';
 import { PEDESTRIAN_ONE_WAYS, PEDESTRIAN_TWO_WAYS } from '@/content/diversions';
 import { bearingDeg, bearingDifference, metresToPath } from '@/lib/geo';
 import { haversine, type LatLng } from '@/lib/geo';
@@ -496,6 +497,30 @@ export function laneViaPoints(from: LatLng, to: LatLng): LatLng[] {
 }
 
 /**
+ * How close a leg end has to stand to a mandal to be that mandal.
+ *
+ * The detours are keyed by coordinates because a router is handed points,
+ * not stops. Tight: the mandals in the peths stand 76 m apart at the
+ * closest, and a leg must not inherit its neighbour's way round.
+ */
+const DETOUR_MATCH_M = 25;
+
+/**
+ * The waypoints that make this walk legal, if it needs them.
+ *
+ * Empty when the lanes have nothing to say, which is nearly every leg —
+ * see content/lane-detours for how the few that do were found.
+ */
+export function laneDetourVia(from: LatLng, to: LatLng): LatLng[] {
+  const detour = LANE_DETOURS.find(
+    (d) =>
+      haversine(from, d.fromAt) <= DETOUR_MATCH_M &&
+      haversine(to, d.toAt) <= DETOUR_MATCH_M
+  );
+  return detour ? detour.via : [];
+}
+
+/**
  * The directions you are allowed to leave a place in.
  *
  * A stop standing on the lane network cannot be left just any way. The
@@ -535,6 +560,40 @@ export function laneExitsFrom(point: LatLng): number[] {
 
 /** How far along a lane to look before calling it a direction. */
 const EXIT_BEARING_M = 40;
+
+/**
+ * The places you are allowed to arrive from.
+ *
+ * The mirror of laneExitsFrom, and needed for the same reason read the
+ * other way round. A stop the crowd is fed into along a one-way lane can
+ * only be reached by coming down that lane: Tulshibaug is entered from
+ * Guruji Talim and from nowhere else, so a walk that approaches it from
+ * the east is not merely taking an odd line, it is walking up a lane
+ * against the crowd and there is no version of that line which is legal.
+ *
+ * Returns the START of every lane that ENDS at this point — the place you
+ * have to get to first. Empty for anywhere no lane feeds, which is most
+ * of the city and means no constraint.
+ *
+ * Bearings would not do here. An exit can be judged by direction because
+ * you are standing at the stop and choosing which way to set off; an
+ * entrance has to be reached, and knowing that Tulshibaug is entered from
+ * the north-west does not tell a router how to get to the north-west
+ * without crossing the lanes in between. So this hands back the point
+ * itself, for a caller to route through.
+ */
+export function laneEntriesTo(point: LatLng): LatLng[] {
+  const out: LatLng[] = [];
+  for (const lane of PEDESTRIAN_ONE_WAYS) {
+    const tail = {
+      lat: lane.path[lane.path.length - 1][1],
+      lng: lane.path[lane.path.length - 1][0],
+    };
+    if (haversine(point, tail) > JOIN_M) continue;
+    out.push({ lat: lane.path[0][1], lng: lane.path[0][0] });
+  }
+  return out;
+}
 
 /**
  * Where each stop falls on a drawn line, as indices into it.

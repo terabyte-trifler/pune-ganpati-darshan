@@ -5,7 +5,8 @@ import { optimizeOrder } from '@/services/route-optimizer';
 import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import {
-  walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints, cutAtStops,
+  walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints, laneDetourVia,
+  cutAtStops,
 } from '@/services/pedestrian-graph';
 import {
   enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygons,
@@ -141,7 +142,26 @@ export async function POST(request: Request) {
    */
   const routePoints = [origin, ...orderedStops];
   const viaByLeg = isOnFoot(mode)
-    ? routePoints.map((p, i) => (i === 0 ? [] : laneViaPoints(routePoints[i - 1], p)))
+    ? routePoints.map((p, i) => {
+        if (i === 0) return [];
+        const from = routePoints[i - 1];
+        /**
+         * A leg with no legal straight answer is sent the way round.
+         *
+         * The exclusion retries below cannot rescue these: bar the lanes
+         * through the peth core and the router returns no path at all,
+         * because as far as OSM is concerned those lanes are the streets.
+         * Walling it off leaves it nowhere to go, so it has to be handed
+         * the way round instead — see content/lane-detours.
+         *
+         * Checked before laneViaPoints rather than merged with it. These
+         * are exactly the legs laneWalk has no answer for, so there is
+         * nothing to merge, and a detour's waypoints already pass through
+         * whatever lanes the legal walk uses.
+         */
+        const detour = laneDetourVia(from, p);
+        return detour.length ? detour : laneViaPoints(from, p);
+      })
     : [];
 
   let route = await computeRoute(origin, orderedStops, mode, [], viaByLeg);

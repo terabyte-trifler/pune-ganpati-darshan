@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   laneWalk, walkGeometry, touchesLanes, spliceLaneLegs, laneExitsFrom,
+  laneEntriesTo, laneDetourVia,
 } from '@/services/pedestrian-graph';
+import { LANE_DETOURS } from '@/content/lane-detours';
 import { haversine, metresToPath, type LatLng } from '@/lib/geo';
 import { legCostFactor } from '@/services/pedestrian-flow';
 import catalogue from '@/content/catalogue.json';
@@ -250,5 +252,53 @@ describe('leaving a stop the way the crowd leaves it', () => {
   it('leaves somewhere no lane starts completely alone', () => {
     // Most of the city. A stop with no lane leaving it has no constraint.
     expect(laneExitsFrom({ lat: 18.5074, lng: 73.8077 })).toHaveLength(0);
+  });
+});
+
+/**
+ * The way round, for walks with no legal straight answer.
+ *
+ * Reported of the lane out of Tulshibaug past Hutatma Babu Genu: it is
+ * one-way, and the app was using it in both directions. There is no
+ * drawing of that walk which is legal — it has to go round.
+ */
+describe('sending a walk the way round', () => {
+  const detour = (from: string, to: string) =>
+    LANE_DETOURS.find((d) => d.from === from && d.to === to);
+
+  it('knows Tulshibaug is entered from Guruji Talim and nowhere else', () => {
+    const entries = laneEntriesTo(TULSHIBAUG);
+    expect(entries).toHaveLength(1);
+    expect(haversine(entries[0], GURUJI_TALIM)).toBeLessThan(30);
+  });
+
+  it('has a way round from Hutatma Babu Genu back into Tulshibaug', () => {
+    const d = detour('hutatma-babu-genu-mandal', 'tulshibaug-ganpati');
+    expect(d, 'the lane the crowd is sent down cannot be walked back up').toBeDefined();
+    expect(d!.via.length).toBeGreaterThan(0);
+    // Longer than the illegal line, necessarily — that is what a one-way
+    // costs. Worth stating so a shorter answer is not "fixed" back in.
+    expect(d!.distanceM).toBeGreaterThan(haversine(d!.fromAt, d!.toAt));
+  });
+
+  it('routes that leg through its waypoints rather than up the lane', () => {
+    const d = detour('hutatma-babu-genu-mandal', 'tulshibaug-ganpati')!;
+    expect(laneDetourVia(d.fromAt, d.toAt)).toEqual(d.via);
+  });
+
+  it('says nothing about legs that are already legal', () => {
+    // The same two mandals the other way round is the way the crowd goes.
+    expect(laneDetourVia(TULSHIBAUG, at('hutatma-babu-genu-mandal'))).toEqual([]);
+    expect(laneDetourVia(GURUJI_TALIM, TULSHIBAUG)).toEqual([]);
+  });
+
+  it('never hands a router more waypoints than it accepts', () => {
+    for (const d of LANE_DETOURS) expect(d.via.length).toBeLessThanOrEqual(2);
+  });
+
+  it('does not confuse one pair with its neighbour', () => {
+    for (const d of LANE_DETOURS) {
+      expect(haversine(d.fromAt, d.toAt)).toBeGreaterThan(25 * 2);
+    }
   });
 });

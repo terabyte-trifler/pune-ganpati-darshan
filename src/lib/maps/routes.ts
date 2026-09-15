@@ -355,11 +355,26 @@ async function computeRouteValhalla(
     return via.slice(0, take);
   });
 
-  const round = (p: LatLng, through = false) => ({
-    lat: Number(p.lat.toFixed(4)),
-    lon: Number(p.lng.toFixed(4)),
-    ...(through ? { type: 'through' as const } : {}),
-  });
+  /**
+   * Stops are rounded to about eleven metres; through-points are not.
+   *
+   * Four decimals on a stop is deliberate — it buckets a moving visitor's
+   * position so the same walk asked twice is one cached request rather
+   * than two, and a mandal does not move by eleven metres.
+   *
+   * A through-point is a different kind of thing. It is not a place the
+   * visitor is going, it is the instruction that keeps the walk out of a
+   * one-way lane, and eleven metres is enough to land it on the wrong side
+   * of one. Hutatma Babu Genu back into Tulshibaug is the case that showed
+   * it: routed through the waypoints as measured it is 666 m and wholly
+   * legal, and through the same waypoints rounded it is 1289 m with 191 m
+   * walked against the crowd. These come from our own data and are already
+   * exact, so they are sent as they are.
+   */
+  const round = (p: LatLng, through = false) =>
+    through
+      ? { lat: p.lat, lon: p.lng, type: 'through' as const }
+      : { lat: Number(p.lat.toFixed(4)), lon: Number(p.lng.toFixed(4)) };
 
   const locations: Array<ReturnType<typeof round>> = [];
   points.forEach((p, i) => {
