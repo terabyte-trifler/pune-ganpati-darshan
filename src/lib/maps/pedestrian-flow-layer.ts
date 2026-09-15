@@ -33,8 +33,16 @@ export const FLOW_SOURCE_ID = 'pedestrian-one-ways';
 /** Cool cobalt: neither the route's vermilion nor the closure's bone. */
 const FLOW_COLOR = '#7FA8D8';
 
-/** Below this the peth lanes overlap and the chevrons collide. */
-const MIN_ZOOM = 13.5;
+/**
+ * Below this the peth lanes overlap and the chevrons collide.
+ *
+ * Sat at 13.5 to begin with, which is exactly the zoom the map opens at —
+ * so these appeared right on their own threshold, as a two-pixel hairline
+ * at 40% opacity over the densest part of the city, and read as missing.
+ * Four of the six stretches are under 150 m, which is a dozen pixels at
+ * this zoom: they have to be drawn boldly to be seen at all.
+ */
+const MIN_ZOOM = 13;
 
 export function flowFeatureCollection(): GeoJSON.FeatureCollection {
   return {
@@ -62,6 +70,22 @@ export function addPedestrianFlowLayers(map: MapLibreMap): void {
   });
 
   map.addLayer({
+    id: 'flow-line-casing',
+    type: 'line',
+    source: FLOW_SOURCE_ID,
+    minzoom: MIN_ZOOM,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      // A dark casing under the line, so it separates from whatever it
+      // runs over — the basemap draws its own lanes in a similar weight
+      // and the cobalt was reading as part of the road beneath it.
+      'line-color': '#14100C',
+      'line-width': ['interpolate', ['linear'], ['zoom'], 13, 6, 17, 13],
+      'line-opacity': 0.75,
+    },
+  });
+
+  map.addLayer({
     id: 'flow-line',
     type: 'line',
     source: FLOW_SOURCE_ID,
@@ -69,8 +93,8 @@ export function addPedestrianFlowLayers(map: MapLibreMap): void {
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
       'line-color': FLOW_COLOR,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 13.5, 2.5, 17, 7],
-      'line-opacity': 0.4,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 13, 3, 17, 7],
+      'line-opacity': 0.9,
     },
   });
 
@@ -83,18 +107,18 @@ export function addPedestrianFlowLayers(map: MapLibreMap): void {
       'symbol-placement': 'line',
       'text-field': ['get', 'arrows'],
       'text-font': ['Noto Sans Bold'],
-      'text-size': ['interpolate', ['linear'], ['zoom'], 13.5, 11, 17, 16],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 13, 13, 17, 18],
       'text-rotation-alignment': 'map',
       // See the note above: an upright-corrected arrow is a wrong arrow.
       'text-keep-upright': false,
       'text-allow-overlap': true,
-      'symbol-spacing': 110,
+      'symbol-spacing': 70,
     },
     paint: {
       'text-color': FLOW_COLOR,
       'text-halo-color': '#14100C',
-      'text-halo-width': 1.4,
-      'text-opacity': 0.95,
+      'text-halo-width': 2,
+      'text-opacity': 1,
     },
   });
 
