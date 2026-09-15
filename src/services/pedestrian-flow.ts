@@ -1,7 +1,7 @@
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
 import { laneWalk, touchesLanes } from '@/services/pedestrian-graph';
 import {
-  bearingDeg, bearingDifference, metresToPath, haversine,
+  bearingDeg, bearingDifference, metresToPath, haversine, isOnFoot,
   type LatLng, type TravelMode,
 } from '@/lib/geo';
 
@@ -198,7 +198,7 @@ function graphCostFactor(from: LatLng, to: LatLng): number {
  * priced at 5 has quietly stopped describing itself.
  */
 export function legCostFactor(from: LatLng, to: LatLng, mode: TravelMode): number {
-  if (mode !== 'walk') return 1;
+  if (!isOnFoot(mode)) return 1;
   // Whichever rule has more to say. The corridor catches a leg that runs
   // straight up a lane; the graph catches one that never touches a lane
   // but has to go round on them.
@@ -223,7 +223,7 @@ export function penaliseAgainstFlow(
   points: LatLng[],
   mode: TravelMode
 ): number[][] {
-  if (mode !== 'walk') return matrix;
+  if (!isOnFoot(mode)) return matrix;
   return matrix.map((row, i) =>
     row.map((cost, j) =>
       i === j || !Number.isFinite(cost)

@@ -6,7 +6,7 @@ import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import { walkGeometry, laneWalk, spliceLaneLegs } from '@/services/pedestrian-graph';
 import { enforceOneWays, penaliseAgainstFlow } from '@/services/pedestrian-flow';
-import { walkedDurationSeconds } from '@/lib/geo';
+import { isOnFoot, walkedDurationSeconds } from '@/lib/geo';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
 
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
    * it was reported from the ground.
    */
   const laneLegs =
-    mode === 'walk' && route.ok
+    isOnFoot(mode) && route.ok
       ? orderedStops.map((stop, i) =>
           laneWalk(i === 0 ? origin : orderedStops[i - 1], stop)
         )
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
     // rest — a leg that merely PASSES along a lane without either end
     // being on it.
     geometry:
-      mode !== 'walk'
+      !isOnFoot(mode)
         ? route.data.geometry
         : enforceOneWays(
             route.data.geometry

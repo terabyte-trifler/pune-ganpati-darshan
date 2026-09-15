@@ -64,6 +64,23 @@ export const MODE_SPEED_MPS = {
 export type TravelMode = keyof typeof MODE_SPEED_MPS;
 
 /**
+ * Whether the legs between mandals are walked in this mode.
+ *
+ * Both 'walk' and 'metro' are, and everything that depends on walking has
+ * to say so the same way. Metro decides where a route begins and ends;
+ * the stops in between are on foot at walking speed, which is why its
+ * speed above is 1.1 and why it asks the router for a pedestrian costing.
+ *
+ * It was missed in three separate `mode === 'walk'` checks, so a metro
+ * visitor's route ignored the one-way lanes entirely — ordering, pricing
+ * and the drawn line alike. A two-wheeler reaches walking through
+ * legModeFor once the vehicle is parked, so it is not named here.
+ */
+export function isOnFoot(mode: TravelMode): boolean {
+  return mode === 'walk' || mode === 'metro';
+}
+
+/**
  * Rough duration estimate used before Routes API is called.
  *
  * Takes a STRAIGHT-LINE distance and applies the detour factor, because

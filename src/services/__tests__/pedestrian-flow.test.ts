@@ -378,3 +378,26 @@ describe('making a drawn line obey the one-ways', () => {
     for (let i = 1; i < out.length; i++) expect(out[i]).not.toEqual(out[i - 1]);
   });
 });
+
+describe('every mode whose legs are walked', () => {
+  it('applies the lanes to metro, not only to walk', () => {
+    // Metro decides where a route starts and ends; the mandals between
+    // are on foot. Three separate `mode === 'walk'` checks missed it, so
+    // a metro visitor's route ignored the one-way lanes outright.
+    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'metro'))
+      .toBe(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'walk'));
+    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'metro')).toBeGreaterThan(1);
+  });
+
+  it('still leaves a rider on the road network', () => {
+    // A two-wheeler reaches walking through legModeFor once it is parked,
+    // so the ride itself is not subject to a pedestrian rule.
+    expect(legCostFactor(TULSHIBAUG, DAGDUSHETH, 'two_wheeler')).toBe(1);
+  });
+
+  it('orders a metro plan the way the crowd allows', () => {
+    const station = { lat: 18.5195, lng: 73.8556 };
+    expect(optimizeLocally(station, [TULSHIBAUG, DAGDUSHETH], 'metro').order)
+      .toEqual([1, 0]);
+  });
+});
