@@ -30,7 +30,34 @@ export type Interest =
   | 'dekhava'
   | 'historic'
   | 'temple'
+  | 'dagdusheth'
   | 'surprise';
+
+/**
+ * The one mandal people ask for by name.
+ *
+ * Every other interest is a category. This one is a single mandal,
+ * because it is the one visitors arrive in Pune already intending to see
+ * — and picking "The famous ones" and hoping is not the same as asking.
+ *
+ * A slug in the source is a thing that can silently stop matching, so a
+ * test asserts this resolves against the catalogue. If it ever does not,
+ * the button would still render and quietly do nothing.
+ */
+export const DAGDUSHETH_SLUG = 'dagdusheth-halwai-ganpati';
+
+/**
+ * What everything else is worth when Dagdusheth is asked for.
+ *
+ * Above zero on purpose, and this is the one place an interest behaves
+ * unlike the others. Picking "Historic mandals" alone should give you
+ * historic mandals and nothing else. Picking one named mandal alone and
+ * getting a six-hour plan with a single stop in it is not an answer —
+ * so the rest of the city stays eligible at a low weight, and the budget
+ * fills around Dagdusheth once Dagdusheth is secured. Any other interest
+ * picked alongside outranks this, because the score is a max.
+ */
+const AROUND_DAGDUSHETH_SCORE = 0.35;
 
 export interface ItineraryRequest {
   /** Total time available, in minutes. */
@@ -149,6 +176,8 @@ const INTEREST_TAGS: Record<Interest, string[]> = {
   dekhava: ['dekhava', 'decoration', 'night'],
   historic: ['historic', 'heritage', 'early-mandal', 'talim', 'tilak'],
   temple: ['temple', 'park', 'family'],
+  // Matched by slug, not by tag — it is one mandal, not a kind of mandal.
+  dagdusheth: [],
   surprise: [],
 };
 
@@ -180,6 +209,9 @@ function interestScore(g: Ganpati, interests: Interest[]): number {
   if (interests.length === 0 || interests.includes('surprise')) return 0.5;
 
   let best = 0;
+  if (interests.includes('dagdusheth')) {
+    best = g.slug === DAGDUSHETH_SLUG ? 1 : AROUND_DAGDUSHETH_SCORE;
+  }
   for (const interest of interests) {
     if (interest === 'manache' && g.category === 'maanache') best = Math.max(best, 1);
     if (interest === 'famous' && g.category === 'famous') best = Math.max(best, 0.9);

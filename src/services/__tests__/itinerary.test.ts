@@ -4,6 +4,7 @@ import {
   dwellMinutes,
   type DarshanPace,
   type Interest,
+  DAGDUSHETH_SLUG,
 } from '../itinerary';
 import { localGanpatis } from '@/services/catalogue';
 import { PUNE_CENTER } from '@/lib/geo';
@@ -206,5 +207,82 @@ describe('temples are not pandals', () => {
       expect(g!.isTemple, `${slug} must not be a temple`).toBe(false);
     }
     expect(slugsOf(['manache'])).toContain('kasba-ganpati');
+  });
+});
+
+/**
+ * The one mandal people ask for by name.
+ *
+ * Every other interest is a category matched by tag or class. This one is
+ * a slug, which is a thing that can stop matching without anything
+ * failing — the button would still render and quietly do nothing — so the
+ * first test here is that it still points at a real mandal.
+ */
+describe('asking for Dagdusheth by name', () => {
+  const dagdusheth = localGanpatis.find((g) => g.slug === DAGDUSHETH_SLUG);
+
+  it('names a mandal that is actually in the catalogue', () => {
+    expect(dagdusheth, `no mandal with slug ${DAGDUSHETH_SLUG}`).toBeDefined();
+  });
+
+  it('is not filtered out as a year-round temple', () => {
+    // It carries a "temple" tag and is open all year, and the builder drops
+    // temples unless they were asked for. If is_temple were ever set on it,
+    // this button would return an empty plan.
+    expect(dagdusheth!.isTemple).toBe(false);
+  });
+
+  it('puts it in the plan', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 240,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    expect(plan.stops.map((s) => s.ganpati.slug)).toContain(DAGDUSHETH_SLUG);
+  });
+
+  it('fills the rest of the time around it rather than stopping at one', () => {
+    // The deliberate difference from every other interest. A six-hour
+    // budget spent on a single mandal is not an answer to "I want to see
+    // Dagdusheth".
+    const plan = buildItinerary({
+      budgetMinutes: 360,
+      interests: ['dagdusheth'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    expect(plan.stops.length).toBeGreaterThan(1);
+  });
+
+  it('still keeps it when combined with another interest', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 300,
+      interests: ['dagdusheth', 'manache'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    const slugs = plan.stops.map((s) => s.ganpati.slug);
+    expect(slugs).toContain(DAGDUSHETH_SLUG);
+    // And the other interest is not crowded out by it.
+    expect(slugs.some((s) => s !== DAGDUSHETH_SLUG)).toBe(true);
+  });
+
+  it('does not leak into a plan that did not ask for it', () => {
+    const plan = buildItinerary({
+      budgetMinutes: 90,
+      interests: ['historic'],
+      pace: 'balanced',
+      mode: 'walk',
+      origin: { lat: 18.5308, lng: 73.8478 },
+      mandals: localGanpatis,
+    });
+    for (const s of plan.stops) expect(s.ganpati.category).toBe('historic');
   });
 });
