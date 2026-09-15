@@ -96,17 +96,94 @@ export function resetPedestrianGraph(): void {
   cached = null;
 }
 
-/** Lane nodes close enough to step onto from a point. */
-function joinsFor(point: LatLng): Array<{ id: number; metres: number }> {
-  return graph()
-    .nodes.map((n) => ({ id: n.id, metres: haversine(point, n.point) }))
-    .filter((j) => j.metres <= JOIN_M)
-    .sort((a, b) => a.metres - b.metres);
+/**
+ * The nearest point to `p` on the segment a-b, and how far away it is.
+ *
+ * Equirectangular, like metresToPath — over a segment a few hundred
+ * metres long in Pune the error is centimetres.
+ */
+function projectOnSegment(p: LatLng, a: LatLng, b: LatLng): { point: LatLng; metres: number } {
+  const mPerLat = 111_132;
+  const mPerLng = 111_320 * Math.cos((p.lat * Math.PI) / 180);
+  const ax = a.lng * mPerLng, ay = a.lat * mPerLat;
+  const bx = b.lng * mPerLng, by = b.lat * mPerLat;
+  const px = p.lng * mPerLng, py = p.lat * mPerLat;
+
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  const point = { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+  return { point, metres: haversine(p, point) };
 }
 
-/** Whether a point is close enough to the lanes for them to apply. */
+/**
+ * A working copy of the graph with `from` and `to` joined onto it.
+ *
+ * Joining only at the lanes' own vertices was wrong, and produced exactly
+ * the artefact it sounds like. Hutatma Babu Genu stands beside the main
+ * southward lane but there is no vertex next to it, so a walk from
+ * Dagdusheth ran 179 m south to the next vertex and then 42 m back NORTH
+ * to reach it — a U-turn, drawn on a lane that only goes south, which is
+ * the one instruction the whole feature exists to give.
+ *
+ * A stop joins where it actually stands. Each lane segment that passes
+ * close enough gets a temporary node at the nearest point along it, with
+ * the segment's own direction preserved on both halves: you may enter it
+ * from the segment's start and leave it towards the segment's end, and
+ * never the other way.
+ */
+function withEndpoints(from: LatLng, to: LatLng) {
+  const base = graph();
+  const nodes = [...base.nodes];
+  const out = base.out.map((edges) => [...edges]);
+
+  const addJoin = (p: LatLng): Array<{ id: number; metres: number }> => {
+    const joins: Array<{ id: number; metres: number }> = [];
+
+    // Existing vertices within reach.
+    for (const n of nodes.slice(0, base.nodes.length)) {
+      const d = haversine(p, n.point);
+      if (d <= JOIN_M) joins.push({ id: n.id, metres: d });
+    }
+
+    // And a fresh node on any segment that passes closer than those.
+    for (let u = 0; u < base.out.length; u++) {
+      for (const edge of base.out[u]) {
+        const { point, metres } = projectOnSegment(p, base.nodes[u].point, base.nodes[edge.to].point);
+        if (metres > JOIN_M) continue;
+        // Already standing on a vertex of this segment; nothing to add.
+        if (haversine(point, base.nodes[u].point) < SAME_NODE_M) continue;
+        if (haversine(point, base.nodes[edge.to].point) < SAME_NODE_M) continue;
+
+        const id = nodes.length;
+        nodes.push({ id, point });
+        out.push([{ to: edge.to, metres: haversine(point, base.nodes[edge.to].point) }]);
+        out[u].push({ to: id, metres: haversine(base.nodes[u].point, point) });
+        joins.push({ id, metres });
+      }
+    }
+
+    return joins.sort((a, b) => a.metres - b.metres);
+  };
+
+  const starts = addJoin(from);
+  const ends = addJoin(to);
+  return { nodes, out, starts, ends };
+}
+
+/**
+ * Whether a point is close enough to the lanes for them to apply.
+ *
+ * Measured to the lanes themselves, not to their corners — a mandal
+ * standing halfway along a stretch is on it.
+ */
 export function touchesLanes(point: LatLng): boolean {
-  return graph().nodes.some((n) => haversine(point, n.point) <= JOIN_M);
+  const { nodes, out } = graph();
+  return out.some((edges, u) =>
+    edges.some(
+      (e) => projectOnSegment(point, nodes[u].point, nodes[e.to].point).metres <= JOIN_M
+    )
+  );
 }
 
 export interface LaneWalk {
@@ -126,11 +203,9 @@ export interface LaneWalk {
  * the right answer for almost every leg in the city.
  */
 export function laneWalk(from: LatLng, to: LatLng): LaneWalk | null {
-  const starts = joinsFor(from);
-  const ends = joinsFor(to);
+  const { nodes, out, starts, ends } = withEndpoints(from, to);
   if (starts.length === 0 || ends.length === 0) return null;
 
-  const { nodes, out } = graph();
   const endCost = new Map(ends.map((e) => [e.id, e.metres]));
 
   const dist = new Array<number>(nodes.length).fill(Infinity);
@@ -167,6 +242,7 @@ export function laneWalk(from: LatLng, to: LatLng): LaneWalk | null {
   const chain: LatLng[] = [];
   for (let at = finish; at !== -1; at = prev[at]) chain.push(nodes[at].point);
   chain.reverse();
+
 
   // A single node means the walk touched the network without travelling
   // along it — nothing to draw, and the straight line is honest.

@@ -141,3 +141,35 @@ describe('keeping the router for everything the lanes do not cover', () => {
     }
   });
 });
+
+describe('joining a lane where you actually stand', () => {
+  const HUTATMA = at('hutatma-babu-genu-mandal');
+
+  it('does not overshoot a mandal that sits between two corners', () => {
+    // The regression this covers: Hutatma Babu Genu stands beside the main
+    // southward lane with no vertex next to it. Joining only at vertices
+    // sent the walk 179 m south to the next corner and then 42 m back
+    // NORTH to reach it — a U-turn, drawn on a lane that only runs south,
+    // which is the one instruction the feature exists to give.
+    const walk = laneWalk(DAGDUSHETH, HUTATMA)!;
+    expect(walk).not.toBeNull();
+
+    const straight = haversine(DAGDUSHETH, HUTATMA);
+    // Room for a real detour, but not for passing it and coming back.
+    expect(walk.metres).toBeLessThan(straight * 1.5);
+
+    // And nothing on the path is further south than the destination.
+    for (const p of walk.path) {
+      expect(p.lat, `${p.lat} is south of Hutatma`).toBeGreaterThan(HUTATMA.lat - 0.0002);
+    }
+  });
+
+  it('still refuses the northward direction it cannot walk', () => {
+    expect(laneWalk(HUTATMA, DAGDUSHETH)).toBeNull();
+  });
+
+  it('counts a mandal beside a lane as on it', () => {
+    // touchesLanes measures to the lanes, not to their corners.
+    expect(touchesLanes(HUTATMA)).toBe(true);
+  });
+});
