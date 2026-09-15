@@ -159,7 +159,7 @@ export function MetroStationPicker({
           />
           <span>
             <strong className="font-semibold text-[var(--chandan)]">
-              Coming for darshan? Please use Kasba Peth.
+              Avoid {s.name}.
             </strong>{' '}
             {s.alightNote}
           </span>
