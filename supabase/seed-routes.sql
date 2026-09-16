@@ -64,19 +64,19 @@ values
    'Evening dekhava trail', 'संध्याकाळचा देखावा',
    'The mandals whose decorated sets are the point — best after dark.',
    'These mandals are experienced from the road rather than in a queue, so the route moves quickly. Everything here reads better once the lighting is fully on.',
-   'walk', 'evening', array['dekhava','lights','night'], true, 3),
+   'walk', 'evening', array['dekhava','lights','night'], true, 4),
 
   ('peth-express-90',
    '90-minute peth express', 'दीड तासात पेठ दर्शन',
    'The most ground you can genuinely cover in an hour and a half on foot.',
    'Deliberately skips the heaviest queues. This is the route for someone passing through Pune with a narrow window rather than a full day.',
-   'walk', 'any', array['essential','quick'], true, 4),
+   'walk', 'any', array['essential','quick'], true, 5),
 
   ('historic-peth-stroll',
    'Historic peth stroll', 'ऐतिहासिक पेठ फेरी',
    'The oldest sarvajanik mandals, and the wadas and talims they grew out of.',
    'Follows the festival''s own history: Bhau Rangari''s early idol, the talim mandals, and Kesari Wada where Tilak ran the newspaper that helped make Ganeshotsav public.',
-   'walk', 'any', array['historic','heritage'], false, 5)
+   'walk', 'any', array['historic','heritage'], false, 6)
 on conflict (slug) do update set
   title = excluded.title, title_mr = excluded.title_mr,
   summary = excluded.summary, description = excluded.description,

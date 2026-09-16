@@ -13,17 +13,17 @@
 -- =====================================================================
 
 insert into routes (slug, title, title_mr, summary, description, mode, time_of_day, themes, featured, sort_order) values
-  ('great-peth-circuit', 'The Great Peth Circuit', 'संपूर्ण पेठ फेरी', 'Every major mandal in the old peths, walked end to end. A full day.', 'The complete walk: twelve mandals from Kasba in the north down to Kesari Wada, taking in the Manache Paach, Dagdusheth and the big dekhava mandals on the way. Budget a whole day — the queue at Dagdusheth alone can swallow an hour, and this route is as much about the peth lanes between the stops as the stops themselves.', 'walk', 'morning', array['essential','manache','heritage','dekhava']::text[], true, 6),
-  ('manache-and-landmarks', 'Manache Paach & the old landmarks', 'मानाचे पाच आणि ऐतिहासिक स्थळे', 'The five ceremonial mandals, plus the historic ones that grew up around them.', 'Follows the Manache Paach in order, but folds in Bhau Rangari''s early idol and the talim mandals that sit between them. A good route if you want the ceremony and the history in one walk rather than choosing.', 'walk', 'morning', array['manache','historic','heritage']::text[], true, 7),
-  ('mandai-to-the-river', 'Mandai to the river', 'मंडईपासून नदीपर्यंत', 'South to north across the peths, from the market to the Shaniwar Peth riverside.', 'A directional walk rather than a loop: start at the Mandai market end and finish near Bhide Pul. Useful if you are heading that way anyway, and it strings together mandals that a circular route tends to miss.', 'walk', 'afternoon', array['essential','dekhava']::text[], false, 8),
-  ('sadashiv-after-dark', 'Sadashiv Peth after dark', 'सदाशिव पेठ — रात्रीचे दर्शन', 'The Sadashiv Peth stretch, where the decoration is the draw.', 'These mandals are viewed from the road rather than queued for, so the walk moves quickly and works well late. The lighting and the stage sets are the reason to come.', 'walk', 'night', array['dekhava','lights','night']::text[], false, 9),
-  ('two-peths-on-foot', 'Narayan & Budhwar on foot', 'नारायण आणि बुधवार पेठ', 'Two neighbouring peths, six mandals, one unhurried walk.', 'Stays inside a small area, so there is very little walking between stops. A sensible choice when you have a couple of hours and would rather see a few mandals properly than rush across the city.', 'walk', 'any', array['heritage','historic']::text[], false, 10),
-  ('mandai-hour', 'One hour from Mandai', 'मंडईतून एक तास', 'Four mandals within a short walk of Mandai, in about an hour.', 'Built for a genuinely narrow window. It deliberately avoids Dagdusheth, because a single queue there would consume the whole hour and leave nothing for the rest.', 'walk', 'any', array['quick','essential']::text[], true, 11),
-  ('narayan-peth-wadas', 'Narayan Peth: wadas and sets', 'नारायण पेठ — वाडे आणि देखावे', 'Kesari Wada and the Narayan Peth mandals around it.', 'Centred on Kesari Wada, where Tilak ran the newspaper that helped turn Ganeshotsav into a public festival. Short, and heavier on history than spectacle.', 'walk', 'afternoon', array['historic','heritage']::text[], false, 12),
-  ('easy-with-children', 'Easy darshan with children', 'मुलांसोबत सोपे दर्शन', 'Open spaces, short queues and somewhere to sit.', 'Chosen for practicality rather than prestige: Sarasbaug has lawns and room to move, and the other stops are quick roadside darshan rather than long queues in a crowded lane. Deliberately avoids the heaviest crowds.', 'walk', 'morning', array['family','temple','quick']::text[], true, 13),
-  ('late-night-short-queues', 'Late night, short queues', 'रात्री उशिरा — कमी गर्दी', 'The same mandals, without the wait — if you can stay up.', 'Queues thin considerably late at night while the lighting stays on. This route favours mandals worth seeing after dark and is ordered so the longest queue comes when it is shortest.', 'walk', 'night', array['night','lights','quick']::text[], false, 14),
-  ('first-evening-in-pune', 'Your first evening in Pune', 'पहिली संध्याकाळ', 'If you only get one evening, these are the ones.', 'A short list for a first visit: the mandal everyone means when they say Pune Ganpati, two of the Manache Paach nearby, and one big dekhava to finish on.', 'walk', 'evening', array['essential','famous','dekhava']::text[], true, 15),
-  ('chinchwad-morya-gosavi', 'Chinchwad: Morya Gosavi', 'चिंचवड — मोरया गोसावी', 'The Chinchwad temple, as its own trip rather than a peth stop.', 'Morya Gosavi sits about 15 km north-west of the peths, so it does not belong on a walking route and this is listed separately and honestly. Treat it as a half-day of its own; it is the centre of the Morya Gosavi tradition and the main draw in Pimpri-Chinchwad.', 'metro', 'any', array['temple','famous','pcmc']::text[], false, 16)
+  ('great-peth-circuit', 'The Great Peth Circuit', 'संपूर्ण पेठ फेरी', 'Every major mandal in the old peths, walked end to end. A full day.', 'The complete walk: twelve mandals from Kasba in the north down to Kesari Wada, taking in the Manache Paach, Dagdusheth and the big dekhava mandals on the way. Budget a whole day — the queue at Dagdusheth alone can swallow an hour, and this route is as much about the peth lanes between the stops as the stops themselves.', 'walk', 'morning', array['essential','manache','heritage','dekhava']::text[], true, 7),
+  ('manache-and-landmarks', 'Manache Paach & the old landmarks', 'मानाचे पाच आणि ऐतिहासिक स्थळे', 'The five ceremonial mandals, plus the historic ones that grew up around them.', 'Follows the Manache Paach in order, but folds in Bhau Rangari''s early idol and the talim mandals that sit between them. A good route if you want the ceremony and the history in one walk rather than choosing.', 'walk', 'morning', array['manache','historic','heritage']::text[], true, 8),
+  ('mandai-to-the-river', 'Mandai to the river', 'मंडईपासून नदीपर्यंत', 'South to north across the peths, from the market to the Shaniwar Peth riverside.', 'A directional walk rather than a loop: start at the Mandai market end and finish near Bhide Pul. Useful if you are heading that way anyway, and it strings together mandals that a circular route tends to miss.', 'walk', 'afternoon', array['essential','dekhava']::text[], false, 9),
+  ('sadashiv-after-dark', 'Sadashiv Peth after dark', 'सदाशिव पेठ — रात्रीचे दर्शन', 'The Sadashiv Peth stretch, where the decoration is the draw.', 'These mandals are viewed from the road rather than queued for, so the walk moves quickly and works well late. The lighting and the stage sets are the reason to come.', 'walk', 'night', array['dekhava','lights','night']::text[], false, 10),
+  ('two-peths-on-foot', 'Narayan & Budhwar on foot', 'नारायण आणि बुधवार पेठ', 'Two neighbouring peths, six mandals, one unhurried walk.', 'Stays inside a small area, so there is very little walking between stops. A sensible choice when you have a couple of hours and would rather see a few mandals properly than rush across the city.', 'walk', 'any', array['heritage','historic']::text[], false, 11),
+  ('mandai-hour', 'One hour from Mandai', 'मंडईतून एक तास', 'Four mandals within a short walk of Mandai, in about an hour.', 'Built for a genuinely narrow window. It deliberately avoids Dagdusheth, because a single queue there would consume the whole hour and leave nothing for the rest.', 'walk', 'any', array['quick','essential']::text[], true, 12),
+  ('narayan-peth-wadas', 'Narayan Peth: wadas and sets', 'नारायण पेठ — वाडे आणि देखावे', 'Kesari Wada and the Narayan Peth mandals around it.', 'Centred on Kesari Wada, where Tilak ran the newspaper that helped turn Ganeshotsav into a public festival. Short, and heavier on history than spectacle.', 'walk', 'afternoon', array['historic','heritage']::text[], false, 13),
+  ('easy-with-children', 'Easy darshan with children', 'मुलांसोबत सोपे दर्शन', 'Open spaces, short queues and somewhere to sit.', 'Chosen for practicality rather than prestige: Sarasbaug has lawns and room to move, and the other stops are quick roadside darshan rather than long queues in a crowded lane. Deliberately avoids the heaviest crowds.', 'walk', 'morning', array['family','temple','quick']::text[], true, 14),
+  ('late-night-short-queues', 'Late night, short queues', 'रात्री उशिरा — कमी गर्दी', 'The same mandals, without the wait — if you can stay up.', 'Queues thin considerably late at night while the lighting stays on. This route favours mandals worth seeing after dark and is ordered so the longest queue comes when it is shortest.', 'walk', 'night', array['night','lights','quick']::text[], false, 15),
+  ('first-evening-in-pune', 'Your first evening in Pune', 'पहिली संध्याकाळ', 'If you only get one evening, these are the ones.', 'A short list for a first visit: the mandal everyone means when they say Pune Ganpati, two of the Manache Paach nearby, and one big dekhava to finish on.', 'walk', 'evening', array['essential','famous','dekhava']::text[], true, 16),
+  ('chinchwad-morya-gosavi', 'Chinchwad: Morya Gosavi', 'चिंचवड — मोरया गोसावी', 'The Chinchwad temple, as its own trip rather than a peth stop.', 'Morya Gosavi sits about 15 km north-west of the peths, so it does not belong on a walking route and this is listed separately and honestly. Treat it as a half-day of its own; it is the centre of the Morya Gosavi tradition and the main draw in Pimpri-Chinchwad.', 'metro', 'any', array['temple','famous','pcmc']::text[], false, 17)
 on conflict (slug) do update set
   title = excluded.title, title_mr = excluded.title_mr,
   summary = excluded.summary, description = excluded.description,
@@ -185,6 +185,58 @@ from (values
   ('every-mandal-from-kasba', 'chinchechi-talim-ganpati', 23, 6, 'either', null),
   ('every-mandal-from-kasba', 'seva-mitra-mandal', 24, 5, 'outside', null),
   ('every-mandal-from-kasba', 'hira-bagh-mandal', 25, 5, 'outside', 'The southern end. Turn back at Perugate instead if the light has gone.')
+) as v(route_slug, mandal_slug, pos, mins, style, note)
+join routes r on r.slug = v.route_slug
+join ganpatis g on g.slug = v.mandal_slug
+on conflict (route_id, position) do update set
+  ganpati_id = excluded.ganpati_id,
+  darshan_minutes = excluded.darshan_minutes,
+  darshan_style = excluded.darshan_style,
+  note = excluded.note;
+
+-- ---------------------------------------------------------------------
+-- Dagdusheth & the Manache Paach
+--
+-- The five in the order they hold by right, with Dagdusheth taken between
+-- the second and the third. That position was measured rather than
+-- chosen: of the six places Dagdusheth could go without disturbing the
+-- five, it is both the shortest walk and one of the cleanest against the
+-- one-way lanes — 2270 m, where putting it last is 2695 m and putting it
+-- after Tulshibaug is 3012 m.
+--
+-- Every note here is one already written for that mandal on another
+-- route. Nothing about these mandals is asserted that the catalogue did
+-- not already say.
+-- ---------------------------------------------------------------------
+insert into routes (slug, title, title_mr, summary, description, mode, time_of_day, themes, total_darshan_s, featured, published, sort_order)
+values (
+  'dagdusheth-and-manache-paach',
+  'Dagdusheth & the Manache Paach',
+  'दगडूशेठ आणि मानाचे पाच',
+  'The five Manache Paach in ceremonial order, with Shrimant Dagdusheth Halwai on the way.',
+  'Six mandals and about 2.3 km on foot: the five Manache Paach in the order they hold by right — Kasba, Tambdi Jogeshwari, Guruji Talim, Tulshibaug, Kesari Wada — with Shrimant Dagdusheth Halwai taken between the second and the third, which is where it falls on the walk and where the lanes allow it.
+
+Dagdusheth is the long wait of the six and the reason to start early; the other five are quick by comparison. The walking itself is short, so the day is mostly queueing and darshan rather than distance.',
+  'walk', 'morning',
+  array['essential', 'manache', 'famous']::text[],
+  6900, true, true, 3
+)
+on conflict (slug) do update set
+  title = excluded.title, title_mr = excluded.title_mr,
+  summary = excluded.summary, description = excluded.description,
+  mode = excluded.mode, time_of_day = excluded.time_of_day,
+  themes = excluded.themes, total_darshan_s = excluded.total_darshan_s,
+  featured = excluded.featured, sort_order = excluded.sort_order;
+
+insert into route_stops (route_id, ganpati_id, position, darshan_minutes, darshan_style, note)
+select r.id, g.id, v.pos, v.mins, v.style::darshan_style, v.note
+from (values
+  ('dagdusheth-and-manache-paach', 'kasba-ganpati', 0, 15, 'inside', 'Start here — the city''s gramdaivat and first of the five.'),
+  ('dagdusheth-and-manache-paach', 'tambdi-jogeshwari', 1, 12, 'inside', 'Second of the Manache Paach.'),
+  ('dagdusheth-and-manache-paach', 'dagdusheth-halwai-ganpati', 2, 45, 'inside', 'The long one, and the only stop here that is not one of the five. Early morning is materially faster.'),
+  ('dagdusheth-and-manache-paach', 'guruji-talim', 3, 8, 'either', 'Third of the Manache Paach, on Laxmi Road.'),
+  ('dagdusheth-and-manache-paach', 'tulshibaug-ganpati', 4, 20, 'inside', 'Fourth of the Manache Paach, inside the market lanes.'),
+  ('dagdusheth-and-manache-paach', 'kesariwada-ganpati', 5, 15, 'inside', 'Fifth of the Manache Paach, in Tilak''s wada.')
 ) as v(route_slug, mandal_slug, pos, mins, style, note)
 join routes r on r.slug = v.route_slug
 join ganpatis g on g.slug = v.mandal_slug
