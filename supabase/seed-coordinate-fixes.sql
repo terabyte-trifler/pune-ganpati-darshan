@@ -26,7 +26,12 @@ update ganpatis set
 from (values
   ('kasba-ganpati', 18.51903, 73.857241, 'openstreetmap', 'node/2289294092'),
   ('tambdi-jogeshwari', 18.51662, 73.854894, 'cross-checked', null),
-  ('guruji-talim', 18.515047, 73.85466, 'openstreetmap', 'node/5832579354'),
+  -- Reported from the ground: Guruji Talim is exactly here. OSM node
+  -- 5832579354 puts it 35 m west, which is off the lane the crowd is sent
+  -- down — so a walk from Guruji Talim to Tulshibaug, the one direction
+  -- that lane exists for, scored as going against it. The node reference
+  -- is dropped rather than kept: it is not where this coordinate is from.
+  ('guruji-talim', 18.514997, 73.854992, 'survey', null),
   ('tulshibaug-ganpati', 18.514268, 73.855306, 'cross-checked', null),
   ('kesariwada-ganpati', 18.515811, 73.849008, 'cross-checked', null),
   ('dagdusheth-halwai-ganpati', 18.516391, 73.856084, 'openstreetmap', 'way/264276391'),
