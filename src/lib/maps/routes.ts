@@ -2,6 +2,9 @@ import 'server-only';
 
 import { MODE_SPEED_MPS, type LatLng } from '@/lib/geo';
 import type { TravelMode } from '@/types/ganpati';
+import { recordUpstream } from '@/lib/maps/route-stats';
+import { cachedBody, rememberBody } from '@/lib/maps/router-cache';
+import { mapLimit, ROUTER_CONCURRENCY } from '@/lib/maps/concurrency';
 
 /**
  * Road routing, server-side only.
@@ -116,12 +119,39 @@ export type RoutesResult<T> = { ok: true; data: T } | RoutesError;
 const TIMEOUT_MS = 8000;
 
 async function fetchJson(url: string, init?: RequestInit) {
+  /**
+   * Served from memory when the same question was asked recently.
+   *
+   * The key is the whole request, so two calls collapse only when they
+   * would have produced the same answer. POST bodies are part of it for
+   * the same reason. See lib/maps/router-cache for why this exists and
+   * what it does not claim to be.
+   */
+  const key = init?.body ? `${url}\n${String(init.body)}` : url;
+  const hit = cachedBody(key);
+  if (hit !== null) {
+    return new Response(hit, {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const started = Date.now();
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    const response = await fetch(url, { ...init, signal: controller.signal });
+    // Only a good answer is worth keeping; a 429 or a 500 must be asked
+    // again rather than remembered for an hour.
+    if (response.ok) {
+      const body = await response.clone().text();
+      rememberBody(key, body);
+    }
+    return response;
   } finally {
     clearTimeout(timer);
+    // Every upstream wait, counted — see lib/maps/route-stats.
+    recordUpstream(Date.now() - started);
   }
 }
 
@@ -426,33 +456,41 @@ async function computeRouteValhalla(
   let distanceM = 0;
   let durationS = 0;
 
-  for (const chunk of chunks) {
+  /**
+   * Every chunk asked at once, then stitched in order.
+   *
+   * A chunk is a self-contained request — it starts and ends at a stop and
+   * shares that stop with its neighbour — so nothing in one depends on the
+   * answer to another. They were being awaited in sequence, which made a
+   * long route cost the sum of its parts rather than the slowest of them.
+   */
+  const answers = await mapLimit(chunks, ROUTER_CONCURRENCY, async (chunk) => {
     const query = JSON.stringify({
       locations: chunk,
       costing,
       directions_options: { units: 'kilometers' },
       ...(avoid.length > 0 ? { exclude_polygons: avoid } : {}),
     });
-
-    let response: Response;
     try {
-      response = await fetchJson(
+      const response = await fetchJson(
         `${VALHALLA_URL}/route?json=${encodeURIComponent(query)}`,
         { next: { revalidate: ROUTER_CACHE_SECONDS } }
       );
+      if (!response.ok) return null;
+      return (await response.json().catch(() => null)) as {
+        trip?: {
+          legs?: Array<{ summary?: { length?: number; time?: number }; shape?: string }>;
+          summary?: { length?: number; time?: number };
+        };
+      } | null;
     } catch {
-      return { ok: false, reason: 'unavailable' };
+      return null;
     }
-    if (!response.ok) return { ok: false, reason: 'unavailable' };
+  });
 
-    const body = (await response.json().catch(() => null)) as {
-      trip?: {
-        legs?: Array<{ summary?: { length?: number; time?: number }; shape?: string }>;
-        summary?: { length?: number; time?: number };
-      };
-    } | null;
-
-    const trip = body?.trip;
+  for (const body of answers) {
+    if (!body) return { ok: false, reason: 'unavailable' };
+    const trip = body.trip;
     if (!trip?.legs?.length) return { ok: false, reason: 'no-route' };
 
     distanceM += Math.round((trip.summary?.length ?? 0) * 1000);
@@ -461,7 +499,9 @@ async function computeRouteValhalla(
     for (const leg of trip.legs) {
       for (const point of decodePolyline6(leg.shape ?? '')) {
         const last = geometry[geometry.length - 1];
-        if (!last || last[0] !== point[0] || last[1] !== point[1]) geometry.push(point);
+        if (!last || last[0] !== point[0] || last[1] !== point[1]) {
+          geometry.push(point);
+        }
       }
       legs.push({
         distanceM: Math.round((leg.summary?.length ?? 0) * 1000),

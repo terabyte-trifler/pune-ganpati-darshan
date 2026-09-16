@@ -473,7 +473,7 @@ export function MiniMap({
         .setLngLat([mandal.location.lng, mandal.location.lat])
         .addTo(map);
     });
-  }, [mandals, ordered, selectedSlug, ready, crowdByMandalId]);
+  }, [mandals, ordered, selectedSlug, ready, crowdByMandalId, showName]);
 
   /* ---------------- Crowd colour ----------------
      The pins are drawn from a GeoJSON source built once during setup, so a

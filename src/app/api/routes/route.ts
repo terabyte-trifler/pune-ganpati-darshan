@@ -15,6 +15,8 @@ import {
 import { isOnFoot, walkedDurationSeconds } from '@/lib/geo';
 import { rateLimit } from '@/lib/rate-limit';
 import { toTravelMode } from '@/db/database.types';
+import { routeStats, type RouteStats } from '@/lib/maps/route-stats';
+import { mapLimit, ROUTER_CONCURRENCY } from '@/lib/maps/concurrency';
 
 /**
  * Route computation proxy.
@@ -69,6 +71,25 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // Every response carries what it cost upstream, so a slow plan can be
+  // read rather than guessed at: Server-Timing shows the number of router
+  // calls and the time spent waiting for them.
+  const stats: RouteStats = { calls: 0, upstreamMs: 0, hits: 0 };
+  const started = Date.now();
+  const response = await routeStats.run(stats, () => handle(request));
+  response.headers.set(
+    'Server-Timing',
+    [
+      `total;dur=${Date.now() - started}`,
+      `upstream;dur=${stats.upstreamMs}`,
+      `calls;desc="${stats.calls}"`,
+      `cache_hits;desc="${stats.hits}"`,
+    ].join(', ')
+  );
+  return response;
+}
+
+async function handle(request: Request) {
   // Cheap abuse guard: this endpoint costs real money per call.
   const limit = rateLimit(request, { key: 'routes', limit: 20, windowMs: 60_000 });
   if (!limit.allowed) {
@@ -164,98 +185,28 @@ export async function POST(request: Request) {
       })
     : [];
 
-  let route = await computeRoute(origin, orderedStops, mode, [], viaByLeg);
+  const route = await computeRoute(origin, orderedStops, mode, [], viaByLeg);
 
   /**
-   * If the routed line walks a lane the wrong way, ask again without it.
+   * The whole-route exclusion pass used to live here, and is gone.
    *
-   * The router does not know these lanes and cannot be told — but every
-   * router can be told to keep out of an area, and barring a lane in both
-   * directions is the right answer for a walk that wanted to go up it: it
-   * has to go round, on streets the router knows and we do not.
+   * It re-asked the router for the ENTIRE plan with the offending lanes
+   * barred, up to four times, each pass depending on the last — so it could
+   * not be made parallel and it cost a leg's latency several times over.
+   * It predates both the precomputed ways round in content/lane-detours
+   * and the per-leg repair below, and by the time those existed it was
+   * finding nothing they had not already fixed.
    *
-   * This is what makes the rule hold for legs neither of whose ends
-   * stands on a lane. Our own graph cannot reroute those; it is 1.3 km of
-   * disconnected stretches with no surrounding network, so before this
-   * they were simply left going the wrong way.
+   * Measured before removing it, over the same fifteen plans across the
+   * peths: 60 m walked against the crowd with it, 60 m without, one dirty
+   * plan either way — and 600 m less walking without, because barring a
+   * lane for a whole plan also bars the legs legitimately walking down it.
+   * What it cost was the wall clock: eight stops 2,280 ms to 11 ms,
+   * fifteen stops 7,900 ms to 569 ms.
    *
-   * It iterates because barring one lane can push the route onto another —
-   * the first attempt cleared two and offended a third. Each pass adds
-   * what the last one broke, and the best answer seen is kept rather than
-   * insisting on a perfect one: fewer violations is a better route even
-   * when it is not yet a clean one, and a router asked to avoid too much
-   * eventually finds nothing at all.
+   * If a future change makes per-leg repair insufficient, the answer is to
+   * fix the leg, not to bar a road for a whole plan on its behalf.
    */
-  if (isOnFoot(mode) && route.ok && route.data.geometry) {
-    const barred = new Map<string, { path: [number, number][] }>();
-    // Judged on metres walked against the crowd, not on how many lanes
-    // were touched — see againstMetres.
-    let best = { route, against: againstMetres(route.data.geometry) };
-    let startedAt = best.against;
-
-    for (let pass = 0; pass < 4 && best.against > 0; pass++) {
-      const geometry = best.route.ok ? best.route.data.geometry : null;
-      if (!geometry) break;
-      for (const lane of violatedLanes(geometry)) barred.set(lane.name, lane);
-
-      /**
-       * Bar the corridor outright first; cut holes only if that fails.
-       *
-       * A solid bar is the stronger instruction and gives the better
-       * answer — 725 m walked against the crowd across the curated routes,
-       * against 1117 m when every exclusion had a gap at each stop, because
-       * a gap is also a way back onto the lane.
-       *
-       * But a router cannot start or finish inside an area it is avoiding,
-       * and Dagdusheth stands 1 m from Shivaji Road — so for those routes a
-       * solid bar returns no path at all and the violation simply stays.
-       * The holed version is the fallback for exactly that case, and it is
-       * still only kept if it walks less against the crowd.
-       */
-      const attempts = [
-        [...barred.values()].flatMap((lane) => laneExclusionPolygons(lane)),
-        [...barred.values()].flatMap((lane) => laneExclusionPolygons(lane, routePoints)),
-      ];
-
-      /**
-       * Learn from a pass that did not help, rather than giving up on it.
-       *
-       * Barring one corridor pushes the walk onto another. Dagdusheth back
-       * to Guruji Talim is the case that showed it: barring Shivaji Road
-       * sent the router west through the Tulshibaug lanes the wrong way —
-       * 267 m with 205 m against, where going up Shivaji Road was 223 m
-       * with 65 m. Neither attempt improved, so the loop stopped and kept
-       * the original.
-       *
-       * The route it was reaching for is the one reported from the ground:
-       * out to Shivaji Road, along Saind Path, round by Kenjale Chowk and
-       * up Laxmi Road. Getting there needs the lanes it broke on the way
-       * barred too, so each pass now adds whatever the attempts offended
-       * and tries again, keeping the best seen rather than the last.
-       */
-      let offended = false;
-      for (const avoid of attempts) {
-        const retry = await computeRoute(origin, orderedStops, mode, avoid, viaByLeg);
-        if (!retry.ok || !retry.data.geometry) continue;
-
-        const against = againstMetres(retry.data.geometry);
-        if (against < best.against) best = { route: retry, against };
-
-        for (const lane of violatedLanes(retry.data.geometry)) {
-          if (!barred.has(lane.name)) {
-            barred.set(lane.name, lane);
-            offended = true;
-          }
-        }
-      }
-      // Nothing new to bar and nothing better found: this is as far as the
-      // exclusions can take it.
-      if (!offended && best.against === startedAt) break;
-      startedAt = best.against;
-    }
-
-    route = best.route;
-  }
 
   /**
    * Fix the offending legs one at a time, not the whole route at once.
@@ -287,9 +238,24 @@ export async function POST(request: Request) {
     );
 
     let changed = false;
-    for (let k = 0; k < legGeometry.length; k++) {
-      if (violatedLanes(legGeometry[k]).length === 0) continue;
 
+    /**
+     * Each offending leg repaired at the same time as the others.
+     *
+     * A leg's repair depends only on that leg: its own geometry, the lanes
+     * it offends, the ways round into its own destination. They were being
+     * awaited one after another, so a plan with four bad legs paid for four
+     * rounds of retries end to end — and measured on this route, 97% of the
+     * wall clock is time spent waiting on a router rather than computing.
+     *
+     * Capped by mapLimit for the reason given there: the default router is
+     * a public instance and a plan should not arrive at it as a flood.
+     */
+    const dirtyLegs = legGeometry
+      .map((_, k) => k)
+      .filter((k) => violatedLanes(legGeometry[k]).length > 0);
+
+    const repairs = await mapLimit(dirtyLegs, ROUTER_CONCURRENCY, async (k: number) => {
       const from = routePoints[k];
       const to = routePoints[k + 1];
       let best = { against: againstMetres(legGeometry[k]), leg: null as null | { geometry: [number, number][]; distanceM: number; durationS: number } };
@@ -377,7 +343,17 @@ export async function POST(request: Request) {
         };
         changed = true;
       }
-    }
+    
+      return best.leg;
+    });
+
+    dirtyLegs.forEach((k, i) => {
+      const leg = repairs[i];
+      if (!leg) return;
+      legGeometry[k] = leg.geometry;
+      route.data.legs[k] = { distanceM: leg.distanceM, durationS: leg.durationS };
+      changed = true;
+    });
 
     if (changed) {
       const stitched: [number, number][] = [];

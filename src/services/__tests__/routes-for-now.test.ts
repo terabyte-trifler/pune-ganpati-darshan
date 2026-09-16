@@ -68,7 +68,7 @@ describe('routes for the time of day', () => {
    */
   it('can fill the rail at every hour without borrowing another slot', () => {
     const anyTime = localRoutes.filter((r) => r.timeOfDay === 'any');
-    for (const [hour, slot] of SLOTS) {
+    for (const [, slot] of SLOTS) {
       const own = localRoutes.filter((r) => r.timeOfDay === slot);
       expect(
         own.length + anyTime.length,
