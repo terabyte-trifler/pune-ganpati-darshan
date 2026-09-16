@@ -343,6 +343,7 @@ export function CrowdReportButtons({
           <div className="mt-3 border-t border-[var(--line)] pt-3">
             <WaitReportButtons
               mandalId={mandalId}
+              location={location}
               minMinutes={30}
               prompt="Roughly how long? It is the most useful thing you can add."
               onDone={() => setWaitAnswered(true)}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  reportEligibility, REPORT_MAX_DISTANCE_M,
+  reportEligibility, REPORT_MAX_DISTANCE_M, WAIT_REPORT_MAX_DISTANCE_M,
   AT_MANDAL_RADIUS_M, AT_MANDAL_MAX_ACCURACY_M, GATE_MAX_ACCURACY_M,
 } from '@/features/crowd/report-eligibility';
 import type { GeoState } from '@/hooks/useGeolocation';
@@ -125,5 +125,49 @@ describe('report eligibility', () => {
       expect(e.kind).toBe('allowed');
       expect(typeof (e as { atMandal: boolean }).atMandal).toBe('boolean');
     }
+  });
+});
+
+/**
+ * The wait question carries its own radius.
+ *
+ * Wider than the colour vote, because it is asked on the way out rather
+ * than at the gate — but it is a radius, where before there was none.
+ */
+describe('the wait report radius', () => {
+  it('is wider than the vote, because the question is asked later', () => {
+    expect(WAIT_REPORT_MAX_DISTANCE_M).toBeGreaterThan(REPORT_MAX_DISTANCE_M);
+  });
+
+  it('accepts somebody who has walked out of the vote radius', () => {
+    const justOutsideTheVote = northOf(REPORT_MAX_DISTANCE_M + 200);
+    expect(reportEligibility(ready(justOutsideTheVote), MANDAL).kind).toBe('too-far');
+    expect(
+      reportEligibility(ready(justOutsideTheVote), MANDAL, WAIT_REPORT_MAX_DISTANCE_M).kind
+    ).toBe('allowed');
+  });
+
+  it('still refuses from beyond it', () => {
+    const e = reportEligibility(
+      ready(northOf(WAIT_REPORT_MAX_DISTANCE_M + 500)),
+      MANDAL,
+      WAIT_REPORT_MAX_DISTANCE_M
+    );
+    expect(e.kind).toBe('too-far');
+  });
+
+  /** The same escalation the vote makes: earn the refusal with a good fix. */
+  it('refines rather than refusing on a fix too coarse to be sure', () => {
+    const e = reportEligibility(
+      ready(northOf(WAIT_REPORT_MAX_DISTANCE_M + 500), GATE_MAX_ACCURACY_M + 1),
+      MANDAL,
+      WAIT_REPORT_MAX_DISTANCE_M
+    );
+    expect(e.kind).toBe('refining');
+  });
+
+  it('leaves every existing caller on the vote radius', () => {
+    const e = reportEligibility(ready(northOf(REPORT_MAX_DISTANCE_M + 200)), MANDAL);
+    expect(e.kind).toBe('too-far');
   });
 });

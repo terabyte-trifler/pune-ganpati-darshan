@@ -44,6 +44,24 @@ import type { GeoState } from '@/hooks/useGeolocation';
 export const REPORT_MAX_DISTANCE_M = 1_000;
 
 /**
+ * How far away a WAIT report is still accepted.
+ *
+ * Wider than the level vote at 1 km, and the difference is the question
+ * being asked. "How busy is it" is about a queue you are looking at, so
+ * the radius is the distance from which you could look. "How long did you
+ * wait" is asked afterwards, by somebody who has finished darshan and is
+ * walking on — they are not at the gate any more, and 1 km would refuse
+ * people whose only fault is having moved since.
+ *
+ * It is still a radius, and that is the point of it: before this there
+ * was none at all on the wait question, so minutes could be reported from
+ * home by somebody who was never there. 1.5 km is roughly the peth core,
+ * which is close enough to have come from the mandal and far enough to
+ * cover the walk away from it.
+ */
+export const WAIT_REPORT_MAX_DISTANCE_M = 1_500;
+
+/**
  * A fix coarser than this cannot decide a 1 km question.
  *
  * Acquisition asks for a coarse fix first, because it returns in under a
@@ -104,7 +122,15 @@ export type ReportEligibility =
  */
 export function reportEligibility(
   geo: GeoState,
-  mandal: LatLng | undefined
+  mandal: LatLng | undefined,
+  /**
+   * How far away is still close enough.
+   *
+   * Defaulted rather than required so every existing caller keeps the
+   * level-vote radius it already had, and only the wait question — which
+   * is asked after somebody has walked away — passes the wider one.
+   */
+  maxDistanceM: number = REPORT_MAX_DISTANCE_M
 ): ReportEligibility {
   if (!mandal) return { kind: 'unknown-mandal' };
 
@@ -119,7 +145,7 @@ export function reportEligibility(
       return { kind: 'no-location', reason: 'unavailable' };
     case 'ready': {
       const distanceM = haversine(geo.position, mandal);
-      if (distanceM > REPORT_MAX_DISTANCE_M) {
+      if (distanceM > maxDistanceM) {
         // Refuse only on a fix good enough to refuse on. Note the
         // asymmetry, and that it is deliberate: a coarse fix INSIDE the
         // radius is still allowed, because the lenient direction is the
