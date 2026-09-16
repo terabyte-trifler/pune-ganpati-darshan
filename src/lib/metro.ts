@@ -279,8 +279,11 @@ export const METRO_STATIONS: MetroStation[] = [
   { id: 'garware-college', name: 'Garware College', nameMr: 'गरवारे कॉलेज', lines: ['aqua'], lat: 18.5119886, lng: 73.8380505, tier: 'network', canAlight: false, exitNote: '' },
 
   /* ---------------- Aqua Line, east of Civil Court ---------------- */
-  { id: 'mangalwar-peth', name: 'Mangalwar Peth', nameMr: 'मंगळवार पेठ', lines: ['aqua'], lat: 18.5290, lng: 73.8620, tier: 'network', canAlight: false, exitNote: '' },
-  { id: 'pune-railway-station', name: 'Pune Railway Station', nameMr: 'पुणे रेल्वे स्टेशन', lines: ['aqua'], lat: 18.5285, lng: 73.8740, tier: 'network', canAlight: false, exitNote: '' },
+  // Reported from the ground: the station at the RTO. OpenStreetMap has no
+  // station here, so a report is the only source this coordinate has.
+  { id: 'mangalwar-peth', name: 'Mangalwar Peth', nameMr: 'मंगळवार पेठ', lines: ['aqua'], lat: 18.53002691900296, lng: 73.86527446241178, tier: 'network', canAlight: false, exitNote: '' },
+  // Reported from the ground. OpenStreetMap has no station here either.
+  { id: 'pune-railway-station', name: 'Pune Railway Station', nameMr: 'पुणे रेल्वे स्टेशन', lines: ['aqua'], lat: 18.52968259540062, lng: 73.87254106480988, tier: 'network', canAlight: false, exitNote: '' },
   { id: 'ruby-hall-clinic', name: 'Ruby Hall Clinic', nameMr: 'रुबी हॉल क्लिनिक', lines: ['aqua'], lat: 18.5327176, lng: 73.8777486, tier: 'network', canAlight: false, exitNote: '' },
   { id: 'bund-garden', name: 'Bund Garden', nameMr: 'बंड गार्डन', lines: ['aqua'], lat: 18.5405933, lng: 73.8834394, tier: 'network', canAlight: false, exitNote: '' },
   { id: 'yerawada', name: 'Yerawada', nameMr: 'येरवडा', lines: ['aqua'], lat: 18.5453173, lng: 73.8866882, tier: 'network', canAlight: false, exitNote: '' },
