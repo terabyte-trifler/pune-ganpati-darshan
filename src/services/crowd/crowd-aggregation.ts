@@ -1,3 +1,4 @@
+import { DEFAULT_RED_THRESHOLD_MIN } from '@/content/crowd-thresholds';
 import type {
   CrowdConfidence,
   CrowdLevel,
@@ -261,11 +262,33 @@ export const WAIT_CURRENT_MINUTES = 2 * FRESHNESS_HALF_LIFE_MINUTES;
  * where "heavy" starts, under 10 is a walk-in. Written here rather than
  * imported from the prior so that Lane A never depends on Lane B.
  */
-export function levelForWaitMinutes(minutes: number): CrowdLevel {
-  if (minutes >= 30) return 'long';
+export function levelForWaitMinutes(
+  minutes: number,
+  /**
+   * When this mandal is allowed to read heavy. Defaulted, so every
+   * existing caller keeps the flat threshold it already had.
+   */
+  redThresholdMin: number = DEFAULT_RED_THRESHOLD_MIN
+): CrowdLevel {
+  if (minutes >= redThresholdMin) return 'long';
   if (minutes >= 10) return 'moving';
   return 'short';
 }
+
+/**
+ * Wait reports needed before their median may take a colour DOWN.
+ *
+ * Raising a colour has always been allowed on a single report, and stays
+ * that way: one person saying they queued an hour is enough to stop the
+ * app calling a mandal short, and understating a queue is the expensive
+ * error — it sends somebody into it.
+ *
+ * Coming down is the direction that needed a guard, and it is the same
+ * argument the dwell lane makes about proportions: one visitor who walked
+ * straight in must not talk a heavy queue down for everyone behind them.
+ * Two independent reports agreeing is a reading; one is an anecdote.
+ */
+export const MIN_WAITS_TO_LOWER_COLOUR = 2;
 
 /** One reported wait, as aggregation needs it. */
 export interface WaitInput {
@@ -972,7 +995,12 @@ export function aggregateMandal(
   /** Passive dwell observations. Optional: absent is the normal case. */
   dwellSamples: DwellInput[] = [],
   /** Reported wait times, from people who queued here. */
-  waitSamples: WaitInput[] = []
+  waitSamples: WaitInput[] = [],
+  /**
+   * When THIS mandal may read heavy. Defaulted so every caller that has
+   * no opinion keeps the flat threshold.
+   */
+  redThresholdMin: number = DEFAULT_RED_THRESHOLD_MIN
 ): CrowdStatus {
   /**
    * Computed once, for every branch below.
@@ -1120,8 +1148,34 @@ export function aggregateMandal(
   // WAIT_CURRENT_MINUTES, so the number shown and the colour shown can
   // never disagree.
   if (breakdown.waitMedianMinutes !== null) {
-    const floor = levelForWaitMinutes(breakdown.waitMedianMinutes);
-    if (SEVERITY[floor] > SEVERITY[winner]) winner = floor;
+    const fromWait = levelForWaitMinutes(breakdown.waitMedianMinutes, redThresholdMin);
+    if (SEVERITY[fromWait] > SEVERITY[winner]) winner = fromWait;
+
+    /**
+     * And a ceiling on red, which the floor above never was.
+     *
+     * The colour comes from the level votes and the minutes from the wait
+     * votes, and nothing used to stop them contradicting each other:
+     * Dagdusheth showed Heavy beside a reported wait of 25 minutes, and
+     * Shanipar Heavy beside 20. A badge that says heavy next to a number
+     * that says otherwise teaches people to trust neither.
+     *
+     * So where enough people have said how long they queued, and their
+     * median is below what this mandal calls heavy, the badge comes down
+     * to match the number printed beside it. It stops at `moving` — this
+     * caps red, it does not reach down to short, because the votes still
+     * carry everything the minutes do not: how long the line looks, how
+     * fast it is moving, whether it is worth joining.
+     *
+     * Only red is capped, and only on MIN_WAITS_TO_LOWER_COLOUR reports.
+     */
+    if (
+      winner === 'long' &&
+      fromWait !== 'long' &&
+      breakdown.waits.length >= MIN_WAITS_TO_LOWER_COLOUR
+    ) {
+      winner = 'moving';
+    }
   }
 
   const agreement = mass > 0 ? scores[winner] / mass : 0;
@@ -1199,13 +1253,19 @@ export function aggregateSnapshot(
   /** Passive dwell observations per mandal. Empty is the normal case. */
   dwellByMandal: Record<string, DwellInput[]> = {},
   /** Reported wait times per mandal. */
-  waitByMandal: Record<string, WaitInput[]> = {}
+  waitByMandal: Record<string, WaitInput[]> = {},
+  /** Red threshold per mandal; unlisted mandals take the flat default. */
+  redThresholdByMandal: Record<string, number> = {}
 ): CrowdStatus[] {
   const byMandal = new Map<string, CrowdReportInput[]>();
   for (const id of mandalIds) byMandal.set(id, []);
   for (const r of reports) byMandal.get(r.mandalId)?.push(r);
 
   return mandalIds.map((id) =>
-    aggregateMandal(id, byMandal.get(id) ?? [], nowMs, dwellByMandal[id] ?? [], waitByMandal[id] ?? [])
+    aggregateMandal(
+      id, byMandal.get(id) ?? [], nowMs,
+      dwellByMandal[id] ?? [], waitByMandal[id] ?? [],
+      redThresholdByMandal[id] ?? DEFAULT_RED_THRESHOLD_MIN
+    )
   );
 }

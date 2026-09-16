@@ -5,6 +5,7 @@ import { features } from '@/lib/env';
 import { clientIpFrom, hashIp } from '@/lib/client-ip';
 import { getAllGanpatis } from '@/services/ganpati';
 import { paceZones } from '@/features/crowd/pace';
+import { redThresholdFor } from '@/content/crowd-thresholds';
 import {
   aggregateSnapshot, aggregateMandal, labelFor, dwellCeilingSeconds,
 } from './crowd-aggregation';
@@ -102,6 +103,22 @@ interface ZoneFacts {
 }
 
 let crossingCache: { byId: Record<string, ZoneFacts>; at: number } | null = null;
+
+/**
+ * When each mandal may read heavy, by id.
+ *
+ * Built over every mandal rather than every pace zone — four mandals have
+ * no zone because they stand too close to a neighbour to be told apart,
+ * and they still take reports and still need a threshold. Hanging this
+ * off ZoneFacts would have silently given those four the flat default
+ * while appearing to be per-mandal.
+ */
+async function getRedThresholds(): Promise<Record<string, number>> {
+  const ganpatis = await getAllGanpatis();
+  const byId: Record<string, number> = {};
+  for (const g of ganpatis) byId[g.id] = redThresholdFor(g.slug);
+  return byId;
+}
 
 async function getZoneFacts(): Promise<Record<string, ZoneFacts>> {
   const now = Date.now();
@@ -317,12 +334,16 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
    * independent queries. They read different tables for the same ids and
    * none of them needs another's result.
    */
-  const [reportsResult, dwellSamples, waitSamples, overrides] = await Promise.all([
-    supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
-    readDwellSamples(supabase, ids),
-    readWaitReports(supabase, ids),
-    readOverrides(supabase, ids),
-  ]);
+  const [reportsResult, dwellSamples, waitSamples, overrides, redThresholds] =
+    await Promise.all([
+      supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
+      readDwellSamples(supabase, ids),
+      readWaitReports(supabase, ids),
+      readOverrides(supabase, ids),
+      // Reads the cached catalogue, so it joins the batch rather than
+      // adding a round trip.
+      getRedThresholds(),
+    ]);
   const { data, error } = reportsResult;
   recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
 
@@ -352,7 +373,9 @@ async function computeSnapshot(): Promise<CrowdSnapshot> {
   // Dwell enters the reading here, at DWELL_MASS each and capped — it can
   // tip a close call but never create one, because it earns no device
   // credit. See crowd-aggregation.
-  const computed = aggregateSnapshot(ids, reports, now, dwellSamples, waitSamples);
+  const computed = aggregateSnapshot(
+    ids, reports, now, dwellSamples, waitSamples, redThresholds
+  );
   // Last, and above everything. An override does not join the weighing —
   // it replaces the result of it.
   const statuses = computed.map((s) =>
@@ -464,12 +487,14 @@ export async function recomputeMandal(mandalId: string): Promise<CrowdStatus | n
     const ids = [mandalId];
     const startedAt = Date.now();
 
-    const [reportsResult, dwellSamples, waitSamples, overrides] = await Promise.all([
-      supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
-      readDwellSamples(supabase, ids),
-      readWaitReports(supabase, ids),
-      readOverrides(supabase, ids),
-    ]);
+    const [reportsResult, dwellSamples, waitSamples, overrides, redThresholds] =
+      await Promise.all([
+        supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
+        readDwellSamples(supabase, ids),
+        readWaitReports(supabase, ids),
+        readOverrides(supabase, ids),
+        getRedThresholds(),
+      ]);
     recordCrowdMetric('crowd_db_latency', Date.now() - startedAt);
 
     const rows = reportsResult.data;
@@ -489,7 +514,8 @@ export async function recomputeMandal(mandalId: string): Promise<CrowdStatus | n
       reports,
       Date.now(),
       dwellSamples[mandalId] ?? [],
-      waitSamples[mandalId] ?? []
+      waitSamples[mandalId] ?? [],
+      redThresholds[mandalId]
     );
     const status = overrides[mandalId]
       ? applyOverride(computed, overrides[mandalId])
@@ -726,17 +752,19 @@ export async function getCrowdExplain(): Promise<{
    * public snapshot path, which had the same shape.
    */
   const since = new Date(Date.now() - DWELL_WINDOW_MINUTES * 60_000).toISOString();
-  const [reportsResult, dwellResult, waitByMandal, explainCrossing] = await Promise.all([
-    supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
-    supabase
-      .from('crowd_dwell_samples')
-      .select('mandal_id, dwell, dwell_seconds, is_final, created_at, device_key')
-      .in('mandal_id', ids)
-      .gte('created_at', since)
-      .limit(5_000),
-    readWaitReports(supabase, ids),
-    getZoneFacts(),
-  ]);
+  const [reportsResult, dwellResult, waitByMandal, explainCrossing, redThresholds] =
+    await Promise.all([
+      supabase.rpc('crowd_active_reports', { p_mandal_ids: ids }),
+      supabase
+        .from('crowd_dwell_samples')
+        .select('mandal_id, dwell, dwell_seconds, is_final, created_at, device_key')
+        .in('mandal_id', ids)
+        .gte('created_at', since)
+        .limit(5_000),
+      readWaitReports(supabase, ids),
+      getZoneFacts(),
+      getRedThresholds(),
+    ]);
 
   const { data, error } = reportsResult;
   if (error || !data) return null;
@@ -784,9 +812,16 @@ export async function getCrowdExplain(): Promise<{
     return {
       mandalId,
       // The live answer, computed exactly as the API computes it — dwell
-      // included only when it is actually switched on.
-      status: aggregateMandal(mandalId, reports, now, dwellCounted ? samples : [], waits),
-      humanOnly: aggregateMandal(mandalId, reports, now, [], waits),
+      // included only when it is actually switched on, and on the same
+      // per-mandal red threshold. An admin screen that explains a colour
+      // the public page is not showing is worse than no admin screen.
+      status: aggregateMandal(
+        mandalId, reports, now, dwellCounted ? samples : [], waits,
+        redThresholds[mandalId]
+      ),
+      humanOnly: aggregateMandal(
+        mandalId, reports, now, [], waits, redThresholds[mandalId]
+      ),
       breakdown: scoreBreakdown(aged, samples, now, waits),
       devices: new Set(aged.map((r, i) => r.deviceSeq ?? -(i + 1))).size,
     };
