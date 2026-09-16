@@ -34,17 +34,26 @@ on conflict (slug) do update set
 insert into route_stops (route_id, ganpati_id, position, darshan_minutes, darshan_style, note)
 select r.id, g.id, v.pos, v.mins, v.style::darshan_style, v.note
 from (values
+  -- Ordered north to south, the way the police send the crowd. Written
+  -- before the one-way lanes were in the app, this walk crossed its own
+  -- path five times and came to 7003 m; it is 3392 m in this order, for
+  -- the same twelve mandals. Kasba still opens it and Kesari Wada still
+  -- closes it, and Dagdusheth is still early enough for its note to hold.
+  --
+  -- The doubling back that is left is not slack: Tulshibaug can only be
+  -- entered from Guruji Talim, so the walk has to come up to Guruji and
+  -- back down into it.
   ('great-peth-circuit', 'kasba-ganpati', 0, 15, 'inside', 'Start at the gramdaivat, before the lanes fill.'),
-  ('great-peth-circuit', 'jilbya-maruti-mandal', 1, 5, 'outside', null),
-  ('great-peth-circuit', 'hutatma-babu-genu-mandal', 2, 10, 'outside', 'Large themed set, changes each year.'),
-  ('great-peth-circuit', 'tambdi-jogeshwari', 3, 12, 'inside', null),
-  ('great-peth-circuit', 'dagdusheth-halwai-ganpati', 4, 45, 'inside', 'The long queue. Go now rather than later.'),
-  ('great-peth-circuit', 'bhau-rangari-ganpati', 5, 8, 'either', 'One of the earliest sarvajanik mandals.'),
+  ('great-peth-circuit', 'bhau-rangari-ganpati', 1, 8, 'either', 'One of the earliest sarvajanik mandals.'),
+  ('great-peth-circuit', 'tambdi-jogeshwari', 2, 12, 'inside', null),
+  ('great-peth-circuit', 'dagdusheth-halwai-ganpati', 3, 45, 'inside', 'The long queue. Go now rather than later.'),
+  ('great-peth-circuit', 'hutatma-babu-genu-mandal', 4, 10, 'outside', 'Large themed set, changes each year.'),
+  ('great-peth-circuit', 'akhil-mandai-mandal', 5, 12, 'outside', 'Beside Mahatma Phule Mandai.'),
   ('great-peth-circuit', 'guruji-talim', 6, 8, 'either', 'On Laxmi Road — closed to vehicles for much of the festival.'),
   ('great-peth-circuit', 'tulshibaug-ganpati', 7, 20, 'inside', null),
-  ('great-peth-circuit', 'nimbalkar-talim-mandal', 8, 6, 'either', null),
-  ('great-peth-circuit', 'akhil-mandai-mandal', 9, 12, 'outside', 'Beside Mahatma Phule Mandai.'),
-  ('great-peth-circuit', 'shanipar-mandal', 10, 6, 'outside', null),
+  ('great-peth-circuit', 'jilbya-maruti-mandal', 8, 5, 'outside', null),
+  ('great-peth-circuit', 'shanipar-mandal', 9, 6, 'outside', null),
+  ('great-peth-circuit', 'nimbalkar-talim-mandal', 10, 6, 'either', null),
   ('great-peth-circuit', 'kesariwada-ganpati', 11, 15, 'inside', 'Finish in the wada courtyard.'),
   ('manache-and-landmarks', 'kasba-ganpati', 0, 15, 'inside', 'First of the Manache Paach.'),
   ('manache-and-landmarks', 'tambdi-jogeshwari', 1, 12, 'inside', null),
