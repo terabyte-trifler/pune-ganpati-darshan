@@ -36,6 +36,21 @@ export const VISIT_KEYS = [
    * never leaves the device. See crowd/wait-prompt-store.
    */
   'pg:wait-prompts:v1',
+  /**
+   * The last position this device reported, and when.
+   *
+   * Kept so a screen that needs a location does not have to start from
+   * nothing — the two-wheeler planner cannot choose a parking without one
+   * and used to sit empty for up to four seconds waiting. Read back only
+   * while it is under five minutes old, replaced by the live fix as soon
+   * as that arrives.
+   *
+   * It is a coordinate, so it belongs here with the visit rather than with
+   * the plan: it clears when somebody clears their visit, and it is never
+   * sent anywhere. The crowd report endpoint still receives no coordinates
+   * at all — that has not changed and must not.
+   */
+  'pg.lastfix',
 ] as const;
 export const CACHE_KEYS = ['ganpatigo_crowd_snapshot'] as const;
 export const DEVICE_KEYS = ['ganpatigo_device_id'] as const;
@@ -70,8 +85,8 @@ const ACTIONS: {
     scope: 'visit',
     title: 'Clear this visit',
     detail:
-      'The anonymous session id used to count visits, the site you arrived from, the cached crowd readings, and any mandal the app is waiting to ask you about. Your plan and saved mandals are kept.',
-    keys: 'pg.session · pg.referrer · pg:wait-prompts:v1 · ganpatigo_crowd_snapshot',
+      'The anonymous session id used to count visits, the site you arrived from, the cached crowd readings, any mandal the app is waiting to ask you about, and the last position your device reported — kept on this phone for five minutes so a route can be planned without waiting for GPS again. Your plan and saved mandals are kept.',
+    keys: 'pg.session · pg.referrer · pg:wait-prompts:v1 · pg.lastfix · ganpatigo_crowd_snapshot',
     label: 'Clear',
   },
   {

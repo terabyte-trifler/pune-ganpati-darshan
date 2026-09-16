@@ -47,7 +47,57 @@ export type GeoState =
 
 const IDLE: GeoState = { status: 'idle' };
 
-let state: GeoState = IDLE;
+/**
+ * The last fix this device had, so the next screen does not start blind.
+ *
+ * Measured on the planner: two-wheeler mode cannot render until a position
+ * exists, because which of twenty-three car parks is right depends on where
+ * the rider is. Walking falls back to the city centre and paints at once;
+ * two-wheeler waited. On a mid-range phone the ride card arrived 0.6 s
+ * after the planner became usable when the device answered quickly, and
+ * 4.2 s when it did not — and the slow case is the one people report.
+ *
+ * What is reused is a REAL position this device reported, not a guess about
+ * where somebody might be. That distinction is the whole argument: the
+ * objection to defaulting to the city centre was that it sends a rider to
+ * somebody else's parking, and a fix from four minutes ago does not.
+ *
+ * Five minutes — long enough to cover opening the app, browsing and
+ * switching to the planner, short enough that someone who has driven across
+ * town is not planned for where they were. The live fix replaces it as soon
+ * as it lands, so the remembered one only ever fills the gap.
+ *
+ * The coordinates stay on the device: written to this phone's localStorage,
+ * sent nowhere, and declared and cleared on /about with every other key.
+ */
+const LAST_FIX_KEY = 'pg.lastfix';
+const LAST_FIX_MAX_AGE_MS = 5 * 60 * 1000;
+
+function readLastFix(): GeoState {
+  if (typeof window === 'undefined') return IDLE;
+  try {
+    const raw = window.localStorage.getItem(LAST_FIX_KEY);
+    if (!raw) return IDLE;
+    const v = JSON.parse(raw) as { lat: number; lng: number; acc: number; at: number };
+    if (typeof v?.lat !== 'number' || typeof v?.lng !== 'number') return IDLE;
+    if (typeof v?.at !== 'number' || Date.now() - v.at > LAST_FIX_MAX_AGE_MS) return IDLE;
+    return { status: 'ready', position: { lat: v.lat, lng: v.lng }, accuracyM: v.acc };
+  } catch {
+    return IDLE;
+  }
+}
+
+function rememberFix(position: LatLng, accuracyM: number) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      LAST_FIX_KEY,
+      JSON.stringify({ lat: position.lat, lng: position.lng, acc: accuracyM, at: Date.now() })
+    );
+  } catch { /* storage disabled, which is fine — it only costs the head start */ }
+}
+
+let state: GeoState = readLastFix();
 const listeners = new Set<() => void>();
 
 /**
@@ -103,6 +153,7 @@ export function retryLocation() {
 
 function setState(next: GeoState) {
   state = next;
+  if (next.status === 'ready') rememberFix(next.position, next.accuracyM);
   for (const listener of listeners) listener();
   // The first successful fix is what makes watching possible at all, so the
   // watch is (re)evaluated whenever the state changes rather than only when
