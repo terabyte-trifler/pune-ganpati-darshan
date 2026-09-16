@@ -79,7 +79,8 @@ function Stop({
 }
 
 export function MetroJourneyCard({
-  alight, walkToFirstM, firstStop, home,
+  alight, walkToFirstM, firstStop, home, homeIsRouted = false,
+  homeNearerButHarder = null,
 }: {
   /** Where the plan says to get off. */
   alight: MetroStation;
@@ -89,6 +90,21 @@ export function MetroJourneyCard({
   firstStop?: { lat: number; lng: number };
   /** Where to catch the train back, and how far it is from the last stop. */
   home?: NearestStation | null;
+  /**
+   * Whether that distance is a routed walk or a straight line.
+   *
+   * It decides the wording, and the wording is the whole difference: a
+   * routed figure is how far somebody walks, a straight-line one is how
+   * far away the station is. Saying the second while meaning the first
+   * understates every walk in the peths, where the lanes run one way and
+   * the way back is rarely the way you came.
+   */
+  homeIsRouted?: boolean;
+  /**
+   * A station that is nearer but harder to reach on foot, when the lanes
+   * are the reason it was passed over.
+   */
+  homeNearerButHarder?: { name: string; distanceM: number } | null;
 }) {
   const { state, request } = useGeolocation();
   // Without this the card asks "Which train do I take?" of somebody who
@@ -220,9 +236,26 @@ export function MetroJourneyCard({
           {journey && journey.totalStops > 0 && home && ' · '}
           {home && (
             <>
-              Back from {home.station.name} ({formatDistance(home.distanceM)})
+              Back from {home.station.name} ({formatDistance(home.distanceM)}
+              {homeIsRouted ? ' walk' : ''})
             </>
           )}
+        </p>
+      )}
+
+      {/* ---------- Why not the station you can see from here ---------- */}
+      {homeNearerButHarder && (
+        <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-[var(--muted)]">
+          <TriangleAlert
+            size={13}
+            aria-hidden="true"
+            className="mt-[2px] shrink-0 text-[var(--zendu)]"
+          />
+          <span>
+            {homeNearerButHarder.name} is closer as the crow flies, but the
+            lanes between here and it only run the other way — walking back up
+            one is the thing they exist to prevent, so the way home goes round.
+          </span>
         </p>
       )}
 

@@ -32,6 +32,7 @@ import { chooseParking } from '@/services/parking-plan';
 import { legModeFor } from '@/services/itinerary';
 import { optimizeLocally } from '@/services/route-optimizer';
 import { flowsOnRoute } from '@/services/pedestrian-flow';
+import { returnWalk } from '@/services/metro-return';
 
 /** Named, because "routed" without a source is a claim with no author. */
 const PROVIDER_NAME: Record<string, string> = {
@@ -187,6 +188,27 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     [stops]
   );
   const [stationId, setStationId] = useState<string | null>(null);
+
+  /**
+   * The walk back to a station at the end of the night.
+   *
+   * Metro plans ended where the last mandal is. Getting there was routed
+   * and drawn; getting home was a straight-line distance in a footnote,
+   * which is the one leg of the evening where the lanes matter most —
+   * they run one way, towards the mandals, and the walk back is the
+   * direction they exist to prevent.
+   *
+   * So it is routed like every other leg, through the same /api/routes
+   * that knows the lanes and the ways round them, and drawn on the map
+   * with the rest of the plan.
+   */
+  const [returnLeg, setReturnLeg] = useState<{
+    station: { id: string; name: string; lat: number; lng: number };
+    distanceM: number;
+    durationS: number;
+    geometry: [number, number][] | null;
+    nearerButHarder: { name: string; distanceM: number } | null;
+  } | null>(null);
   const station = (stationId ? stationById(stationId) : null) ?? suggestedStation;
 
 
@@ -395,6 +417,57 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
     }
   }, [sharedSlugs, hydrated, stops, origin, legMode, replace]);
 
+  /**
+   * Route the walk back, once the order is settled.
+   *
+   * Its own request rather than an extra stop on the plan's: the return
+   * is not a stop somebody chose and must not be reordered into the
+   * middle of the evening. optimize is false for the same reason — the
+   * order of this one leg is not in question, only its line.
+   *
+   * Silent on failure. A plan that arrived is worth more than an error
+   * about the way home, and the card simply does not show the leg.
+   */
+  const fetchReturnLeg = async (ordered: typeof stops) => {
+    const last = ordered[ordered.length - 1];
+    if (mode !== 'metro' || !last) { setReturnLeg(null); return; }
+    const back = returnWalk({ lat: last.location.lat, lng: last.location.lng });
+    if (!back) { setReturnLeg(null); return; }
+
+    const to = { lat: back.station.lat, lng: back.station.lng };
+    try {
+      const response = await fetch('/api/routes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin: { lat: last.location.lat, lng: last.location.lng },
+          // The way round comes first where there is one, so the walk
+          // home does not go back up a lane the crowd is coming down.
+          stops: [...back.via, to],
+          mode: 'walk',
+          optimize: false,
+        }),
+      });
+      if (!response.ok) { setReturnLeg(null); return; }
+      const data = (await response.json()) as RouteResult;
+      setReturnLeg({
+        station: { id: back.station.id, name: back.station.name, ...to },
+        // The routed distance, not the straight line the card used to show.
+        distanceM: data.distanceM ?? back.distanceM,
+        durationS: data.durationS,
+        geometry: data.geometry,
+        nearerButHarder: back.nearerButHarder
+          ? {
+              name: back.nearerButHarder.station.name,
+              distanceM: back.nearerButHarder.distanceM,
+            }
+          : null,
+      });
+    } catch {
+      setReturnLeg(null);
+    }
+  };
+
   const optimize = async () => {
     if (stops.length < 2) return;
     setBusy(true);
@@ -427,6 +500,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       // Apply the optimised ordering to the stored plan.
       const reordered = data.order.map((i) => stops[i].slug);
       startTransition(() => replace(reordered));
+      void fetchReturnLeg(data.order.map((i) => stops[i]));
       trackEvent('plan_optimized', {
         props: { stops: stops.length, mode, by: data.optimizedBy },
       });
@@ -670,7 +744,18 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
                 ? { lat: stops[0].location.lat, lng: stops[0].location.lng }
                 : undefined
             }
-            home={returnStation(stops)}
+            home={
+              returnLeg
+                ? {
+                    station: returnLeg.station as never,
+                    // Routed, so the number is the walk rather than the
+                    // distance a bird would cover.
+                    distanceM: returnLeg.distanceM,
+                  }
+                : returnStation(stops)
+            }
+            homeIsRouted={returnLeg != null}
+            homeNearerButHarder={returnLeg?.nearerButHarder ?? null}
           />
           <MetroStationPicker
             value={station}
@@ -743,7 +828,16 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
       <MiniMap
         mandals={stops}
         ordered
-        routeGeometry={result?.geometry ?? null}
+        routeGeometry={
+          /* The walk back is part of the evening, so it is part of the
+             line. Appended rather than merged into the plan's own legs:
+             it belongs after the last stop and nowhere else. */
+          result?.geometry
+            ? returnLeg?.geometry
+              ? [...result.geometry, ...returnLeg.geometry]
+              : result.geometry
+            : null
+        }
         className="mt-4 h-64 w-full"
       />
       {!result?.geometry && stops.length > 1 && (
