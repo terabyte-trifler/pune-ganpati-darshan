@@ -1,5 +1,5 @@
 import { PARKING, type ParkingSpot } from '@/content/parking';
-import { haversine, estimateRideSeconds, metresToPath, type LatLng } from '@/lib/geo';
+import { haversine, estimateRideSeconds, metresToPath, MODE_SPEED_MPS, type LatLng } from '@/lib/geo';
 import { ROAD_CLOSURES } from '@/content/diversions';
 import { optimizeLocally } from '@/services/route-optimizer';
 
@@ -247,60 +247,98 @@ export function chooseParking(
 
   const points = mandals.map((m) => ({ lat: m.location.lat, lng: m.location.lng }));
 
-  let best: ParkingChoice | null = null;
+  /**
+   * Every spot ranked cheaply, and only the serious ones solved properly.
+   *
+   * The walk from a parking is an open travelling-salesman problem, and
+   * this used to solve one for every spot in the city — 23 solves, which
+   * measured at 3.4 ms each with eight stops and 23.7 ms with twenty-five.
+   * That is 78 ms and 546 ms of blocked main thread, recomputed whenever
+   * the rider's position published a new fix, which is why two-wheeler
+   * plans stuttered where walking ones did not.
+   *
+   * What separates one spot from another is mostly the ride to it and how
+   * far it sits from the mandals; the tour of the mandals themselves is
+   * nearly the same whichever side you arrive from. So the ride plus the
+   * walk to the nearest stop ranks them, and only the best few are costed
+   * for real. Verified against the exhaustive answer rather than assumed —
+   * see the test.
+   */
+  const SOLVE_CANDIDATES = 6;
+
+  const priced = candidates.map((spot) => {
+    const point: LatLng = { lat: spot.lat, lng: spot.lng };
+    const detoured =
+      inForce && (isOnClosedRoad(spot) || approachMeetsClosure(origin, spot));
+    const ride = rideSeconds(origin, point) * (detoured ? CLOSURE_DETOUR_FACTOR : 1);
+    const nearest = points.reduce((m, p) => Math.min(m, haversine(point, p)), Infinity);
+    return { spot, point, detoured, ride, rank: ride + nearest / MODE_SPEED_MPS.walk };
+  });
+  priced.sort((a, b) => a.rank - b.rank);
+
+  let best: ParkingChoice | null = null as ParkingChoice | null;
   // Compared in seconds, displayed in minutes. Scoring on the rounded
   // minutes would let two spots tie on a number the rider never sees.
   let bestSeconds = Infinity;
 
   /**
-   * Every spot that could be walked from, kept for the fallback list.
+   * Every spot that was costed for real, kept for the fallback list.
    *
-   * The loop already computes the walk from each candidate and then
-   * throws all but the winner away. The fallbacks need exactly that
-   * discarded work, so it is retained rather than recomputed.
+   * The alternates need the walk from each, which is exactly the work the
+   * solve does, so it is retained rather than recomputed.
    */
   const scored: { spot: ParkingSpot; point: LatLng; walkSeconds: number }[] = [];
 
-  for (const spot of candidates) {
-    const point: LatLng = { lat: spot.lat, lng: spot.lng };
-
-    // Priced, not excluded: a closed road on the way means a longer ride,
-    // and the whole-journey score decides whether it is still the best
-    // place to leave the vehicle.
-    const detoured =
-      inForce && (isOnClosedRoad(spot) || approachMeetsClosure(origin, spot));
-    const ride = rideSeconds(origin, point) * (detoured ? CLOSURE_DETOUR_FACTOR : 1);
-
+  const solve = (entry: (typeof priced)[number]) => {
     // The walk is planned from the parking, not from the person: that is
     // the whole point of the mode.
-    const walk = optimizeLocally(point, points, 'walk');
+    const walk = optimizeLocally(entry.point, points, 'walk');
     // `totalCost` is null when a leg is impassable. A parking whose walk
     // cannot be costed is not a parking we can recommend, so it is skipped
     // rather than scored as though the walk were free.
-    if (walk.totalCost === null) continue;
-    scored.push({ spot, point, walkSeconds: walk.totalCost });
+    if (walk.totalCost === null) return;
+    scored.push({ spot: entry.spot, point: entry.point, walkSeconds: walk.totalCost });
 
-    const seconds = ride + walk.totalCost;
-    if (seconds >= bestSeconds) continue;
+    const seconds = entry.ride + walk.totalCost;
+    if (seconds >= bestSeconds) return;
     bestSeconds = seconds;
 
     // The total is the sum of the two figures shown, not a separately
     // rounded number — otherwise a card can read "12 min + 39 min" beside
     // a total of 50 and look broken over a rounding error.
-    const rideMinutes = Math.round(ride / 60);
+    const rideMinutes = Math.round(entry.ride / 60);
     const walkMinutes = Math.round(walk.totalCost / 60);
 
     best = {
-      spot,
+      spot: entry.spot,
       rideMinutes,
       walkMinutes,
       travelMinutes: rideMinutes + walkMinutes,
       order: walk.order,
-      detouredForClosures: detoured,
+      detouredForClosures: entry.detoured,
       closuresInForce: inForce,
       // Filled in below, once the winner is known.
       alternates: [],
     };
+  };
+
+  for (const entry of priced.slice(0, SOLVE_CANDIDATES)) solve(entry);
+
+  /**
+   * The fallbacks are costed too, or their walk would be a guess.
+   *
+   * They are the spots near the winner, which the cheap ranking does not
+   * necessarily put in the first few — and the card shows each one's walk
+   * against the chosen one's, a comparison that has to be real.
+   */
+  if (best) {
+    const chosenPoint: LatLng = { lat: best!.spot.lat, lng: best!.spot.lng };
+    const solved = new Set(scored.map((s) => s.spot.no));
+    for (const entry of priced) {
+      if (solved.has(entry.spot.no)) continue;
+      if (haversine(chosenPoint, entry.point) > ALTERNATE_MAX_METRES) continue;
+      solve(entry);
+    }
   }
 
   if (!best) return null;

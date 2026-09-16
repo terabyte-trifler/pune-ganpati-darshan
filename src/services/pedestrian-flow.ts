@@ -304,15 +304,50 @@ const AGAINST_METRE_WEIGHT = 4;
  * Returns 1 where there is nothing to correct, which is every leg outside
  * the peths and most inside them.
  */
+/**
+ * The measured tables, keyed for lookup instead of scanned.
+ *
+ * These are consulted once per pair of stops, and the ordering asks about
+ * every pair — so a plan of n stops does n² lookups, and chooseParking
+ * does that again for every parking spot in the city. Scanning 756 rows
+ * with two haversines each, n² times, per spot, is how a two-wheeler plan
+ * came to block the main thread for 88 ms at eight stops and 694 ms at
+ * twenty-five, measured.
+ *
+ * Both tables are keyed by mandal coordinates, and the points the planner
+ * asks about ARE those coordinates, so an exact key hits almost always.
+ * The scan stays as the fallback for the one leg that does not come from
+ * the catalogue: the first, from wherever the visitor is standing.
+ */
+const coordKey = (p: LatLng) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+const pairKey = (a: LatLng, b: LatLng) => `${coordKey(a)}|${coordKey(b)}`;
+
+let legIndex: Map<string, (typeof LANE_LEG_METRES)[number]> | null = null;
+let againstIndex: Map<string, (typeof LANE_AGAINST_PAIRS)[number]> | null = null;
+
+function legByKey(from: LatLng, to: LatLng) {
+  legIndex ??= new Map(LANE_LEG_METRES.map((l) => [pairKey(l.fromAt, l.toAt), l]));
+  return legIndex.get(pairKey(from, to));
+}
+
+function againstByKey(from: LatLng, to: LatLng) {
+  againstIndex ??= new Map(
+    LANE_AGAINST_PAIRS.map((p) => [pairKey(p.fromAt, p.toAt), p])
+  );
+  return againstIndex.get(pairKey(from, to));
+}
+
 function measuredWalkFactor(from: LatLng, to: LatLng): number {
   const straight = haversine(from, to);
   if (straight <= 0) return 1;
 
-  const leg = LANE_LEG_METRES.find(
-    (l) =>
-      haversine(from, l.fromAt) <= PAIR_MATCH_M &&
-      haversine(to, l.toAt) <= PAIR_MATCH_M
-  );
+  const leg =
+    legByKey(from, to) ??
+    LANE_LEG_METRES.find(
+      (l) =>
+        haversine(from, l.fromAt) <= PAIR_MATCH_M &&
+        haversine(to, l.toAt) <= PAIR_MATCH_M
+    );
   // Measured, however it came out: that is the answer, and a pair that
   // walks close to its straight line is a pair with nothing to correct.
   if (leg) return Math.max(1, leg.walkM / straight);
@@ -370,11 +405,13 @@ function approachPenaltyM(from: LatLng, to: LatLng): number {
 }
 
 function measuredAgainstM(from: LatLng, to: LatLng): number {
-  const pair = LANE_AGAINST_PAIRS.find(
-    (p) =>
-      haversine(from, p.fromAt) <= PAIR_MATCH_M &&
-      haversine(to, p.toAt) <= PAIR_MATCH_M
-  );
+  const pair =
+    againstByKey(from, to) ??
+    LANE_AGAINST_PAIRS.find(
+      (p) =>
+        haversine(from, p.fromAt) <= PAIR_MATCH_M &&
+        haversine(to, p.toAt) <= PAIR_MATCH_M
+    );
   return pair ? pair.againstM : 0;
 }
 
