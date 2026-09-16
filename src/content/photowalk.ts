@@ -9,18 +9,17 @@
  * all live there; nothing about the walk is administered by this app, so
  * this file holds the least it can and links out for the rest.
  *
- * `time` is null on purpose. pwip.in says "To be announced", and that is
- * the honest state of it — a start time invented here to make the card
- * look complete would send people to Shivaji Nagar at the wrong hour.
- * The card renders the words "Time to be announced" from this null; it
- * does not guess, and it must not be given a placeholder.
+ * The 7am start and the Shaniwar Wada meeting point came from the
+ * organiser direct, and both are more specific than pwip.in's listing,
+ * which still said "To be announced" and "Old city mandals" when this was
+ * written. `time` stays nullable for the next walk announced before its
+ * hour is fixed: the card prints "Time to be announced" from a null
+ * rather than showing a placeholder that reads as a real time and sends
+ * people to the wrong place at the wrong hour.
  *
- * The meeting point is Shivaji Nagar. pwip.in's listing says "Old city
- * mandals", which describes the walk rather than where it starts; the
- * specific point came from the organiser direct. If the two ever
- * disagree again, pwip.in is the page the walkers will be reading on the
- * morning, so it wins — update this file to match rather than the other
- * way round.
+ * If this file and pwip.in ever disagree, pwip.in wins — it is the page
+ * the walkers will be reading on the morning. Update this to match
+ * rather than the other way round.
  *
  * The walk is free and open to any camera, which is worth stating on the
  * card because both are the first thing people ask.
@@ -43,8 +42,8 @@ export interface Photowalk {
 export const PHOTOWALK: Photowalk = {
   date: '2026-09-19',
   dateLabel: 'Saturday 19 September',
-  time: null,
-  meetingPoint: 'Shivaji Nagar',
+  time: '7:00 am start',
+  meetingPoint: 'Shaniwar Wada',
   title: 'Ganpati photowalk',
   blurb:
     'The mandals through the old peths in festival week, photographed in '

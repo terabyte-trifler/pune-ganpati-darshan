@@ -15,16 +15,25 @@ describe('photowalk', () => {
   });
 
   it('states the meeting point', () => {
-    expect(PHOTOWALK.meetingPoint).toBe('Shivaji Nagar');
+    expect(PHOTOWALK.meetingPoint).toBe('Shaniwar Wada');
+  });
+
+  it('carries the published start time', () => {
+    expect(PHOTOWALK.time).toBe('7:00 am start');
   });
 
   /**
-   * pwip.in says the time is to be announced. A placeholder here — "9am",
-   * "TBA", an empty string — would either invent a time or print as one,
-   * so null is the only honest value until the organiser publishes one.
+   * The field is nullable so a walk announced before its hour is fixed can
+   * say so. What it must never hold is a stand-in that renders as a real
+   * time — "TBA" or an empty string both print into the slot where a
+   * walker reads the hour, and send people out at the wrong one. A null
+   * takes the "Time to be announced" branch on the card instead.
    */
-  it('leaves the time null rather than guessing it', () => {
-    expect(PHOTOWALK.time).toBeNull();
+  it('never stands a placeholder in for a real time', () => {
+    if (PHOTOWALK.time === null) return;
+    expect(PHOTOWALK.time.trim()).not.toBe('');
+    expect(PHOTOWALK.time).toMatch(/\d/);
+    expect(PHOTOWALK.time.toLowerCase()).not.toMatch(/tba|to be announced|tbd/);
   });
 
   it('labels the date consistently with the ISO date', () => {
