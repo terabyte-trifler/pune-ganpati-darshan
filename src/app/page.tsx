@@ -55,13 +55,33 @@ export default async function HomePage() {
 
   const iconic = all.filter((g) => g.category !== 'maanache').slice(0, 8);
 
-  // Time-appropriate routes lead, with the remaining featured ones behind
-  // them so the rail is never short.
+  /**
+   * Everything under "Good for right now" has to be good right now.
+   *
+   * The rail led with the time-appropriate routes and then padded itself
+   * with whatever else was featured, so it was never short — but a route
+   * marked for the morning is not good at one in the afternoon, and the
+   * heading above it said it was. The evening dekhava trail sat there at
+   * 9am, which is the very thing the note on this section says must not
+   * happen.
+   *
+   * Padding with the routes marked for ANY hour keeps the rail full and
+   * keeps the heading true: those are good right now by definition.
+   * Every slot has at least two of its own and there are five marked for
+   * any hour, so six is always reachable without borrowing from a
+   * different time of day.
+   *
+   * Featured first among the padding, since that is what featured is for.
+   */
   const nowRoutes = routesForNow(routes);
   const nowSlugs = new Set(nowRoutes.map((r) => r.slug));
+  const anyTime = routes.filter(
+    (r) => r.timeOfDay === 'any' && !nowSlugs.has(r.slug)
+  );
   const leadRoutes = [
     ...nowRoutes,
-    ...routes.filter((r) => r.featured && !nowSlugs.has(r.slug)),
+    ...anyTime.filter((r) => r.featured),
+    ...anyTime.filter((r) => !r.featured),
   ].slice(0, 6);
   const coreAreas = areas.filter((a) => a.isCore);
 
