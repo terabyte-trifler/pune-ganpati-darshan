@@ -35,6 +35,23 @@ describe('observedWaitMinutes', () => {
     expect(observedWaitMinutes(rows, NOW)?.minutes).toBe(10);
   });
 
+  it('accepts exactly two devices', () => {
+    const rows = ['a', 'b'].map((d) => visit(d, 720, 120));
+    const got = observedWaitMinutes(rows, NOW);
+    expect(got?.devices).toBe(2);
+    expect(got?.minutes).toBe(10);
+  });
+
+  /**
+   * The average, not the middle one. At the two and three devices this
+   * actually sees, a median discards half the readings it has.
+   */
+  it('averages the devices rather than taking a median', () => {
+    // excesses 8, 10, 30 → median would be 10, mean is 16.
+    const rows = [visit('a', 600, 120), visit('b', 720, 120), visit('c', 1920, 120)];
+    expect(observedWaitMinutes(rows, NOW)?.minutes).toBe(16);
+  });
+
   /**
    * A threshold marker's duration IS the threshold, quantised to the
    * 30-second clock — it always reads exactly 90 or 360. A median over
@@ -139,13 +156,34 @@ describe('queueTimeFor — the devices raise a wait, never lower it', () => {
     expect(got.source).toBe('observed');
   });
 
-  /** A person saying how long they stood outranks a passive sample. */
-  it('never displaces a reported wait', () => {
-    const got = queueTimeFor(
+  /**
+   * Voting comes first, and that is the whole precedence rule.
+   *
+   * A person who queued and said how long outranks any number of phones,
+   * in both directions — the devices may not raise a reported wait and
+   * may not lower one. The passive lane is consulted only where nobody
+   * has said anything.
+   */
+  it('never displaces a reported wait, even a much lower one', () => {
+    const higher = queueTimeFor(
       { status: 'long', waitMedianMinutes: 90, observedWaitMinutes: 120 },
       DAGDUSHETH
     );
-    expect(got).toEqual({ minutes: 90, source: 'reported' });
+    expect(higher).toEqual({ minutes: 90, source: 'reported' });
+
+    const lower = queueTimeFor(
+      { status: 'long', waitMedianMinutes: 20, observedWaitMinutes: 45 },
+      DAGDUSHETH
+    );
+    expect(lower).toEqual({ minutes: 20, source: 'reported' });
+  });
+
+  it('defers to a reported wait at a small mandal too', () => {
+    const got = queueTimeFor(
+      { status: 'short', waitMedianMinutes: 3, observedWaitMinutes: 11 },
+      SMALL
+    );
+    expect(got).toEqual({ minutes: 3, source: 'reported' });
   });
 
   it('still answers when there is no prior at all', () => {

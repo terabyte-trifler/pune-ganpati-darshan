@@ -156,7 +156,7 @@ export function queueTimeFor(
    * observedWaitMinutes is a lower bound rather than an estimate — the
    * sample misses anyone who closed the tab mid-queue and includes
    * everyone standing outside looking at the dekhava, so it under-reads,
-   * structurally and always. Dagdusheth measures eight minutes against a
+   * structurally and always. Dagdusheth averages nine minutes against a
    * curated peak of a hundred and fifty.
    *
    * A lower bound is still worth something: if devices stood here for

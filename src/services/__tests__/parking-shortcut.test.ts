@@ -69,19 +69,33 @@ function agreement(at: Date) {
  * closed one is the harder problem, since the detour factor pulls spots
  * past one another and the cheap ranking agrees less often. The bounds
  * below are what was measured, not a target that was aimed at.
+ *
+ * ---------------------------------------------------------------------
+ * The timeout is explicit because this test is genuinely slow.
+ *
+ * Each case solves EVERY parking spot exhaustively to compare against the
+ * shortcut, which is about 5.7 seconds of arithmetic — over vitest's 5s
+ * default. It sat just the wrong side of that line and passed only when
+ * the scheduler happened to be kind, so it went green alone and red in a
+ * full run, and the run that tipped it had nothing to do with parking.
+ *
+ * A slow test and a hung test are different things, and the timeout
+ * should say which one this is.
  */
+const EXHAUSTIVE_SOLVE_TIMEOUT_MS = 30_000;
+
 describe('the parking shortcut', () => {
   it('agrees with solving every spot, before the roads close', () => {
     const { same, total, worstPct } = agreement(istAt(11));
     console.log(`  open roads:   ${same}/${total} same, worst ${worstPct.toFixed(1)}%`);
     expect(same / total).toBeGreaterThanOrEqual(0.8);
     expect(worstPct).toBeLessThan(5);
-  });
+  }, EXHAUSTIVE_SOLVE_TIMEOUT_MS);
 
   it('stays close enough once the roads close', () => {
     const { same, total, worstPct } = agreement(istAt(20));
     console.log(`  closed roads: ${same}/${total} same, worst ${worstPct.toFixed(1)}%`);
     expect(same / total).toBeGreaterThanOrEqual(0.7);
     expect(worstPct).toBeLessThan(8);
-  });
+  }, EXHAUSTIVE_SOLVE_TIMEOUT_MS);
 });

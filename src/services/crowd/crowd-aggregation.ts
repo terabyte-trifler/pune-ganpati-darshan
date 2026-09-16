@@ -650,18 +650,18 @@ function readDevice(rows: AgedDwell[]): DeviceReading {
  * thirty-one minutes and one that measured ninety-five both end up
  * showing whatever the table says "long" means here.
  *
- * The obvious fix is to publish the median excess as the wait. The 86
+ * The obvious fix is to publish that average as the wait. The 86
  * completed visits in production say do not:
  *
  *     mandal                 n   observed   curated normal / peak
- *     Dagdusheth             8    7.9 min        45 / 150
- *     Tulshibaug            12    7.5 min        20 / 45
- *     Tambdi Jogeshwari     20    5.1 min        12 / 30
- *     Jilbya Maruti          3   12.8 min         5 / 12
+ *     Dagdusheth             8    9.0 min        45 / 150
+ *     Tulshibaug            12    9.2 min        20 / 45
+ *     Tambdi Jogeshwari     20    9.0 min        12 / 30
+ *     Hutatma Babu Genu       9   11.8 min        10 / 25
+ *     Jilbya Maruti          3    9.8 min         5 / 12
  *     Nimbalkar Talim        2   29.2 min         6 / 15
- *     Chhatrapati Rajaram    1   33.1 min        10 / 25
  *
- * Dagdusheth reads eight minutes. Its queue at peak is two and a half
+ * Dagdusheth reads nine minutes. Its queue at peak is two and a half
  * hours. Publishing that figure would send people to the busiest mandal
  * in Pune believing it was quick — the precise failure `dwellConsensus`
  * already has a veto for.
@@ -708,14 +708,31 @@ function readDevice(rows: AgedDwell[]): DeviceReading {
  * Shanipar, Mati and Jilbya Maruti — all by nine to fourteen minutes, and
  * all of them small mandals whose curated normal looks low. It never
  * touches Dagdusheth, Tulshibaug or Kesariwada.
+ *
+ * None of this outranks a person. Where anybody has said how long they
+ * actually queued, that figure is shown and this one is not consulted at
+ * all — see queueTimeFor, which takes the reported wait first and only
+ * reaches the devices when nobody has said anything.
  */
 export const MIN_DEVICES_FOR_OBSERVED_WAIT = 2;
 
-/** Median, on a copy — the caller's array is not ours to sort. */
-function medianOf(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+/**
+ * The average of what the devices measured.
+ *
+ * A mean rather than a median, which is the opposite of the choice the
+ * reported-wait lane makes — and the reason is the sample size. A median
+ * needs enough readings to have a middle worth finding; at the two and
+ * three devices this actually sees, it just picks one of them and throws
+ * the other away. The mean uses both.
+ *
+ * What a mean normally costs is exposure to an outlier, and here that is
+ * already handled twice over: `plausible` drops parked phones before any
+ * arithmetic, and the caller caps the result at the mandal's own peak. So
+ * the worst a long tail can do is push the figure up to a bound a person
+ * has already curated.
+ */
+function meanOf(values: number[]): number {
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
 export function observedWaitMinutes(
@@ -758,7 +775,7 @@ export function observedWaitMinutes(
     return Math.max(0, (x.d.dwellSeconds ?? 0) - crossing) / 60;
   });
 
-  const minutes = Math.round(medianOf(excesses));
+  const minutes = Math.round(meanOf(excesses));
   // A median that rounds to nothing is not a wait worth quoting, and as a
   // floor it could never raise anything anyway.
   return minutes > 0 ? { minutes, devices: longestPerDevice.size } : null;
