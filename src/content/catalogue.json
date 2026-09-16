@@ -91,6 +91,212 @@
   ],
   "routes": [
     {
+      "id": "faac49c9-aecc-4d67-96bb-b37840b66cd0",
+      "mode": "walk",
+      "slug": "every-mandal-from-kasba",
+      "title": "Every mandal, from Kasba",
+      "themes": [
+        "essential",
+        "manache",
+        "heritage",
+        "dekhava"
+      ],
+      "summary": "All 26 festival mandals in one walk, ordered for the least walking.",
+      "featured": true,
+      "title_mr": "सर्व मंडळे — कसब्यापासून",
+      "published": true,
+      "sort_order": 0,
+      "description": "The complete circuit: every sarvajanik mandal in the catalogue, in the order that covers them with the least walking. It starts at Kasba Ganpati — the gramdaivat and the first of the Manache Paach — runs south through Budhwar and Shukrawar Peth, crosses west through Narayan and Shaniwar, and finishes at Hira Bagh. Dagdusheth comes ninth, inside the first hour, because that is the only time its queue is 45 minutes rather than two. Budget the whole day: about 10 km of walking and four hours of darshan, and the peth lanes between the stops are half the point. Temples are deliberately left out — Sarasbaug, Trishund and Morya Gosavi are year-round temples, not festival pandals, and Morya Gosavi is 15 km away.",
+      "time_of_day": "morning",
+      "total_walk_s": null,
+      "total_darshan_s": null,
+      "total_distance_m": null,
+      "stops": [
+        {
+          "note": "Start at the gramdaivat, first of the Manache Paach and the quietest hour of the day.",
+          "position": 0,
+          "ganpati_slug": "kasba-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 1,
+          "ganpati_slug": "phani-ali-ganesh-mandir",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "One of the earliest sarvajanik mandals in the city.",
+          "position": 2,
+          "ganpati_slug": "bhau-rangari-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": null,
+          "position": 3,
+          "ganpati_slug": "balvikas-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": "Second of the Manache Paach.",
+          "position": 4,
+          "ganpati_slug": "tambdi-jogeshwari",
+          "darshan_style": "inside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": "The long one, reached early on purpose. Later in the day this queue alone can take two hours.",
+          "position": 5,
+          "ganpati_slug": "dagdusheth-halwai-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 45
+        },
+        {
+          "note": null,
+          "position": 6,
+          "ganpati_slug": "hutatma-babu-genu-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": "Beside Mahatma Phule Mandai.",
+          "position": 7,
+          "ganpati_slug": "akhil-mandai-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 12
+        },
+        {
+          "note": null,
+          "position": 8,
+          "ganpati_slug": "honaji-tarun-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Third of the Manache Paach, on Laxmi Road.",
+          "position": 9,
+          "ganpati_slug": "guruji-talim",
+          "darshan_style": "either",
+          "darshan_minutes": 8
+        },
+        {
+          "note": "Fourth of the Manache Paach, inside the market lanes.",
+          "position": 10,
+          "ganpati_slug": "tulshibaug-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 20
+        },
+        {
+          "note": null,
+          "position": 11,
+          "ganpati_slug": "jilbya-maruti-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 12,
+          "ganpati_slug": "shanipar-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": "Fifth of the Manache Paach, in Tilak's wada.",
+          "position": 13,
+          "ganpati_slug": "kesariwada-ganpati",
+          "darshan_style": "inside",
+          "darshan_minutes": 15
+        },
+        {
+          "note": null,
+          "position": 14,
+          "ganpati_slug": "mati-ganpati",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 15,
+          "ganpati_slug": "garud-ganpati-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 16,
+          "ganpati_slug": "hatti-ganpati-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 17,
+          "ganpati_slug": "chhatrapati-rajaram-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 10
+        },
+        {
+          "note": null,
+          "position": 18,
+          "ganpati_slug": "navjavan-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 19,
+          "ganpati_slug": "perugate-bhave-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 20,
+          "ganpati_slug": "chimnya-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 21,
+          "ganpati_slug": "nimbalkar-talim-mandal",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 22,
+          "ganpati_slug": "natu-baug-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": null,
+          "position": 23,
+          "ganpati_slug": "chinchechi-talim-ganpati",
+          "darshan_style": "either",
+          "darshan_minutes": 6
+        },
+        {
+          "note": null,
+          "position": 24,
+          "ganpati_slug": "seva-mitra-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        },
+        {
+          "note": "The southern end. Turn back at Perugate instead if the light has gone.",
+          "position": 25,
+          "ganpati_slug": "hira-bagh-mandal",
+          "darshan_style": "outside",
+          "darshan_minutes": 5
+        }
+      ]
+    },
+    {
       "id": "11501637-e9ee-4a57-ad72-fe6dd55156ac",
       "mode": "walk",
       "slug": "manache-5-sakal-walk",

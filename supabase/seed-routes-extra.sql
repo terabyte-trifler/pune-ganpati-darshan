@@ -116,3 +116,80 @@ update routes set total_darshan_s = sub.secs
 from (select route_id, sum(coalesce(darshan_minutes,0))*60 as secs
       from route_stops group by route_id) sub
 where routes.id = sub.route_id;
+
+-- ---------------------------------------------------------------------
+-- Every mandal, from Kasba
+--
+-- This route was created in the admin and lived only in the database for
+-- a fortnight: it was not in this seed, so it was not in the generated
+-- snapshot either, and an audit of the curated routes that read the
+-- snapshot did not see it at all. Written down here so it is in the
+-- source of truth like the rest.
+--
+-- Ordered north to south along the one-ways. It used to ask for Jilbya
+-- Maruti to Hutatma Babu Genu to Dagdusheth, which is three stops walked
+-- against the crowd: the app sent those two legs 1354 m and 1121 m round
+-- to keep them legal, for mandals 161 m and 139 m apart. Taken with the
+-- flow instead — Dagdusheth then Hutatma, Tulshibaug then Jilbya — the
+-- whole walk is 7900 m rather than 9754 m.
+--
+-- The order the notes require is kept: Kasba opens it, the Manache Paach
+-- stay in their own precedence (Kasba, Tambdi Jogeshwari, Guruji Talim,
+-- Tulshibaug, Kesari Wada), Dagdusheth is early as its note promises, and
+-- Hira Bagh is the southern end.
+-- ---------------------------------------------------------------------
+insert into routes (slug, title, title_mr, summary, description, mode, time_of_day, themes, featured, published, sort_order)
+values (
+  'every-mandal-from-kasba',
+  'Every mandal, from Kasba',
+  'सर्व मंडळे — कसब्यापासून',
+  'All 26 festival mandals in one walk, ordered for the least walking.',
+  'The complete circuit: every sarvajanik mandal in the catalogue, in the order that covers them with the least walking. It starts at Kasba Ganpati — the gramdaivat and the first of the Manache Paach — runs south through Budhwar and Shukrawar Peth, crosses west through Narayan and Shaniwar, and finishes at Hira Bagh. Dagdusheth comes ninth, inside the first hour, because that is the only time its queue is 45 minutes rather than two. Budget the whole day: about 10 km of walking and four hours of darshan, and the peth lanes between the stops are half the point. Temples are deliberately left out — Sarasbaug, Trishund and Morya Gosavi are year-round temples, not festival pandals, and Morya Gosavi is 15 km away.',
+  'walk', 'morning',
+  array['essential', 'manache', 'heritage', 'dekhava']::text[],
+  true, true, 0
+)
+on conflict (slug) do update set
+  title = excluded.title, title_mr = excluded.title_mr,
+  summary = excluded.summary, description = excluded.description,
+  mode = excluded.mode, time_of_day = excluded.time_of_day,
+  themes = excluded.themes, featured = excluded.featured,
+  sort_order = excluded.sort_order;
+
+insert into route_stops (route_id, ganpati_id, position, darshan_minutes, darshan_style, note)
+select r.id, g.id, v.pos, v.mins, v.style::darshan_style, v.note
+from (values
+  ('every-mandal-from-kasba', 'kasba-ganpati', 0, 15, 'inside', 'Start at the gramdaivat, first of the Manache Paach and the quietest hour of the day.'),
+  ('every-mandal-from-kasba', 'phani-ali-ganesh-mandir', 1, 6, 'either', null),
+  ('every-mandal-from-kasba', 'bhau-rangari-ganpati', 2, 8, 'either', 'One of the earliest sarvajanik mandals in the city.'),
+  ('every-mandal-from-kasba', 'balvikas-mandal', 3, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'tambdi-jogeshwari', 4, 12, 'inside', 'Second of the Manache Paach.'),
+  ('every-mandal-from-kasba', 'dagdusheth-halwai-ganpati', 5, 45, 'inside', 'The long one, reached early on purpose. Later in the day this queue alone can take two hours.'),
+  ('every-mandal-from-kasba', 'hutatma-babu-genu-mandal', 6, 10, 'outside', null),
+  ('every-mandal-from-kasba', 'akhil-mandai-mandal', 7, 12, 'outside', 'Beside Mahatma Phule Mandai.'),
+  ('every-mandal-from-kasba', 'honaji-tarun-mandal', 8, 6, 'outside', null),
+  ('every-mandal-from-kasba', 'guruji-talim', 9, 8, 'either', 'Third of the Manache Paach, on Laxmi Road.'),
+  ('every-mandal-from-kasba', 'tulshibaug-ganpati', 10, 20, 'inside', 'Fourth of the Manache Paach, inside the market lanes.'),
+  ('every-mandal-from-kasba', 'jilbya-maruti-mandal', 11, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'shanipar-mandal', 12, 6, 'outside', null),
+  ('every-mandal-from-kasba', 'kesariwada-ganpati', 13, 15, 'inside', 'Fifth of the Manache Paach, in Tilak''s wada.'),
+  ('every-mandal-from-kasba', 'mati-ganpati', 14, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'garud-ganpati-mandal', 15, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'hatti-ganpati-mandal', 16, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'chhatrapati-rajaram-mandal', 17, 10, 'outside', null),
+  ('every-mandal-from-kasba', 'navjavan-mandal', 18, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'perugate-bhave-mandal', 19, 6, 'outside', null),
+  ('every-mandal-from-kasba', 'chimnya-ganpati', 20, 6, 'either', null),
+  ('every-mandal-from-kasba', 'nimbalkar-talim-mandal', 21, 6, 'either', null),
+  ('every-mandal-from-kasba', 'natu-baug-mandal', 22, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'chinchechi-talim-ganpati', 23, 6, 'either', null),
+  ('every-mandal-from-kasba', 'seva-mitra-mandal', 24, 5, 'outside', null),
+  ('every-mandal-from-kasba', 'hira-bagh-mandal', 25, 5, 'outside', 'The southern end. Turn back at Perugate instead if the light has gone.')
+) as v(route_slug, mandal_slug, pos, mins, style, note)
+join routes r on r.slug = v.route_slug
+join ganpatis g on g.slug = v.mandal_slug
+on conflict (route_id, position) do update set
+  ganpati_id = excluded.ganpati_id,
+  darshan_minutes = excluded.darshan_minutes,
+  darshan_style = excluded.darshan_style,
+  note = excluded.note;
