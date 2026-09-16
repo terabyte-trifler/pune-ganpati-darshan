@@ -511,6 +511,47 @@ const DETOUR_MATCH_M = 25;
  * Empty when the lanes have nothing to say, which is nearly every leg —
  * see content/lane-detours for how the few that do were found.
  */
+/**
+ * Ways round to this stop that were found for somebody else.
+ *
+ * Every chain in lane-detours runs between two mandals, because that is
+ * what could be searched: a pair of fixed points. The first leg of a plan
+ * starts wherever the visitor is standing, and no table can hold a row for
+ * that — so those legs were the ones left walking against a lane after
+ * everything else had been fixed.
+ *
+ * But the way round is mostly a property of the DESTINATION and the side
+ * you come at it from, not of where you set out. The loop into Tulshibaug
+ * is the loop into Tulshibaug whether you started at Jilbya Maruti or at
+ * Swargate. So a leg with no chain of its own borrows the chains of legs
+ * that arrive at the same stop from roughly the same direction, and the
+ * caller tries them and keeps whichever comes back cleanest.
+ *
+ * Ordered nearest-approach first, so the most similar walk is tried first.
+ */
+export function laneDetoursInto(from: LatLng, to: LatLng): LatLng[][] {
+  const heading = bearingDeg(from, to);
+  return LANE_DETOURS
+    .filter((d) => haversine(to, d.toAt) <= DETOUR_MATCH_M)
+    .map((d) => ({ d, off: bearingDifference(heading, bearingDeg(d.fromAt, d.toAt)) }))
+    .filter((x) => x.off <= APPROACH_SIDE_DEG)
+    .sort((a, b) => a.off - b.off)
+    .map((x) => x.d.via);
+}
+
+/** How wide a fan counts as coming at a stop from the same side. */
+const APPROACH_SIDE_DEG = 60;
+
+/** How long the legal way round is, or 0 when the leg needs none. */
+export function laneDetourMetres(from: LatLng, to: LatLng): number {
+  const detour = LANE_DETOURS.find(
+    (d) =>
+      haversine(from, d.fromAt) <= DETOUR_MATCH_M &&
+      haversine(to, d.toAt) <= DETOUR_MATCH_M
+  );
+  return detour ? detour.distanceM : 0;
+}
+
 export function laneDetourVia(from: LatLng, to: LatLng): LatLng[] {
   const detour = LANE_DETOURS.find(
     (d) =>

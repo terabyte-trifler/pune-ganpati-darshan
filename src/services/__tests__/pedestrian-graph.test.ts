@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   laneWalk, walkGeometry, touchesLanes, spliceLaneLegs, laneExitsFrom,
-  laneEntriesTo, laneDetourVia,
+  laneEntriesTo, laneDetourVia, laneDetoursInto,
 } from '@/services/pedestrian-graph';
 import { LANE_DETOURS } from '@/content/lane-detours';
-import { haversine, metresToPath, type LatLng } from '@/lib/geo';
+import { haversine, metresToPath, bearingDeg, bearingDifference, type LatLng } from '@/lib/geo';
 import { legCostFactor } from '@/services/pedestrian-flow';
 import catalogue from '@/content/catalogue.json';
 
@@ -300,5 +300,57 @@ describe('sending a walk the way round', () => {
     for (const d of LANE_DETOURS) {
       expect(haversine(d.fromAt, d.toAt)).toBeGreaterThan(25 * 2);
     }
+  });
+});
+
+/**
+ * Coming at a stop from the wrong side, with no chain of your own.
+ *
+ * Reported of Akhil Mandai and Tulshibaug: you may come OUT of Tulshibaug
+ * southwards, but you cannot go in from the south. The first leg of a plan
+ * starts wherever the visitor is standing, so it can never have a row in
+ * the detour table — and those were the legs still walking against a lane
+ * once every pair between mandals had been fixed.
+ */
+describe('borrowing a way round', () => {
+  const AKHIL = at('akhil-mandai-mandal');
+
+  it('offers the chains of walks that arrive the same way', () => {
+    // Somewhere south of Tulshibaug that is not a mandal at all.
+    const south = { lat: 18.5105, lng: 73.8558 };
+    const ways = laneDetoursInto(south, TULSHIBAUG);
+    expect(ways.length).toBeGreaterThan(0);
+    for (const via of ways) expect(via.length).toBeGreaterThan(0);
+  });
+
+  it('only offers chains that arrive from the same side', () => {
+    /**
+     * The function offers candidates; it does not decide whether the leg
+     * needs one. A leg already coming down the lane from Guruji Talim is
+     * clean, and the route handler never asks about a clean leg — so what
+     * matters here is that nothing is offered from the wrong side, not
+     * that nothing is offered at all.
+     */
+    const south = { lat: 18.5105, lng: 73.8558 };
+    const heading = bearingDeg(south, TULSHIBAUG);
+    for (const via of laneDetoursInto(south, TULSHIBAUG)) {
+      const source = LANE_DETOURS.find((d) => d.via === via)!;
+      expect(
+        bearingDifference(heading, bearingDeg(source.fromAt, source.toAt))
+      ).toBeLessThanOrEqual(60);
+    }
+  });
+
+  it('offers nothing for a stop no lane feeds', () => {
+    expect(laneDetoursInto(TULSHIBAUG, AKHIL)).toEqual([]);
+  });
+
+  it('borrows only from walks arriving at the same stop', () => {
+    const south = { lat: 18.5105, lng: 73.8558 };
+    const borrowed = laneDetoursInto(south, TULSHIBAUG);
+    const intoTulshibaug = LANE_DETOURS.filter(
+      (d) => haversine(d.toAt, TULSHIBAUG) <= 25
+    ).map((d) => d.via);
+    for (const via of borrowed) expect(intoTulshibaug).toContainEqual(via);
   });
 });

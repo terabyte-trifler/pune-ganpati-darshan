@@ -6,7 +6,7 @@ import { estimateMatrix } from '@/services/route-optimizer';
 import { MAX_PLAN_STOPS } from '@/lib/plan-limits';
 import {
   walkGeometry, laneWalk, spliceLaneLegs, laneViaPoints, laneDetourVia,
-  cutAtStops,
+  laneEntriesTo, laneDetoursInto, cutAtStops,
 } from '@/services/pedestrian-graph';
 import {
   enforceOneWays, penaliseAgainstFlow, violatedLanes, laneExclusionPolygons,
@@ -305,6 +305,45 @@ export async function POST(request: Request) {
        * pushes a leg onto another, so a pass that only half-helps still
        * tells you what to bar next.
        */
+      /**
+       * Try coming in the way the crowd is fed in, before barring anything.
+       *
+       * A stop at the end of a one-way lane has one legal approach, and a
+       * leg that arrives any other way is walking up the lane. Barring the
+       * lane does not fix that — it leaves the router nowhere to go — but
+       * sending it round to the entrance does.
+       *
+       * This is the same correction the detour table applies, for legs the
+       * table has no row for. It cannot have one for every case: the table
+       * was built a pair at a time, and a pair routed on its own is not
+       * the same walk as the same pair inside a plan. Akhil Mandai to
+       * Tulshibaug on its own comes round by Guruji Talim; with Jilbya
+       * Maruti as the next stop, the router cuts up the Jilbya lane to
+       * save the corner, and walks 119 m against the crowd doing it.
+       *
+       * Kept only if it comes back cleaner, like every other attempt here.
+       */
+      const ways = [
+        ...laneEntriesTo(to).map((entry) => [entry]),
+        ...laneDetoursInto(from, to),
+      ];
+      for (const via of ways) {
+        if (best.against <= 0) break;
+        const attempt = await computeRoute(from, [to], mode, [], [[], via]);
+        if (!attempt.ok || !attempt.data.geometry) continue;
+        const against = againstMetres(attempt.data.geometry);
+        if (against < best.against) {
+          best = {
+            against,
+            leg: {
+              geometry: attempt.data.geometry,
+              distanceM: attempt.data.distanceM,
+              durationS: attempt.data.durationS,
+            },
+          };
+        }
+      }
+
       for (let pass = 0; pass < 3 && best.against > 0; pass++) {
         const source = best.leg?.geometry ?? legGeometry[k];
         const before = barred.size;

@@ -1,8 +1,9 @@
 import { PEDESTRIAN_ONE_WAYS } from '@/content/diversions';
 import { LANE_AGAINST_PAIRS } from '@/content/lane-against';
+import { LANE_LEG_METRES } from '@/content/lane-leg-metres';
 import {
   laneWalk, touchesLanes, flowBearingAt, stepAgainstFlow, laneOpposing,
-  laneExitsFrom,
+  laneExitsFrom, laneDetourMetres,
   FLOW_CORRIDOR_M,
 } from '@/services/pedestrian-graph';
 import {
@@ -291,6 +292,83 @@ const AGAINST_METRE_WEIGHT = 4;
  * this app's own pipeline, so a pair with no entry is one that came back
  * clean — not one that was never asked.
  */
+/**
+ * What this leg really costs, as a multiple of its straight line.
+ *
+ * The matrix a plan is ordered from comes from a router's table, and no
+ * router knows the lanes — so it prices the walk it would draw without
+ * them, which in the peths is a different and shorter walk than the one
+ * this app draws. See content/lane-leg-metres: the distances there were
+ * measured off this app's own routes.
+ *
+ * Returns 1 where there is nothing to correct, which is every leg outside
+ * the peths and most inside them.
+ */
+function measuredWalkFactor(from: LatLng, to: LatLng): number {
+  const straight = haversine(from, to);
+  if (straight <= 0) return 1;
+
+  const leg = LANE_LEG_METRES.find(
+    (l) =>
+      haversine(from, l.fromAt) <= PAIR_MATCH_M &&
+      haversine(to, l.toAt) <= PAIR_MATCH_M
+  );
+  // Measured, however it came out: that is the answer, and a pair that
+  // walks close to its straight line is a pair with nothing to correct.
+  if (leg) return Math.max(1, leg.walkM / straight);
+
+  // Not measured, because it starts where no mandal stands — the first
+  // leg of a plan, from wherever the visitor is.
+  return (straight + approachPenaltyM(from, to)) / straight;
+}
+
+/**
+ * How wide a fan counts as coming at a stop from the same side.
+ *
+ * Generous, because what is being asked is only which way round a stop the
+ * walk arrives — the north-west approach to Tulshibaug is down the lane
+ * from Guruji Talim and costs nothing, and everything else has to go round
+ * to it.
+ */
+const APPROACH_SIDE_DEG = 60;
+
+/**
+ * The extra metres a walk pays to reach this stop from this side.
+ *
+ * The measured table only covers mandal pairs, and the first leg of every
+ * plan starts wherever the visitor is standing. Leaving that leg at its
+ * straight-line estimate while every other leg is corrected does not merely
+ * lose a little accuracy — it biases the whole order, because the solver
+ * can reach an awkward stop cheaply from the uncorrected origin and then
+ * pays the real price getting away from it. That is precisely the walk
+ * reported: up to Tulshibaug first, then back down for the mandals it
+ * passed on the way.
+ *
+ * So the correction is generalised from the legs that WERE measured. The
+ * detour round to a stop's entrance is a property of the stop and the side
+ * you come at it from, much more than of how far away you started —
+ * Tulshibaug costs about the same loop round to Guruji Talim whether you
+ * are coming from Jilbya Maruti or from Swargate. Hence extra METRES, from
+ * the measured legs arriving on the same side, and the median of them so
+ * one unusual line cannot set the price.
+ */
+function approachPenaltyM(from: LatLng, to: LatLng): number {
+  const heading = bearingDeg(from, to);
+  const extras: number[] = [];
+
+  for (const leg of LANE_LEG_METRES) {
+    if (haversine(to, leg.toAt) > PAIR_MATCH_M) continue;
+    const side = bearingDeg(leg.fromAt, leg.toAt);
+    if (bearingDifference(heading, side) > APPROACH_SIDE_DEG) continue;
+    const straight = haversine(leg.fromAt, leg.toAt);
+    if (straight > 0) extras.push(Math.max(0, leg.walkM - straight));
+  }
+
+  if (extras.length === 0) return 0;
+  extras.sort((a, b) => a - b);
+  return extras[Math.floor(extras.length / 2)];
+}
+
 function measuredAgainstM(from: LatLng, to: LatLng): number {
   const pair = LANE_AGAINST_PAIRS.find(
     (p) =>
@@ -326,10 +404,20 @@ export function legCostFactor(from: LatLng, to: LatLng, mode: TravelMode): numbe
   // Whichever rule has more to say. The corridor catches a leg that runs
   // straight up a lane; the graph catches one that never touches a lane
   // but has to go round on them.
+  /**
+   * A leg with a searched way round is priced by that walk, not by the
+   * line the router drew through the lane. This is the same correction as
+   * entryCostFactor and a better one where it applies, because the chain
+   * was routed rather than reasoned about.
+   */
+  const detourM = laneDetourMetres(from, to);
+
   return Math.max(
     1 + share * AGAINST_METRE_WEIGHT,
     legAgainstFlow(from, to) ? AGAINST_FLOW_FACTOR : 1,
-    graphCostFactor(from, to)
+    graphCostFactor(from, to),
+    measuredWalkFactor(from, to),
+    detourM && straight > 0 ? detourM / straight : 1
   );
 }
 

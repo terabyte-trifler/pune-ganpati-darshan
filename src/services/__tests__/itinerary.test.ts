@@ -339,7 +339,27 @@ describe('asking for Dagdusheth by name', () => {
       origin: { lat: 18.5308, lng: 73.8478 },
       mandals: localGanpatis,
     });
-    for (const s of plan.stops) expect(s.ganpati.category).toBe('historic');
+    expect(plan.stops.length).toBeGreaterThan(0);
+    for (const s of plan.stops) {
+      expect(s.ganpati.slug).not.toBe(DAGDUSHETH_SLUG);
+      /**
+       * Matching the interest, not carrying one category.
+       *
+       * This asked every stop to be category 'historic', which was always
+       * stricter than the rule it was guarding: a mandal matches an
+       * interest by its TAGS as well, and Tambdi Jogeshwari is maanache by
+       * category and 'heritage' by tag. It only passed because the stops
+       * that fitted a ninety-minute budget happened to be the ones whose
+       * category said historic too, and a change in what those legs cost
+       * to walk was enough to bring in a mandal that had always qualified.
+       */
+      const tags = ['historic', 'heritage', 'early-mandal', 'talim', 'tilak'];
+      expect(
+        s.ganpati.category === 'historic' ||
+          tags.some((t) => s.ganpati.tags.includes(t)),
+        `${s.ganpati.slug} does not match the historic interest at all`
+      ).toBe(true);
+    }
   });
 });
 
