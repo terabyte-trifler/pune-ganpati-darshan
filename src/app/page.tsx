@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Search, Route as RouteIcon, ChevronRight, CircleParking, Ban } from 'lucide-react';
+import {
+  Search, Route as RouteIcon, ChevronRight, CircleParking, Ban,
+  Camera, ExternalLink,
+} from 'lucide-react';
 import {
   getAllGanpatis, getAreas, getFestivalConfig, getManachePaach,
 } from '@/services/ganpati';
@@ -15,6 +18,7 @@ import { WaitPrompt } from '@/features/crowd/WaitPrompt';
 import { Button } from '@/components/ui/Button';
 import { PARKING } from '@/content/parking';
 import { ROAD_CLOSURES } from '@/content/diversions';
+import { PHOTOWALK, photowalkIsUpcoming } from '@/content/photowalk';
 
 /**
  * The homepage was the one page on the site with no canonical.
@@ -253,6 +257,53 @@ export default async function HomePage() {
           <ChevronRight size={16} aria-hidden="true" className="shrink-0 text-[var(--faint)]" />
         </Link>
       </section>
+
+      {/* ---------------- Photowalk ----------------
+
+          A dated event, so it is the one section on this page that takes
+          itself down: photowalkIsUpcoming stops rendering it on the 20th
+          rather than leaving an advert for a walk that has happened.
+
+          Everything here is pwip.in's to change — the time is still to be
+          announced there — so the card states only what is published and
+          sends people to the listing to register, rather than holding a
+          copy of the details that can quietly go stale. */}
+      {photowalkIsUpcoming() && (
+        <section className="mt-7 px-4">
+          <a
+            href={PHOTOWALK.registerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4 transition-colors hover:border-[#8E7CB0]/50"
+          >
+            <span
+              aria-hidden="true"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#8E7CB0]/40"
+            >
+              <Camera size={19} className="text-[#8E7CB0]" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold text-[var(--chandan)]">
+                {PHOTOWALK.title}
+              </span>
+              <span className="mt-0.5 block text-[12.5px] leading-relaxed text-[var(--muted)]">
+                {PHOTOWALK.dateLabel} · meet at {PHOTOWALK.meetingPoint}.{' '}
+                {PHOTOWALK.blurb}
+              </span>
+              <span className="mt-1 block text-[11.5px] leading-relaxed text-[var(--faint)]">
+                {PHOTOWALK.time ?? 'Time to be announced'}
+                <br />
+                {PHOTOWALK.cost}
+              </span>
+              <span className="mt-1.5 flex items-center gap-1 text-[11.5px] font-medium text-[#8E7CB0]">
+                Register on pwip.in
+                <ExternalLink size={11} aria-hidden="true" />
+              </span>
+            </span>
+            <ChevronRight size={16} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--faint)]" />
+          </a>
+        </section>
+      )}
 
       {/* ---------------- Manache Paach ---------------- */}
       <section className="mt-10">
