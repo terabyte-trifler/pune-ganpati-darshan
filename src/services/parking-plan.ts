@@ -196,6 +196,15 @@ export interface ParkingChoice {
 export const PARKING_ALTERNATES = 3;
 
 /**
+ * How many parking spots are costed properly, out of twenty-three.
+ *
+ * Chosen by measurement, not by feel — parking-shortcut.test sweeps this
+ * against solving every spot and reports both how often the answer
+ * changes and how much worse the journey gets when it does.
+ */
+export const SOLVE_CANDIDATES = 6;
+
+/**
  * Beyond this, a fallback is a different plan rather than a second try.
  *
  * A rider standing at a full parking will walk or roll a few hundred
@@ -229,7 +238,14 @@ export function chooseParking(
   mandals: { location: LatLng }[],
   candidates: ParkingSpot[] = PARKING,
   /** When the ride happens. Decides whether the closures are in force. */
-  at: Date = new Date()
+  at: Date = new Date(),
+  /**
+   * How many of the cheaply-ranked spots to cost for real.
+   *
+   * Exposed so the trade can be measured rather than argued about — see
+   * parking-shortcut.test, which sweeps it against solving all of them.
+   */
+  candidatesToSolve: number = SOLVE_CANDIDATES
 ): ParkingChoice | null {
   if (mandals.length === 0 || candidates.length === 0) return null;
 
@@ -264,7 +280,7 @@ export function chooseParking(
    * for real. Verified against the exhaustive answer rather than assumed —
    * see the test.
    */
-  const SOLVE_CANDIDATES = 6;
+  const solveCandidates = candidatesToSolve;
 
   const priced = candidates.map((spot) => {
     const point: LatLng = { lat: spot.lat, lng: spot.lng };
@@ -322,7 +338,7 @@ export function chooseParking(
     };
   };
 
-  for (const entry of priced.slice(0, SOLVE_CANDIDATES)) solve(entry);
+  for (const entry of priced.slice(0, solveCandidates)) solve(entry);
 
   /**
    * The fallbacks are costed too, or their walk would be a guess.
@@ -334,9 +350,30 @@ export function chooseParking(
   if (best) {
     const chosenPoint: LatLng = { lat: best!.spot.lat, lng: best!.spot.lng };
     const solved = new Set(scored.map((s) => s.spot.no));
-    for (const entry of priced) {
+    /**
+     * Every spot inside the radius, not just the three the card shows.
+     *
+     * Trimming to the nearest three before solving was tried and measured:
+     * it saves a median of four solves, and it makes the plan WORSE,
+     * because this pass does not only fill the fallback list — solve()
+     * also promotes a better winner when it finds one, so the spots near
+     * the provisional choice are getting a second look here. Cutting the
+     * list first took the worst-case journey from 1.9% longer than
+     * solving all twenty-three to 3.3%, to save about 25 ms of work that
+     * is deferred and off the interaction path anyway.
+     *
+     * Recovering that quality by raising SOLVE_CANDIDATES instead costs
+     * more than it saves: nine candidates matches the exhaustive answer
+     * in all 64 measured cases, and takes 275 ms against this 185 ms.
+     * See parking-shortcut.test for the numbers.
+     */
+    const nearest = priced
+      .filter((e) => e.spot.no !== best!.spot.no)
+      .map((e) => ({ entry: e, metres: haversine(chosenPoint, e.point) }))
+      .filter((e) => e.metres <= ALTERNATE_MAX_METRES);
+
+    for (const { entry } of nearest) {
       if (solved.has(entry.spot.no)) continue;
-      if (haversine(chosenPoint, entry.point) > ALTERNATE_MAX_METRES) continue;
       solve(entry);
     }
   }
