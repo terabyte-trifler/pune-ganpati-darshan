@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import type { CrowdDisplay } from './crowd-display';
 import { CROWD_COLOR } from './CrowdBadge';
 import type { CrowdLevel } from '@/types/crowd';
 
@@ -74,5 +75,38 @@ export function QueueTime({
         </span>
       )}
     </span>
+  );
+}
+
+/**
+ * The same thing, for a caller that already holds a CrowdDisplay.
+ *
+ * Saves every such surface unpacking the two fields itself and getting
+ * the null cases subtly different from its neighbours.
+ */
+export function QueueTimeFor({
+  display,
+  className,
+  size = 'sm',
+  suffix = true,
+}: {
+  display: CrowdDisplay | null;
+  className?: string;
+  size?: 'sm' | 'md';
+  suffix?: boolean;
+}) {
+  if (!display) return null;
+  return (
+    <QueueTime
+      level={display.level}
+      wait={
+        display.estimatedWaitMinutes != null && display.waitSource
+          ? { minutes: display.estimatedWaitMinutes, source: display.waitSource }
+          : null
+      }
+      className={className}
+      size={size}
+      suffix={suffix}
+    />
   );
 }

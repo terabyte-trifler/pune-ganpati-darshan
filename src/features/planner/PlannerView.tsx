@@ -18,7 +18,7 @@ import { StartWizard } from './StartWizard';
 import { useTravelMode } from './travel-mode-store';
 import { StartRouteButton } from './StartRouteButton';
 import { MiniMap } from '@/features/map/MiniMapLoader';
-import { CrowdBadge } from '@/features/crowd/CrowdBadge';
+import { CrowdBadgeWithWait } from '@/features/crowd/CrowdBadge';
 import { useCrowdState } from '@/features/crowd/useCrowd';
 import { dwellMinutes, type DarshanPace } from '@/services/itinerary';
 import {
@@ -903,7 +903,7 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
                   {stop.name}
                 </Link>
                 <p className="truncate text-[12px] text-[var(--faint)]">{stop.area.name}</p>
-                <CrowdBadge mandalId={stop.id} prior={stop} className="mt-1" />
+                <CrowdBadgeWithWait mandalId={stop.id} prior={stop} className="mt-1" />
               </div>
             </li>
           ))}
@@ -979,7 +979,7 @@ function StopRow({
             <> · <span className="text-[var(--zendu)]">{formatDuration(legDurationS)} leg</span></>
           )}
         </p>
-        <CrowdBadge mandalId={stop.id} prior={stop} className="mt-1" />
+        <CrowdBadgeWithWait mandalId={stop.id} prior={stop} className="mt-1" />
       </div>
 
       <button

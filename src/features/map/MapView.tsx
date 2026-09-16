@@ -8,6 +8,7 @@ import { BottomSheet, type Detent } from './BottomSheet';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 import { CrowdBadgeView } from '@/features/crowd/CrowdBadge';
+import { QueueTimeFor } from '@/features/crowd/QueueTime';
 import { CrowdReportButtons } from '@/features/crowd/CrowdReportButtons';
 import { MapUnavailable } from './MapUnavailable';
 import { MapErrorBoundary } from './MapErrorBoundary';
@@ -242,6 +243,10 @@ export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[
                 {/* Renders nothing until someone has reported, so silence
                     never reads as a calm queue. */}
                 <CrowdBadgeView display={displays[selected.ganpati.id] ?? null} />
+                {/* How long, beside how busy. The sheet is where somebody
+                    decides whether to walk to this one, and the level on
+                    its own leaves the next question unanswered. */}
+                <QueueTimeFor display={displays[selected.ganpati.id] ?? null} />
                 <Link
                   href={`/ganpati/${selected.ganpati.slug}`}
                   className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-[var(--shendur)]"
