@@ -220,6 +220,42 @@ body {
   backdrop-filter: blur(8px);
   box-shadow: var(--shadow-float);
 }
+/*
+ * The card naming a mandal when its pin is tapped.
+ *
+ * MapLibre's own popup is a white bubble with a white tip, which on these
+ * night-coloured maps reads as a hole punched in the page. Both surfaces
+ * have to be restyled: the tip is a separate element and keeps its own
+ * border colour, so skipping it leaves a white arrow under a dark card.
+ */
+.mandal-name-popup .maplibregl-popup-content {
+  background: rgb(20 16 12 / 0.94);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 8px 11px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-float);
+}
+/*
+ * The tip needs the extra class to win.
+ *
+ * MapLibre colours it per anchor — `.maplibregl-popup-anchor-bottom
+ * .maplibregl-popup-tip` and seven siblings — so a single-class override
+ * ties on specificity and loses on order, which left a white arrow hanging
+ * under a dark card. Matching the popup element itself as well outranks
+ * all eight without reaching for !important.
+ */
+.mandal-name-popup.maplibregl-popup .maplibregl-popup-tip {
+  border-top-color: rgb(20 16 12 / 0.94);
+  border-bottom-color: rgb(20 16 12 / 0.94);
+  border-left-color: rgb(20 16 12 / 0.94);
+  border-right-color: rgb(20 16 12 / 0.94);
+}
+/* Never let the card swallow a tap meant for the pin underneath it. */
+.mandal-name-popup {
+  pointer-events: none;
+}
+
 /* MapLibre's icons are dark SVGs meant for a light control; invert them. */
 .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
   filter: invert(1) brightness(0.9);

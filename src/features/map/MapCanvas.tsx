@@ -9,6 +9,7 @@ import {
   type MapMouseEvent,
   type ErrorEvent,
   type ExpressionSpecification,
+  type Popup,
 } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { DARK_MAP_STYLE } from '@/lib/maps/map-style';
@@ -21,6 +22,7 @@ import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
+import { openNamePopup } from '@/lib/maps/name-popup';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdPinKey } from '@/features/crowd/crowd-display';
 
@@ -279,6 +281,18 @@ export function MapCanvas({
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { onReadyRef.current = onReady; }, [onReady]);
 
+  /**
+   * The name of the pin that was tapped, on the map, at the pin.
+   *
+   * The sheet below lists every mandal in view and highlights the chosen
+   * one — but that is a different place from the pin, and below the fold at
+   * the smaller detents, so tapping a mark could leave the question of
+   * which mandal it was unanswered on screen. See lib/maps/name-popup.
+   */
+  const popupRef = useRef<Popup | null>(null);
+  const ganpatisRef = useRef(ganpatis);
+  useEffect(() => { ganpatisRef.current = ganpatis; }, [ganpatis]);
+
   /* ---------------- Create the map once ---------------- */
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -523,13 +537,19 @@ export function MapCanvas({
 
       map.on('click', 'mandals', (e: MapMouseEvent & { features?: GeoJSON.Feature[] }) => {
         const slug = e.features?.[0]?.properties?.slug;
-        if (typeof slug === 'string') onSelectRef.current(slug);
+        if (typeof slug !== 'string') return;
+        const mandal = ganpatisRef.current.find((g) => g.slug === slug);
+        if (mandal) popupRef.current = openNamePopup(map, mandal, popupRef.current);
+        onSelectRef.current(slug);
       });
 
-      // Tapping empty map clears the selection.
+      // Tapping empty map clears the selection, and the name with it.
       map.on('click', (e: MapMouseEvent) => {
         const hits = map.queryRenderedFeatures(e.point, { layers: ['mandals', 'clusters'] });
-        if (hits.length === 0) onSelectRef.current(null);
+        if (hits.length > 0) return;
+        popupRef.current?.remove();
+        popupRef.current = null;
+        onSelectRef.current(null);
       });
 
       for (const layer of ['mandals', 'clusters']) {
@@ -571,6 +591,8 @@ export function MapCanvas({
 
     return () => {
       observer.disconnect();
+      popupRef.current?.remove();
+      popupRef.current = null;
       map.remove();
       mapRef.current = null;
     };

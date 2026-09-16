@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Map as MapLibreMap,
   Marker,
+  type Popup,
   AttributionControl,
   NavigationControl,
   type GeoJSONSource,
@@ -19,6 +20,7 @@ import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
+import { openNamePopup } from '@/lib/maps/name-popup';
 import { walkGeometry } from '@/services/pedestrian-graph';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
@@ -133,6 +135,37 @@ export function MiniMap({
 
   const onSelectRef = useRef(onSelect);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
+
+  /**
+   * The name of whatever was last tapped.
+   *
+   * Every map in the app draws mandals as marks, and a mark on its own says
+   * where but not which. On the full map that was answered by the sheet
+   * sliding up; on these embedded ones it was answered nowhere, or only in
+   * a list somewhere below the figure — so on a mandal's own page, on
+   * /parking and on a shared plan, tapping a pin did nothing at all.
+   *
+   * One popup, reused. Two pins cannot be open at once, and letting them
+   * would put a name over the mark it does not belong to.
+   */
+  const popupRef = useRef<Popup | null>(null);
+  // Read inside handlers that are bound once, so they see the current list.
+  const mandalsRef = useRef(mandals);
+  useEffect(() => { mandalsRef.current = mandals; }, [mandals]);
+
+  /**
+   * Name the mandal on the map, at the mandal.
+   *
+   * Anchored to the pin rather than shown in a corner, because on a map
+   * carrying a dozen marks a name that is not attached to one of them
+   * raises the question it was meant to answer.
+   *
+   * Stable: it touches only refs, so the handlers bound once during setup
+   * keep working after the mandals prop changes.
+   */
+  const showName = useCallback((map: MapLibreMap, mandal: Ganpati) => {
+    popupRef.current = openNamePopup(map, mandal, popupRef.current);
+  }, []);
 
   /**
    * Live crowd, from the same shared store every other surface reads. No
@@ -309,11 +342,24 @@ export function MiniMap({
         });
         map.on('click', 'mandal-pins', (e: MapMouseEvent & { features?: GeoJSON.Feature[] }) => {
           const slug = e.features?.[0]?.properties?.slug;
-          if (typeof slug === 'string') onSelectRef.current?.(slug);
+          if (typeof slug !== 'string') return;
+          const mandal = mandalsRef.current.find((m) => m.slug === slug);
+          if (mandal) showName(map, mandal);
+          onSelectRef.current?.(slug);
         });
         map.on('mouseenter', 'mandal-pins', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'mandal-pins', () => { map.getCanvas().style.cursor = ''; });
       }
+
+      // A tap that hit no pin puts the name away again.
+      map.on('click', (e: MapMouseEvent) => {
+        const onPin = map.getLayer('mandal-pins')
+          ? map.queryRenderedFeatures(e.point, { layers: ['mandal-pins'] }).length > 0
+          : false;
+        if (onPin) return;
+        popupRef.current?.remove();
+        popupRef.current = null;
+      });
 
       if (framed.length > 1) {
         map.fitBounds([[b.west, b.south], [b.east, b.north]], {
@@ -334,6 +380,8 @@ export function MiniMap({
       observer.disconnect();
       numberedRef.current.forEach((m) => m.remove());
       numberedRef.current = [];
+      popupRef.current?.remove();
+      popupRef.current = null;
       map.remove();
       mapRef.current = null;
     };
@@ -413,7 +461,13 @@ export function MiniMap({
       ].join(';');
       el.appendChild(order);
 
-      el.addEventListener('click', () => onSelectRef.current?.(mandal.slug));
+      el.addEventListener('click', (event) => {
+        // Otherwise the same tap reaches the map and reads as one that hit
+        // no pin, which closes the card it has just opened.
+        event.stopPropagation();
+        showName(map, mandal);
+        onSelectRef.current?.(mandal.slug);
+      });
 
       return new Marker({ element: el })
         .setLngLat([mandal.location.lng, mandal.location.lat])
