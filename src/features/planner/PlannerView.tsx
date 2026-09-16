@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
@@ -210,12 +210,53 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
    * a real position: guessing the rider is at the city centre would send
    * them to a parking chosen for somebody else.
    */
+  /**
+   * Anchored to a coarse grid, not to the exact fix.
+   *
+   * The position publishes again every time the rider moves twelve metres,
+   * and this used to depend on the whole geolocation object — so choosing
+   * the parking, the most expensive thing on this screen, ran again for
+   * every one of them. Twelve metres cannot change which of twenty-three
+   * car parks across the city is the right one: it moves the ride estimate
+   * by about two seconds.
+   *
+   * Roughly a hundred metres, which is about half a minute of riding and
+   * well inside the accuracy of a straight-line ride estimate. The choice
+   * still follows the rider in, just once per block rather than once per
+   * doorway.
+   */
+  const anchor = useMemo(() => {
+    if (geo.status !== 'ready') return null;
+    const grid = 0.001; // ~111 m of latitude
+    return {
+      lat: Math.round(geo.position.lat / grid) * grid,
+      lng: Math.round(geo.position.lng / grid) * grid,
+    };
+  }, [geo]);
+
+  /**
+   * Deferred, so choosing the parking can never sit in front of a tap.
+   *
+   * It is down to 185 ms at twenty-five stops from 694, and it runs once
+   * per block rather than once per fix — but it still runs during render,
+   * and a rider who taps a mandal while it is working would wait for it.
+   * Deferring lets React keep the interaction responsive and recompute the
+   * parking behind it; the card is a few frames late, which nobody can
+   * see, instead of the whole screen being a few hundred milliseconds
+   * late, which everybody can.
+   */
+  const deferred = useDeferredValue(anchor);
+  const anchorLat = deferred?.lat ?? null;
+  const anchorLng = deferred?.lng ?? null;
+
   const parking = useMemo(() => {
-    if (mode !== 'two_wheeler' || geo.status !== 'ready' || stops.length === 0) {
+    if (mode !== 'two_wheeler' || anchorLat === null || anchorLng === null || stops.length === 0) {
       return null;
     }
-    return chooseParking(geo.position, stops);
-  }, [mode, geo, stops]);
+    return chooseParking({ lat: anchorLat, lng: anchorLng }, stops);
+    // Deliberately the rounded pair rather than `anchor`, whose identity
+    // changes with every fix even when the numbers do not.
+  }, [mode, anchorLat, anchorLng, stops]);
 
   const origin: LatLng = useMemo(
     () =>
