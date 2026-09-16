@@ -680,6 +680,37 @@ export function PlannerView({ ganpatis }: { ganpatis: Ganpati[] }) {
         </div>
       )}
 
+      {/*
+        Two-wheeler mode waits for a position, and used to show nothing
+        while it waited.
+
+        Walking renders the moment the page does, because it falls back to
+        the city centre for an origin. Two-wheeler cannot: which of
+        twenty-three car parks is right depends on where the rider is, and
+        a guess sends them to somebody else's parking. So the card simply
+        was not there until a fix arrived — which is why picking
+        two-wheeler from the start feels slow while switching to it from
+        walking feels instant. It is the same wait; by the time you have
+        been looking at a walking plan, the fix has already landed.
+
+        The wait is now visible and explained rather than blank, which is
+        the only honest thing to show: the answer genuinely is not known
+        yet, and pretending otherwise would put a rider on the wrong side
+        of the city.
+      */}
+      {mode === 'two_wheeler' && !parking && stops.length > 0 && geo.status !== 'denied' && (
+        <div
+          className="surface mt-4 rounded-[var(--radius-card)] border border-[var(--line)] p-4"
+          aria-live="polite"
+        >
+          <p className="text-[13px] text-[var(--muted)]">
+            {geo.status === 'ready'
+              ? 'Working out where to leave the vehicle…'
+              : 'Finding you, to work out where to leave the vehicle. The ride and the walk appear here.'}
+          </p>
+        </div>
+      )}
+
       {/* The ride to the parking, which is the first leg of the plan. */}
       {parking && (
         <div className="mt-4">

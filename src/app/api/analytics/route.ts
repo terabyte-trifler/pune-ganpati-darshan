@@ -78,6 +78,11 @@ const EVENT_NAMES = [
   'map_opened', 'ganpati_viewed', 'search_performed', 'search_no_results',
   'directions_clicked', 'favorite_added', 'favorite_removed', 'plan_created',
   'plan_started', 'plan_optimized', 'share_clicked', 'location_enabled',
+  // How long a fix took and how good it was, in buckets. The client has
+  // been sending these since the timing was instrumented and this list
+  // has been rejecting every one of them, so the question "is locating
+  // people slow, and for whom" had a measurement that reached nobody.
+  'location_fix',
 ] as const;
 
 const bodySchema = z.object({
