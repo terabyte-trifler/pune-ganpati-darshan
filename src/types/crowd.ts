@@ -70,6 +70,14 @@ export interface CrowdStatus {
   waitMedianMinutes: number | null;
   /** How many wait reports that median came from. */
   waitReportCount: number;
+  /**
+   * Median minutes the dwell devices measured here, or null.
+   *
+   * A LOWER BOUND, never an estimate — see observedWaitMinutes in
+   * crowd-aggregation for why the production data forces that reading.
+   * It may raise a modelled wait and may never lower one.
+   */
+  observedWaitMinutes: number | null;
   /** ISO timestamp of the most recent active report, or null. */
   lastUpdated: string | null;
   trend: CrowdTrend;

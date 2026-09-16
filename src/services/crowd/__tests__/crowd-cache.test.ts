@@ -18,6 +18,7 @@ const status = (mandalId: string): CrowdStatus => ({
   confidence: 'medium',
   waitMedianMinutes: null,
   waitReportCount: 0,
+  observedWaitMinutes: null,
   lastUpdated: new Date().toISOString(),
   trend: 'stable',
 });

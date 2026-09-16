@@ -6,6 +6,7 @@ import type { CrowdStatus } from '@/types/crowd';
 const st = (o: Partial<CrowdStatus>): CrowdStatus => ({
   mandalId: 'm', status: null, label: '', detail: '', reportCount: 0,
   source: 'reported', confidence: 'low', waitMedianMinutes: null, waitReportCount: 0,
+  observedWaitMinutes: null,
   lastUpdated: null, trend: 'unknown', ...o,
 });
 const prior = crowdExpectation(

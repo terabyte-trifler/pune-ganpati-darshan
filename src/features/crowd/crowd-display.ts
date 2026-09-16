@@ -1,4 +1,6 @@
-import { crowdExpectation, waitForLevel, type PriorInput } from '@/services/crowd/crowd-prior';
+import {
+  crowdExpectation, waitForLevel, waitBounds, type PriorInput,
+} from '@/services/crowd/crowd-prior';
 import type { FestivalPhase } from '@/lib/festival';
 import type { CrowdLevel, CrowdStatus } from '@/types/crowd';
 
@@ -89,7 +91,7 @@ export interface CrowdDisplay {
    * waited. 'modelled' is this mandal's own darshan bounds read against
    * the level — a figure, not a measurement. Null when there is no wait.
    */
-  waitSource: 'reported' | 'modelled' | null;
+  waitSource: 'reported' | 'observed' | 'modelled' | null;
   /** Newest report, ISO. Null for an estimate — there is no report. */
   lastUpdated: string | null;
   pinKey: CrowdPinKey;
@@ -133,14 +135,55 @@ export const ESTIMATED_LABEL: Record<CrowdLevel, string> = {
  * figure, not a measurement, and marked so the wording can hedge it.
  */
 export function queueTimeFor(
-  status: { status: CrowdLevel | null; waitMedianMinutes: number | null } | null,
+  status: {
+    status: CrowdLevel | null;
+    waitMedianMinutes: number | null;
+    observedWaitMinutes?: number | null;
+  } | null,
   prior: PriorInput | null | undefined
-): { minutes: number; source: 'reported' | 'modelled' } | null {
+): { minutes: number; source: 'reported' | 'observed' | 'modelled' } | null {
   if (!status?.status) return null;
   if (status.waitMedianMinutes != null && status.waitMedianMinutes > 0) {
     return { minutes: status.waitMedianMinutes, source: 'reported' };
   }
+
   const modelled = prior ? waitForLevel(prior, status.status) : null;
+  const observed = status.observedWaitMinutes ?? null;
+
+  /**
+   * The devices raise the model's figure; they never lower it.
+   *
+   * observedWaitMinutes is a lower bound rather than an estimate — the
+   * sample misses anyone who closed the tab mid-queue and includes
+   * everyone standing outside looking at the dekhava, so it under-reads,
+   * structurally and always. Dagdusheth measures eight minutes against a
+   * curated peak of a hundred and fifty.
+   *
+   * A lower bound is still worth something: if devices stood here for
+   * thirty-three minutes, the queue was at least thirty-three minutes,
+   * whatever the table says. So it wins only where it is HIGHER, and
+   * where it wins it is labelled as measured rather than modelled.
+   */
+  /**
+   * Capped at this mandal's own peak, because two devices is the floor.
+   *
+   * The device floor is two — see MIN_DEVICES_FOR_OBSERVED_WAIT, which
+   * explains why the data forces it that low. Two phones are enough to
+   * establish that a queue was longer than the model thinks; they are not
+   * enough to claim it was longer than this mandal has ever been known to
+   * run. Jilbya Maruti measures fourteen minutes against a curated peak of
+   * twelve, and the honest reading of that is "at least its peak", not
+   * "a new record set by two phones".
+   *
+   * Rows above the cap are still in the table, which is where a peak that
+   * is genuinely too low should be re-curated from — by a person.
+   */
+  const ceiling = prior ? waitBounds(prior).peak : null;
+  const floor = ceiling != null ? Math.min(observed ?? 0, ceiling) : observed;
+
+  if (floor != null && floor > 0 && (!modelled || floor > modelled.minutes)) {
+    return { minutes: floor, source: 'observed' };
+  }
   return modelled ? { minutes: modelled.minutes, source: 'modelled' } : null;
 }
 

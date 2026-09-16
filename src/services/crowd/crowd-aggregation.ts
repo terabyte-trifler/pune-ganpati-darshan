@@ -636,6 +636,135 @@ function readDevice(rows: AgedDwell[]): DeviceReading {
 }
 
 /**
+ * How many minutes the devices actually measured, or null.
+ *
+ * ---------------------------------------------------------------------
+ * This may only RAISE a wait, never lower one, and that is not caution —
+ * it is what the production data says.
+ *
+ * `readDevice` already computes a per-device excess: seconds in the zone
+ * less the time it takes to walk across it. That number is a real
+ * measurement, and the app throws it away — it is collapsed into one of
+ * three levels by `levelForWaitMinutes` and the minutes a visitor sees
+ * are then read back out of `waitBounds`. So a device that measured
+ * thirty-one minutes and one that measured ninety-five both end up
+ * showing whatever the table says "long" means here.
+ *
+ * The obvious fix is to publish the median excess as the wait. The 86
+ * completed visits in production say do not:
+ *
+ *     mandal                 n   observed   curated normal / peak
+ *     Dagdusheth             8    7.9 min        45 / 150
+ *     Tulshibaug            12    7.5 min        20 / 45
+ *     Tambdi Jogeshwari     20    5.1 min        12 / 30
+ *     Jilbya Maruti          3   12.8 min         5 / 12
+ *     Nimbalkar Talim        2   29.2 min         6 / 15
+ *     Chhatrapati Rajaram    1   33.1 min        10 / 25
+ *
+ * Dagdusheth reads eight minutes. Its queue at peak is two and a half
+ * hours. Publishing that figure would send people to the busiest mandal
+ * in Pune believing it was quick — the precise failure `dwellConsensus`
+ * already has a veto for.
+ *
+ * The bias has two causes and both point one way. A final row is only
+ * written if the page is still open when the device leaves, and the
+ * longest queues are exactly where somebody gives up and closes the tab.
+ * And the zone is a circle round the mandal, so everyone photographing
+ * the dekhava from the road outside is in the sample while the queue
+ * itself may run beyond the radius.
+ *
+ * Under-measurement that is structural rather than random is still
+ * useful: it makes this a LOWER BOUND. A device that stood thirty-three
+ * minutes proves the queue was at least that long, whatever the table
+ * says. So the figure is used as a floor on the modelled number and can
+ * never pull one down — the same rule `pedestrian-flow` applies to its
+ * measured walking legs, for the same reason.
+ *
+ * On today's data that fires at three mandals, all small ones whose
+ * curated peak looks too low. It never touches Dagdusheth.
+ */
+
+/**
+ * Distinct devices before a measured wait may be quoted.
+ *
+ * Two, which is low, and the number was measured rather than chosen.
+ *
+ * Three was the first setting, on the reasoning that a NUMBER OF MINUTES
+ * is a stronger claim than a colour and should not rest on the same
+ * evidence as MIN_DWELL_DEVICES_FOR_STATUS. Against the festival's own
+ * data that made this dead code: across every mandal and every 90-minute
+ * window to date, the most devices ever completing a visit at one mandal
+ * is four, at Tambdi Jogeshwari, and everywhere else it is one or two. At
+ * three the floor never once fired.
+ *
+ * What makes two defensible here and not elsewhere is the direction of
+ * the error. This can only RAISE a wait, so the worst it can do is
+ * overstate a queue — and `dwellConsensus` has already settled which way
+ * that cuts: a pessimistic passive signal costs somebody a walk to
+ * another mandal, an optimistic one sends them into a two-hour queue on
+ * the app's word. A floor cannot make the second mistake.
+ *
+ * At two it raises four mandals on the real data — Tambdi Jogeshwari,
+ * Shanipar, Mati and Jilbya Maruti — all by nine to fourteen minutes, and
+ * all of them small mandals whose curated normal looks low. It never
+ * touches Dagdusheth, Tulshibaug or Kesariwada.
+ */
+export const MIN_DEVICES_FOR_OBSERVED_WAIT = 2;
+
+/** Median, on a copy — the caller's array is not ours to sort. */
+function medianOf(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+export function observedWaitMinutes(
+  samples: DwellInput[],
+  nowMs: number
+): { minutes: number; devices: number } | null {
+  const fresh = samples
+    .map((d) => ({ d, ageMinutes: (nowMs - Date.parse(d.createdAt)) / 60_000 }))
+    .filter((x) => Number.isFinite(x.ageMinutes) && x.ageMinutes >= 0 && x.ageMinutes <= ACTIVE_WINDOW_MINUTES)
+    // Attributable rows only — the same rule dwellConsensus applies. An
+    // unkeyed row cannot be counted as a device, and this is a claim
+    // about how many devices measured it.
+    .filter((x) => typeof x.d.deviceKey === 'string' && x.d.deviceKey.length > 0)
+    // Parked phones out before anything is measured.
+    .filter(plausible)
+    /**
+     * Completed visits only.
+     *
+     * A threshold marker's duration is the threshold, quantised to the
+     * 30-second clock — it always reads exactly 90 or 360 seconds. Taking
+     * a median over those would be measuring the constants in this file
+     * rather than any queue.
+     */
+    .filter((x) => x.d.isFinal === true && typeof x.d.dwellSeconds === 'number');
+
+  // One reading per device, the longest completed visit it recorded, so
+  // a single phone cannot weight the median by reporting twice.
+  const longestPerDevice = new Map<string, AgedDwell>();
+  for (const x of fresh) {
+    const key = x.d.deviceKey as string;
+    const held = longestPerDevice.get(key);
+    if (!held || (x.d.dwellSeconds ?? 0) > (held.d.dwellSeconds ?? 0)) {
+      longestPerDevice.set(key, x);
+    }
+  }
+  if (longestPerDevice.size < MIN_DEVICES_FOR_OBSERVED_WAIT) return null;
+
+  const excesses = [...longestPerDevice.values()].map((x) => {
+    const crossing = x.d.crossingSeconds ?? 0;
+    return Math.max(0, (x.d.dwellSeconds ?? 0) - crossing) / 60;
+  });
+
+  const minutes = Math.round(medianOf(excesses));
+  // A median that rounds to nothing is not a wait worth quoting, and as a
+  // floor it could never raise anything anyway.
+  return minutes > 0 ? { minutes, devices: longestPerDevice.size } : null;
+}
+
+/**
  * What the dwell devices agree on, or null.
  *
  * Returns a level only when enough independent devices have been seen and
@@ -828,6 +957,15 @@ export function aggregateMandal(
   /** Reported wait times, from people who queued here. */
   waitSamples: WaitInput[] = []
 ): CrowdStatus {
+  /**
+   * Computed once, for every branch below.
+   *
+   * It is deliberately independent of which lane decided the level: a
+   * measured floor is true whether the colour came from reports, from the
+   * devices, or from nobody at all.
+   */
+  const observedWait = observedWaitMinutes(dwellSamples, nowMs);
+
   const aged = reports
     .map((r) => ({
       status: r.status,
@@ -878,6 +1016,7 @@ export function aggregateMandal(
         confidence: 'low',
         waitMedianMinutes: null,
         waitReportCount: 0,
+        observedWaitMinutes: observedWait?.minutes ?? null,
         // When the devices were seen, not when anyone reported.
         lastUpdated: consensus.newestAt,
         trend: 'unknown',
@@ -895,6 +1034,7 @@ export function aggregateMandal(
       confidence: 'low',
       waitMedianMinutes: null,
       waitReportCount: 0,
+      observedWaitMinutes: observedWait?.minutes ?? null,
       lastUpdated: null,
       trend: 'unknown',
     };
@@ -1004,6 +1144,7 @@ export function aggregateMandal(
       confidence: 'low',
       waitMedianMinutes: breakdown.waitMedianMinutes,
       waitReportCount: breakdown.waits.length,
+      observedWaitMinutes: observedWait?.minutes ?? null,
       lastUpdated,
       trend: 'unknown',
     };
@@ -1021,6 +1162,7 @@ export function aggregateMandal(
     confidence: confidenceFrom(humanMass, agreement),
     waitMedianMinutes: breakdown.waitMedianMinutes,
     waitReportCount: breakdown.waits.length,
+    observedWaitMinutes: observedWait?.minutes ?? null,
     lastUpdated,
     trend: trendFrom(aged),
   };

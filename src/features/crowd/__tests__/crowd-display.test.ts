@@ -38,6 +38,7 @@ const reported = (level: 'short' | 'moving' | 'long'): CrowdStatus => ({
   confidence: 'medium',
   waitMedianMinutes: null,
   waitReportCount: 0,
+  observedWaitMinutes: null,
   lastUpdated: '2026-09-18T15:30:00.000Z',
   trend: 'stable',
 });

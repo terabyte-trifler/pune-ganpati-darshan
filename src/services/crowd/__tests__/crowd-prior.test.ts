@@ -254,10 +254,16 @@ describe('the prior holds no weight in the measured lane', () => {
 
     // The CrowdStatus interface specifically must carry no expectation
     // field — the snapshot may carry other lanes, a status may not.
-    const iface = src.slice(
-      src.indexOf('export interface CrowdStatus'),
-      src.indexOf('}', src.indexOf('export interface CrowdStatus'))
-    );
+    // Field names, not prose: observedWaitMinutes has to say where its
+    // number comes from to be readable, and naming a lane in a comment is
+    // not the same as carrying it as a field.
+    const iface = src
+      .slice(
+        src.indexOf('export interface CrowdStatus'),
+        src.indexOf('}', src.indexOf('export interface CrowdStatus'))
+      )
+      .replace(/\/\*\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/[^\n]*/g, '');
     expect(iface).not.toMatch(/expect|prior|dwell/i);
   });
 });

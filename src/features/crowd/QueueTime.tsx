@@ -17,6 +17,13 @@ import type { CrowdLevel } from '@/types/crowd';
  *
  *   reported   the median of what people standing there actually waited.
  *              A measurement. Stated plainly.
+ *   observed   the median the dwell devices measured. Also a measurement,
+ *              but a one-sided one — it misses anybody who closed the tab
+ *              mid-queue and counts everybody admiring the dekhava from
+ *              outside, so it under-reads by construction. It is shown
+ *              only where it exceeds the modelled figure, and it is
+ *              phrased "at least", which is the true claim: devices stood
+ *              here this long, so the queue was at least this long.
  *   modelled   this mandal's own darshan bounds read against the level
  *              people are reporting. A figure, not a measurement, so it
  *              is hedged with "about" and never given a false precision.
@@ -34,7 +41,7 @@ export function QueueTime({
   suffix = true,
 }: {
   level: CrowdLevel | null;
-  wait: { minutes: number; source: 'reported' | 'modelled' } | null;
+  wait: { minutes: number; source: 'reported' | 'observed' | 'modelled' } | null;
   className?: string;
   size?: 'sm' | 'md';
   /**
@@ -51,6 +58,7 @@ export function QueueTime({
   if (!level || !wait || wait.minutes <= 0) return null;
   const { minutes } = wait;
   const reported = wait.source === 'reported';
+  const observed = wait.source === 'observed';
   return (
     <span
       className={cn(
@@ -62,16 +70,21 @@ export function QueueTime({
       title={
         reported
           ? 'The middle of what people here have said they waited'
-          : 'Worked out from this mandal’s own darshan time and how busy people say it is — not a measured wait'
+          : observed
+            ? 'Measured from phones that stood here — the queue was at least this long, and may be longer'
+            : 'Worked out from this mandal’s own darshan time and how busy people say it is — not a measured wait'
       }
     >
-      {/* "about" carries the whole difference between a measured wait and
-          a worked-out one, and it is the word people already use for it. */}
-      {reported ? '' : 'about '}
+      {/* Three different claims, three different words. Nothing for a
+          reported wait, which is simply what people said they stood.
+          "at least" for the devices, which under-read by construction and
+          so can only ever establish a floor. "about" for the model, which
+          is a worked-out figure and not a measurement at all. */}
+      {reported ? '' : observed ? 'at least ' : 'about '}
       {minutes} min
       {suffix && (
         <span className="font-normal text-[var(--faint)]">
-          {reported ? 'reported wait' : 'in the queue'}
+          {reported ? 'reported wait' : observed ? 'measured here' : 'in the queue'}
         </span>
       )}
     </span>
