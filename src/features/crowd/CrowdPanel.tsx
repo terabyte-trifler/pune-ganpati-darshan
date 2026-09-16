@@ -317,16 +317,13 @@ export function CrowdPanel({
         <div className="mt-4 border-t border-[var(--line)] pt-4">
           <CrowdReportButtons mandalId={mandalId} location={mandalLocation} />
 
-          {/* Gated like the colour buttons, but at a wider radius.
-              This was deliberately ungated — the reasoning being that a
-              wait is given after the fact, on the walk to the next mandal
-              or on the bus home, so refusing somebody who had moved on
-              would throw away the best report in the app. What that
-              missed is that it also accepted one from somebody who was
-              never there, and minutes outrank every other signal on the
-              mandal. 1.5 km keeps the walk away and drops the armchair. */}
+          {/* Asked without a location gate, unlike the colour buttons.
+              A wait time is given after the fact, often on the walk to the
+              next mandal or on the bus home, and refusing it because the
+              person has already moved on would throw away the best report
+              in the app. The cooldown stops it being repeated. */}
           <div className="mt-4 border-t border-[var(--line)] pt-4">
-            <WaitReportButtons mandalId={mandalId} location={mandalLocation} />
+            <WaitReportButtons mandalId={mandalId} />
           </div>
         </div>
       )}

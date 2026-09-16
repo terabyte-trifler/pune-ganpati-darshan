@@ -76,7 +76,6 @@ export function WaitPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
       <div className="mt-3">
         <WaitReportButtons
           mandalId={pending.mandalId}
-          location={mandal.location}
           compact
           onDone={() => clearWaitPrompt(pending.mandalId)}
         />
