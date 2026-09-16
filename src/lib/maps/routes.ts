@@ -345,15 +345,26 @@ async function computeRouteValhalla(
     return Array.from({ length: MAX_VIA_PER_LEG }, (_, i) => via[Math.round(i * step)]);
   });
 
-  // Still too many: give up the via points rather than the request. An
-  // ordering that respects the lanes with a plain line beats no pedestrian
-  // route at all.
-  let budget = MAX_LOCATIONS - points.length;
-  const fitted = thinned.map((via) => {
-    const take = Math.max(0, Math.min(via.length, budget));
-    budget -= take;
-    return via.slice(0, take);
-  });
+  /**
+   * No global budget. The request is split, so the limit is per chunk.
+   *
+   * This used to hand out MAX_LOCATIONS minus the number of stops, which
+   * made sense when a route was one request and ten locations was the
+   * whole allowance. It has not been one request since chunking arrived —
+   * and on any route with ten stops or more the subtraction goes negative,
+   * so every leg was allowed zero via points and the lanes were silently
+   * switched off on exactly the long walks that need them most. The Great
+   * Peth Circuit has twelve stops; Every Mandal From Kasba has
+   * twenty-six, and was walking Jilbya Maruti to Hutatma Babu Genu to
+   * Dagdusheth straight up the one-way because the waypoints that send it
+   * round were dropped before the request was even built.
+   *
+   * A leg is at most two via points, so a stop, its via points and the
+   * next stop come to four locations — inside the limit on their own. The
+   * chunker below cuts at stops and never in the middle of a leg, so
+   * every chunk it produces fits.
+   */
+  const fitted = thinned;
 
   /**
    * Stops are rounded to about eleven metres; through-points are not.
