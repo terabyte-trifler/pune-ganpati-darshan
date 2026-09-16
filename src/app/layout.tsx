@@ -11,6 +11,7 @@ import { SiteFooter } from '@/components/SiteFooter';
 import { FestivalConfigProvider } from '@/features/crowd/FestivalPhaseProvider';
 import { getAllGanpatis, getFestivalConfig } from '@/services/ganpati';
 import { DwellSignal } from '@/features/crowd/DwellSignal';
+import { LocationWarmup } from '@/components/LocationWarmup';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -180,6 +181,10 @@ export default async function RootLayout({
               }))}
             />
           )}
+          {/* Starts locating on load where permission is already granted,
+              so a screen that needs a position is not the first to ask.
+              Prompts nobody — see LocationWarmup. */}
+          <LocationWarmup />
         </FestivalConfigProvider>
         <ServiceWorkerRegistration />
       </body>
