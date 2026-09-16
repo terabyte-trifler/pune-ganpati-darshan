@@ -58,31 +58,21 @@ export default async function HomePage() {
   /**
    * Everything under "Good for right now" has to be good right now.
    *
-   * The rail led with the time-appropriate routes and then padded itself
-   * with whatever else was featured, so it was never short — but a route
-   * marked for the morning is not good at one in the afternoon, and the
-   * heading above it said it was. The evening dekhava trail sat there at
-   * 9am, which is the very thing the note on this section says must not
-   * happen.
+   * This led with the routes suited to the hour and then padded itself
+   * with whatever else was featured, so it was never short — but the
+   * heading says "Good for right now" and the line under it says "suited
+   * to the time of day", and a walk marked for the morning is neither at
+   * one in the afternoon. The note on this section already said an
+   * evening dekhava trail is useless at 9am; the padding put it there.
    *
-   * Padding with the routes marked for ANY hour keeps the rail full and
-   * keeps the heading true: those are good right now by definition.
-   * Every slot has at least two of its own and there are five marked for
-   * any hour, so six is always reachable without borrowing from a
-   * different time of day.
-   *
-   * Featured first among the padding, since that is what featured is for.
+   * routesForNow now answers with both the routes for this hour and the
+   * ones marked for any hour, in editorial order, which fills the rail
+   * without the padding and without the claim being false. Every slot has
+   * at least two of its own and five are marked for any hour, so six is
+   * always reachable.
    */
   const nowRoutes = routesForNow(routes);
-  const nowSlugs = new Set(nowRoutes.map((r) => r.slug));
-  const anyTime = routes.filter(
-    (r) => r.timeOfDay === 'any' && !nowSlugs.has(r.slug)
-  );
-  const leadRoutes = [
-    ...nowRoutes,
-    ...anyTime.filter((r) => r.featured),
-    ...anyTime.filter((r) => !r.featured),
-  ].slice(0, 6);
+  const leadRoutes = nowRoutes.slice(0, 6);
   const coreAreas = areas.filter((a) => a.isCore);
 
   return (

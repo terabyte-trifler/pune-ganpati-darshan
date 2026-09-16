@@ -31,9 +31,25 @@ describe('routes for the time of day', () => {
     for (const [hour, slot] of SLOTS) {
       const picked = routesForNow(localRoutes, atIst(hour));
       expect(picked.length, `nothing at ${hour}:00 IST`).toBeGreaterThan(0);
-      for (const r of picked) {
-        expect(r.timeOfDay, `${r.slug} offered at ${hour}:00 IST`).toBe(slot);
+      // The slot's own routes are offered at its hour and at no other.
+      const ownAt = (h: number) =>
+        routesForNow(localRoutes, atIst(h)).filter((r) => r.timeOfDay === slot);
+      expect(ownAt(hour).length, `no ${slot} route at ${hour}:00 IST`).toBeGreaterThan(0);
+      for (const [other] of SLOTS.filter(([h]) => h !== hour)) {
+        expect(ownAt(other), `${slot} routes offered at ${other}:00 IST`).toEqual([]);
       }
+    }
+  });
+
+  /**
+   * The route the owner asked to keep on top. It leads at every hour,
+   * which is a property of the route — marked for any hour, first in
+   * editorial order — and not of a rail that pins one card by name.
+   */
+  it('leads with the pinned route at every hour of the day', () => {
+    for (const hour of [0, 7, 13, 18, 22, 23]) {
+      const first = routesForNow(localRoutes, atIst(hour))[0];
+      expect(first?.slug, `at ${hour}:00 IST`).toBe('dagdusheth-and-manache-paach');
     }
   });
 
@@ -68,5 +84,13 @@ describe('routes for the time of day', () => {
     const atNight = routesForNow(onlyMorning, atIst(22));
     expect(atNight.length).toBeGreaterThan(0);
     for (const r of atNight) expect(r.timeOfDay).toBe('any');
+  });
+
+  it('keeps the rail in editorial order, not clock order', () => {
+    // localRoutes arrives in sort_order; the picks must be a subsequence
+    // of it, so what leads is the editorial decision and not the clock.
+    const index = new Map(localRoutes.map((r, i) => [r.slug, i]));
+    const picked = routesForNow(localRoutes, atIst(13)).map((r) => index.get(r.slug)!);
+    expect([...picked].sort((a, b) => a - b)).toEqual(picked);
   });
 });

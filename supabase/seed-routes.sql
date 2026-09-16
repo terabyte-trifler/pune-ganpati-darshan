@@ -52,13 +52,13 @@ values
    'Manache 5 Sakal Walk', 'मानाचे पाच — सकाळ दर्शन',
    'All five Manache Paach in ceremonial order, on foot, before the peths fill up.',
    'The five mandals with ceremonial precedence, walked in the order the procession follows. Starting early matters more here than anywhere else: the same walk after 10am takes roughly twice as long.',
-   'walk', 'morning', array['manache','heritage','essential'], true, 1),
+   'walk', 'morning', array['manache','heritage','essential'], true, 2),
 
   ('dagdusheth-and-around',
    'Dagdusheth & the Budhwar Peth core', 'दगडूशेठ आणि बुधवार पेठ',
    'Pune''s best-known Ganpati plus the mandals within a few minutes'' walk of it.',
    'Built around the longest queue in the city. Dagdusheth alone can take the better part of an hour at peak, so the surrounding stops are deliberately short ones you can fold in either side of it.',
-   'walk', 'morning', array['famous','essential'], true, 2),
+   'walk', 'morning', array['famous','essential'], true, 3),
 
   ('evening-dekhava-trail',
    'Evening dekhava trail', 'संध्याकाळचा देखावा',

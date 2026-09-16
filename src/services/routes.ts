@@ -187,8 +187,23 @@ export function routesForNow(routes: CuratedRoute[], now = new Date()): CuratedR
   const slot: TimeOfDay =
     hour < 11 ? 'morning' : hour < 16 ? 'afternoon' : hour < 20 ? 'evening' : 'night';
 
-  const matching = routes.filter((r) => r.timeOfDay === slot);
-  return matching.length > 0 ? matching : routes.filter((r) => r.timeOfDay === 'any');
+  /**
+   * Suited to this hour, or suited to any of them.
+   *
+   * A route marked for any hour IS good right now — that is what the mark
+   * means — so it belongs in this list rather than being padding the
+   * caller bolts on afterwards. Keeping it out was also the only reason a
+   * route could not be put at the top of the rail all day: it would have
+   * had to claim a time of day it does not have.
+   *
+   * `routes` arrives in sort_order, so that is the order this keeps, and
+   * editorial priority decides what leads rather than an accident of
+   * which slot the clock is in.
+   */
+  const matching = routes.filter(
+    (r) => r.timeOfDay === slot || r.timeOfDay === 'any'
+  );
+  return matching.length > 0 ? matching : routes;
 }
 
 export async function getRoutesWithMandals() {

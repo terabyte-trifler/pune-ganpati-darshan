@@ -147,7 +147,7 @@ values (
   'The complete circuit: every sarvajanik mandal in the catalogue, in the order that covers them with the least walking. It starts at Kasba Ganpati — the gramdaivat and the first of the Manache Paach — runs south through Budhwar and Shukrawar Peth, crosses west through Narayan and Shaniwar, and finishes at Hira Bagh. Dagdusheth comes ninth, inside the first hour, because that is the only time its queue is 45 minutes rather than two. Budget the whole day: about 10 km of walking and four hours of darshan, and the peth lanes between the stops are half the point. Temples are deliberately left out — Sarasbaug, Trishund and Morya Gosavi are year-round temples, not festival pandals, and Morya Gosavi is 15 km away.',
   'walk', 'morning',
   array['essential', 'manache', 'heritage', 'dekhava']::text[],
-  true, true, 0
+  true, true, 17
 )
 on conflict (slug) do update set
   title = excluded.title, title_mr = excluded.title_mr,
@@ -217,9 +217,9 @@ values (
   'Six mandals and about 2.3 km on foot: the five Manache Paach in the order they hold by right — Kasba, Tambdi Jogeshwari, Guruji Talim, Tulshibaug, Kesari Wada — with Shrimant Dagdusheth Halwai taken between the second and the third, which is where it falls on the walk and where the lanes allow it.
 
 Dagdusheth is the long wait of the six and the reason to start early; the other five are quick by comparison. The walking itself is short, so the day is mostly queueing and darshan rather than distance.',
-  'walk', 'morning',
+  'walk', 'any',
   array['essential', 'manache', 'famous']::text[],
-  6900, true, true, 3
+  6900, true, true, 1
 )
 on conflict (slug) do update set
   title = excluded.title, title_mr = excluded.title_mr,
