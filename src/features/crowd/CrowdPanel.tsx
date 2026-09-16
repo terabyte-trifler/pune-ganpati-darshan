@@ -153,6 +153,12 @@ export function CrowdPanel({
             {status?.label}
           </p>
 
+          {/* No queue time here. This panel already answers it below, in
+              "People waited about ...", with a caveat this line could not
+              carry — that the figure is what devotees reported and not a
+              measured queue. Two statements of the same number, one of
+              them less careful than the other, is worse than one. */}
+
           {/* No count, by the owner's decision: visitors are never told how
               many people reported. The confidence wording already carries
               how solid the reading is — and it accounts for agreement as

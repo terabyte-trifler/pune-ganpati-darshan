@@ -265,6 +265,44 @@ export function waitBounds(m: PriorInput): {
   };
 }
 
+/**
+ * How long the queue is when people have told us how busy it is.
+ *
+ * The clock model answers "how long is it usually, at this hour, on this
+ * day". This answers a different question — "how long is it NOW, given
+ * that people standing there are calling it short, moving or heavy" — and
+ * it is the one a visitor actually has, because reports outrank the model
+ * everywhere else in the app.
+ *
+ * It uses the same per-mandal bounds the model does, so the answer is
+ * specific to the mandal rather than a number applied to all of them. A
+ * heavy queue at Dagdusheth and a heavy queue at a lane mandal are both
+ * heavy and are not both ninety minutes: the first is measured in hours
+ * and the second in minutes, and waitBounds is where that difference
+ * already lives.
+ *
+ * The three levels are read against the same scale the clock model
+ * sweeps: quiet is the floor it never goes below, normal is the mandal's
+ * own ordinary darshan, peak is its worst. So "short" means near the
+ * floor, "moving" means an ordinary queue, "heavy" means its peak.
+ *
+ * Returns null where the app has no basis for a number, rather than
+ * inventing one: a mandal with no curated darshan time gets an estimate
+ * from a fallback, and stating a wait to the minute off a fallback would
+ * dress a guess as a measurement.
+ */
+export function waitForLevel(
+  mandal: PriorInput,
+  level: CrowdLevel
+): { minutes: number; basis: PriorBasis } | null {
+  const { peak, normal, basis } = waitBounds(mandal);
+  const quiet = normal * QUIET_FRACTION;
+  const minutes =
+    level === 'short' ? quiet : level === 'moving' ? normal : peak;
+  if (!Number.isFinite(minutes) || minutes <= 0) return null;
+  return { minutes: roundWait(minutes), basis };
+}
+
 export function levelForWait(minutes: number): CrowdLevel {
   if (minutes >= LONG_THRESHOLD_MIN) return 'long';
   if (minutes >= SHORT_THRESHOLD_MIN) return 'moving';
@@ -278,7 +316,7 @@ const LABEL: Record<CrowdLevel, string> = {
 };
 
 /** Rounded to the nearest five, because the model is not precise to one. */
-function roundWait(minutes: number): number {
+export function roundWait(minutes: number): number {
   return Math.max(1, Math.round(minutes / 5) * 5);
 }
 

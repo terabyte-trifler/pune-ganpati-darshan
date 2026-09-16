@@ -44,23 +44,40 @@ const reported = (level: 'short' | 'moving' | 'long'): CrowdStatus => ({
 
 describe('a report always wins', () => {
   it('never lets the prior speak where there is a reading', () => {
-    // 21:00 on day 8 at Dagdusheth: the prior would say heavy. People say
-    // short. The people win, and no trace of the estimate survives.
+    /**
+     * 21:00 on day 8 at Dagdusheth: the prior would call it heavy, people
+     * say short, and the people win. What the prior must not do is
+     * describe the CROWD — the level, the label and the pin are all the
+     * report's, and nothing here is 'Usually heavy'.
+     *
+     * The wait is a separate question. This asked for null, on the
+     * grounds that no trace of the estimate should survive; the effect
+     * was that the app stopped saying how long the queue was at the
+     * moment it knew most about it. It now says how long, from this
+     * mandal's own darshan bounds read against the reported level — and
+     * marks it 'modelled', so nothing claims to be a measurement. Where
+     * people have reported an actual wait, that median is used instead
+     * and marked 'reported'.
+     */
     const display = crowdDisplayFor(
       reported('short'),
       DAGDUSHETH,
       during(8),
       ist('2026-09-21', 21)
     );
-    expect(display).toEqual({
+    expect(display).toMatchObject({
       level: 'short',
       label: 'Short',
       source: 'reported',
       estimated: false,
-      estimatedWaitMinutes: null,
       lastUpdated: '2026-09-18T15:30:00.000Z',
       pinKey: 'short',
+      waitSource: 'modelled',
     });
+    // Short at Dagdusheth is Dagdusheth's floor, not a number that would
+    // be used for a lane mandal.
+    expect(display!.estimatedWaitMinutes).toBeGreaterThan(0);
+    expect(display!.estimatedWaitMinutes).toBeLessThan(DAGDUSHETH.peakDarshanMinutes!);
   });
 
   it('uses the aggregation\'s own wording, never a prefixed one', () => {

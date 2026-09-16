@@ -9,6 +9,7 @@ import { rankTrackerRows, type Rankable } from './tracker-rows';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { haversine, formatDistance } from '@/lib/geo';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
+import { QueueTime } from './QueueTime';
 import { NearbyReportPrompt } from './NearbyReportPrompt';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
@@ -100,6 +101,8 @@ const MAX_ROWS = 3;
 interface Ranked extends Rankable {
   g: Ganpati;
   label: string;
+  /** How long the queue is, and whether that is measured or worked out. */
+  wait: { minutes: number; source: 'reported' | 'modelled' } | null;
   /** When this mandal was last reported — NOT when the snapshot was built. */
   lastUpdated: string | null;
 }
@@ -165,6 +168,10 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
           level: display.level,
           label: display.label,
           source: display.source,
+          wait:
+            display.estimatedWaitMinutes != null && display.waitSource
+              ? { minutes: display.estimatedWaitMinutes, source: display.waitSource }
+              : null,
           distanceM: position
             ? haversine(position, { lat: g.location.lat, lng: g.location.lng })
             : null,
@@ -310,7 +317,7 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
               : 'Reported right now'}
         </p>
             <ul className="mt-1.5 divide-y divide-[var(--line)]">
-              {rows.map(({ g, level, label, source, distanceM, lastUpdated }) => {
+              {rows.map(({ g, level, label, source, wait, distanceM, lastUpdated }) => {
                 // Each mandal's OWN freshness. A reading can be 80 minutes
                 // old inside a snapshot computed a second ago, so this is
                 // the only honest place to put a time.
@@ -376,11 +383,19 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
                           )}
                         </span>
                       </span>
-                      <span
-                        className="shrink-0 text-[13px] font-semibold"
-                        style={{ color: CROWD_COLOR[level] }}
-                      >
-                        {label}
+                      {/* The level answers "should I go"; the wait answers
+                          "how long will I stand there", which is the one
+                          that decides whether it fits the evening. Both in
+                          the level's colour, so the row reads as one
+                          judgement rather than two. */}
+                      <span className="flex shrink-0 flex-col items-end gap-0.5">
+                        <span
+                          className="text-[13px] font-semibold"
+                          style={{ color: CROWD_COLOR[level] }}
+                        >
+                          {label}
+                        </span>
+                        <QueueTime level={level} wait={wait} size="sm" />
                       </span>
                     </Link>
                   </li>

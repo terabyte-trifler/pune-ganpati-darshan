@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { MapPin } from 'lucide-react';
 import { CategoryBadge, TempleBadge } from '@/components/ui/Badge';
-import { CrowdBadge } from '@/features/crowd/CrowdBadge';
+import { CrowdBadgeWithWait } from '@/features/crowd/CrowdBadge';
 import { GanpatiImage } from '@/components/ui/GanpatiImage';
 import { formatDistance } from '@/lib/geo';
 import { cn } from '@/lib/utils';
@@ -71,7 +71,7 @@ export function GanpatiCard({
             Filled when people have reported, hollow and "Estimated" when
             the hour-of-day model is the only thing speaking, absent when
             neither has anything to say. */}
-        <CrowdBadge mandalId={ganpati.id} prior={ganpati} className="self-start" />
+        <CrowdBadgeWithWait mandalId={ganpati.id} prior={ganpati} className="self-start" />
         {ganpati.nameMr && (
           <p lang="mr" className="clamp-2 text-[12px] leading-tight text-[var(--muted)]">
             {ganpati.nameMr}

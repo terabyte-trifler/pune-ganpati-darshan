@@ -2,6 +2,7 @@
 
 import { useCrowdDisplayFor } from './useCrowdDisplay';
 import type { CrowdDisplay } from './crowd-display';
+import { QueueTime } from './QueueTime';
 import { cn } from '@/lib/utils';
 import type { PriorInput } from '@/services/crowd/crowd-prior';
 import type { CrowdLevel } from '@/types/crowd';
@@ -146,6 +147,42 @@ export function CrowdBadgeView({
  * has reported, and one that does not shows nothing there, exactly as
  * before. Anywhere a mandal's catalogue entry is to hand, pass it.
  */
+/**
+ * The badge with the wait beside it, for a card that has room for both.
+ *
+ * The badge itself stays as it was — on a map pin its job is triage at a
+ * glance and a second number costs more there than it pays. A card in a
+ * list is different: somebody is choosing between mandals, and "heavy"
+ * without "90 min" leaves them the one question the app can answer.
+ */
+export function CrowdBadgeWithWait({
+  mandalId,
+  prior,
+  className,
+}: {
+  mandalId: string;
+  prior?: PriorInput;
+  className?: string;
+}) {
+  const display = useCrowdDisplayFor(mandalId, prior);
+  if (!display) return null;
+  return (
+    <span className={cn('flex flex-wrap items-center gap-x-2 gap-y-1', className)}>
+      <CrowdBadgeView display={display} />
+      <QueueTime
+        level={display.level}
+        wait={
+          display.estimatedWaitMinutes != null && display.waitSource
+            ? { minutes: display.estimatedWaitMinutes, source: display.waitSource }
+            : null
+        }
+        size="sm"
+        suffix={false}
+      />
+    </span>
+  );
+}
+
 export function CrowdBadge({
   mandalId,
   prior,
