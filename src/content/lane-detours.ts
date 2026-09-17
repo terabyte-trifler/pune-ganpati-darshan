@@ -28,9 +28,17 @@ import type { LatLng } from '@/lib/geo';
  * Shortest matters. Taking the first clean chain instead sent Hutatma
  * Babu Genu to Tulshibaug the long way round, 1433 m where 666 m does it.
  *
- * 169 of the 202 pairs have a way round. The other 33 have none
- * that this search could find, and stay as they are — the ordering
- * already prices them so a plan avoids the pair altogether.
+ * 181 of 181 pairs have a way round. Every one of them does.
+ *
+ * The last twelve took a second pass, and what found them was changing
+ * the candidates rather than searching harder. The first sweep offered
+ * the router lane entries, closure junctions and mandals; the second
+ * offered the 19 waypoints that were ALREADY WORKING for the other pairs
+ * in this file. All twelve cleared immediately, at 0 m against and 1.1x
+ * to 1.4x straight-line — tighter than the median detour here, which is
+ * 1.5x. A junction that gets one walk legally round the peth tends to be
+ * the junction that gets the next one round too, and that is a cheaper
+ * thing to try than a deeper chain.
  *
  * Regenerate with scripts/emit-lane-detours.mjs after lane-against.ts.
  * ---------------------------------------------------------------------
@@ -267,11 +275,21 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.5086, lng: 73.8555 },
     via: [{ lat: 18.513445, lng: 73.855866 }],
     distanceM: 875 },
+  // 1303 m the legal way round
+  { from: 'dagdusheth-halwai-ganpati', to: 'garud-ganpati-mandal',
+    fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.5137, lng: 73.8456 },
+    via: [{ lat: 18.514532, lng: 73.853743 }],
+    distanceM: 1303 },
   //  944 m the legal way round
   { from: 'dagdusheth-halwai-ganpati', to: 'guruji-talim',
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.514997, lng: 73.854992 },
     via: [{ lat: 18.515619, lng: 73.859274 }],
     distanceM: 944 },
+  // 1404 m the legal way round
+  { from: 'dagdusheth-halwai-ganpati', to: 'hatti-ganpati-mandal',
+    fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.511223, lng: 73.845858 },
+    via: [{ lat: 18.512619, lng: 73.852601 }],
+    distanceM: 1404 },
   //  349 m the legal way round
   { from: 'dagdusheth-halwai-ganpati', to: 'jilbya-maruti-mandal',
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.513319, lng: 73.854938 },
@@ -287,6 +305,11 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.515811, lng: 73.849008 },
     via: [{ lat: 18.513445, lng: 73.855866 }],
     distanceM: 1305 },
+  // 1185 m the legal way round
+  { from: 'dagdusheth-halwai-ganpati', to: 'mati-ganpati',
+    fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.5159, lng: 73.8468 },
+    via: [{ lat: 18.515811, lng: 73.849008 }],
+    distanceM: 1185 },
   //  757 m the legal way round
   { from: 'dagdusheth-halwai-ganpati', to: 'natu-baug-mandal',
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.510703, lng: 73.853821 },
@@ -312,6 +335,11 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.5188, lng: 73.8571 },
     via: [{ lat: 18.515619, lng: 73.859274 }],
     distanceM: 1004 },
+  // 1938 m the legal way round
+  { from: 'dagdusheth-halwai-ganpati', to: 'sarasbaug-ganpati',
+    fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.500881, lng: 73.85295 },
+    via: [{ lat: 18.513271, lng: 73.853891 }],
+    distanceM: 1938 },
   //  620 m the legal way round
   { from: 'dagdusheth-halwai-ganpati', to: 'shanipar-mandal',
     fromAt: { lat: 18.51514, lng: 73.856379 }, toAt: { lat: 18.512619, lng: 73.852601 },
@@ -342,6 +370,11 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.5137, lng: 73.8456 }, toAt: { lat: 18.51389, lng: 73.856342 },
     via: [{ lat: 18.515811, lng: 73.849008 }, { lat: 18.515222, lng: 73.856379 }],
     distanceM: 1688 },
+  // 1633 m the legal way round
+  { from: 'garud-ganpati-mandal', to: 'phani-ali-ganesh-mandir',
+    fromAt: { lat: 18.5137, lng: 73.8456 }, toAt: { lat: 18.5188, lng: 73.8571 },
+    via: [{ lat: 18.516558, lng: 73.853881 }],
+    distanceM: 1633 },
   // 1471 m the legal way round
   { from: 'garud-ganpati-mandal', to: 'tulshibaug-ganpati',
     fromAt: { lat: 18.5137, lng: 73.8456 }, toAt: { lat: 18.514268, lng: 73.855306 },
@@ -372,11 +405,26 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.511223, lng: 73.845858 }, toAt: { lat: 18.51389, lng: 73.856342 },
     via: [{ lat: 18.515811, lng: 73.849008 }, { lat: 18.515222, lng: 73.856379 }],
     distanceM: 1988 },
+  // 1826 m the legal way round
+  { from: 'hatti-ganpati-mandal', to: 'phani-ali-ganesh-mandir',
+    fromAt: { lat: 18.511223, lng: 73.845858 }, toAt: { lat: 18.5188, lng: 73.8571 },
+    via: [{ lat: 18.514532, lng: 73.853743 }],
+    distanceM: 1826 },
   // 1771 m the legal way round
   { from: 'hatti-ganpati-mandal', to: 'tulshibaug-ganpati',
     fromAt: { lat: 18.511223, lng: 73.845858 }, toAt: { lat: 18.514268, lng: 73.855306 },
     via: [{ lat: 18.515811, lng: 73.849008 }],
     distanceM: 1771 },
+  // 1386 m the legal way round
+  { from: 'hira-bagh-mandal', to: 'hutatma-babu-genu-mandal',
+    fromAt: { lat: 18.5042217511876, lng: 73.8557645094566 }, toAt: { lat: 18.51389, lng: 73.856342 },
+    via: [{ lat: 18.513445, lng: 73.855866 }],
+    distanceM: 1386 },
+  // 1944 m the legal way round
+  { from: 'hira-bagh-mandal', to: 'phani-ali-ganesh-mandir',
+    fromAt: { lat: 18.5042217511876, lng: 73.8557645094566 }, toAt: { lat: 18.5188, lng: 73.8571 },
+    via: [{ lat: 18.51263, lng: 73.857653 }],
+    distanceM: 1944 },
   //  783 m the legal way round
   { from: 'honaji-tarun-mandal', to: 'balvikas-mandal',
     fromAt: { lat: 18.5156190173467, lng: 73.8592741338598 }, toAt: { lat: 18.5174365565457, lng: 73.8550423013327 },
@@ -492,6 +540,11 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.51389, lng: 73.856342 }, toAt: { lat: 18.51662, lng: 73.854894 },
     via: [{ lat: 18.513319, lng: 73.854938 }],
     distanceM: 757 },
+  // 1421 m the legal way round
+  { from: 'hutatma-babu-genu-mandal', to: 'trishund-ganpati-mandir',
+    fromAt: { lat: 18.51389, lng: 73.856342 }, toAt: { lat: 18.5217, lng: 73.8619 },
+    via: [{ lat: 18.515619, lng: 73.859274 }],
+    distanceM: 1421 },
   //  666 m the legal way round
   { from: 'hutatma-babu-genu-mandal', to: 'tulshibaug-ganpati',
     fromAt: { lat: 18.51389, lng: 73.856342 }, toAt: { lat: 18.514268, lng: 73.855306 },
@@ -747,11 +800,26 @@ export const LANE_DETOURS: LaneDetour[] = [
     fromAt: { lat: 18.5188, lng: 73.8571 }, toAt: { lat: 18.513319, lng: 73.854938 },
     via: [{ lat: 18.513445, lng: 73.855866 }],
     distanceM: 811 },
+  // 1939 m the legal way round
+  { from: 'sarasbaug-ganpati', to: 'dagdusheth-halwai-ganpati',
+    fromAt: { lat: 18.500881, lng: 73.85295 }, toAt: { lat: 18.51514, lng: 73.856379 },
+    via: [{ lat: 18.513271, lng: 73.853891 }],
+    distanceM: 1939 },
   // 2313 m the legal way round
   { from: 'sarasbaug-ganpati', to: 'honaji-tarun-mandal',
     fromAt: { lat: 18.500881, lng: 73.85295 }, toAt: { lat: 18.5156190173467, lng: 73.8592741338598 },
     via: [{ lat: 18.5086, lng: 73.8555 }],
     distanceM: 2313 },
+  // 1786 m the legal way round
+  { from: 'sarasbaug-ganpati', to: 'hutatma-babu-genu-mandal',
+    fromAt: { lat: 18.500881, lng: 73.85295 }, toAt: { lat: 18.51389, lng: 73.856342 },
+    via: [{ lat: 18.513445, lng: 73.855866 }],
+    distanceM: 1786 },
+  // 2354 m the legal way round
+  { from: 'sarasbaug-ganpati', to: 'phani-ali-ganesh-mandir',
+    fromAt: { lat: 18.500881, lng: 73.85295 }, toAt: { lat: 18.5188, lng: 73.8571 },
+    via: [{ lat: 18.514532, lng: 73.853743 }],
+    distanceM: 2354 },
   // 1457 m the legal way round
   { from: 'seva-mitra-mandal', to: 'balvikas-mandal',
     fromAt: { lat: 18.5086563388099, lng: 73.8575649915299 }, toAt: { lat: 18.5174365565457, lng: 73.8550423013327 },

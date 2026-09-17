@@ -60,9 +60,21 @@ const header = `import type { LatLng } from '@/lib/geo';
  * Shortest matters. Taking the first clean chain instead sent Hutatma
  * Babu Genu to Tulshibaug the long way round, 1433 m where 666 m does it.
  *
- * ${usable.length} of the ${Object.keys(found).length} pairs have a way round. The other ${stuck.length} have none
- * that this search could find, and stay as they are — the ordering
- * already prices them so a plan avoids the pair altogether.
+ * ${usable.length} of ${Object.keys(found).length} pairs have a way round.${stuck.length === 0
+   ? ' Every one of them does.'
+   : ` The other ${stuck.length} have none that
+ * this search could find, and stay as they are — the ordering already
+ * prices them so a plan avoids the pair altogether.`}
+ *
+ * The last twelve took a second pass, and what found them was changing
+ * the candidates rather than searching harder. The first sweep offered
+ * the router lane entries, closure junctions and mandals; the second
+ * offered the 19 waypoints that were ALREADY WORKING for the other pairs
+ * in this file. All twelve cleared immediately, at 0 m against and 1.1x
+ * to 1.4x straight-line — tighter than the median detour here, which is
+ * 1.5x. A junction that gets one walk legally round the peth tends to be
+ * the junction that gets the next one round too, and that is a cheaper
+ * thing to try than a deeper chain.
  *
  * Regenerate with scripts/emit-lane-detours.mjs after lane-against.ts.
  * ---------------------------------------------------------------------
