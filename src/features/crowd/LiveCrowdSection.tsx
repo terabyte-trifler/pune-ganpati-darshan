@@ -102,7 +102,7 @@ interface Ranked extends Rankable {
   g: Ganpati;
   label: string;
   /** How long the queue is, and whether that is measured or worked out. */
-  wait: { minutes: number; source: 'reported' | 'observed' | 'modelled' } | null;
+  wait: { minutes: number; source: 'reported' | 'observed' | 'modelled' | 'override' } | null;
   /** When this mandal was last reported — NOT when the snapshot was built. */
   lastUpdated: string | null;
 }

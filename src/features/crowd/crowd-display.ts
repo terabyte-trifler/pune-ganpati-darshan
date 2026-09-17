@@ -91,7 +91,7 @@ export interface CrowdDisplay {
    * waited. 'modelled' is this mandal's own darshan bounds read against
    * the level — a figure, not a measurement. Null when there is no wait.
    */
-  waitSource: 'reported' | 'observed' | 'modelled' | null;
+  waitSource: 'reported' | 'observed' | 'modelled' | 'override' | null;
   /** Newest report, ISO. Null for an estimate — there is no report. */
   lastUpdated: string | null;
   pinKey: CrowdPinKey;
@@ -139,12 +139,25 @@ export function queueTimeFor(
     status: CrowdLevel | null;
     waitMedianMinutes: number | null;
     observedWaitMinutes?: number | null;
+    /** Set when this reading came from an admin override. */
+    source?: string;
   } | null,
   prior: PriorInput | null | undefined
-): { minutes: number; source: 'reported' | 'observed' | 'modelled' } | null {
+): { minutes: number; source: 'reported' | 'observed' | 'modelled' | 'override' } | null {
   if (!status?.status) return null;
   if (status.waitMedianMinutes != null && status.waitMedianMinutes > 0) {
-    return { minutes: status.waitMedianMinutes, source: 'reported' };
+    /**
+     * An override carries its minutes in the same field, and must not be
+     * described as a visitor report.
+     *
+     * applyOverride writes the asserted minutes into waitMedianMinutes
+     * because that is the field the whole precedence chain already reads.
+     * What it must not inherit is the wording: "the middle of what people
+     * here have said they waited" is false of a number one named person
+     * asserted, and this app does not misattribute a reading.
+     */
+    const source = status.source === 'override' ? 'override' : 'reported';
+    return { minutes: status.waitMedianMinutes, source };
   }
 
   const modelled = prior ? waitForLevel(prior, status.status) : null;

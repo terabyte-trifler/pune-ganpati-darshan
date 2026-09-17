@@ -120,7 +120,15 @@ export default async function AdminOverridePage() {
 
               <OverrideControls
                 mandalId={g.id}
-                active={held ? { status: held.status, expiresAt: held.expiresAt } : null}
+                active={
+                  held
+                    ? {
+                        status: held.status,
+                        expiresAt: held.expiresAt,
+                        waitMinutes: held.waitMinutes,
+                      }
+                    : null
+                }
                 cooldownSeconds={cooldowns[g.id] ?? 0}
               />
             </li>

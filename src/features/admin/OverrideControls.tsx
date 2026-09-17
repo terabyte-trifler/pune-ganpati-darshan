@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, Loader2, X } from 'lucide-react';
+import { Check, Loader2, X, Clock } from 'lucide-react';
 import { CROWD_COLOR, CrowdDot } from '@/features/crowd/CrowdBadge';
 import { useClockMs } from '@/features/crowd/useCrowd';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,16 @@ const LEVELS: { level: CrowdLevel; label: string }[] = [
   { level: 'long', label: '30+ min' },
 ];
 
+/**
+ * Minutes an admin can assert, same buckets a visitor is offered plus the
+ * two that only Dagdusheth-scale queues need.
+ *
+ * Coarse on purpose: nobody standing in a peth times a queue to the
+ * minute, and a free-text box would invite a precision the observation
+ * does not have.
+ */
+const WAIT_CHOICES = [5, 10, 15, 20, 30, 45, 60, 90, 120, 150] as const;
+
 function mmss(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -37,7 +47,7 @@ export function OverrideControls({
   cooldownSeconds,
 }: {
   mandalId: string;
-  active: { status: CrowdLevel; expiresAt: string } | null;
+  active: { status: CrowdLevel; expiresAt: string; waitMinutes?: number | null } | null;
   cooldownSeconds: number;
 }) {
   const router = useRouter();
@@ -47,6 +57,17 @@ export function OverrideControls({
   const nowMs = useClockMs();
   const [busy, setBusy] = useState<CrowdLevel | 'clear' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /**
+   * Minutes to assert alongside the colour, or '' to leave the model to it.
+   *
+   * Empty is the default and means exactly what an override meant before
+   * this existed: the colour is asserted and the minutes are worked out
+   * from the mandal's own bounds. It is not zero — zero is a real claim,
+   * that there is no queue at all.
+   */
+  const [waitMinutes, setWaitMinutes] = useState<string>(
+    active?.waitMinutes != null ? String(active.waitMinutes) : ''
+  );
 
   async function send(status: CrowdLevel | null) {
     setBusy(status ?? 'clear');
@@ -55,7 +76,14 @@ export function OverrideControls({
       const response = await fetch('/api/admin/crowd-override', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mandalId, status }),
+        body: JSON.stringify({
+          mandalId,
+          status,
+          // Only sent when setting, and only when a figure was chosen.
+          ...(status !== null && waitMinutes !== ''
+            ? { waitMinutes: Number(waitMinutes) }
+            : {}),
+        }),
       });
       const result = (await response.json().catch(() => ({}))) as {
         success?: boolean;
@@ -98,6 +126,29 @@ export function OverrideControls({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      {/* Chosen BEFORE the level, because tapping a level is what sends.
+          Disabled during the cooldown for the same reason the buttons
+          are: nothing can be asserted until the hold expires. */}
+      <label className="inline-flex items-center gap-1 text-[11.5px] text-[var(--faint)]">
+        <Clock size={11} aria-hidden="true" />
+        <select
+          value={waitMinutes}
+          onChange={(e) => setWaitMinutes(e.target.value)}
+          disabled={busy !== null || locked}
+          aria-label="Wait to show, in minutes"
+          className={cn(
+            'min-h-9 rounded-[var(--radius-chip)] border border-[var(--line-strong)]',
+            'bg-transparent px-2 text-[12px] font-semibold text-[var(--chandan)]',
+            'disabled:opacity-40'
+          )}
+        >
+          <option value="">from the model</option>
+          {WAIT_CHOICES.map((m) => (
+            <option key={m} value={m}>{m} min</option>
+          ))}
+        </select>
+      </label>
+
       {LEVELS.map(({ level, label }) => {
         const isActive = active?.status === level;
         return (

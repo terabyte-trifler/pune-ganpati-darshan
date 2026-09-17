@@ -240,6 +240,27 @@ async function readWaitReports(
 }
 
 /**
+ * An override that is currently in force.
+ *
+ * Named because the shape was written out inline in four places, which is
+ * three chances for them to drift apart — and adding `waitMinutes` would
+ * have been four edits that all had to agree.
+ */
+interface ActiveOverride {
+  status: CrowdLevel;
+  setBy: string;
+  createdAt: string;
+  expiresAt: string;
+  /**
+   * Minutes the admin asserted, or null to let the model fill them in.
+   *
+   * Null is not "no wait": it means the colour was asserted and nothing
+   * more, which is all an override could say before this existed.
+   */
+  waitMinutes: number | null;
+}
+
+/**
  * Admin overrides still in force, keyed by mandal.
  *
  * Deliberately NOT behind a feature flag and deliberately not part of the
@@ -254,7 +275,7 @@ async function readOverrides(
   supabase: ReturnType<typeof getSupabaseAdminClient>,
   ids: string[]
 ): Promise<
-  Record<string, { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }>
+  Record<string, ActiveOverride>
 > {
   try {
     const { data, error } = await supabase.rpc('crowd_active_overrides', {
@@ -263,7 +284,7 @@ async function readOverrides(
     if (error || !data) return {};
     const out: Record<
       string,
-      { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }
+      ActiveOverride
     > = {};
     for (const row of data) {
       out[row.mandal_id] = {
@@ -271,6 +292,7 @@ async function readOverrides(
         setBy: row.set_by,
         createdAt: row.created_at,
         expiresAt: row.expires_at,
+        waitMinutes: row.wait_minutes ?? null,
       };
     }
     return out;
@@ -294,7 +316,7 @@ async function readOverrides(
  */
 function applyOverride(
   status: CrowdStatus,
-  override: { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }
+  override: ActiveOverride
 ): CrowdStatus {
   const { label } = labelFor(override.status);
   return {
@@ -313,6 +335,26 @@ function applyOverride(
     // half-hour, because the snapshot recomputes every fifteen seconds —
     // so a value set twenty-five minutes ago looked freshly checked.
     lastUpdated: override.createdAt,
+    /**
+     * The minutes the admin asserted, where they asserted any.
+     *
+     * Without this an override could only set the colour, and the number
+     * a visitor read came from waitForLevel — this mandal's curated
+     * bounds against the asserted level. Somebody standing at Dagdusheth
+     * watching a forty-minute queue could set "heavy" and the app would
+     * print 150 minutes at them, because that is what the table says
+     * heavy means there. The colour was right and the number was wrong,
+     * and the number is the one people plan an evening around.
+     *
+     * Left alone when null, so an override that asserts only a colour
+     * behaves exactly as every override did before.
+     *
+     * This is applied AFTER aggregation, so it is final: none of the
+     * weighing, the wait floor or the red ceiling runs again over it.
+     */
+    ...(override.waitMinutes != null
+      ? { waitMedianMinutes: override.waitMinutes }
+      : {}),
   };
 }
 
@@ -857,6 +899,8 @@ export async function setCrowdOverride(input: {
   mandalId: string;
   status: CrowdLevel;
   actor: string;
+  /** Minutes to show, or null to leave the model to it. */
+  waitMinutes?: number | null;
 }): Promise<OverrideResult> {
   if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return { success: false, reason: 'unavailable' };
@@ -869,6 +913,7 @@ export async function setCrowdOverride(input: {
     p_mandal_id: input.mandalId,
     p_status: input.status,
     p_actor: input.actor,
+    p_wait_minutes: input.waitMinutes ?? null,
   });
 
   if (error || !data) {
@@ -898,7 +943,7 @@ export async function clearCrowdOverride(mandalId: string): Promise<OverrideResu
 
 /** Every override still in force, for the admin surface. */
 export async function getActiveOverrides(): Promise<
-  Record<string, { status: CrowdLevel; setBy: string; createdAt: string; expiresAt: string }>
+  Record<string, ActiveOverride>
 > {
   if (!features.supabase || !process.env.SUPABASE_SERVICE_ROLE_KEY) return {};
   const ids = await getKnownMandalIds();

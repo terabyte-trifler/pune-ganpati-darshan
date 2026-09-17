@@ -442,6 +442,8 @@ export type Database = {
           set_by: string;
           created_at: string;
           expires_at: string;
+          /** Minutes the admin asserted, or null to leave it to the model. */
+          wait_minutes: number | null;
         }[];
       };
       search_ganpatis: {

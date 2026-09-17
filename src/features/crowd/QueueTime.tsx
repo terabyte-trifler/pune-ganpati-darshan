@@ -24,6 +24,10 @@ import type { CrowdLevel } from '@/types/crowd';
  *              only where it exceeds the modelled figure, and it is
  *              phrased "at least", which is the true claim: devices stood
  *              here this long, so the queue was at least this long.
+ *   override   minutes somebody from the team asserted after going and
+ *              looking. A measurement, stated plainly like a reported
+ *              one — but never CALLED a report, because one named person
+ *              is not "people here".
  *   modelled   this mandal's own darshan bounds read against the level
  *              people are reporting. A figure, not a measurement, so it
  *              is hedged with "about" and never given a false precision.
@@ -41,7 +45,7 @@ export function QueueTime({
   suffix = true,
 }: {
   level: CrowdLevel | null;
-  wait: { minutes: number; source: 'reported' | 'observed' | 'modelled' } | null;
+  wait: { minutes: number; source: 'reported' | 'observed' | 'modelled' | 'override' } | null;
   className?: string;
   size?: 'sm' | 'md';
   /**
@@ -59,6 +63,10 @@ export function QueueTime({
   const { minutes } = wait;
   const reported = wait.source === 'reported';
   const observed = wait.source === 'observed';
+  // Asserted by somebody from the team who went and looked. Stated as
+  // plainly as a reported wait, because it is a measurement — just not
+  // one a visitor made, which is why it is not called one.
+  const checked = wait.source === 'override';
   return (
     <span
       className={cn(
@@ -70,7 +78,9 @@ export function QueueTime({
       title={
         reported
           ? 'The middle of what people here have said they waited'
-          : observed
+          : checked
+            ? 'Checked by the Pune Ganpati Darshan team'
+            : observed
             ? 'Measured from phones that stood here — the queue was at least this long, and may be longer'
             : 'Worked out from this mandal’s own darshan time and how busy people say it is — not a measured wait'
       }
@@ -80,11 +90,13 @@ export function QueueTime({
           "at least" for the devices, which under-read by construction and
           so can only ever establish a floor. "about" for the model, which
           is a worked-out figure and not a measurement at all. */}
-      {reported ? '' : observed ? 'at least ' : 'about '}
+      {reported || checked ? '' : observed ? 'at least ' : 'about '}
       {minutes} min
       {suffix && (
         <span className="font-normal text-[var(--faint)]">
-          {reported ? 'reported wait' : observed ? 'measured here' : 'in the queue'}
+          {reported ? 'reported wait'
+            : checked ? 'checked wait'
+              : observed ? 'measured here' : 'in the queue'}
         </span>
       )}
     </span>

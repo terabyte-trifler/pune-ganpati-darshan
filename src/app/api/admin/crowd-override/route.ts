@@ -30,6 +30,12 @@ const bodySchema = z.object({
   mandalId: z.string().uuid(),
   // null clears an override early; a level sets one.
   status: z.enum(['short', 'moving', 'long']).nullable(),
+  /**
+   * Minutes to show alongside the colour, or absent to leave the model
+   * to it. Capped at four hours, the same ceiling a visitor's wait
+   * report uses — beyond that it is a misread form, not a queue.
+   */
+  waitMinutes: z.number().int().min(0).max(240).nullable().optional(),
 });
 
 export async function POST(request: Request) {
@@ -50,12 +56,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid_request' }, { status: 400 });
   }
 
-  const { mandalId, status } = parsed.data;
+  const { mandalId, status, waitMinutes } = parsed.data;
 
   const result =
     status === null
       ? await clearCrowdOverride(mandalId)
-      : await setCrowdOverride({ mandalId, status, actor: user.email ?? 'unknown' });
+      : await setCrowdOverride({
+          mandalId,
+          status,
+          waitMinutes: waitMinutes ?? null,
+          actor: user.email ?? 'unknown',
+        });
 
   if (!result.success) {
     return NextResponse.json(result, { status: result.reason === 'cooldown' ? 429 : 400 });
