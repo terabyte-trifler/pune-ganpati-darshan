@@ -25,23 +25,47 @@ interface CacheOptions {
   sMaxAge?: number;
   /** Seconds it may keep serving a stale copy while it refreshes. */
   staleWhileRevalidate?: number;
+  /**
+   * What the ETag is computed over, when that is not the whole body.
+   *
+   * Exists because hashing the whole body made the ETag useless. The crowd
+   * snapshot carries `computedAt`, the moment it was BUILT, which moves
+   * every time the cache expires and the snapshot is recomputed — even
+   * when every reading in it is byte-identical. Two consecutive snapshots
+   * taken two seconds apart differed in that one field and nothing else,
+   * so the hash changed, every conditional request missed, and a poll that
+   * should have cost a few hundred bytes of headers cost the entire body.
+   *
+   * Pass the part that actually represents the content, and a client
+   * holding an unchanged copy gets the 304 this was always meant to send.
+   */
+  etagOf?: unknown;
 }
 
 /**
  * A public, CDN-cacheable JSON response with an ETag.
  *
  * The ETag turns a poll into a 304 with no body, which matters on a
- * congested festival network: a phone polling every 20 seconds transfers
- * a few hundred bytes of headers instead of the payload when nothing has
- * changed.
+ * congested festival network: a phone polling transfers a few hundred
+ * bytes of headers instead of the payload when nothing has changed — and
+ * it is the difference between a poll costing 1.6 KB on the wire and
+ * costing almost nothing.
+ *
+ * See `etagOf` for why the caller usually has to say what to hash.
  */
 export function cachedJson(
   data: unknown,
   request: Request,
-  { sMaxAge = CROWD_CACHE_TTL_SECONDS, staleWhileRevalidate = 60 }: CacheOptions = {}
+  {
+    sMaxAge = CROWD_CACHE_TTL_SECONDS,
+    staleWhileRevalidate = 60,
+    etagOf,
+  }: CacheOptions = {}
 ) {
   const body = JSON.stringify(data);
-  const etag = `W/"${createHash('sha1').update(body).digest('base64url')}"`;
+  const etag = `W/"${createHash('sha1')
+    .update(JSON.stringify(etagOf === undefined ? data : etagOf))
+    .digest('base64url')}"`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

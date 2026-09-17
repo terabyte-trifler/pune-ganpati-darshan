@@ -31,7 +31,31 @@ export async function GET(request: Request) {
   return timed(async () => {
     try {
       const snapshot = await getCrowdSnapshot();
+      /**
+       * The ETag is computed over everything EXCEPT `computedAt`.
+       *
+       * `computedAt` is when the snapshot was built, not when anything in
+       * it happened, so it moves on every recompute while every reading
+       * stays byte-identical. Hashing it made the ETag change on almost
+       * every request, so no poll ever matched and each one paid for the
+       * whole body instead of the 304 this endpoint was built to send.
+       *
+       * `stale` stays in the hash: a snapshot that has become last-known
+       * IS different, and the header says so.
+       *
+       * A client that gets a 304 keeps its older `computedAt`, which is
+       * correct — the only thing that reads it is the "last known · x ago"
+       * suffix, shown when `stale` is set, and a change in `stale` sends a
+       * fresh body anyway.
+       */
+      // Copy-and-remove rather than picking fields: a field added to the
+      // snapshot later must change the ETag by default, or a real change
+      // would silently never reach a polling client.
+      const content: Partial<typeof snapshot> = { ...snapshot };
+      delete content.computedAt;
+
       return cachedJson(snapshot, request, {
+        etagOf: content,
         // A stale snapshot is already being served past its useful life;
         // let the CDN revalidate sooner rather than pin it.
         sMaxAge: snapshot.stale ? 5 : undefined,
