@@ -43,13 +43,29 @@ describe('observedWaitMinutes', () => {
   });
 
   /**
-   * The average, not the middle one. At the two and three devices this
-   * actually sees, a median discards half the readings it has.
+   * The middle reading, not the average one.
+   *
+   * It was briefly a mean, on the argument that at two or three devices a
+   * median just picks one reading and discards the other. Owner's
+   * decision to go back: one wrong reading cannot move a median, and
+   * every figure in this file is now arrived at the same way — the
+   * reported-wait lane has always taken the middle.
    */
-  it('averages the devices rather than taking a median', () => {
-    // excesses 8, 10, 30 → median would be 10, mean is 16.
+  it('takes the middle device reading, not the average', () => {
+    // excesses 8, 10, 30 → median 10, where a mean would say 16.
     const rows = [visit('a', 600, 120), visit('b', 720, 120), visit('c', 1920, 120)];
-    expect(observedWaitMinutes(rows, NOW)?.minutes).toBe(16);
+    expect(observedWaitMinutes(rows, NOW)?.minutes).toBe(10);
+  });
+
+  /** One absurd-but-plausible reading must not drag the figure up. */
+  it('resists a single long outlier', () => {
+    const rows = [
+      visit('a', 600, 120), visit('b', 660, 120),
+      visit('c', 720, 120), visit('d', 660, 120),
+      visit('e', 7200, 120),
+    ];
+    // Middle of 8,9,10,9,118 -> 9. A mean would read 31.
+    expect(observedWaitMinutes(rows, NOW)?.minutes).toBe(9);
   });
 
   /**
