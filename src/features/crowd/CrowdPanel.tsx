@@ -208,11 +208,17 @@ export function CrowdPanel({
               for one reading, two of them about the app's own plumbing
               rather than about the queue. The panel says what was seen
               and when; how it knows is not the visitor's problem. */}
-          {!observed && (
+          {/* An override says nothing here either, for the same reason.
+              It used to explain itself — who set it, and that it stands
+              for half an hour before live reports take over. Owner's
+              decision to drop it: to a visitor this IS the reading, and a
+              paragraph about how long the app will keep it is the app
+              talking about itself. The level, the wait and the time it
+              was reported are on screen already, and they are the
+              answer. */}
+          {!observed && !overridden && (
           <p className="mt-2 text-[12px] leading-relaxed text-[var(--faint)]">
-            {overridden
-              ? 'Reported by the team rather than by devotees. It stands for half an hour, then live reports take over again.'
-              : 'Reported by devotees in the last 90 minutes. Not a measured queue time.'}
+            Reported by devotees in the last 90 minutes. Not a measured queue time.
           </p>
           )}
         </>
