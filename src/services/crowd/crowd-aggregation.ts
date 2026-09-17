@@ -378,8 +378,22 @@ export function confidenceFrom(mass: number, agreement: number): CrowdConfidence
 /** Windows compared to derive a trend, in minutes. */
 const TREND_RECENT_MINUTES = 20;
 const TREND_PRIOR_MINUTES = 60;
-/** Below this severity change the difference is noise, not a trend. */
-const TREND_EPSILON = 0.25;
+/**
+ * Below this severity change the difference is noise, not a trend.
+ *
+ * 0.5, raised from 0.25, and this is where the outlier is filtered —
+ * not in the statistic. Measured on the cases that matter, with three
+ * reports either side:
+ *
+ *     one person calling a steady queue heavy   delta 0.33   noise
+ *     {short,moving,moving} -> {moving,mov,long} delta 0.67   real
+ *     a shift across five reports                delta 0.80   real
+ *
+ * 0.25 admitted the first. 0.5 separates it from both of the others with
+ * room either side, which a median could not do at all: on a 0/1/2 scale
+ * it reads every one of those three as no change.
+ */
+const TREND_EPSILON = 0.5;
 /** Fewer than this in either window and we say `unknown` rather than guess. */
 const TREND_MIN_SAMPLES = 2;
 
@@ -407,25 +421,29 @@ export function trendFrom(
   }
 
   /**
-   * The middle report, not the average one.
+   * A mean here, where every other figure in this file is a median.
    *
-   * A mean here let a single outlier tip the verdict: one person calling
-   * a steady queue heavy moved the recent average by enough to read as
-   * "worsening" for everybody, which is the opposite of what a trend over
-   * several reports is for. The median asks whether the TYPICAL report
-   * changed, which is the question.
+   * The odd one out on purpose. Medians are right for wait times, which
+   * are skewed minutes where one exaggerated report should not move the
+   * answer. This is not that: it is an ordinal 0/1/2 scale over a handful
+   * of reports, and a median of three ordinals barely moves at all.
    *
-   * At the two-report minimum the two are identical, so this changes
-   * nothing at the smallest sample and only bites where there is enough
-   * evidence for an outlier to exist.
+   * It was briefly a median, to stop one loud report tipping the verdict.
+   * Measured against made-up-but-realistic cases, that suppressed the
+   * outlier and three genuine shifts with it:
    *
-   * SEVERITY is 0/1/2, so a median delta lands on halves — 0.5 is the
-   * smallest real move and clears TREND_EPSILON comfortably.
+   *   {short,moving,moving} -> {moving,moving,long}
+   *       mean   +0.67  worsening
+   *       median  0     stable      <- a queue plainly getting worse
+   *
+   * The median cannot tell an outlier from a trend, because on this scale
+   * neither moves it. So the outlier is filtered by the THRESHOLD instead,
+   * which can tell them apart: see TREND_EPSILON.
    */
-  const middle = (rs: { status: CrowdLevel }[]) =>
-    medianOf(rs.map((r) => SEVERITY[r.status]));
+  const mean = (rs: { status: CrowdLevel }[]) =>
+    rs.reduce((sum, r) => sum + SEVERITY[r.status], 0) / rs.length;
 
-  const delta = middle(recent) - middle(prior);
+  const delta = mean(recent) - mean(prior);
   if (Math.abs(delta) < TREND_EPSILON) return 'stable';
   return delta > 0 ? 'worsening' : 'improving';
 }
