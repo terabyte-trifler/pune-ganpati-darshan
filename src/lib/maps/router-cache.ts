@@ -70,3 +70,64 @@ export function clearRouterCache() {
 export function routerCacheSize() {
   return store.size;
 }
+
+/**
+ * The half the cache was missing: two identical questions asked AT ONCE.
+ *
+ * The LRU above collapses a repeat ask into nothing, but only once the
+ * first answer has come back. Everything that arrives while it is still
+ * in flight misses, because there is nothing stored yet — so twenty
+ * people tapping Optimise on the same popular walk in the same second
+ * produced twenty calls to the public Valhalla instance, not one. The
+ * cache made the SECOND minute cheap and did nothing for the first.
+ *
+ * That is the shape of a festival: everyone asks about the same handful
+ * of mandals at the same moment, and the upstream is a volunteer-run
+ * server with no SLA that has already answered ECONNRESET under load. A
+ * burst of identical requests is exactly what must not reach it.
+ *
+ * So an identical request that is already running is awaited rather than
+ * repeated. The outcome is shared whatever it is: if the one real call
+ * fails, every waiter sees that failure instead of piling on a server
+ * that is already struggling — which is the behaviour that turns a bad
+ * minute into a retry storm.
+ *
+ * `crowd-service` does the same thing for the crowd snapshot and explains
+ * the reasoning there too; this is that idea applied to the router.
+ */
+export interface SettledResponse {
+  body: string;
+  status: number;
+  ok: boolean;
+}
+
+const pending = new Map<string, Promise<SettledResponse>>();
+
+export function pendingRequest(key: string): Promise<SettledResponse> | null {
+  return pending.get(key) ?? null;
+}
+
+export function trackRequest(
+  key: string,
+  run: Promise<SettledResponse>
+): Promise<SettledResponse> {
+  pending.set(key, run);
+  // Cleared however it ends, and only if this promise is still the one
+  // registered — a later request must never be evicted by an earlier
+  // one settling.
+  void run
+    .catch(() => undefined)
+    .finally(() => {
+      if (pending.get(key) === run) pending.delete(key);
+    });
+  return run;
+}
+
+/** Only for tests, like clearRouterCache. */
+export function clearPendingRequests() {
+  pending.clear();
+}
+
+export function pendingRequestCount() {
+  return pending.size;
+}

@@ -2,8 +2,11 @@ import 'server-only';
 
 import { MODE_SPEED_MPS, type LatLng } from '@/lib/geo';
 import type { TravelMode } from '@/types/ganpati';
-import { recordUpstream } from '@/lib/maps/route-stats';
-import { cachedBody, rememberBody } from '@/lib/maps/router-cache';
+import { recordUpstream, recordCacheHit } from '@/lib/maps/route-stats';
+import {
+  cachedBody, rememberBody, pendingRequest, trackRequest,
+  type SettledResponse,
+} from '@/lib/maps/router-cache';
 import { mapLimit, ROUTER_CONCURRENCY } from '@/lib/maps/concurrency';
 
 /**
@@ -136,23 +139,53 @@ async function fetchJson(url: string, init?: RequestInit) {
     });
   }
 
+  /**
+   * An identical question already in flight is awaited, not repeated.
+   *
+   * The cache above only helps once an answer exists. Requests arriving
+   * while the first is still running all miss, so a burst of people
+   * optimising the same popular walk in the same second reached the
+   * public Valhalla instance once per person. See router-cache.
+   *
+   * The response is rebuilt per caller because a Response body can only
+   * be read once — what is shared is the text and the status, not the
+   * object.
+   */
+  const already = pendingRequest(key);
+  if (already) {
+    const settled = await already;
+    recordCacheHit();
+    return new Response(settled.body, {
+      status: settled.status,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   const started = Date.now();
-  try {
-    const response = await fetch(url, { ...init, signal: controller.signal });
-    // Only a good answer is worth keeping; a 429 or a 500 must be asked
-    // again rather than remembered for an hour.
-    if (response.ok) {
-      const body = await response.clone().text();
-      rememberBody(key, body);
+
+  const run = (async (): Promise<SettledResponse> => {
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      const body = await response.text();
+      // Only a good answer is worth keeping; a 429 or a 500 must be asked
+      // again rather than remembered for an hour.
+      if (response.ok) rememberBody(key, body);
+      return { body, status: response.status, ok: response.ok };
+    } finally {
+      clearTimeout(timer);
+      // Every upstream wait, counted — see lib/maps/route-stats. Counted
+      // once for the real call, never for the callers that joined it.
+      recordUpstream(Date.now() - started);
     }
-    return response;
-  } finally {
-    clearTimeout(timer);
-    // Every upstream wait, counted — see lib/maps/route-stats.
-    recordUpstream(Date.now() - started);
-  }
+  })();
+
+  const settled = await trackRequest(key, run);
+  return new Response(settled.body, {
+    status: settled.status,
+    headers: { 'content-type': 'application/json' },
+  });
 }
 
 /**

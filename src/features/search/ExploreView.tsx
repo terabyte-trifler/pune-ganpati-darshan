@@ -23,19 +23,13 @@ import type { Area, Ganpati, GanpatiCategory } from '@/types/ganpati';
 const DISTANCE_BANDS = [1000, 3000, 5000, 10_000] as const;
 
 export function ExploreView({
-  ganpatis, areas, categories, initialCategory, initialArea, autoFocus = false,
+  ganpatis, areas, categories, initialCategory, initialArea,
 }: {
   ganpatis: Ganpati[];
   areas: Area[];
   categories: Array<{ key: GanpatiCategory; name: string; nameMr: string | null }>;
   initialCategory?: GanpatiCategory;
   initialArea?: string;
-  /**
-   * Focus the search field on arrival. Set only when the visitor came here
-   * to search — a plain visit to /explore should not open a keyboard over
-   * the list of somebody who came to browse.
-   */
-  autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<Set<GanpatiCategory>>(
@@ -128,11 +122,31 @@ export function ExploreView({
    * Only on ?q= or ?focus=1, never on a plain visit to /explore: stealing
    * focus on arrival scrolls a sticky field into view and opens a keyboard
    * over the list for someone who came to browse.
+   *
+   * ---------------------------------------------------------------------
+   * Read here, on the client, and not from the page's `searchParams`.
+   *
+   * It used to be a prop, resolved by awaiting `searchParams` in the
+   * server component — and a comment there said that was done "so the page
+   * keeps rendering statically", which is exactly backwards. Awaiting
+   * searchParams is what FORCES dynamic rendering. /explore declared
+   * `revalidate = 3600` and then opted out of it on the next line: every
+   * visit to a bottom-nav tab came back `cache-control: private, no-store`
+   * with a cache MISS, paying a function invocation and three catalogue
+   * reads to decide whether to focus a text field.
+   *
+   * Nothing about this decision needs the server. It only ever ran inside
+   * this effect, which is client-only by definition, so the URL is read
+   * where the focus actually happens and the page goes back to being
+   * static.
    */
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (autoFocus) searchRef.current?.focus();
-  }, [autoFocus]);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('focus') === '1' || params.get('q')) {
+      searchRef.current?.focus();
+    }
+  }, []);
 
   return (
     <div className="mx-auto max-w-5xl">

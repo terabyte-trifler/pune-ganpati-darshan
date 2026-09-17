@@ -13,18 +13,23 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 /**
- * `?focus=1` means the visitor tapped a search affordance to get here —
- * the home page and the map both have one — so the field takes focus and
- * the keyboard opens. Read here rather than with useSearchParams so the
- * page keeps rendering statically.
+ * Static, and it has to stay that way.
+ *
+ * This page awaited `searchParams` to read `?focus=1`, under a comment
+ * claiming that kept it static. It does the opposite: touching
+ * searchParams in a server component opts the route out of static
+ * rendering entirely. The `revalidate = 3600` above was dead, every visit
+ * to a nav tab returned `private, no-store` on a cache MISS, and each one
+ * paid a function invocation plus getAllGanpatis + getAreas +
+ * getCategories — to decide whether a text field should take focus.
+ *
+ * ExploreView reads the parameter on the client now, where the focus call
+ * already lived. Nothing renders differently; the page is simply cacheable
+ * again. Do not reintroduce searchParams here.
  */
-export default async function ExplorePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ focus?: string }>;
-}) {
-  const [{ focus }, ganpatis, areas, categories] = await Promise.all([
-    searchParams, getAllGanpatis(), getAreas(), getCategories(),
+export default async function ExplorePage() {
+  const [ganpatis, areas, categories] = await Promise.all([
+    getAllGanpatis(), getAreas(), getCategories(),
   ]);
 
   return (
@@ -40,7 +45,6 @@ export default async function ExplorePage({
         ganpatis={ganpatis}
         areas={areas}
         categories={categories}
-        autoFocus={focus === '1'}
       />
     </main>
   );
