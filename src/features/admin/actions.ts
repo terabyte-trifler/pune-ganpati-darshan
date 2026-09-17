@@ -82,6 +82,27 @@ async function resolveAreaId(areaSlug: string) {
   return data?.id ?? null;
 }
 
+/**
+ * Every page a catalogue change is visible on.
+ *
+ * `/map` was missing from all three call sites below, so a mandal added
+ * or edited through the admin never reached the map until its own hourly
+ * ISR window happened to expire — up to an hour of the map disagreeing
+ * with the list on /explore, which reads the same catalogue and
+ * revalidates immediately. Found by adding one: the mandal was live on
+ * its own page and on /explore while /map still showed the old set.
+ *
+ * Listed once rather than repeated, because the bug was three copies of
+ * a list that had to be kept the same by hand and was not.
+ */
+function revalidateCatalogue(slug?: string) {
+  revalidatePath('/');
+  revalidatePath('/explore');
+  revalidatePath('/map');
+  revalidatePath('/admin');
+  if (slug) revalidatePath(`/ganpati/${slug}`);
+}
+
 export async function upsertGanpati(
   id: string | null,
   formData: FormData
@@ -110,10 +131,7 @@ export async function upsertGanpati(
 
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath('/');
-  revalidatePath('/explore');
-  revalidatePath('/admin');
-  revalidatePath(`/ganpati/${parsed.data.slug}`);
+  revalidateCatalogue(parsed.data.slug);
 
   return { ok: true, message: id ? 'Mandal updated.' : 'Mandal created.' };
 }
@@ -126,9 +144,7 @@ export async function deleteGanpati(id: string): Promise<ActionResult> {
   const { error } = await supabase.from('ganpatis').delete().eq('id', id);
   if (error) return { ok: false, error: error.message };
 
-  revalidatePath('/');
-  revalidatePath('/explore');
-  revalidatePath('/admin');
+  revalidateCatalogue();
   return { ok: true, message: 'Mandal deleted.' };
 }
 
@@ -214,9 +230,7 @@ export async function importGanpatis(payload: string): Promise<ImportReport> {
 
   if (error) return { ok: false, inserted: 0, errors: [{ row: 0, message: error.message }] };
 
-  revalidatePath('/');
-  revalidatePath('/explore');
-  revalidatePath('/admin');
+  revalidateCatalogue();
   return { ok: true, inserted: rows.length, errors: [] };
 }
 

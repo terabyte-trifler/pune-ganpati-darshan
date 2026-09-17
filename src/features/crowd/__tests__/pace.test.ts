@@ -3,11 +3,12 @@ import catalogue from '@/content/catalogue.json';
 import {
   paceRadiusFor, paceZones, resolvePaceZone, classifyDwell,
   stepDwell, initialDwellState,
-  PACE_MAX_RADIUS_M, PACE_MIN_RADIUS_M,
+  PACE_MAX_RADIUS_M, PACE_MIN_RADIUS_M, PACE_BLOCK_DISTANCE_M,
   DWELL_EXIT_GRACE_S, crossingSeconds,
   DWELL_LINGERING_MULTIPLE, DWELL_QUEUEING_MULTIPLE,
   type PaceMandal, type PaceZone, type DwellState,
 } from '@/features/crowd/pace';
+import { haversine } from '@/lib/geo';
 
 /**
  * The dwell signal.
@@ -53,9 +54,35 @@ describe('the radius comes from geometry, not a constant', () => {
 });
 
 describe('zones over the real catalogue', () => {
+  /**
+   * Stated as a relationship, not two counts.
+   *
+   * This pinned 29 mandals and 25 zones, which made it a test of how many
+   * mandals the catalogue happened to hold rather than of the rule — and
+   * adding one to Deccan Gymkhana failed it for exactly the reason the
+   * MAX_PLAN_STOPS comment gives: a fixed number becomes a wrong number
+   * the moment a mandal is added.
+   *
+   * What the rule actually says is that a mandal has a zone unless some
+   * other mandal stands closer than PACE_BLOCK_DISTANCE_M to it, so that
+   * is what is checked, against every mandal in the catalogue whatever
+   * size it grows to. The four known casualties keep their own named
+   * tests below.
+   */
   it('admits every mandal it can tell apart, and no others', () => {
-    expect(MANDALS.length).toBe(29);
-    expect(ZONES.length).toBe(25);
+    const tooClose = (m: (typeof MANDALS)[number]) =>
+      MANDALS.some(
+        (other) =>
+          other.id !== m.id &&
+          haversine({ lat: m.lat, lng: m.lng }, { lat: other.lat, lng: other.lng }) <
+            PACE_BLOCK_DISTANCE_M
+      );
+    const expected = MANDALS.filter((m) => !tooClose(m));
+    expect(ZONES.length).toBe(expected.length);
+    expect(ZONES.length).toBeLessThan(MANDALS.length);
+    for (const m of expected) {
+      expect(ZONES.some((z) => z.mandalId === m.id)).toBe(true);
+    }
   });
 
   it('gives a zone to NEITHER of a pair it cannot separate', () => {
