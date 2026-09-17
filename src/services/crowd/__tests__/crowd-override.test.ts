@@ -81,14 +81,29 @@ describe('it sits above the algorithms, not inside them', () => {
     expect(service).toContain('overrides[s.mandalId] ? applyOverride(');
   });
 
-  it('does not claim devotees said it', () => {
-    // Lane A's wording is "Devotees report". One named person is not
-    // devotees, so the override keeps its own sentence.
-    // It says "reported", by the owner's decision — a person did look.
-    // It must still never say "Devotees report", which is Lane A's
-    // wording and claims several people where this is one.
-    expect(service).toContain('Reported by the Pune Ganpati Darshan team');
-    expect(service).not.toContain('Devotees report');
+  it('reads as an ordinary report of the same level', () => {
+    // It used to carry its own sentence naming the team, to avoid Lane
+    // A's "Devotees report" claiming several people where this is one.
+    // Owner's decision to drop that: to a visitor this IS the reading,
+    // and every surface already shows WHEN it was asserted, so freshness
+    // is shown rather than announced.
+    // The sentence now comes from labelFor, the same source an ordinary
+    // report's does, so the two cannot drift into saying different things
+    // about the same level.
+    expect(service).toContain('const { label, detail } = labelFor(override.status)');
+    // Only the comment explaining why it was dropped may still mention it.
+    const fn = service.slice(
+      service.indexOf('function applyOverride'),
+      service.indexOf('function applyOverride') + 2000
+    );
+    expect(fn).not.toContain("detail: 'Reported by");
+  });
+
+  it('still carries the moment it was asserted, so "1 min ago" is true', () => {
+    // The whole reason the panel can drop the attribution: lastUpdated is
+    // the assertion time, not the snapshot clock, so the relative time a
+    // visitor reads is the real age of the check.
+    expect(service).toContain('lastUpdated: override.createdAt');
   });
 
   it('does not inflate the report count', () => {

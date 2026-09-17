@@ -318,15 +318,29 @@ function applyOverride(
   status: CrowdStatus,
   override: ActiveOverride
 ): CrowdStatus {
-  const { label } = labelFor(override.status);
+  const { label, detail } = labelFor(override.status);
   return {
     ...status,
     status: override.status,
     label,
-    // "Reported", by the owner's decision — a person did go and look.
-    // Not "devotees report", though: that is Lane A's wording and it
-    // means several people, where this is one.
-    detail: 'Reported by the Pune Ganpati Darshan team',
+    /**
+     * Worded exactly as an ordinary report of the same level.
+     *
+     * It used to say "Reported by the Pune Ganpati Darshan team", on the
+     * reasoning that an override is one named person and Lane A's
+     * "Devotees report" means several. Owner's decision to drop it: to a
+     * visitor this IS the reading, and naming the team in the panel made
+     * a fresh check look like an announcement rather than a report.
+     *
+     * `lastUpdated` below carries the moment it was asserted, so the
+     * surfaces render it the same way they render any report — "1 min
+     * ago" — and freshness is shown rather than claimed.
+     *
+     * `source: 'override'` is unchanged and still distinguishes it
+     * everywhere that matters: the pin, the admin screens, and the wait's
+     * own provenance. What changed is only the sentence a visitor reads.
+     */
+    detail,
     source: 'override',
     confidence: 'high',
     trend: 'unknown',
