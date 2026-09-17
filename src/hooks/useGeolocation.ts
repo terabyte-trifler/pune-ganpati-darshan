@@ -2,7 +2,6 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import type { LatLng } from '@/lib/geo';
-import { trackEvent } from '@/services/analytics';
 
 /**
  * Geolocation.
@@ -328,42 +327,24 @@ const getSnapshot = () => state;
 const getServerSnapshot = () => IDLE;
 
 /**
- * Where the time actually goes, measured on real handsets.
+ * Location timing is no longer measured.
  *
- * A location fix cannot be profiled from a desktop: headless Chrome
- * answers instantly with a faked position, and an emulator's GPS is not a
- * GPS. So the acquisition reports its own timing, as an aggregate event
- * with no coordinates in it — how long, how accurate, and which stage
- * answered. That is enough to tell a slow fix from a denied one, and a
- * cached coarse answer from a cold GPS lock, without the analytics ever
- * learning where anybody is.
+ * Acquisition used to report its own timing as a `location_fix` event —
+ * bucketed milliseconds, bucketed accuracy, never a coordinate — because
+ * a fix cannot be profiled from a desktop, where headless Chrome answers
+ * instantly with a faked position.
+ *
+ * It was removed for size, not for privacy. It reached 44,367 rows, 30%
+ * of analytics_events, and nothing ever read it: the only consumer of
+ * that table is traffic_origin_overview, which counts rows and sessions
+ * and never filters by name. It was the single largest contributor to the
+ * one quota in this project with a hard ceiling — Supabase stops at
+ * 500 MB, and a full database stops crowd reporting for everybody.
+ *
+ * If the question comes back — "is acquisition fast, slow, or hopeless" —
+ * it is a distribution, and a day of festival traffic answers it. Turn it
+ * on, read it, turn it off. Do not leave it running.
  */
-function markLocationStart(): number {
-  return typeof performance !== 'undefined' ? performance.now() : Date.now();
-}
-
-function recordLocationTiming(
-  stage: 'coarse' | 'precise' | 'denied' | 'failed',
-  startedAt: number,
-  accuracyM: number | null
-) {
-  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
-  const ms = Math.round(now - startedAt);
-  trackEvent('location_fix', {
-    props: {
-      stage,
-      // Bucketed, not raw: a millisecond figure is a fingerprint of a
-      // device, and the question is only ever "fast, slow, or hopeless".
-      ms: ms < 500 ? '<500' : ms < 1500 ? '<1.5s' : ms < 4000 ? '<4s' : ms < 10_000 ? '<10s' : '10s+',
-      accuracy:
-        accuracyM === null ? 'none'
-          : accuracyM <= 30 ? '<=30m'
-            : accuracyM <= 100 ? '<=100m'
-              : accuracyM <= 500 ? '<=500m'
-                : '>500m',
-    },
-  });
-}
 
 export function requestLocation() {
   acquire(false);
@@ -427,11 +408,8 @@ function acquire(precise: boolean) {
    * the calls would have doubled the battery cost in precisely the case
    * where acquisition is already struggling.
    */
-  const mark = markLocationStart();
-
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      recordLocationTiming(precise ? 'precise' : 'coarse', mark, pos.coords.accuracy);
       setState({
         status: 'ready',
         position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
@@ -440,7 +418,6 @@ function acquire(precise: boolean) {
     },
     (error) => {
       const denied = error.code === error.PERMISSION_DENIED;
-      recordLocationTiming(denied ? 'denied' : 'failed', mark, null);
       setState(denied ? { status: 'denied' } : { status: 'unavailable' });
     },
     precise

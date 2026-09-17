@@ -78,11 +78,12 @@ const EVENT_NAMES = [
   'map_opened', 'ganpati_viewed', 'search_performed', 'search_no_results',
   'directions_clicked', 'favorite_added', 'favorite_removed', 'plan_created',
   'plan_started', 'plan_optimized', 'share_clicked', 'location_enabled',
-  // How long a fix took and how good it was, in buckets. The client has
-  // been sending these since the timing was instrumented and this list
-  // has been rejecting every one of them, so the question "is locating
-  // people slow, and for whom" had a measurement that reached nobody.
-  'location_fix',
+  // 'location_fix' is deliberately NOT here. It was the largest event in
+  // the table — 44,367 rows, 30% of everything — and no reader anywhere:
+  // traffic_origin_overview counts rows and sessions and never filters by
+  // name. The client no longer sends it, and this list is the second lock
+  // so a stale bundle in somebody's cache cannot start filling the table
+  // again. See the note in hooks/useGeolocation.
 ] as const;
 
 const bodySchema = z.object({

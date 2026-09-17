@@ -34,7 +34,15 @@ export const dynamic = 'force-dynamic';
  * them would produce a number that describes neither.
  */
 
-const WINDOW_DAYS = 7;
+/**
+ * Five, and it must match p_retention in cleanup_analytics.
+ *
+ * Retention is what this can see, not a preference: rows older than the
+ * cleanup window do not exist. Asking for seven days when five are kept
+ * would draw two days of flat zero and read as a collapse in traffic.
+ * Change both or neither.
+ */
+const WINDOW_DAYS = 5;
 
 export default async function AdminTrafficPage({
   searchParams,
