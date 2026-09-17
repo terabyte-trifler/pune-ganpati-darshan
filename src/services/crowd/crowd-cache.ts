@@ -22,13 +22,24 @@ export interface CrowdCache {
 /**
  * Freshness of cached crowd state.
  *
- * 15 seconds. Crowd reports are inherently fuzzy — a queue does not change
- * meaningfully in 15 seconds — and this is the single number that decides
- * how much traffic reaches Postgres: at 10,000 concurrent readers, one
- * database query per 15s window is the difference between a warm database
- * and a dead one.
+ * Crowd reports are inherently fuzzy — a queue does not change meaningfully
+ * in half a minute — and this is the single number that decides how much
+ * traffic reaches Postgres: at 10,000 concurrent readers, one database
+ * query per window is the difference between a warm database and a dead
+ * one.
+ *
+ * It is also the edge `s-maxage`, via cachedJson, which is what makes it
+ * worth more than it looks. At 15s every edge region refetched from the
+ * function four times a minute whether one person was reading or ten
+ * thousand — so the cost scaled with Vercel's region count, not with
+ * traffic. The first Pro invoice showed it: 973K function invocations and
+ * 6 hours of Fluid CPU in a day and a half.
+ *
+ * 30 seconds halves both. The reading a visitor sees is at most fifteen
+ * seconds older than before, against a 90-minute active window and a
+ * timestamp on every row saying when it was reported.
  */
-export const CROWD_CACHE_TTL_SECONDS = 15;
+export const CROWD_CACHE_TTL_SECONDS = 30;
 
 /**
  * How long a snapshot may be served after a database failure (§55).

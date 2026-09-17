@@ -38,8 +38,19 @@ const ENDPOINT = '/api/crowd';
  * that are at most 15 seconds older — against a 90-minute active window
  * and per-row timestamps that already tell the user exactly how fresh each
  * reading is.
+ *
+ * Now 60s, and the reason is the bill rather than the load. The first
+ * Pro invoice put Edge Requests at 1.56M and Fast Data Transfer at 18 GB
+ * in a day and a half — and the load test above already established that
+ * polling costs exactly those two things and NOT database load, because
+ * every poll is served from the edge. So this halves the line items it
+ * actually drives, and touches nothing else.
+ *
+ * What it costs is 30 seconds of freshness on a signal whose own window
+ * is 90 minutes, and every row already prints how long ago it was
+ * reported. Nobody reads a queue report twice in a minute.
  */
-const POLL_INTERVAL_MS = 30_000;
+const POLL_INTERVAL_MS = 60_000;
 
 /** Shorter than the poll interval, so a stalled read cannot stack up. */
 const SNAPSHOT_TIMEOUT_MS = 10_000;
