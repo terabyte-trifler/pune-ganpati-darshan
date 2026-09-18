@@ -1,33 +1,36 @@
 import { describe, it, expect } from 'vitest';
-import catalogue from '@/content/catalogue.json';
-import { MAHAPRASAD, mahaprasadFor, type MahaprasadEntry } from '@/content/mahaprasad';
-import type { Ganpati } from '@/types/ganpati';
-
-const slugs = new Set(catalogue.ganpatis.map((g) => g.slug));
+import { MAHAPRASAD, mahaprasadDirections } from '@/content/mahaprasad';
 
 /**
  * Mahaprasad is an announcement, not an observation.
  *
  * The cost of being wrong here is not a bad reading — it is somebody
  * elderly walking across the peths to a counter that is not serving. So
- * the guards are about never stating a time nobody announced.
+ * the guards are about never stating a time nobody announced, and never
+ * pointing somebody at a place that is not where they were told.
  */
 describe('mahaprasad', () => {
-  it('names only mandals that exist in the catalogue', () => {
-    const unknown = MAHAPRASAD.filter((e) => !slugs.has(e.slug)).map((e) => e.slug);
-    expect(unknown).toEqual([]);
+  it('names each place once', () => {
+    const names = MAHAPRASAD.map((e) => e.name);
+    expect(new Set(names).size).toBe(names.length);
   });
 
-  it('names each mandal at most once', () => {
-    const seen = new Set(MAHAPRASAD.map((e) => e.slug));
-    expect(seen.size).toBe(MAHAPRASAD.length);
+  it('has a real coordinate for every entry', () => {
+    for (const e of MAHAPRASAD) {
+      // Pune, generously bounded. A transposed or truncated coordinate is
+      // the failure that sends somebody to the wrong side of the city.
+      expect(e.at.lat).toBeGreaterThan(18.4);
+      expect(e.at.lat).toBeLessThan(18.65);
+      expect(e.at.lng).toBeGreaterThan(73.75);
+      expect(e.at.lng).toBeLessThan(73.95);
+    }
   });
 
   /**
-   * null means "serves, but has not said when" — a real and common state,
-   * and NOT the same as no mahaprasad. What it must never hold is a
-   * stand-in that renders as a time: "TBA", "soon" or an empty string all
-   * print into the slot where a visitor reads the hour.
+   * null means "serves, but has not said when" — a real state, and NOT
+   * the same as no mahaprasad. What it must never hold is a stand-in that
+   * renders as a time: "TBA", "soon" and an empty string all print into
+   * the slot where a visitor reads the hour.
    */
   it('never stands a placeholder in for a time', () => {
     for (const e of MAHAPRASAD) {
@@ -45,20 +48,24 @@ describe('mahaprasad', () => {
     }
   });
 
-  it('drops an entry whose mandal is not in the given list', () => {
-    const entry: MahaprasadEntry = {
-      slug: 'not-a-mandal', servesAt: '12:00', days: null, note: null,
-    };
-    const rows = mahaprasadFor([] as Ganpati[]);
-    expect(rows).toEqual([]);
-    expect(entry.slug).toBe('not-a-mandal');
+  it('builds walking directions to the announced coordinate', () => {
+    const e = MAHAPRASAD[0];
+    const url = new URL(mahaprasadDirections(e));
+    expect(url.searchParams.get('destination')).toBe(`${e.at.lat},${e.at.lng}`);
+    // Walking: the peth core is closed to traffic during the festival.
+    expect(url.searchParams.get('travelmode')).toBe('walking');
   });
 
-  it('joins an entry to its mandal', () => {
-    const g = catalogue.ganpatis[0] as unknown as Ganpati;
-    const rows = mahaprasadFor([g]);
-    // Empty until the announcements are in hand; this asserts the join
-    // shape rather than any particular content.
-    expect(rows.every((r) => r.ganpati.slug === r.entry.slug)).toBe(true);
+  /**
+   * Standalone on purpose. Keying to a catalogue slug meant a mandal had
+   * to become a full darshan destination — page, darshan time, crowd
+   * tracker, dwell zone — before it could be listed as serving food.
+   * Serving mahaprasad is not that claim.
+   */
+  it('carries its own location rather than a catalogue slug', () => {
+    for (const e of MAHAPRASAD) {
+      expect(e).not.toHaveProperty('slug');
+      expect(e.name.trim().length).toBeGreaterThan(0);
+    }
   });
 });

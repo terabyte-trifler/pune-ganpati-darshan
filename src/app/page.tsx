@@ -313,10 +313,11 @@ export default async function HomePage() {
           eat, and it belongs with the other things that are true only
           today rather than with the catalogue.
 
-          Renders nothing while the list is empty, which is how it ships.
-          See content/mahaprasad — a section with invented timings is
-          worse than no section. */}
-      <MahaprasadSection ganpatis={all} />
+          Standalone: mahaprasad entries carry their own name, place and
+          announced hours, and are not joined to the catalogue. Serving
+          food is not the same claim as being a darshan destination — see
+          content/mahaprasad. Renders nothing while the list is empty. */}
+      <MahaprasadSection />
 
       {/* ---------------- Manache Paach ---------------- */}
       <section className="mt-10">
