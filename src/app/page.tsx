@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { PARKING } from '@/content/parking';
 import { ROAD_CLOSURES } from '@/content/diversions';
 import { PHOTOWALK, photowalkIsUpcoming } from '@/content/photowalk';
+import { MahaprasadSection } from '@/features/discovery/MahaprasadSection';
 
 /**
  * The homepage was the one page on the site with no canonical.
@@ -304,6 +305,18 @@ export default async function HomePage() {
           </a>
         </section>
       )}
+
+      {/* ---------------- Mahaprasad ----------------
+
+          Placed after the photowalk and before the browsing sections:
+          somebody deciding their evening wants to know where they can
+          eat, and it belongs with the other things that are true only
+          today rather than with the catalogue.
+
+          Renders nothing while the list is empty, which is how it ships.
+          See content/mahaprasad — a section with invented timings is
+          worse than no section. */}
+      <MahaprasadSection ganpatis={all} />
 
       {/* ---------------- Manache Paach ---------------- */}
       <section className="mt-10">
