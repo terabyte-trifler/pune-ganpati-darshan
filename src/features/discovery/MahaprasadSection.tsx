@@ -1,4 +1,4 @@
-import { Navigation, UtensilsCrossed, Info } from 'lucide-react';
+import { Navigation, HandPlatter, Info } from 'lucide-react';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { MAHAPRASAD, mahaprasadDirections } from '@/content/mahaprasad';
 
@@ -33,11 +33,17 @@ export function MahaprasadSection() {
             className="rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4"
           >
             <div className="flex items-start gap-3">
+              {/* A hand offering a platter, which is how prasad is
+                  actually given and received — on a leaf plate or thali,
+                  by hand. It was a knife-and-fork icon, which is the
+                  wrong register twice over: nobody eats prasad with
+                  cutlery, and the association is a restaurant rather
+                  than an offering. */}
               <span
                 aria-hidden="true"
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[#6F8F4A]/45"
               >
-                <UtensilsCrossed size={18} className="text-[#7FA355]" />
+                <HandPlatter size={18} className="text-[#7FA355]" />
               </span>
 
               <div className="min-w-0 flex-1">
