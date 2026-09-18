@@ -88,29 +88,42 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  /*
+   * An ALLOWLIST, not a denylist — and that inversion is the point.
+   *
+   * This matched everything except _next, favicon, icons, the service
+   * worker, the manifest, .png and api/crowd. Which is to say: every
+   * page, every other API route, every request a visitor makes. The
+   * proxy exists to refresh a Supabase session and gate /admin, and it
+   * was running on all of it.
+   *
+   * On 18 September the invoice showed 4.01M edge requests producing
+   * 2.51M function invocations — 63% of requests reaching a function on
+   * a site whose public pages are all statically rendered and cached.
+   * Middleware that matches everything is the obvious candidate for the
+   * gap, and Fluid Active CPU plus Function Invocations are $3.65 of an
+   * $8.06 bill, both metered.
+   *
+   * What makes an allowlist safe here is that sign-in is allowlisted in
+   * the DATABASE: a trigger on auth.users means only the owner's account
+   * can ever exist (see 20260910160000_signin_allowlist.sql). Every
+   * visitor is anonymous, favourites are per-device, and browsing, the
+   * map, routes and crowd reporting need no account by design.
+   *
+   * So the set of paths where a session can matter is small and known.
+   * Verified by grep before writing this: the only server-side readers of
+   * a session are /admin/**, /api/admin/*, /api/plans, /signin and the
+   * auth callback. No public page reads it. Adding a page that does means
+   * adding it here — hence the test that pins this list against the
+   * pages that actually call getSessionUser or requireAdmin.
+   */
   matcher: [
-    /*
-     * Everything except Next's own internals and static assets.
-     *
-     * This excluded `_next/static` and `_next/image` but not `_next/hmr`,
-     * so in development every hot-reload WebSocket upgrade was routed
-     * through this middleware, which answered with an ordinary HTTP
-     * response. The handshake failed with ERR_INVALID_HTTP_RESPONSE, the
-     * dev client never connected, and the page never hydrated — the app
-     * rendered correctly and then did nothing at all when tapped, with no
-     * error to explain why. Production was unaffected, which is what made
-     * it look like a data problem rather than a routing one.
-     *
-     * Nothing under `_next/` needs a session refresh, so the whole prefix
-     * is excluded rather than enumerating the parts.
-     *
-     * `api/crowd` is excluded for the same reason and a louder one: it is
-     * the endpoint every open tab polls, nothing under it reads a session
-     * — every write there is authorised by device id and database rules,
-     * not by a user — and running this on it meant an invocation per poll
-     * for a cookie that was never going to be there. /api/plans is the one
-     * API route that does need a user, and it is still matched.
-     */
-    '/((?!_next/|api/crowd|favicon.ico|icons/|sw.js|manifest.webmanifest|.*\\.png$).*)',
+    '/admin',
+    '/admin/:path*',
+    '/api/admin/:path*',
+    '/api/plans',
+    '/api/plans/:path*',
+    '/auth/:path*',
+    '/signin',
   ],
 };

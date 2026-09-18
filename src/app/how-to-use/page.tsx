@@ -19,7 +19,13 @@ import { HowToUseView } from '@/features/guide/HowToUseView';
  * the markup in HowToUseView. This file is only the route and its head.
  */
 
-export const revalidate = 3600;
+/**
+ * No revalidate. This page reads no database — its content comes from
+ * files in the repository, so it cannot change without a deploy, and a
+ * deploy regenerates it anyway. An hourly revalidation was an
+ * invocation, some CPU and a rebuild every hour to produce a byte
+ * identical page.
+ */
 
 export const metadata: Metadata = {
   title: GUIDE_EN.meta.title,

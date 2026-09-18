@@ -82,24 +82,71 @@ describe('the admin gate is unchanged', () => {
   });
 });
 
-describe('the matcher', () => {
+describe('the matcher is an allowlist, and covers exactly what needs a session', () => {
+  /** Next matcher patterns, as simple prefix tests. */
   const matches = (path: string) =>
-    new RegExp(`^${config.matcher[0]}$`).test(path);
+    config.matcher.some((pat) => {
+      const base = pat.replace('/:path*', '');
+      return pat.includes(':path*') ? path === base || path.startsWith(base + '/') : path === pat;
+    });
 
-  /** Polled by every open tab, and nothing under it reads a session. */
-  it('skips the crowd endpoints entirely', () => {
-    expect(matches('/api/crowd')).toBe(false);
-    expect(matches('/api/crowd/batch')).toBe(false);
-  });
-
-  it('still covers the routes that need a user', () => {
-    expect(matches('/api/plans')).toBe(true);
+  it('runs on the admin gate', () => {
     expect(matches('/admin')).toBe(true);
-    expect(matches('/')).toBe(true);
+    expect(matches('/admin/crowd')).toBe(true);
+    expect(matches('/admin/ganpati/abc')).toBe(true);
   });
 
-  it('still skips Next internals and static files', () => {
-    expect(matches('/_next/static/chunk.js')).toBe(false);
-    expect(matches('/favicon.ico')).toBe(false);
+  it('runs on the routes that read a user', () => {
+    expect(matches('/api/plans')).toBe(true);
+    expect(matches('/api/admin/crowd-override')).toBe(true);
+    expect(matches('/signin')).toBe(true);
+    expect(matches('/auth/callback')).toBe(true);
+  });
+
+  /**
+   * The saving. The proxy used to run on all of these, refreshing a
+   * session for visitors who cannot have one — sign-in is allowlisted in
+   * the database, so only the owner's account can exist.
+   */
+  it('does NOT run on anything a visitor touches', () => {
+    for (const p of [
+      '/', '/map', '/explore', '/routes', '/routes/manache-5-sakal-walk',
+      '/ganpati/dagdusheth-halwai-ganpati', '/area/kasba-peth',
+      '/category/maanache', '/parking', '/plan', '/saved', '/start',
+      '/about', '/guides', '/how-to-use', '/licences',
+      '/api/crowd', '/api/crowd/batch', '/api/analytics', '/api/routes',
+      '/_next/static/chunk.js', '/favicon.ico', '/sw.js', '/robots.txt',
+    ]) {
+      expect(matches(p), `${p} should not invoke the proxy`).toBe(false);
+    }
+  });
+
+  /**
+   * The guard that keeps this honest. If a page starts reading a session
+   * it must be added to the matcher, and this fails until it is.
+   */
+  it('covers every page that actually reads a session', async () => {
+    const { readdirSync, readFileSync, statSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const readers: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(dir)) {
+        const full = join(dir, e);
+        if (statSync(full).isDirectory()) { walk(full); continue; }
+        if (!/\.(ts|tsx)$/.test(e)) continue;
+        const src = readFileSync(full, 'utf8');
+        if (/getSessionUser|requireAdmin\(/.test(src)) readers.push(full);
+      }
+    };
+    walk('src/app');
+    // Map each file back to its route and assert the matcher covers it.
+    for (const f of readers) {
+      const route = '/' + f
+        .replace(/^src\/app\//, '')
+        .replace(/\/(page|route)\.tsx?$/, '')
+        .replace(/\/\[[^\]]+\]/g, '/x');
+      expect(matches(route === '/' ? '/' : route), `${f} reads a session but ${route} is not matched`).toBe(true);
+    }
+    expect(readers.length).toBeGreaterThan(0);
   });
 });
