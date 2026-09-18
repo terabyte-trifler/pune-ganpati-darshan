@@ -49,14 +49,22 @@ export interface MahaprasadEntry {
 }
 
 /**
- * Empty until the mandals' own announcements are in hand.
- *
  * The section renders nothing at all while this is empty — deliberately.
  * A mahaprasad page with invented timings is worse than no page: the cost
  * of being wrong is somebody elderly walking to a counter that is not
- * serving.
+ * serving. Add a mandal here only when somebody has actually been told.
  */
-export const MAHAPRASAD: readonly MahaprasadEntry[] = [];
+export const MAHAPRASAD: readonly MahaprasadEntry[] = [
+  {
+    slug: 'nav-kiran-tarun-mandal',
+    // As announced: 7pm to 11pm, every day. Written the way a visitor
+    // reads a clock rather than as 19:00–23:00, because this field
+    // carries the announcement and that is how it was made.
+    servesAt: '7 pm to 11 pm',
+    days: 'Every day',
+    note: null,
+  },
+];
 
 /** Entries joined to the catalogue, in catalogue order. Unknown slugs drop. */
 export function mahaprasadFor(
