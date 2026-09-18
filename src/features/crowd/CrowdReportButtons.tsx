@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { Loader2, RotateCcw, Check, MapPin } from 'lucide-react';
+import { Loader2, RotateCcw, Check } from 'lucide-react';
 import { getDeviceId, newRequestId, resetDeviceId } from './device';
 import { WaitReportButtons } from './WaitReportButtons';
 import { applyCrowdStatus, refreshCrowd } from './crowd-store';
@@ -12,11 +12,9 @@ import {
   subscribeToCooldowns,
 } from './cooldown-store';
 import { useClockMs } from './useCrowd';
-import {
-  useGeolocation, retryLocation, useResolveLocation, requestPreciseLocation,
-} from '@/hooks/useGeolocation';
-import { formatDistance, type LatLng } from '@/lib/geo';
-import { reportEligibility, REPORT_MAX_DISTANCE_M } from './report-eligibility';
+import { type LatLng } from '@/lib/geo';
+import { useReportGate } from './useReportGate';
+import { ReportGateNotice } from './ReportGateNotice';
 import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
@@ -114,16 +112,12 @@ export function CrowdReportButtons({
   compact?: boolean;
   onReported?: () => void;
 }) {
-  const { state: geo, request: requestLocation } = useGeolocation();
-  // Picks up a permission already granted; never opens a dialog by itself.
-  useResolveLocation();
-
   /**
    * Whether this person may report at all, and with how much weight.
    *
-   * One rule, shared by every surface that offers the controls — the
+   * One rule, shared by every surface that offers either control — the
    * mandal page, the map sheet and the home prompt — so they cannot drift
-   * into disagreeing about who is close enough.
+   * into disagreeing about who is close enough. See `useReportGate`.
    *
    * `atMandal` is still client-asserted, and the server treats it as a
    * hint rather than a fact: anyone can POST it. The cost of lying is
@@ -131,25 +125,7 @@ export function CrowdReportButtons({
    * hour means a liar buys one extra unit of weight on one mandal, and
    * someone willing to forge this could mint device ids just as easily.
    */
-  const eligibility = reportEligibility(geo, location);
-
-  /**
-   * A coarse fix that lands outside the radius asks the GPS radio once.
-   *
-   * Acquisition prefers a coarse fix because it is fast, and at the old
-   * 5 km gate that cost nothing. At 1 km it can put somebody standing at
-   * the mandal outside the radius, so rather than refuse them, this
-   * escalates
-   * — once per mount, guarded by a ref, because a `watchPosition` that
-   * keeps landing coarse must not turn into a loop of radio requests.
-   */
-  const refined = useRef(false);
-  useEffect(() => {
-    if (eligibility.kind !== 'refining' || refined.current) return;
-    refined.current = true;
-    requestPreciseLocation();
-  }, [eligibility.kind]);
-  const atMandal = eligibility.kind === 'allowed' && eligibility.atMandal;
+  const { eligibility, atMandal, requestLocation } = useReportGate(location);
 
   const [submitting, setSubmitting] = useState<CrowdLevel | null>(null);
   /** The level this device just reported, kept so the row can show it back. */
@@ -365,58 +341,13 @@ export function CrowdReportButtons({
    * is only useful advice in one of them.
    */
   if (eligibility.kind !== 'allowed') {
-    const message = (() => {
-      switch (eligibility.kind) {
-        case 'locating':
-          return 'Finding you…';
-        case 'needs-location':
-          return null; // rendered as an action below, not a sentence
-        case 'no-location':
-          return eligibility.reason === 'denied'
-            ? 'Location is off, so we can’t tell how far away you are. Reports come from people near the mandal.'
-            : 'We couldn’t get your location, so we can’t tell how far away you are.';
-        case 'refining':
-          return 'Getting a more precise location — the first fix was too rough to tell how far away you are.';
-        case 'too-far':
-          return `You’re ${formatDistance(eligibility.distanceM)} away. Reports come from people within ${formatDistance(REPORT_MAX_DISTANCE_M)} — the queue is only worth reporting if you can see it.`;
-        case 'unknown-mandal':
-          return 'We don’t have a position for this mandal, so reports can’t be placed.';
-      }
-    })();
-
     return (
-      <div className={compact ? '' : 'mt-2.5'}>
-        {eligibility.kind === 'needs-location' ? (
-          <button
-            type="button"
-            onClick={() => { trackEvent('location_enabled'); requestLocation(); }}
-            className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold text-[var(--shendur)]"
-          >
-            <MapPin size={14} aria-hidden="true" />
-            Turn on location to report the queue
-          </button>
-        ) : eligibility.kind === 'no-location' && eligibility.reason === 'unavailable' ? (
-          /* A fix that failed rather than a permission that was refused.
-             It retries on its own a few times, but a person standing in a
-             lane should not have to wait for that — or reload the page,
-             which is what they were doing before this existed. */
-          <>
-            <p className="text-[12px] leading-relaxed text-[var(--muted)]">
-              Still finding your location — the lanes here block GPS.
-            </p>
-            <button
-              type="button"
-              onClick={() => retryLocation()}
-              className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-[13px] font-semibold text-[var(--shendur)]"
-            >
-              <MapPin size={14} aria-hidden="true" />
-              Try again
-            </button>
-          </>
-        ) : (
-          <p className="text-[12px] leading-relaxed text-[var(--muted)]">{message}</p>
-        )}
-      </div>
+      <ReportGateNotice
+        eligibility={eligibility}
+        subject="queue"
+        onRequestLocation={requestLocation}
+        compact={compact}
+      />
     );
   }
 

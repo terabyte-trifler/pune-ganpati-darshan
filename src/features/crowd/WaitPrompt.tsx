@@ -73,6 +73,14 @@ export function WaitPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
         everyone else — nobody can see a queue from across the city.
       </p>
 
+      {/* No `location`, and so no distance gate — the only caller that
+          leaves it off. Everywhere else the gate stands in for "was this
+          person actually here?"; here that is already answered, and
+          better: this card exists only because the dwell tracker watched
+          this device sit at this mandal long enough to have been in the
+          queue. Asking for a fresh fix now would refuse everybody who
+          did the honest thing and answered once they got home, which is
+          the whole point of asking afterwards. */}
       <div className="mt-3">
         <WaitReportButtons
           mandalId={pending.mandalId}

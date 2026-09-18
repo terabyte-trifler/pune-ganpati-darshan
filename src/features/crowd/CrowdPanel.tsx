@@ -323,13 +323,19 @@ export function CrowdPanel({
         <div className="mt-4 border-t border-[var(--line)] pt-4">
           <CrowdReportButtons mandalId={mandalId} location={mandalLocation} />
 
-          {/* Asked without a location gate, unlike the colour buttons.
-              A wait time is given after the fact, often on the walk to the
-              next mandal or on the bus home, and refusing it because the
-              person has already moved on would throw away the best report
-              in the app. The cooldown stops it being repeated. */}
+          {/* Gated to 1 km, like the colour buttons above.
+              It was open to anyone from anywhere, on the reasoning that a
+              wait time is given after the fact — on the walk to the next
+              mandal or on the bus home — so refusing it once somebody had
+              moved on would throw away the best report in the app. True,
+              but it cut the wrong way: a wait report is the heaviest
+              signal the tracker has, and being the easiest to file from
+              a sofa made the median the easiest number to move.
+              The person who left and wants to answer properly is still
+              asked, by the dwell prompt on the home page, which knows
+              they were here. */}
           <div className="mt-4 border-t border-[var(--line)] pt-4">
-            <WaitReportButtons mandalId={mandalId} />
+            <WaitReportButtons mandalId={mandalId} location={mandalLocation} />
           </div>
         </div>
       )}

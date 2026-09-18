@@ -6,6 +6,9 @@ import { getDeviceId } from './device';
 import { applyCrowdStatus, refreshCrowd } from './crowd-store';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
+import { type LatLng } from '@/lib/geo';
+import { useReportGate } from './useReportGate';
+import { ReportGateNotice } from './ReportGateNotice';
 import type { CrowdStatus } from '@/types/crowd';
 
 /**
@@ -25,6 +28,21 @@ import type { CrowdStatus } from '@/types/crowd';
  * It never asks twice for the same mandal: the server holds a two-hour
  * cooldown per device, and a second tap comes back as `cooldown` rather
  * than a second row.
+ *
+ * ---------------------------------------------------------------------
+ * These buckets are gated to 1 km of the mandal, like the colour buttons,
+ * whenever the caller passes `location`.
+ *
+ * A wait report is the heaviest signal in the app — worth 1.5x a colour,
+ * and the only one the tracker turns into a number of minutes on screen.
+ * That is exactly why it cannot be open to anyone from anywhere: a
+ * handful of guesses from across town move a median that people are
+ * planning their evening around.
+ *
+ * The one caller that does NOT pass a location is the dwell prompt, and
+ * it is not an exception to the rule so much as a different way of
+ * satisfying it — see WaitPrompt.
+ * ---------------------------------------------------------------------
  */
 
 const OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90] as const;
@@ -36,12 +54,22 @@ function label(minutes: number): string {
 
 export function WaitReportButtons({
   mandalId,
+  location,
   onDone,
   compact = false,
   minMinutes = 0,
   prompt,
 }: {
   mandalId: string;
+  /**
+   * The mandal's position.
+   *
+   * When given, the buckets are gated to REPORT_MAX_DISTANCE_M and are
+   * not rendered outside it. When omitted there is no gate, so a caller
+   * may only leave it out if it has established presence some other way;
+   * the dwell prompt is the only one that does.
+   */
+  location?: LatLng;
   /** Called after a report lands, so a prompt can dismiss itself. */
   onDone?: (minutes: number) => void;
   compact?: boolean;
@@ -57,6 +85,7 @@ export function WaitReportButtons({
   /** Replaces the default question. */
   prompt?: string;
 }) {
+  const { eligibility, requestLocation } = useReportGate(location);
   const [sending, setSending] = useState<number | null>(null);
   const [sent, setSent] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -130,6 +159,20 @@ export function WaitReportButtons({
         <Check size={14} aria-hidden="true" className="text-[var(--crowd-short)]" />
         Thanks — {label(sent)} noted 🙏
       </p>
+    );
+  }
+
+  // Only when the caller asked for a gate. Placed after the thank-you
+  // above on purpose: somebody whose report already landed should still
+  // see it confirmed if their fix drops out a second later.
+  if (location && eligibility.kind !== 'allowed') {
+    return (
+      <ReportGateNotice
+        eligibility={eligibility}
+        subject="wait"
+        onRequestLocation={requestLocation}
+        compact={compact}
+      />
     );
   }
 
