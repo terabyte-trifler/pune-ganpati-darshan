@@ -40,6 +40,15 @@ interface QueuedEvent {
 }
 
 const SESSION_KEY = 'pg.session';
+/**
+ * How long a queued event waits for company before it is sent. Measured at
+ * 1.2s, every interaction more than a moment apart became its own request:
+ * analytics was 131K of the 198K daily function invocations. Widening it
+ * costs nothing that matters because the queue is always flushed on the way
+ * out of the page.
+ */
+const FLUSH_WINDOW_MS = 6_000;
+
 let queue: QueuedEvent[] = [];
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -100,6 +109,11 @@ function flush() {
 
   const batch = queue;
   queue = [];
+  // Cancel, don't just forget. A flush triggered by the size cap or by the
+  // page going away used to leave the old timer pending, so the next event
+  // after it was sent on the remainder of someone else's window instead of
+  // its own.
+  if (flushTimer !== null) clearTimeout(flushTimer);
   flushTimer = null;
 
   const payload = JSON.stringify({
@@ -137,15 +151,25 @@ export function trackEvent(
   if (typeof window === 'undefined') return;
   queue.push({ name, ganpatiId: options.ganpatiId, props: options.props });
 
-  // Batch within a short window so a burst of interactions is one request.
-  flushTimer ??= setTimeout(flush, 1200);
+  // Batch within a window wide enough to cover a read-then-tap, so a whole
+  // page visit is usually one request rather than one per interaction. The
+  // window is only a ceiling on latency, never on delivery: both unload
+  // handlers below flush synchronously, and sendBeacon survives the unload.
+  flushTimer ??= setTimeout(flush, FLUSH_WINDOW_MS);
 
   if (queue.length >= 10) flush();
 }
 
 if (typeof window !== 'undefined') {
-  // Flush on the last reliable moment before the page goes away.
+  // Flush on the last reliable moment before the page goes away. Neither
+  // event alone is enough: iOS Safari can move a page into the back/forward
+  // cache without ever reporting it hidden, and a desktop tab can be hidden
+  // for minutes and then come back. Listening for both means the wider
+  // batching window above never costs an event. flush() is a no-op on an
+  // empty queue, so firing twice is free.
+  const flushBeforeUnload = () => flush();
+  window.addEventListener('pagehide', flushBeforeUnload);
   window.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flush();
+    if (document.visibilityState === 'hidden') flushBeforeUnload();
   });
 }

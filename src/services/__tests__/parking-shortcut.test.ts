@@ -8,7 +8,7 @@ import type { ParkingSpot } from '@/content/parking';
 import type { Ganpati } from '@/types/ganpati';
 
 /** The old behaviour: solve every spot, take the cheapest total. */
-function exhaustive(origin: LatLng, stops: Ganpati[], at: Date) {
+function exhaustive(origin: LatLng, stops: Ganpati[]) {
   const points = stops.map((m) => m.location);
   let best: ParkingSpot | null = null;
   let bestS = Infinity;
@@ -40,7 +40,7 @@ function agreement(at: Date) {
       for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
       const stops = pool.slice(0, 3 + (s % 8));
       const fast = chooseParking(origin, stops, PARKING, at);
-      const slow = exhaustive(origin, stops, at);
+      const slow = exhaustive(origin, stops);
       total++;
       if (fast?.spot.no === slow.spot?.no) { same++; continue; }
       // Different spot: how much worse is it, really?
