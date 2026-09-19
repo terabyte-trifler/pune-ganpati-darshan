@@ -3,7 +3,7 @@ import {
   aggregateMandal, levelForWaitMinutes, MIN_WAITS_TO_LOWER_COLOUR,
 } from '@/services/crowd/crowd-aggregation';
 import {
-  redThresholdFor, DEFAULT_RED_THRESHOLD_MIN,
+  redThresholdFor, DEFAULT_RED_THRESHOLD_MIN, RED_THRESHOLD_BY_SLUG,
 } from '@/content/crowd-thresholds';
 
 const NOW = Date.parse('2026-09-19T15:00:00.000Z');
@@ -19,9 +19,19 @@ const waits = (minutes: number[], ago = 5) =>
   minutes.map((m) => ({ minutes: m, createdAt: minsAgo(ago) }));
 
 describe('the per-mandal red threshold', () => {
-  it('gives Shanipar 30 and Dagdusheth 35', () => {
+  it('gives Shanipar and Dagdusheth 30', () => {
     expect(redThresholdFor('shanipar-mandal')).toBe(30);
-    expect(redThresholdFor('dagdusheth-halwai-ganpati')).toBe(35);
+    expect(redThresholdFor('dagdusheth-halwai-ganpati')).toBe(30);
+  });
+
+  it('pins those two by name rather than letting them inherit', () => {
+    // Both now equal DEFAULT_RED_THRESHOLD_MIN, so redThresholdFor alone
+    // can no longer tell a decision from an inheritance — the test above
+    // would pass with the entries deleted. These two were decided about
+    // by name, and must not be carried along by a future change to the
+    // default. Asserting on the map is the only thing that catches that.
+    expect(RED_THRESHOLD_BY_SLUG['shanipar-mandal']).toBe(30);
+    expect(RED_THRESHOLD_BY_SLUG['dagdusheth-halwai-ganpati']).toBe(30);
   });
 
   it('leaves every other mandal on the flat threshold', () => {
