@@ -169,6 +169,8 @@ export interface ScheduleEntry {
   /** IST, as published. A range where the source gave one. */
   time: string;
   what: string;
+  /** Short display name, for the row's tag. Absent for citywide entries. */
+  mandal?: string;
   /** Mandal slug, where the entry belongs to one in the catalogue. */
   slug?: string;
   source: 'police' | 'mandal';
@@ -179,37 +181,43 @@ export const VISARJAN_TIMELINE: ScheduleEntry[] = [
   { time: '06:00', what: 'Police ground deployment takes effect across all sectors', source: 'police' },
   {
     time: '07:00 – 07:30',
-    what: 'Bhausaheb Rangari: Anant Chaturdashi puja',
+    what: 'Anant Chaturdashi puja',
+    mandal: 'Bhausaheb Rangari',
     slug: 'bhau-rangari-ganpati',
     source: 'mandal',
   },
   {
     time: '08:00',
-    what: 'Bhausaheb Rangari: the idol is placed on the Shri Vighnaharta Rath, which moves to the Lokmanya Tilak statue at Mandai',
+    what: 'Onto the Shri Vighnaharta Rath, which moves to the Lokmanya Tilak statue at Mandai',
+    mandal: 'Bhausaheb Rangari',
     slug: 'bhau-rangari-ganpati',
     source: 'mandal',
   },
   {
     time: '09:00',
-    what: 'Kasba Ganpati, the first of the Manache Paach, reaches the Lokmanya Tilak statue for aarti',
+    what: 'Reaches the Lokmanya Tilak statue for aarti, as the first of the Manache Paach',
+    mandal: 'Kasba',
     slug: 'kasba-ganpati',
     source: 'police',
   },
   {
     time: '09:30',
-    what: 'Kasba Ganpati moves from the Tilak statue towards Belbaug Chowk',
+    what: 'Moves from the Tilak statue towards Belbaug Chowk',
+    mandal: 'Kasba',
     slug: 'kasba-ganpati',
     source: 'police',
   },
   {
     time: '09:30',
-    what: 'Tambdi Jogeshwari, the second of the Manache Paach, begins its procession',
+    what: 'Begins its procession, as the second of the Manache Paach',
+    mandal: 'Tambdi Jogeshwari',
     slug: 'tambdi-jogeshwari',
     source: 'mandal',
   },
   {
     time: '09:30',
-    what: 'Guruji Talim, the third, begins from the Tilak statue at Mandai',
+    what: 'Begins from the Tilak statue at Mandai, as the third',
+    mandal: 'Guruji Talim',
     slug: 'guruji-talim',
     source: 'mandal',
   },
@@ -220,7 +228,8 @@ export const VISARJAN_TIMELINE: ScheduleEntry[] = [
   },
   {
     time: '17:00 – 17:30',
-    what: 'Bhausaheb Rangari: the chariot joins the main procession on Laxmi Road, on a route it has taken for 135 years',
+    what: 'The chariot joins the main procession on Laxmi Road, on a route it has taken for 135 years',
+    mandal: 'Bhausaheb Rangari',
     slug: 'bhau-rangari-ganpati',
     source: 'mandal',
   },

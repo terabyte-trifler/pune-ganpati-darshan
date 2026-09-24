@@ -4,8 +4,12 @@ import { ExternalLink, Radio, TriangleAlert, Clock, Ban } from 'lucide-react';
 import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
-  MANDAL_ROUTE_SCHEDULES,
+  MANDAL_ROUTE_SCHEDULES, MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES,
 } from '@/content/visarjan';
+import { mergedTimings, mandalsWithTimings } from '@/lib/visarjan-timings';
+import { TimingsTimeline } from '@/features/visarjan/TimingsTimeline';
+import { getFestivalConfig } from '@/services/ganpati';
+import { isVisarjanImminent } from '@/lib/festival';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
@@ -40,7 +44,9 @@ export const metadata: Metadata = {
  * footnote — it is the only source that is right at the hour you read it.
  */
 export default async function VisarjanPage() {
-  const ganpatis = await getAllGanpatis();
+  const [ganpatis, festival] = await Promise.all([getAllGanpatis(), getFestivalConfig()]);
+  const rows = mergedTimings();
+  const timingMandals = mandalsWithTimings(rows);
   const manache = ganpatis
     .filter((g) => g.manacheRank !== null)
     .sort((a, b) => (a.manacheRank ?? 0) - (b.manacheRank ?? 0));
@@ -143,59 +149,53 @@ export default async function VisarjanPage() {
           </p>
         </div>
 
-        {/* Where it will be, hour by hour — the question someone
-            choosing a place to stand is actually asking. */}
-        {MANDAL_ROUTE_SCHEDULES.map((sched) => (
-          <section key={sched.slug} className="mt-8">
-            <h2 className="font-display text-[20px] font-bold text-[var(--chandan)]">
-              {sched.mandal}: {sched.title.toLowerCase()}
-            </h2>
-            <p lang="mr" className="mt-1 text-[13px] text-[var(--faint)]">
-              {sched.titleMr}
-            </p>
+        {/* ---------------- Timings ----------------
+            One list, ordered by the clock, because that is how the
+            question arrives on the day: not "when does Kasba go" but
+            "what comes past here in the next hour". */}
+        <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
+          Timings for the day
+        </h2>
+        <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
+          Every time any mandal has published, in one list. These are
+          intentions, not observations — the procession is known for
+          running late, so take this as the order and rhythm of the day and
+          the{' '}
+          <a
+            href={POLICE_TRACKER.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[var(--shendur)]"
+          >
+            live tracker
+          </a>{' '}
+          as the hour.
+        </p>
 
-            <ol className="mt-4 border-l border-[var(--line-strong)] pl-4">
-              {sched.checkpoints.map((c) => (
-                <li key={c.time} className="relative py-2">
-                  {/* The lamp on the line: this is a procession moving
-                      past a point, not a row in a table. */}
-                  <span
-                    aria-hidden="true"
-                    className="absolute -left-[21px] top-[15px] h-1.5 w-1.5 rounded-full bg-[var(--zendu)]"
-                    style={{ boxShadow: 'var(--glow-zendu)' }}
-                  />
-                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                    <span className="font-display text-[15px] font-bold text-[var(--zendu)] tabular-nums">
-                      {c.time}
-                    </span>
-                    <span className="text-[14.5px] text-[var(--chandan)]">{c.place}</span>
-                    <span lang="mr" className="text-[13px] text-[var(--faint)]">
-                      {c.placeMr}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ol>
+        <TimingsTimeline
+          rows={rows}
+          mandals={timingMandals}
+          isToday={isVisarjanImminent(festival)}
+        />
 
-            <p className="prose-measure mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
-              Published by the {sched.source}. Its first two checkpoints match
-              the Police Commissioner&rsquo;s briefing exactly, which is the
-              firmest agreement anything on this page has. Still the
-              mandal&rsquo;s plan rather than an observation — the procession
-              is known for running late, so treat these as the order and
-              rhythm of the day, and the{' '}
-              <a
-                href={POLICE_TRACKER.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--shendur)]"
-              >
-                live tracker
-              </a>{' '}
-              as the hour.
-            </p>
-          </section>
-        ))}
+        <p className="prose-measure mt-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          {MANACHE_ASSEMBLY}
+        </p>
+
+        <p className="prose-measure mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
+          {MANDALS_WITH_SCHEDULES} of the mandals on this site have published
+          times. The others have not, and each moves when the one ahead of it
+          moves, so there is no hour to print for them. Beware of the timings
+          circulating for the Manache Paach that read like this list — 11:45
+          for Kasba, 10:00 for Tambdi Jogeshwari — as those are the{' '}
+          <em>aagman</em> times from 14 September, not the procession. Grey
+          markers are{' '}
+          <a href={TIMELINE_SOURCES.policeUrl} target="_blank" rel="noopener noreferrer" className="text-[var(--shendur)]">
+            police
+          </a>
+          ; marigold are the mandal&rsquo;s own, Kasba&rsquo;s checkpoints
+          coming from its trust&rsquo;s published Laxmi Road schedule.
+        </p>
 
         {/* ---------------- The order ---------------- */}
         <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
