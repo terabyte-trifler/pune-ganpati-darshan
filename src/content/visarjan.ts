@@ -117,10 +117,12 @@ export const VISARJAN_CLOSURES: VisarjanClosure[] = [
     road: 'Jangli Maharaj Road',
     stretch: 'Jhansi Rani Chowk to Khandoji Baba Chowk',
     localNote:
-      'Reported locally as shut only from Bal Gandharva onwards — half ' +
-      'the stretch rather than all of it. Bal Gandharva stands between ' +
-      'the two points the notice names, so this narrows the order rather ' +
-      'than contradicting it.',
+      'Reported locally as shut only from the Ghole Road junction, by ' +
+      'Bal Gandharva — about two thirds of the stretch rather than all ' +
+      'of it. That junction lies between the two points the notice ' +
+      'names, so this narrows the order rather than contradicting it, ' +
+      'and the map is dotted from there down to Khandoji Baba rather ' +
+      'than along the whole road.',
   },
   { from: '11:00', road: 'Fergusson College Road', stretch: 'Khandoji Baba Chowk to the Fergusson College main gate' },
   { from: '12:00', road: 'Bhandarkar Road', stretch: 'PYC Gymkhana to Goodluck Chowk' },
