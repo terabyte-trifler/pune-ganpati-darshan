@@ -3,6 +3,7 @@ import { VISARJAN_CLOSURES, DIVERSION_POINTS, MANDAL_ROUTE_PATHS } from '@/conte
 import { CHECKPOINT_POINTS, TOTAL_CHECKPOINTS } from '@/content/visarjan-checkpoints';
 import { RING_POINTS, RING_KM } from '@/content/visarjan-ringroad';
 import { POLICE_ROADS, POLICE_PARKING } from '@/content/visarjan-police';
+import { EXTRA_ROADS } from '@/content/visarjan-extra-roads';
 
 /**
  * Visarjan day: the procession corridor, and the closures that can be
@@ -144,9 +145,23 @@ const corridor = POLICE_ROADS.filter((r) => r.kind !== 'diversion' && isProcessi
   (r) => ({ road: r.road, segments: [r.path] })
 );
 
-const closures = POLICE_ROADS.filter(
-  (r) => r.kind !== 'diversion' && !isProcession(r.road) && closureFor(r.road)
-).map((r) => ({ road: r.road, segments: [r.path] }));
+const closures = [
+  ...POLICE_ROADS.filter(
+    (r) => r.kind !== 'diversion' && !isProcession(r.road) && closureFor(r.road)
+  ).map((r) => ({ road: r.road, segments: [r.path] })),
+  /**
+   * Roads the police tracker has no line for.
+   *
+   * Their map carries eleven roads; the notice lists seventeen closures.
+   * Jangli Maharaj Road is the gap people notice, because it is the
+   * spine of Deccan — so it comes from OSM, checked against the junction
+   * the notice names. See scripts/emit-extra-roads.mjs.
+   */
+  ...EXTRA_ROADS.filter((r) => closureFor(r.road)).map((r) => ({
+    road: r.road,
+    segments: r.segments,
+  })),
+];
 
 const officialRing = POLICE_ROADS.find((r) => r.kind === 'diversion');
 

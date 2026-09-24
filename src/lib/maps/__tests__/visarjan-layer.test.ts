@@ -7,6 +7,7 @@ import {
 } from '../visarjan-layer';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 import { VISARJAN_CLOSURES } from '@/content/visarjan';
+import { EXTRA_ROADS } from '@/content/visarjan-extra-roads';
 
 /**
  * These guard the generator, not the rendering.
@@ -129,6 +130,26 @@ describe('visarjan map layers', () => {
         expect(
           visarjanTapLabel('visarjan-checkpoint', f.properties)?.subtitle ?? ''
         ).not.toMatch(/passes here too/);
+      }
+    });
+  });
+
+  describe('roads the police publish no line for', () => {
+    it('draws Jangli Maharaj Road, the gap people notice', () => {
+      const names = visarjanClosureFeatureCollection().features.map(
+        (f) => f.properties?.name
+      );
+      expect(names).toContain('Jangli Maharaj Road');
+    });
+
+    it('only accepts an extra road that reaches its notice junction', () => {
+      // The check that makes drawing the whole named road honest: OSM
+      // has a "Jangli Maharaj Mandir" half a kilometre off, and a road
+      // that did not touch Khandoji Baba would not be this closure.
+      for (const r of EXTRA_ROADS) {
+        expect(r.anchor, r.road).toBeTruthy();
+        expect(r.reachM, `${r.road} is ${r.reachM} m from ${r.anchor}`).toBeLessThanOrEqual(120);
+        expect(r.segments.flat().length).toBeGreaterThan(8);
       }
     });
   });
