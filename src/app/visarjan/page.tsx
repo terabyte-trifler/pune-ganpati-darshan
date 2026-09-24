@@ -4,8 +4,7 @@ import { ExternalLink, Radio, TriangleAlert, Clock, Ban } from 'lucide-react';
 import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
-  VISARJAN_TIMELINE, TIMELINE_SOURCES, MANDALS_WITH_SCHEDULES,
-  MANDAL_ROUTE_SCHEDULES, MANACHE_ASSEMBLY,
+  MANDAL_ROUTE_SCHEDULES,
 } from '@/content/visarjan';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -144,94 +143,8 @@ export default async function VisarjanPage() {
           </p>
         </div>
 
-        {/* ---------------- Timings ----------------
-            The question everyone actually arrives with. It is a short
-            list because only two mandals have published one, and the
-            page says that rather than padding it out. */}
-        <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
-          Timings for the day
-        </h2>
-        <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
-          Start times, not a timetable. The procession runs into the next
-          morning and the back of it slips by hours, so a listed hour is
-          when a mandal means to set off — not when it will pass any
-          particular corner.
-        </p>
-
-        <ol className="mt-4 space-y-2">
-          {VISARJAN_TIMELINE.map((e) => {
-            const row = (
-              <>
-                <span className="font-display w-[86px] shrink-0 text-[15px] font-bold text-[var(--zendu)] tabular-nums">
-                  {e.time}
-                </span>
-                <span className="min-w-0 text-[14px] leading-relaxed text-[var(--muted)]">
-                  {e.what}
-                  {e.source === 'mandal' && (
-                    <span className="ml-1.5 whitespace-nowrap text-[11px] text-[var(--faint)]">
-                      mandal&rsquo;s own
-                    </span>
-                  )}
-                </span>
-              </>
-            );
-            return (
-              <li key={`${e.time}-${e.what.slice(0, 24)}`}>
-                {e.slug ? (
-                  <Link
-                    href={`/ganpati/${e.slug}`}
-                    className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] px-3.5 py-3"
-                  >
-                    {row}
-                  </Link>
-                ) : (
-                  <div className="flex items-start gap-3 rounded-[var(--radius-card)] border border-[var(--line)] px-3.5 py-3">
-                    {row}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-
-        {/* Three mandals give the same hour. Left unexplained that reads
-            like a data error, so the page explains it instead. */}
-        <p className="prose-measure mt-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3.5 text-[13px] leading-relaxed text-[var(--muted)]">
-          {MANACHE_ASSEMBLY}
-        </p>
-
-        <p className="prose-measure mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
-          {MANDALS_WITH_SCHEDULES} of the mandals on this site have published
-          a schedule for the day. The others have not, and each moves when
-          the one ahead of it moves, so there is no hour to print for them.
-          Beware of the timings circulating for the Manache Paach that read
-          like this list — 11:45 for Kasba, 10:00 for Tambdi Jogeshwari — as
-          those are the <em>aagman</em> times from 14 September, not the
-          procession. Police times from{' '}
-          <a
-            href={TIMELINE_SOURCES.policeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--shendur)]"
-          >
-            Commissioner Amitesh Kumar&rsquo;s briefing
-          </a>
-          ; mandal times from{' '}
-          <a
-            href={TIMELINE_SOURCES.mandalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--shendur)]"
-          >
-            the mandal&rsquo;s own schedule
-          </a>
-          , both reported 24 September 2026.
-        </p>
-
-        {/* Where it will be, hour by hour. The timeline above answers
-            "when does it start"; this answers "which corner, and when" —
-            which is the question someone choosing a place to stand is
-            actually asking. */}
+        {/* Where it will be, hour by hour — the question someone
+            choosing a place to stand is actually asking. */}
         {MANDAL_ROUTE_SCHEDULES.map((sched) => (
           <section key={sched.slug} className="mt-8">
             <h2 className="font-display text-[20px] font-bold text-[var(--chandan)]">
