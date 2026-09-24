@@ -60,6 +60,15 @@ export const CHECKPOINT_POINTS: CheckpointPoint[] = [
     "lat": 18.514475
   },
   {
+    "time": "12:35",
+    "place": "Umbrya Ganpati Chowk",
+    "placeMr": "उंबऱ्या गणपती चौक",
+    "osmName": "read off Google Maps",
+    "offCorridorM": 0,
+    "lng": 73.850118,
+    "lat": 18.514183
+  },
+  {
     "time": "13:45",
     "place": "Vijay Talkies Chowk",
     "placeMr": "विजय टॉकीज चौक",

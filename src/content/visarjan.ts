@@ -545,7 +545,16 @@ export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
         lng: 73.853768,
         source: 'Google Maps, sequence-checked',
       },
-      { place: 'Umbrya Ganpati Chowk', placeMr: 'उंबऱ्या गणपती चौक' },
+      {
+        place: 'Umbrya Ganpati Chowk',
+        placeMr: 'उंबऱ्या गणपती चौक',
+        // Read off the ground, and it lands 0 m from Laxmi Road — which
+        // is the corroboration, because Kasba's schedule puts this same
+        // chowk on Laxmi Road at 12:35. Two routes, one coordinate.
+        lat: 18.514183,
+        lng: 73.850118,
+        source: 'Google Maps, sequence-checked',
+      },
       { place: 'Lokmanya Tilak Chowk', placeMr: 'लोकमान्य टिळक चौक' },
       {
         place: 'Chhatrapati Sambhaji Maharaj bridge',

@@ -416,13 +416,14 @@ export default async function VisarjanPage() {
               this route is marked as far as it can be — four of the seven
               points. Belbaug and Ganpati Chowk are there as Kasba&rsquo;s
               checkpoints and say &ldquo;Dagdusheth passes here too&rdquo;
-              when tapped; Nagarkar Talim Chowk and the Chhatrapati
+              when tapped; Umbrya Ganpati is there too, as Kasba&rsquo;s
+              12:35 checkpoint; Nagarkar Talim Chowk and the Chhatrapati
               Sambhaji Maharaj bridge, where the procession leaves the
-              peths for the river, are marked in hollow brass. Umbrya
-              Ganpati, Lokmanya Tilak Chowk and Panchaleshwar are in
-              neither OpenStreetMap, Nominatim nor Photon, so they keep
-              their place in the order above and stay off the map — a chowk
-              guessed onto the wrong corner is worse than one left off.
+              peths for the river, are marked in hollow brass. Lokmanya
+              Tilak Chowk and Panchaleshwar are in neither OpenStreetMap,
+              Nominatim nor Photon, so they keep their place in the order
+              above and stay off the map — a chowk guessed onto the wrong
+              corner is worse than one left off.
             </p>
           </section>
         ))}

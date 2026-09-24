@@ -51,6 +51,19 @@ const KNOWN = {
   'Lokmanya Tilak Putala (Mandai)': 'Mandai Chowk',
 };
 
+/**
+ * Chowks read off the ground, for places no geocoder carries.
+ *
+ * The peth chowks are absent from OSM, Nominatim and Photon alike, so
+ * for these the best available source is someone standing in the city.
+ * They are held here rather than pasted into the generated file so the
+ * generator stays the one place that decides what gets drawn — and they
+ * go through the same corridor and sequence checks as everything else.
+ */
+const HAND_PLACED = {
+  'Umbrya Ganpati Chowk': { lat: 18.514183, lng: 73.850118, via: 'read off Google Maps' },
+};
+
 /** Search patterns per checkpoint, keyed by the schedule's own place name. */
 const PATTERNS = {
   'Lokmanya Tilak Putala (Mandai)': 'Mandai|मंडई|Lokmanya Tilak',
@@ -127,6 +140,22 @@ async function main() {
         });
         continue;
       }
+    }
+
+    const hand = HAND_PLACED[cp.place];
+    if (hand) {
+      const off = Math.round(offCorridor([hand.lng, hand.lat]));
+      if (off > MAX_OFF_CORRIDOR_M) {
+        console.warn(`  REJECT ${cp.time} ${cp.place} — hand coordinate is ${off} m off the corridor`);
+        continue;
+      }
+      console.log(`  HAND   ${cp.time} ${cp.place} — ${hand.via}, ${off} m off`);
+      out.push({
+        time: cp.time, place: cp.place, placeMr: cp.placeMr,
+        osmName: hand.via, offCorridorM: off,
+        lng: Number(hand.lng.toFixed(6)), lat: Number(hand.lat.toFixed(6)),
+      });
+      continue;
     }
 
     const re = new RegExp(PATTERNS[cp.place], 'i');
