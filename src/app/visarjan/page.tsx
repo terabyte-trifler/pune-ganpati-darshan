@@ -10,6 +10,7 @@ import {
 import { mergedTimings, mandalsWithTimings } from '@/lib/visarjan-timings';
 import { TimingsTimeline } from '@/features/visarjan/TimingsTimeline';
 import { UpNext } from '@/features/visarjan/UpNext';
+import { LiveProcession } from '@/features/visarjan/LiveProcession';
 import { getFestivalConfig } from '@/services/ganpati';
 import { isVisarjanImminent, getFestivalPhase } from '@/lib/festival';
 import { getAllGanpatis } from '@/services/ganpati';
@@ -163,6 +164,11 @@ export default async function VisarjanPage() {
             takes, and how much of the centre that puts behind a
             barricade. Interactive, so it can be panned into the peth the
             reader actually lives in. */}
+        {/* Directly under the tracker link it complements: that says
+            where the procession is, this says which mandals are in it.
+            Renders nothing at all until the feed carries real names. */}
+        <LiveProcession active={isVisarjanDay} />
+
         <UpNext rows={rows} isVisarjanDay={isVisarjanDay} isEve={isEve} />
 
         <div id="map" className="scroll-mt-4" />
