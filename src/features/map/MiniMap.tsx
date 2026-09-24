@@ -150,17 +150,21 @@ function collapseAttribution(container: HTMLElement) {
 }
 
 /**
- * One pin for every mandal, in brass, for maps where the queue is not
- * the subject.
+ * One pin for every mandal, in dark bhagwa, for maps where the queue is
+ * not the subject.
  *
- * Brass is the app's own colour for a mandal, and on this map it sits in
- * a deliberate family: gold for the festival — the corridor, the
- * checkpoints, the mandals — against orange and grey for the
- * restrictions. A reader can tell an instruction from a place at a
- * glance without reading the legend.
+ * Saffron is the colour of the day and the mandals are what the day is
+ * about, so they carry it. Deep rather than bright: a bright saffron at
+ * thirty pins would outshout the corridor they stand along, and this is
+ * a map about a procession passing them.
+ *
+ * It is deliberately browner than the vermilion of the diversion rings,
+ * which is the nearest thing to it on the map. The two are also told
+ * apart by form — a filled pin against a hollow ring — so colour is not
+ * carrying that distinction alone.
  */
 export const UNIFORM_PIN_ID = 'mini-uniform';
-const UNIFORM_PIN_COLOR = '#c9a227';
+const UNIFORM_PIN_COLOR = '#CC6600';
 
 async function registerImage(map: MapLibreMap, id: string, url: string, size: number) {
   if (map.hasImage(id)) return;

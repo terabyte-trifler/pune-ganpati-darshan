@@ -246,10 +246,10 @@ export default async function VisarjanPage() {
               <span
                 aria-hidden="true"
                 className="h-3 w-3 shrink-0 rounded-full"
-                style={{ background: '#c9a227', border: '1.5px solid #14100C' }}
+                style={{ background: '#CC6600', border: '1.5px solid #14100C' }}
               />
-              All {ganpatis.length} mandals, one colour — no queue is claimed
-              once the idols have left
+              All {ganpatis.length} mandals in bhagwa, one colour — no queue
+              is claimed once the idols have left
             </li>
             <li className="flex items-center gap-2.5">
               <span
