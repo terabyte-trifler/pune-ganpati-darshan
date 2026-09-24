@@ -101,6 +101,18 @@ export interface MiniMapProps {
    */
   showParking?: boolean;
   /**
+   * Draw the pedestrian one-way lanes. On by default, because a walker
+   * needs to know which way the crowd moves before setting off.
+   *
+   * The visarjan map turns it off. Those arrows are our own darshan-day
+   * data — which lane the queue flows down on an ordinary festival
+   * evening — and on Anant Chaturdashi they do not hold: the peths are
+   * given over to the procession and the police direct the crowd. Left
+   * drawn, they would put confident blue arrows down roads whose rules
+   * changed that morning.
+   */
+  showPedestrianFlow?: boolean;
+  /**
    * Frame on these coordinates instead of on the mandals.
    *
    * Needed as soon as a map carries something other than mandals. On
@@ -144,7 +156,7 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
   className, zoom, interactive = true, showClosures = false,
-  showVisarjan = false, showParking = true, frameOn,
+  showVisarjan = false, showParking = true, showPedestrianFlow = true, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -287,8 +299,10 @@ export function MiniMap({
       if (showVisarjan) addVisarjanLayers(map);
       // Not gated on showClosures: this is not a closure. It is where the
       // crowd walks one way, and a route map is exactly where a walker
-      // needs to see which way that is before setting off.
-      addPedestrianFlowLayers(map);
+      // needs to see which way that is before setting off. It IS gated on
+      // its own flag, because the day the peths belong to the procession
+      // is the day those lanes stop being true.
+      if (showPedestrianFlow) addPedestrianFlowLayers(map);
 
       map.addLayer({
         id: 'route-line',

@@ -157,6 +157,7 @@ export default async function VisarjanPage() {
           mandals={manache}
           showVisarjan
           showParking={false}
+          showPedestrianFlow={false}
           interactive
           frameOn={corridorFrame}
           className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]"
