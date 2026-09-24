@@ -377,6 +377,16 @@ export default async function VisarjanPage() {
                         {c.disputed}
                       </span>
                     )}
+                    {/* Marked as not-the-notice, in its own colour. A
+                        local report can be more current than an order
+                        written days ahead, and must still never be read
+                        as the order. */}
+                    {c.localNote && (
+                      <span className="mt-1 block text-[12px] leading-relaxed text-[var(--shendur)]">
+                        <strong className="font-semibold">On the ground:</strong>{' '}
+                        <span className="text-[var(--muted)]">{c.localNote}</span>
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

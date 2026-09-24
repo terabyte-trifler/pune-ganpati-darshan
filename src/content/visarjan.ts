@@ -69,6 +69,16 @@ export interface VisarjanClosure {
   stretch: string;
   /** Set when the sources disagreed and we had to choose. */
   disputed?: string;
+  /**
+   * Something known on the ground that the notice does not say.
+   *
+   * Kept in its own field, and rendered in its own voice, because the
+   * rest of this file is quoted from a police order and this is not. A
+   * local report can be more current than the order — the order is
+   * written days ahead and the barricades go where the officer on the
+   * junction puts them — but it must never be read as the order itself.
+   */
+  localNote?: string;
 }
 
 /**
@@ -87,7 +97,16 @@ export const VISARJAN_CLOSURES: VisarjanClosure[] = [
   { from: '10:00', road: 'Ganesh Road', stretch: 'Daruwala Bridge to Jijamata Chowk' },
   { from: '10:00', road: 'Kelkar Road', stretch: 'Budhwar Chowk to Alka Talkies Chowk' },
   { from: '10:00', road: 'Shastri Road', stretch: 'Senadatta Chowk to Alka Talkies Chowk' },
-  { from: '11:00', road: 'Jangli Maharaj Road', stretch: 'Jhansi Rani Chowk to Khandoji Baba Chowk' },
+  {
+    from: '11:00',
+    road: 'Jangli Maharaj Road',
+    stretch: 'Jhansi Rani Chowk to Khandoji Baba Chowk',
+    localNote:
+      'Reported locally as shut only from Bal Gandharva onwards — half ' +
+      'the stretch rather than all of it. Bal Gandharva stands between ' +
+      'the two points the notice names, so this narrows the order rather ' +
+      'than contradicting it.',
+  },
   { from: '11:00', road: 'Fergusson College Road', stretch: 'Khandoji Baba Chowk to the Fergusson College main gate' },
   { from: '12:00', road: 'Bhandarkar Road', stretch: 'PYC Gymkhana to Goodluck Chowk' },
   { from: '12:00', road: 'Pune–Satara Road', stretch: 'Volga Chowk to Jedhe Chowk' },
