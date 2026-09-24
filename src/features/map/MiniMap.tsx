@@ -18,7 +18,7 @@ import { boundsOf, haversine } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
-import { addVisarjanLayers } from '@/lib/maps/visarjan-layer';
+import { addVisarjanLayers, liftVisarjanMarkers } from '@/lib/maps/visarjan-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
 import { openNamePopup } from '@/lib/maps/name-popup';
@@ -431,6 +431,11 @@ export function MiniMap({
         });
         map.on('mouseenter', 'mandal-pins', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'mandal-pins', () => { map.getCanvas().style.cursor = ''; });
+
+        // The pins were added last and would otherwise bury the marks
+        // this map exists for — the procession passes the mandals, so a
+        // checkpoint almost always shares a corner with one.
+        if (showVisarjan) liftVisarjanMarkers(map);
       }
 
       // A tap that hit no pin puts the name away again.

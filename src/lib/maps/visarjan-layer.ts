@@ -39,6 +39,23 @@ const CLOSURE_COLOR = '#C8BCA8';
 /** Vermilion-leaning, because a diversion is an instruction to act on. */
 const DIVERSION_COLOR = '#E2621B';
 
+/**
+ * White, because everything else on this map is already spoken for.
+ *
+ * The corridor is marigold, the mandals brass, the diversions vermilion,
+ * the closures bone-grey, and the metro owns purple and teal. Against a
+ * near-black ground white is both the highest contrast available and the
+ * only tone left that carries no other meaning — green would have been
+ * brighter still, and wrong, because green is "short queue" in this
+ * app's pin language on a map that has deliberately stopped claiming
+ * queues at all.
+ *
+ * These are also the marks most worth seeing: a checkpoint answers "when
+ * does it reach this corner", which is the question asked while standing
+ * on the corner.
+ */
+const CHECKPOINT_COLOR = '#FFFFFF';
+
 const MIN_ZOOM = 12.5;
 
 const corridor = VISARJAN_GEOMETRY.filter((g) => g.kind === 'procession');
@@ -126,6 +143,24 @@ export function visarjanClosureFeatureCollection(): GeoJSON.FeatureCollection {
  * Call inside the map's own 'load' handler, before the mandal pins so
  * they stay on top. Guards on the source, because adding twice throws.
  */
+/**
+ * Lifts the checkpoints and diversions above the mandal pins.
+ *
+ * Layer order is insertion order, and the mandal pins are added after
+ * these. With thirty of them on the peths, a checkpoint drawn underneath
+ * disappears behind whichever mandal happens to share its corner — which
+ * is most of them, since the procession passes the mandals. Called once
+ * the pins exist.
+ */
+export function liftVisarjanMarkers(map: MapLibreMap): void {
+  for (const id of [
+    'visarjan-diversion', 'visarjan-diversion-label',
+    'visarjan-checkpoint', 'visarjan-checkpoint-label',
+  ]) {
+    if (map.getLayer(id)) map.moveLayer(id);
+  }
+}
+
 export function addVisarjanLayers(map: MapLibreMap): void {
   if (map.getSource(VISARJAN_SOURCE_ID)) return;
 
@@ -216,10 +251,12 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     source: VISARJAN_CHECKPOINT_SOURCE_ID,
     minzoom: 12.5,
     paint: {
-      'circle-color': CORRIDOR_COLOR,
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3.5, 17, 7],
+      'circle-color': CHECKPOINT_COLOR,
+      // A shade larger than a mandal pin: on this map the checkpoint is
+      // the instruction and the mandal is the context.
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 4.5, 17, 8.5],
       'circle-stroke-color': '#14100C',
-      'circle-stroke-width': 1.6,
+      'circle-stroke-width': 2,
     },
   });
 
@@ -240,9 +277,9 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       'text-max-width': 9,
     },
     paint: {
-      'text-color': CORRIDOR_COLOR,
+      'text-color': CHECKPOINT_COLOR,
       'text-halo-color': '#14100C',
-      'text-halo-width': 1.5,
+      'text-halo-width': 2,
     },
   });
 
