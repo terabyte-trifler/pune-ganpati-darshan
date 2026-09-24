@@ -1,10 +1,12 @@
 'use client';
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, SlidersHorizontal, LocateFixed } from 'lucide-react';
+import Link from 'next/link';
+import { Search, X, SlidersHorizontal, LocateFixed, ArrowRight } from 'lucide-react';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { Chip } from '@/components/ui/Chip';
 import { searchGanpatis } from '@/services/search';
+import { suggestPages } from '@/content/page-suggestions';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useFavorites } from '@/hooks/useFavorites';
 import { haversine } from '@/lib/geo';
@@ -60,6 +62,10 @@ export function ExploreView({
     }, 900);
     return () => clearTimeout(timer);
   }, [deferredQuery, ganpatis]);
+
+  // Pages that answer the query, shown alongside mandals rather than
+  // instead of them: a search for "visarjan" may still want the mandal.
+  const pageHits = useMemo(() => suggestPages(deferredQuery), [deferredQuery]);
 
   const results = useMemo(() => {
     let list = deferredQuery.trim()
@@ -283,6 +289,37 @@ export function ExploreView({
           {results.length} {results.length === 1 ? 'mandal' : 'mandals'}
           {query && <> for &ldquo;{query}&rdquo;</>}
         </p>
+
+        {/* A page can answer what the catalogue cannot.
+            A third of searches found nothing on 22 September, and among
+            them were "visarjan", "parking" and area names — each of which
+            the app answers on a page the search box could not reach. */}
+        {pageHits.length > 0 && (
+          <ul className="mb-3 space-y-2">
+            {pageHits.map((p) => (
+              <li key={p.href}>
+                <Link
+                  href={p.href}
+                  className="flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--shendur)]/35 bg-[var(--shendur)]/[0.07] px-3.5 py-2.5"
+                >
+                  <ArrowRight
+                    size={16}
+                    aria-hidden="true"
+                    className="shrink-0 text-[var(--shendur)]"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-[14.5px] font-semibold text-[var(--chandan)]">
+                      {p.title}
+                    </span>
+                    <span className="block text-[12.5px] leading-relaxed text-[var(--muted)]">
+                      {p.blurb}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {results.length === 0 ? (
           <div className="surface rounded-[var(--radius-card)] border border-[var(--line)] px-4 py-10 text-center">

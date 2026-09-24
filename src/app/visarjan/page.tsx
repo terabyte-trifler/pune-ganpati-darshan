@@ -8,8 +8,9 @@ import {
 } from '@/content/visarjan';
 import { mergedTimings, mandalsWithTimings } from '@/lib/visarjan-timings';
 import { TimingsTimeline } from '@/features/visarjan/TimingsTimeline';
+import { UpNext } from '@/features/visarjan/UpNext';
 import { getFestivalConfig } from '@/services/ganpati';
-import { isVisarjanImminent } from '@/lib/festival';
+import { isVisarjanImminent, getFestivalPhase } from '@/lib/festival';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
@@ -46,6 +47,13 @@ export const metadata: Metadata = {
 export default async function VisarjanPage() {
   const [ganpatis, festival] = await Promise.all([getAllGanpatis(), getFestivalConfig()]);
   const rows = mergedTimings();
+
+  // The day and its eve are different states, and the clock means
+  // different things in each: on the eve every published hour is still
+  // ahead, but on tomorrow's clock, not tonight's.
+  const phase = getFestivalPhase(festival);
+  const isVisarjanDay = phase.phase === 'during' && phase.isVisarjan;
+  const isEve = isVisarjanImminent(festival) && !isVisarjanDay;
   const timingMandals = mandalsWithTimings(rows);
   const manache = ganpatis
     .filter((g) => g.manacheRank !== null)
@@ -82,6 +90,34 @@ export default async function VisarjanPage() {
           the next morning.
         </p>
 
+        {/* Jump links. The page is nearly seven screens and is mostly
+            reached from a forwarded link, so the reader arrives wanting
+            one of these sections rather than the top of a scroll —
+            exactly the reasoning /parking already follows.
+
+            Plain anchors, not buttons: they work before hydration and
+            they survive being shared as a URL. */}
+        <nav
+          aria-label="Sections of this page"
+          className="-mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1"
+        >
+          {[
+            ['#timings', 'Timings'],
+            ['#closures', `Closed roads (${VISARJAN_CLOSURES.length})`],
+            ['#map', 'Map'],
+            ['#order', 'Manache Paach'],
+            ['#rules', 'Parking & bans'],
+          ].map(([href, label]) => (
+            <a
+              key={href}
+              href={href}
+              className="inline-flex min-h-11 shrink-0 items-center rounded-[var(--radius-chip)] border border-[var(--line-strong)] px-3 text-[13px] text-[var(--muted)]"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+
         {/* The live answer, first. Everything below it is a plan made
             yesterday; this is the only thing that knows the hour. */}
         <a
@@ -109,6 +145,9 @@ export default async function VisarjanPage() {
             takes, and how much of the centre that puts behind a
             barricade. Interactive, so it can be panned into the peth the
             reader actually lives in. */}
+        <UpNext rows={rows} isVisarjanDay={isVisarjanDay} isEve={isEve} />
+
+        <div id="map" className="scroll-mt-4" />
         <MiniMap
           mandals={manache}
           showVisarjan
@@ -153,7 +192,10 @@ export default async function VisarjanPage() {
             One list, ordered by the clock, because that is how the
             question arrives on the day: not "when does Kasba go" but
             "what comes past here in the next hour". */}
-        <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
+        <h2
+          id="timings"
+          className="font-display mt-8 scroll-mt-4 text-[20px] font-bold text-[var(--chandan)]"
+        >
           Timings for the day
         </h2>
         <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
@@ -175,7 +217,7 @@ export default async function VisarjanPage() {
         <TimingsTimeline
           rows={rows}
           mandals={timingMandals}
-          isToday={isVisarjanImminent(festival)}
+          isToday={isVisarjanDay}
         />
 
         <p className="prose-measure mt-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3.5 text-[13px] leading-relaxed text-[var(--muted)]">
@@ -198,7 +240,10 @@ export default async function VisarjanPage() {
         </p>
 
         {/* ---------------- The order ---------------- */}
-        <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
+        <h2
+          id="order"
+          className="font-display mt-8 scroll-mt-4 text-[20px] font-bold text-[var(--chandan)]"
+        >
           The Manache Paach, in order
         </h2>
         <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
@@ -229,7 +274,10 @@ export default async function VisarjanPage() {
         </ol>
 
         {/* ---------------- Closures ---------------- */}
-        <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
+        <h2
+          id="closures"
+          className="font-display mt-8 scroll-mt-4 text-[20px] font-bold text-[var(--chandan)]"
+        >
           What closes, and when
         </h2>
         <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
@@ -266,7 +314,10 @@ export default async function VisarjanPage() {
         </div>
 
         {/* ---------------- Restrictions ---------------- */}
-        <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
+        <h2
+          id="rules"
+          className="font-display mt-8 scroll-mt-4 text-[20px] font-bold text-[var(--chandan)]"
+        >
           Also in force
         </h2>
         <ul className="mt-3 space-y-2.5">

@@ -1,8 +1,9 @@
 'use client';
 
-import { Fragment, useRef, useSyncExternalStore } from 'react';
+import { Fragment, useRef } from 'react';
 import Link from 'next/link';
 import type { TimingRow } from '@/lib/visarjan-timings';
+import { useIstMinutes, formatIst } from './useIstClock';
 
 /**
  * The day's published times, in one list, with the clock on it.
@@ -26,44 +27,8 @@ import type { TimingRow } from '@/lib/visarjan-timings';
  * they can press instead.
  */
 
-const IST_OFFSET_MIN = 5.5 * 60;
-
 /** The marker's id, so the "Now" chip can find it wherever it lands. */
 const NOW_ID = 'visarjan-now';
-
-/** Minutes past midnight IST, right now. */
-function istMinutesNow(): number {
-  const now = new Date();
-  return (now.getUTCHours() * 60 + now.getUTCMinutes() + IST_OFFSET_MIN) % (24 * 60);
-}
-
-/**
- * The clock, as an external store.
- *
- * Deliberately not `useState` + `useEffect`. Setting state synchronously
- * in an effect just to learn the time causes a second render on every
- * mount, and React's own guidance is that a clock is an external system
- * to subscribe to rather than state to sync. `useSyncExternalStore` also
- * gives the server snapshot for free, which is what keeps the marker out
- * of the prerendered HTML.
- *
- * The snapshot is stable within a minute — the same integer — so React
- * re-renders on the minute turning and not on every tick.
- */
-function subscribeToClock(onChange: () => void): () => void {
-  const id = setInterval(onChange, 30_000);
-  return () => clearInterval(id);
-}
-
-const clockSnapshot = () => istMinutesNow();
-/** No marker in the prerendered HTML: the server has no "now" worth having. */
-const serverClockSnapshot = (): number | null => null;
-
-function formatIst(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
 
 export function TimingsTimeline({
   rows,
@@ -78,8 +43,7 @@ export function TimingsTimeline({
   const listRef = useRef<HTMLOListElement>(null);
 
   // null on the server and on any day but this one.
-  const clock = useSyncExternalStore(subscribeToClock, clockSnapshot, serverClockSnapshot);
-  const nowMinutes = isToday ? clock : null;
+  const nowMinutes = useIstMinutes(isToday);
 
   const scrollTo = (el: Element | null) => {
     // Smooth scrolling is driven by the compositor, so it silently does
