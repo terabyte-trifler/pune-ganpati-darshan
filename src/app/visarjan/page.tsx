@@ -20,7 +20,7 @@ import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
   DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
-  PARKING_COUNT, DRAWN_ROUTE_STOPS,
+  PARKING_COUNT,
 } from '@/lib/maps/visarjan-layer';
 import { POLICE_PARKING } from '@/content/visarjan-police';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
