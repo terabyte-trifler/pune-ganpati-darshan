@@ -136,6 +136,95 @@ export const VISARJAN_RESTRICTIONS: VisarjanRestriction[] = [
  */
 export const KASBA_START =
   'Shri Kasba Ganpati, the city’s gramdaivat and the first of the ' +
-  'Manache Paach, leaves after its 9 a.m. pooja. The rest follow in order ' +
-  'behind it — each when the one ahead has moved, which is why no later ' +
-  'mandal has a time worth printing.';
+  'Manache Paach, sets the day going — see the timeline above. The rest ' +
+  'follow in order behind it, each when the one ahead has moved, which is ' +
+  'why only two mandals in this catalogue have a departure time worth ' +
+  'printing.';
+
+/**
+ * Visarjan-day timings.
+ *
+ * ---------------------------------------------------------------------
+ * Why this list is short, and why it stays short.
+ *
+ * Two of the thirty mandals in the catalogue have published a schedule
+ * for 25 September; the rest have not, and each of them moves when the
+ * mandal ahead of it moves. So this carries the citywide spine the
+ * Police Commissioner gave, the two mandal schedules that exist, and
+ * nothing else.
+ *
+ * Every entry below was checked against the one trap this subject is
+ * full of: the aagman timings from 14 September are widely republished
+ * and read exactly like visarjan timings. Kasba's "11:45 pran-pratishtha"
+ * and Tambdi Jogeshwari's "10 a.m. from Mandar Lodge" are arrival-day
+ * times and are deliberately NOT here, however often they surface in a
+ * search for the procession.
+ *
+ * These are start times, not a timetable. The procession runs into the
+ * next morning and the back of it slips by hours; a mandal's listed hour
+ * is when it intends to set off, not when it will pass any given corner.
+ */
+
+export interface ScheduleEntry {
+  /** IST, as published. A range where the source gave one. */
+  time: string;
+  what: string;
+  /** Mandal slug, where the entry belongs to one in the catalogue. */
+  slug?: string;
+  source: 'police' | 'mandal';
+}
+
+/** The citywide spine, from the Police Commissioner's briefing. */
+export const VISARJAN_TIMELINE: ScheduleEntry[] = [
+  { time: '06:00', what: 'Police ground deployment takes effect across all sectors', source: 'police' },
+  {
+    time: '07:00 – 07:30',
+    what: 'Bhausaheb Rangari: Anant Chaturdashi puja',
+    slug: 'bhau-rangari-ganpati',
+    source: 'mandal',
+  },
+  {
+    time: '08:00',
+    what: 'Bhausaheb Rangari: the idol is placed on the Shri Vighnaharta Rath, which moves to the Lokmanya Tilak statue at Mandai',
+    slug: 'bhau-rangari-ganpati',
+    source: 'mandal',
+  },
+  {
+    time: '09:00',
+    what: 'Kasba Ganpati, the first of the Manache Paach, reaches the Lokmanya Tilak statue for aarti',
+    slug: 'kasba-ganpati',
+    source: 'police',
+  },
+  {
+    time: '09:30',
+    what: 'Kasba Ganpati moves from the Tilak statue towards Belbaug Chowk',
+    slug: 'kasba-ganpati',
+    source: 'police',
+  },
+  {
+    time: '10:15',
+    what: 'The formal immersion procession commences from Belbaug Chowk, and the central route opens',
+    source: 'police',
+  },
+  {
+    time: '17:00 – 17:30',
+    what: 'Bhausaheb Rangari: the chariot joins the main procession on Laxmi Road, on a route it has taken for 135 years',
+    slug: 'bhau-rangari-ganpati',
+    source: 'mandal',
+  },
+];
+
+/** Where the timeline's two kinds of entry come from. */
+export const TIMELINE_SOURCES = {
+  police:
+    'Pune Police, from Commissioner Amitesh Kumar’s visarjan briefing, ' +
+    'reported by Punekar News on 24 September 2026',
+  mandal: 'The mandal’s own published schedule, reported by Punekar News on 24 September 2026',
+  policeUrl:
+    'https://www.punekarnews.in/pune-ganesh-visarjan-2026-over-10000-cops-deployed-safety-prioritised-over-procession-speed-says-cp-amitesh-kumar/',
+  mandalUrl:
+    'https://www.punekarnews.in/pune-ganesh-visarjan-2026-bhausaheb-rangari-ganpati-visarjan-schedule-route-and-key-attractions/',
+} as const;
+
+/** How many of the catalogue's mandals have published a schedule. */
+export const MANDALS_WITH_SCHEDULES = 2;
