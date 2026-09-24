@@ -270,6 +270,13 @@ export const VISARJAN_TIMELINE: ScheduleEntry[] = [
     source: 'police',
   },
   {
+    time: '16:00',
+    what: 'Sets off from its temple for Belbaug Chowk and the Sambhaji Maharaj bridge',
+    mandal: 'Dagdusheth',
+    slug: 'dagdusheth-halwai-ganpati',
+    source: 'mandal',
+  },
+  {
     time: '17:00 – 17:30',
     what: 'The chariot joins the main procession on Laxmi Road, on a route it has taken for 135 years',
     mandal: 'Bhausaheb Rangari',
@@ -291,7 +298,7 @@ export const TIMELINE_SOURCES = {
 } as const;
 
 /** How many of the catalogue's mandals have published a schedule. */
-export const MANDALS_WITH_SCHEDULES = 4;
+export const MANDALS_WITH_SCHEDULES = 5;
 
 /**
  * Why three mandals all say 09:30.
@@ -429,3 +436,50 @@ export const NO_PARKING_ROADS = [
 
 /** Areas outside the centre with their own arrangements for the day. */
 export const OUTLYING_AREAS = ['Dhayari Phata', 'Keshav Nagar–Mundhwa', 'Sasane Nagar–Hadapsar'];
+
+/**
+ * A mandal's route as an ordered sequence, with no times on the stops.
+ *
+ * Kasba publishes an hour against each chowk; most mandals publish the
+ * order and a departure time and nothing else. Both are worth carrying
+ * and they are different shapes, so they are different structures —
+ * putting Dagdusheth into the checkpoint type would mean inventing nine
+ * times to fill the fields, which is the one thing this file refuses.
+ *
+ * The order alone answers a real question: whether the procession is
+ * coming towards you or has already gone past.
+ */
+export interface MandalRoutePath {
+  slug: string;
+  mandal: string;
+  /** Published departure, IST. */
+  startsAt: string;
+  /** From where, in the mandal's own words. */
+  startsFrom: string;
+  startsFromMr: string;
+  /** In order. Transliteration first, Devanagari as the mandal wrote it. */
+  stops: { place: string; placeMr: string }[];
+  /** Where it ends. */
+  endsAt: string;
+  endsAtMr: string;
+}
+
+export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
+  {
+    slug: 'dagdusheth-halwai-ganpati',
+    mandal: 'Shrimant Dagdusheth Halwai Ganpati',
+    startsAt: '16:00',
+    startsFrom: 'the Dagdusheth Halwai Ganpati temple',
+    startsFromMr: 'श्रीमंत दगडूशेठ हलवाई गणपती मंदिर',
+    stops: [
+      { place: 'Belbaug Chowk', placeMr: 'बेलबाग चौक' },
+      { place: 'Ganpati Chowk', placeMr: 'गणपती चौक' },
+      { place: 'Nagarkar Talim Chowk', placeMr: 'नगरकर तालीम चौक' },
+      { place: 'Umbrya Ganpati Chowk', placeMr: 'उंबऱ्या गणपती चौक' },
+      { place: 'Lokmanya Tilak Chowk', placeMr: 'लोकमान्य टिळक चौक' },
+      { place: 'Chhatrapati Sambhaji Maharaj bridge', placeMr: 'छत्रपती संभाजी महाराज पूल' },
+    ],
+    endsAt: 'the immersion ghat at Shri Panchaleshwar Mandir',
+    endsAtMr: 'विसर्जन घाट – श्री पांचाळेश्वर मंदिर',
+  },
+];

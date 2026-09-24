@@ -6,6 +6,7 @@ import {
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
   MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES,
   DIVERSION_POINTS, RING_ROAD_ADVICE, NO_PARKING_ROADS, OUTLYING_AREAS,
+  MANDAL_ROUTE_PATHS,
 } from '@/content/visarjan';
 import { mergedTimings, mandalsWithTimings } from '@/lib/visarjan-timings';
 import { TimingsTimeline } from '@/features/visarjan/TimingsTimeline';
@@ -121,6 +122,7 @@ export default async function VisarjanPage() {
             ['#closures', `Closed roads (${VISARJAN_CLOSURES.length})`],
             ['#map', 'Map'],
             ['#order', 'Manache Paach'],
+            ['#dagdusheth', 'Dagdusheth route'],
             ['#diversions', 'Diversions'],
             ['#rules', 'Parking & bans'],
           ].map(([href, label]) => (
@@ -330,6 +332,72 @@ export default async function VisarjanPage() {
           ; marigold are the mandal&rsquo;s own, Kasba&rsquo;s checkpoints
           coming from its trust&rsquo;s published Laxmi Road schedule.
         </p>
+
+        {/* A route without times on the stops. Answers the question the
+            timings cannot: is it coming towards me, or has it gone. */}
+        {MANDAL_ROUTE_PATHS.map((r) => (
+          <section key={r.slug} className="mt-8">
+            <h2
+              id="dagdusheth"
+              className="font-display scroll-mt-4 text-[20px] font-bold text-[var(--chandan)]"
+            >
+              {r.mandal}: the route
+            </h2>
+            <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
+              Sets off at{' '}
+              <strong className="font-semibold text-[var(--zendu)]">{r.startsAt}</strong>{' '}
+              from {r.startsFrom}{' '}
+              <span lang="mr" className="text-[var(--faint)]">
+                ({r.startsFromMr})
+              </span>
+              . The mandal publishes the order of the route but no hour
+              against each stop, so none is shown — what it gives you is
+              whether the procession is still coming or already past.
+            </p>
+
+            <ol className="mt-4 border-l border-[var(--line-strong)] pl-4">
+              {r.stops.map((stop, i) => (
+                <li key={stop.place} className="relative py-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="absolute -left-[21px] top-[11px] h-1.5 w-1.5 rounded-full bg-[var(--pital)]"
+                  />
+                  <span className="flex flex-wrap items-baseline gap-x-2.5">
+                    <span className="text-[12px] tabular-nums text-[var(--faint)]">
+                      {i + 1}
+                    </span>
+                    <span className="text-[14.5px] text-[var(--chandan)]">{stop.place}</span>
+                    <span lang="mr" className="text-[13px] text-[var(--faint)]">
+                      {stop.placeMr}
+                    </span>
+                  </span>
+                </li>
+              ))}
+              <li className="relative py-1.5">
+                <span
+                  aria-hidden="true"
+                  className="absolute -left-[22px] top-[10px] h-2 w-2 rounded-full bg-[var(--zendu)]"
+                  style={{ boxShadow: 'var(--glow-zendu)' }}
+                />
+                <span className="flex flex-wrap items-baseline gap-x-2.5">
+                  <span className="text-[14.5px] font-semibold text-[var(--chandan)]">
+                    {r.endsAt}
+                  </span>
+                  <span lang="mr" className="text-[13px] text-[var(--faint)]">
+                    {r.endsAtMr}
+                  </span>
+                </span>
+              </li>
+            </ol>
+
+            <p className="prose-measure mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
+              Published by the mandal. Three of these chowks — Belbaug,
+              Ganpati Chowk and Umbrya Ganpati — are on Kasba&rsquo;s
+              schedule too, which is the same corridor read from a
+              different starting point.
+            </p>
+          </section>
+        ))}
 
         {/* ---------------- The order ---------------- */}
         <h2
