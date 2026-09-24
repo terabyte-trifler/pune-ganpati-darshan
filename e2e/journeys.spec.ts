@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import catalogue from '../src/content/catalogue.json';
+import { MAX_PLAN_STOPS } from '../src/lib/plan-limits';
 
 /**
  * Counts come from the catalogue, not from literals. Hardcoding "18 mandals"
@@ -521,8 +522,16 @@ test('Flow 12 — metro replaces the car, and picking it chooses a station', asy
   await expect(page.getByRole('button', { name: /^Mandai/ })).toHaveCount(0);
 
   // And its absence is explained rather than left to be noticed.
-  await expect(page.getByText(/No getting off at Mandai/)).toBeVisible();
-  await expect(page.getByText(/board here to go home/)).toBeVisible();
+  //
+  // Asserted on the shape of the explanation, not its exact sentence: this
+  // test failed for days because the copy was reworded from "No getting
+  // off at Mandai" to "Avoid Mandai", while the behaviour it guards — that
+  // the gap is explained at all — never changed. What matters is that the
+  // station is named, that it is warned against, and that the reader is
+  // pointed at the station to use instead.
+  await expect(page.getByText(/Avoid Mandai/)).toBeVisible();
+  await expect(page.getByText(/use Kasba Peth/)).toBeVisible();
+  await expect(page.getByText(/journey home/)).toBeVisible();
 
   // The two Aqua Line ones are the rare answer, so they start collapsed.
   await expect(
@@ -728,7 +737,7 @@ test('Flow 16 — a long darshan still optimises instead of being rejected', asy
   // The boundary that used to 400, and the cap itself. Both must return
   // every stop, ordered — a plan is not allowed to silently lose stops the
   // visitor chose.
-  for (const n of [10, 20]) {
+  for (const n of [10, MAX_PLAN_STOPS]) {
     const res = await post(n);
     expect(res.status(), `${n} stops must be accepted`).toBe(200);
     const json = await res.json();
@@ -744,10 +753,15 @@ test('Flow 16 — a long darshan still optimises instead of being rejected', asy
 
   // Past the cap it is still refused — but with something a person can act
   // on rather than "Invalid request".
-  const tooMany = await post(21);
+  //
+  // The cap is read from the source rather than written here: it was
+  // raised to hold every mandal in the city, and this test went on
+  // asserting the old 20 for days afterwards — a stale expectation that
+  // fails without describing anything real.
+  const tooMany = await post(MAX_PLAN_STOPS + 1);
   expect(tooMany.status()).toBe(400);
   const { error } = await tooMany.json();
-  expect(error).toMatch(/up to 20 stops/);
+  expect(error).toMatch(new RegExp(`up to ${MAX_PLAN_STOPS} stops`));
   expect(error).not.toBe('Invalid request');
 });
 

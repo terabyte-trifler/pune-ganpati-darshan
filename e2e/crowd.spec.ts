@@ -584,7 +584,12 @@ test('the tracker ends with a key to the colours the map uses', async ({ page })
   // And that the map speaks the same language — including what grey means,
   // which is the one a reader would otherwise guess wrong.
   await expect(section.getByText(/drawn in its queue.s colour/)).toBeVisible();
-  await expect(section.getByText(/Grey means nobody has reported/)).toBeVisible();
+  // The invariant, not the sentence: grey must be explained as an absence
+  // of information rather than as a quiet queue. The copy has already been
+  // reworded once — it now covers all three pin styles — and the old exact
+  // string kept this test red without describing anything broken.
+  await expect(section.getByText(/Grey means/)).toBeVisible();
+  await expect(section.getByText(/not\s+that the mandal is quiet/)).toBeVisible();
 });
 
 test('the live crowd section invites a report when nobody has reported', async ({ page }) => {
@@ -603,8 +608,29 @@ test('the live crowd section invites a report when nobody has reported', async (
   await page.goto('/');
   const section = page.locator(LIVE_SECTION);
   await expect(section).toBeVisible();
-  await expect(section.getByText(/no queues reported yet/i)).toBeVisible();
-  await expect(section.getByText(/you would be the first/i)).toBeVisible();
+
+  /**
+   * Two shapes are correct here, and which one appears depends on the date.
+   *
+   * With no reports, Lane B fills the rows from the clock and the mandal's
+   * usual wait — but only during the festival. Outside it the prior stays
+   * silent, there are no rows, and the section invites a report instead.
+   * This test asserted the second shape unconditionally and so went red for
+   * the whole of Ganeshotsav, which is precisely when it mattered.
+   *
+   * What must hold on every date is the part §55 is actually about: with
+   * nothing reported, the section must never word anything as a report.
+   */
+  await expect(section.getByText(/devotees report/i)).toHaveCount(0);
+
+  const invited = await section.getByText(/you would be the first/i).count();
+  if (invited > 0) {
+    await expect(section.getByText(/no queues reported yet/i)).toBeVisible();
+  } else {
+    // The estimates are showing, and must say so in Lane B's own words.
+    await expect(section.getByText(/estimated/i).first()).toBeVisible();
+    await expect(section.getByText(/fill rows a report could not/i)).toBeVisible();
+  }
 });
 
 test('the live crowd section says so when crowd data cannot be reached', async ({ page }) => {
@@ -616,7 +642,24 @@ test('the live crowd section says so when crowd data cannot be reached', async (
   await page.goto('/');
   const section = page.locator(LIVE_SECTION);
   await expect(section).toBeVisible();
-  await expect(section.getByText(/temporarily unavailable/i)).toBeVisible();
+
+  /**
+   * The on-device estimates survive an unreachable service deliberately —
+   * a saturated cell in a peth at 9pm is the situation Lane B was written
+   * for — so during the festival this section still answers, and the
+   * "temporarily unavailable" line appears only when there is nothing at
+   * all to put here. Both are correct; the date decides which.
+   *
+   * The invariant either way: a service we could not reach must never be
+   * rendered as something a devotee reported.
+   */
+  await expect(section.getByText(/devotees report/i)).toHaveCount(0);
+
+  const unavailable = await section.getByText(/temporarily unavailable/i).count();
+  if (unavailable === 0) {
+    await expect(section.getByText(/estimated/i).first()).toBeVisible();
+  }
+
   // The rest of the page must survive it.
   await expect(page.locator('a[href^="/ganpati/"]').first()).toBeVisible();
 });
