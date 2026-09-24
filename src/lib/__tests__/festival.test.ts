@@ -42,6 +42,34 @@ describe('festival phase', () => {
     expect(getFestivalPhase(config, ist('2026-09-26T08:00:00'))).toEqual({ phase: 'after' });
   });
 
+  // The procession reaches the ghats in the small hours. Ending the festival
+  // at midnight would blank the site during its busiest hours of the year.
+  it('keeps the night after visarjan on visarjan day', () => {
+    expect(getFestivalPhase(config, ist('2026-09-26T00:30:00'))).toMatchObject({
+      phase: 'during', day: 12, isVisarjan: true, isVisarjanNight: true,
+    });
+    expect(getFestivalPhase(config, ist('2026-09-26T05:59:00'))).toMatchObject({
+      phase: 'during', isVisarjanNight: true,
+    });
+  });
+
+  it('is not visarjan night before the idols leave', () => {
+    expect(getFestivalPhase(config, ist('2026-09-25T00:30:00'))).toMatchObject({
+      phase: 'during', day: 12, isVisarjan: true, isVisarjanNight: false,
+    });
+  });
+
+  it('ends once the visarjan night is over', () => {
+    expect(getFestivalPhase(config, ist('2026-09-26T06:00:00'))).toEqual({ phase: 'after' });
+  });
+
+  it('only extends the night that follows visarjan', () => {
+    const midFestival: FestivalConfig = { ...config, visarjanDate: '2026-09-20' };
+    expect(getFestivalPhase(midFestival, ist('2026-09-21T00:30:00'))).toMatchObject({
+      phase: 'during', day: 7, isVisarjan: true, isVisarjanNight: true,
+    });
+  });
+
   it('is year-agnostic', () => {
     const next: FestivalConfig = {
       ...config, year: 2027, startDate: '2027-09-04',

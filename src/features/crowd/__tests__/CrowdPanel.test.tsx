@@ -41,7 +41,13 @@ vi.mock('@/features/crowd/CrowdReportButtons', () => ({
 const { CrowdPanel } = await import('@/features/crowd/CrowdPanel');
 
 const PRIOR = { darshanMinutes: 20, peakDarshanMinutes: 45, prominence: 890 };
-const DURING: FestivalPhase = { phase: 'during', day: 6, totalDays: 12, isVisarjan: false };
+const DURING: FestivalPhase = {
+  phase: 'during',
+  day: 6,
+  totalDays: 12,
+  isVisarjan: false,
+  isVisarjanNight: false,
+};
 /** 21:00 IST on Sat 19 Sep 2026. */
 const NOW = Date.parse('2026-09-19T15:30:00.000Z');
 
@@ -151,7 +157,9 @@ describe('Phase 1 — the prior speaks when the measurement cannot', () => {
   });
 
   it('stays silent on visarjan afternoon', () => {
-    panel({ phase: { phase: 'during', day: 12, totalDays: 12, isVisarjan: true } });
+    panel({
+      phase: { phase: 'during', day: 12, totalDays: 12, isVisarjan: true, isVisarjanNight: false },
+    });
     expect(screen.queryByText(/Usually/)).toBeNull();
   });
 

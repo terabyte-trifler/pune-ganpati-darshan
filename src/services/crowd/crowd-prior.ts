@@ -346,7 +346,14 @@ export function crowdExpectation(
   if (phase.phase !== 'during') return null;
 
   const istHour = istHourOf(at);
-  if (phase.isVisarjan && istHour >= VISARJAN_SILENT_AFTER_IST) return null;
+  // Once the idols have left, the prior stays silent for the rest of the
+  // visarjan day — including the small hours of the next morning, which
+  // `getFestivalPhase` still reports as visarjan while the procession runs.
+  // The pre-dawn hours of visarjan day itself are not that: the mandaps are
+  // full and those are among the busiest hours on the site.
+  if (phase.isVisarjan && (phase.isVisarjanNight || istHour >= VISARJAN_SILENT_AFTER_IST)) {
+    return null;
+  }
 
   const dow = istDayOfWeek(at);
   const hf = hourFactor(istHour);

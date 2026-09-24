@@ -11,7 +11,7 @@ const st = (o: Partial<CrowdStatus>): CrowdStatus => ({
 });
 const prior = crowdExpectation(
   { darshanMinutes: 20, peakDarshanMinutes: 45, prominence: 890 },
-  { phase: 'during', day: 6, totalDays: 12, isVisarjan: false },
+  { phase: 'during', day: 6, totalDays: 12, isVisarjan: false, isVisarjanNight: false },
   new Date(Date.parse('2026-09-19T15:30:00.000Z'))
 );
 

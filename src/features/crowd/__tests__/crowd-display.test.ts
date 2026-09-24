@@ -20,7 +20,7 @@ const ist = (isoDate: string, hour: number) =>
   new Date(Date.parse(`${isoDate}T00:00:00.000Z`) - 5.5 * 3600_000 + hour * 3600_000);
 
 const during = (day: number, isVisarjan = false): FestivalPhase =>
-  ({ phase: 'during', day, totalDays: 12, isVisarjan });
+  ({ phase: 'during', day, totalDays: 12, isVisarjan, isVisarjanNight: false });
 
 const DAGDUSHETH: PriorInput = {
   darshanMinutes: 45,

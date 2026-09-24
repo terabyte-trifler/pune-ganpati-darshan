@@ -45,4 +45,29 @@ describe('search', () => {
   it('returns nothing for an empty query', () => {
     expect(searchGanpatis(localGanpatis, '   ')).toHaveLength(0);
   });
+
+  // Both spellings are in everyday use, and "Dagadusheth" was returning
+  // nothing at all for the most-searched mandal in the city.
+  it.each(['dagdusheth', 'dagadusheth', 'dagadu', 'dagdushet'])(
+    'finds Dagdusheth spelled "%s"',
+    (query) => {
+      const [top] = searchGanpatis(localGanpatis, query);
+      expect(top?.ganpati.slug).toBe('dagdusheth-halwai-ganpati');
+    }
+  );
+
+  it.each(['manacha', 'manache paach', 'manache 5 ganpati'])(
+    'finds the Manache Paach from "%s"',
+    (query) => {
+      const hits = searchGanpatis(localGanpatis, query);
+      expect(hits.length).toBeGreaterThanOrEqual(5);
+      expect(hits.every((h) => h.ganpati.category === 'maanache')).toBe(true);
+    }
+  );
+
+  it('does not invent matches for unrelated words', () => {
+    for (const query of ['chocolate', 'xyzzy', 'laptop']) {
+      expect(searchGanpatis(localGanpatis, query)).toHaveLength(0);
+    }
+  });
 });

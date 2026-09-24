@@ -60,6 +60,22 @@ function subsequenceScore(haystack: string, needle: string): number {
   return 0.35 + 0.25 * (bestStreak / needle.length);
 }
 
+/**
+ * Consonant skeleton, for the vowels Marathi transliteration does not agree
+ * on. "Dagadusheth" and "Dagdusheth" are the same name and the same idol,
+ * and the first spelling was returning nothing at all: the subsequence
+ * matcher needs every letter of the query in order, and the extra "a" is
+ * not there to find. Dropping unstressed vowels makes both "dgdsht".
+ *
+ * A leading vowel is kept — it carries the word ("Akhil", not "khl") — and
+ * doubled letters collapse, so "shambhala" and "shambhaala" agree too.
+ */
+function skeleton(value: string): string {
+  const folded = value.replace(/w/g, 'v');
+  return (folded.slice(0, 1) + folded.slice(1).replace(/[aeiou]/g, ''))
+    .replace(/(.)\1+/g, '$1');
+}
+
 function fieldScore(field: string | null, query: string): number {
   if (!field) return 0;
   const value = normalise(field);
@@ -70,7 +86,15 @@ function fieldScore(field: string | null, query: string): number {
   if (value.split(/[\s,—-]+/).some((w) => w.startsWith(query))) return 0.8;
   if (value.includes(query)) return 0.66;
 
-  return query.length >= 4 ? subsequenceScore(value, query) : 0;
+  if (query.length < 4) return 0;
+
+  const direct = subsequenceScore(value, query);
+  if (direct > 0) return direct;
+
+  // Scored below every literal match: a skeleton hit is a guess about how
+  // someone spelled a name, not something they typed.
+  const skeletonQuery = skeleton(query);
+  return skeletonQuery.length >= 3 && skeleton(value).includes(skeletonQuery) ? 0.58 : 0;
 }
 
 export function searchGanpatis(
@@ -106,7 +130,18 @@ export function searchGanpatis(
       if (tagScore > best) { best = tagScore; matchedOn = 'tag'; }
     }
 
-    if (CATEGORY_TERMS[g.category]?.some((t) => normalise(t).startsWith(query))) {
+    // "manacha", "manache paach", "manache 5 ganpati" are all the same ask,
+    // so a category term may match any word of the query, by skeleton too.
+    const queryWords = query.split(/\s+/).filter((w) => w.length >= 3);
+    const categoryHit = CATEGORY_TERMS[g.category]?.some((term) => {
+      const t = normalise(term);
+      return (
+        t.startsWith(query) ||
+        queryWords.some((w) => t.startsWith(w) || skeleton(t) === skeleton(w))
+      );
+    });
+
+    if (categoryHit) {
       const catScore = 0.75;
       if (catScore > best) { best = catScore; matchedOn = 'category'; }
     }

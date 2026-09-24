@@ -73,6 +73,7 @@ export default async function AdminCrowdPriorPage({
     day,
     totalDays,
     isVisarjan: day === visarjanDay,
+    isVisarjanNight: false,
   };
 
   // The calendar date for the chosen festival day, so the weekday — which
