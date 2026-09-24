@@ -155,6 +155,7 @@ export default async function VisarjanPage() {
         <MiniMap
           mandals={manache}
           showVisarjan
+          showParking={false}
           interactive
           frameOn={corridorFrame}
           className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]"

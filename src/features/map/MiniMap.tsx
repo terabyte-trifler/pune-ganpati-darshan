@@ -90,6 +90,17 @@ export interface MiniMapProps {
    */
   showVisarjan?: boolean;
   /**
+   * Draw the police parking list. On by default, because "where do I
+   * leave the vehicle" is worth answering wherever a map appears.
+   *
+   * The visarjan map turns it off. That day is the one day the answer is
+   * not useful: the roads reaching most of those places are closed
+   * through the morning, no vehicle is getting near the corridor, and a
+   * screen of P discs over the procession route is a suggestion the day
+   * cannot honour.
+   */
+  showParking?: boolean;
+  /**
    * Frame on these coordinates instead of on the mandals.
    *
    * Needed as soon as a map carries something other than mandals. On
@@ -133,7 +144,7 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
   className, zoom, interactive = true, showClosures = false,
-  showVisarjan = false, frameOn,
+  showVisarjan = false, showParking = true, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -269,8 +280,9 @@ export function MiniMap({
       // peths with no stations on it answers "which mandals" and leaves
       // "how do I get to them" to a different screen.
       addMetroLayers(map);
-      // Parking on every map; closures only where they are the subject.
-      addParkingLayers(map);
+      // Parking on every map that can use it; closures only where they
+      // are the subject.
+      if (showParking) addParkingLayers(map);
       if (showClosures) addClosureLayers(map);
       if (showVisarjan) addVisarjanLayers(map);
       // Not gated on showClosures: this is not a closure. It is where the
