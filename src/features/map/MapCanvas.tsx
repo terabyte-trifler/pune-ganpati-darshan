@@ -20,6 +20,7 @@ import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
+import { addVisarjanLayers } from '@/lib/maps/visarjan-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
 import { openNamePopup } from '@/lib/maps/name-popup';
@@ -55,6 +56,8 @@ export interface MapCanvasProps {
    * rendered as no dot at all — never as a calm queue (§32, §33).
    */
   crowd?: Record<string, CrowdPinKey>;
+  /** Visarjan day: draw the corridor and that day's closures instead. */
+  showVisarjan?: boolean;
 }
 
 /**
@@ -268,6 +271,7 @@ async function registerClusterPin(map: MapLibreMap) {
 
 export function MapCanvas({
   ganpatis, selectedSlug, onSelect, userLocation, routeGeometry, onReady, crowd,
+  showVisarjan = false,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -427,7 +431,12 @@ export function MapCanvas({
       whenIdle(() => {
         // The map can be torn down while the callback is pending.
         if (!mapRef.current) return;
-        addClosureLayers(map);
+        // One closure plan at a time. On Anant Chaturdashi the visarjan
+        // order replaces the ordinary after-17:00 one; drawing both would
+        // put two contradictory sets of shut roads on the same map with
+        // nothing to say which is today's.
+        if (showVisarjan) addVisarjanLayers(map);
+        else addClosureLayers(map);
         addPedestrianFlowLayers(map);
         addMetroLayers(map);
         addParkingLayers(map);

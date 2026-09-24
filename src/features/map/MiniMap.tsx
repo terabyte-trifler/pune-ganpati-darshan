@@ -18,6 +18,7 @@ import { boundsOf, haversine } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
+import { addVisarjanLayers } from '@/lib/maps/visarjan-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
 import { openNamePopup } from '@/lib/maps/name-popup';
@@ -79,6 +80,16 @@ export interface MiniMapProps {
    */
   showClosures?: boolean;
   /**
+   * Draw the visarjan corridor and the closures ordered for that day.
+   *
+   * Opt-in and separate from `showClosures`, because the two plans are
+   * for different days: the after-17:00 closures are the ordinary
+   * festival evening, and these replace them on Anant Chaturdashi. Both
+   * on one map would show a reader two contradictory sets of shut roads
+   * with nothing saying which is today's.
+   */
+  showVisarjan?: boolean;
+  /**
    * Frame on these coordinates instead of on the mandals.
    *
    * Needed as soon as a map carries something other than mandals. On
@@ -121,7 +132,8 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
-  className, zoom, interactive = true, showClosures = false, frameOn,
+  className, zoom, interactive = true, showClosures = false,
+  showVisarjan = false, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -260,6 +272,7 @@ export function MiniMap({
       // Parking on every map; closures only where they are the subject.
       addParkingLayers(map);
       if (showClosures) addClosureLayers(map);
+      if (showVisarjan) addVisarjanLayers(map);
       // Not gated on showClosures: this is not a closure. It is where the
       // crowd walks one way, and a route map is exactly where a walker
       // needs to see which way that is before setting off.

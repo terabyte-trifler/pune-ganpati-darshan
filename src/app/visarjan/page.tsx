@@ -7,6 +7,9 @@ import {
 } from '@/content/visarjan';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { MiniMap } from '@/features/map/MiniMapLoader';
+import { DRAWN_CLOSURES, TOTAL_CLOSURES } from '@/lib/maps/visarjan-layer';
+import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 
 export const revalidate = 3600;
 
@@ -40,6 +43,13 @@ export default async function VisarjanPage() {
   const manache = ganpatis
     .filter((g) => g.manacheRank !== null)
     .sort((a, b) => (a.manacheRank ?? 0) - (b.manacheRank ?? 0));
+
+  // Frame on the corridor itself, not on the mandals: the Manache Paach
+  // sit inside the peths, and fitting them leaves Karve Road and Jedhe
+  // Chowk off the edge of a map that exists to show exactly those.
+  const corridorFrame = VISARJAN_GEOMETRY.flatMap((g) =>
+    g.segments.flat().map(([lng, lat]) => ({ lat, lng }))
+  );
 
   // Grouped by hour, because the notice is a timetable and reading it as
   // seventeen separate rows hides the shape of the day.
@@ -86,6 +96,51 @@ export default async function VisarjanPage() {
             </span>
           </span>
         </a>
+
+        {/* The corridor on one frame. The list below is a timetable and
+            cannot show the shape of the day: which roads the procession
+            takes, and how much of the centre that puts behind a
+            barricade. Interactive, so it can be panned into the peth the
+            reader actually lives in. */}
+        <MiniMap
+          mandals={manache}
+          showVisarjan
+          interactive
+          frameOn={corridorFrame}
+          className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]"
+        />
+        <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
+          <h2 className="text-[12px] font-bold uppercase tracking-[0.09em] text-[var(--faint)]">
+            What the map shows
+          </h2>
+          <ul className="mt-3 space-y-2 text-[13px] leading-relaxed text-[var(--muted)]">
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-7 shrink-0 rounded-full"
+                style={{ background: '#F2A93B', boxShadow: '0 0 10px #F2A93B88' }}
+              />
+              The miravnuk&rsquo;s four roads, converging at{' '}
+              {PROCESSION_ROUTE.convergesAt}
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-0 w-7 shrink-0 border-t-2 border-dashed"
+                style={{ borderColor: '#C8BCA8' }}
+              />
+              Closed stretches, each labelled with its hour
+            </li>
+          </ul>
+          <p className="prose-measure mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
+            {DRAWN_CLOSURES} of the {TOTAL_CLOSURES} closures are drawn. The
+            rest name a junction we have no verified position for, and a
+            guessed end point draws a confident line down the wrong road —
+            so they stay in the list below, where the notice&rsquo;s own
+            words are exact. A road missing from the map is not an open
+            road. Roads {OSM_CREDIT}.
+          </p>
+        </div>
 
         {/* ---------------- The order ---------------- */}
         <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">
