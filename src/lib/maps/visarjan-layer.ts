@@ -2,6 +2,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
 import { CHECKPOINT_POINTS, TOTAL_CHECKPOINTS } from '@/content/visarjan-checkpoints';
+import { RING_PATH, RING_POINTS, RING_KM } from '@/content/visarjan-ringroad';
 
 /**
  * Visarjan day: the procession corridor, and the closures that can be
@@ -31,6 +32,7 @@ export const VISARJAN_SOURCE_ID = 'visarjan-corridor';
 export const VISARJAN_CLOSURE_SOURCE_ID = 'visarjan-closures';
 export const VISARJAN_DIVERSION_SOURCE_ID = 'visarjan-diversions';
 export const VISARJAN_CHECKPOINT_SOURCE_ID = 'visarjan-checkpoints';
+export const VISARJAN_RING_SOURCE_ID = 'visarjan-ring';
 
 /** Marigold, at low opacity. The procession, not a route. */
 const CORRIDOR_COLOR = '#F2A93B';
@@ -62,6 +64,22 @@ const DIVERSION_COLOR = '#E2621B';
  */
 const CHECKPOINT_COLOR = '#14100C';
 const CHECKPOINT_RING = '#FFFFFF';
+
+/**
+ * Green, and the only thing on this map that means "go".
+ *
+ * Everything else here is a restriction — a corridor to keep clear, a
+ * road that shuts, a junction you are turned at — and they are drawn
+ * warm or grey. A reader scanning for a way across the city needs the
+ * one permissive mark to be unmistakable, and green against those is as
+ * far as this palette goes.
+ *
+ * It is the app's own `short` green rather than a new one. The usual
+ * objection — that green means "short queue" in the pin language — does
+ * not apply on this map: every mandal here is drawn in brass and no
+ * queue is claimed at all, so the colour is free.
+ */
+const RING_COLOR = '#5FB872';
 
 const MIN_ZOOM = 12.5;
 
@@ -106,6 +124,22 @@ export function corridorFeatureCollection(): GeoJSON.FeatureCollection {
  * times come from MANDAL_ROUTE_SCHEDULES through the generator, so the
  * marker and the list below the map cannot disagree.
  */
+export const RING_LENGTH_KM = RING_KM;
+export const RING_STOPS = RING_POINTS;
+
+export function ringFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        properties: { label: `Ring road · ${RING_KM} km · keeps out of the corridor` },
+        geometry: { type: 'LineString', coordinates: RING_PATH },
+      },
+    ],
+  };
+}
+
 export function checkpointFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -186,6 +220,45 @@ export function addVisarjanLayers(map: MapLibreMap): void {
   map.addSource(VISARJAN_CHECKPOINT_SOURCE_ID, {
     type: 'geojson',
     data: checkpointFeatureCollection(),
+  });
+  map.addSource(VISARJAN_RING_SOURCE_ID, {
+    type: 'geojson',
+    data: ringFeatureCollection(),
+  });
+
+  // The ring goes down first, under the corridor and the closures: it is
+  // the widest thing here and the least urgent to read, and where it
+  // meets a shut road the restriction must draw on top of it.
+  map.addLayer({
+    id: 'visarjan-ring-line',
+    type: 'line',
+    source: VISARJAN_RING_SOURCE_ID,
+    minzoom: 11,
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': RING_COLOR,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 11, 2, 17, 6],
+      'line-opacity': 0.8,
+    },
+  });
+
+  map.addLayer({
+    id: 'visarjan-ring-label',
+    type: 'symbol',
+    source: VISARJAN_RING_SOURCE_ID,
+    minzoom: 12.5,
+    layout: {
+      'symbol-placement': 'line',
+      'text-field': ['get', 'label'],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 10,
+      'symbol-spacing': 400,
+    },
+    paint: {
+      'text-color': RING_COLOR,
+      'text-halo-color': '#14100C',
+      'text-halo-width': 1.6,
+    },
   });
 
   // The band, under everything: a glow the peth lanes sit inside.
@@ -276,7 +349,10 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     id: 'visarjan-checkpoint-label',
     type: 'symbol',
     source: VISARJAN_CHECKPOINT_SOURCE_ID,
-    minzoom: 13.5,
+    // 13, not 13.5: fitting the ring into the default frame sits the map
+    // right on the old threshold, and the hour is the whole point of a
+    // checkpoint — a dot with no time on it says nothing.
+    minzoom: 13,
     layout: {
       // The hour first: at a corner on the day, that is the question.
       'text-field': ['concat', ['get', 'time'], '  ', ['get', 'place']],

@@ -17,9 +17,10 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
-  DRAWN_CHECKPOINTS, ALL_CHECKPOINTS,
+  DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS,
 } from '@/lib/maps/visarjan-layer';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
+import { RING_PATH } from '@/content/visarjan-ringroad';
 
 export const revalidate = 3600;
 
@@ -63,12 +64,19 @@ export default async function VisarjanPage() {
     .filter((g) => g.manacheRank !== null)
     .sort((a, b) => (a.manacheRank ?? 0) - (b.manacheRank ?? 0));
 
-  // Frame on the corridor itself, not on the mandals: the Manache Paach
-  // sit inside the peths, and fitting them leaves Karve Road and Jedhe
-  // Chowk off the edge of a map that exists to show exactly those.
-  const corridorFrame = VISARJAN_GEOMETRY.flatMap((g) =>
-    g.segments.flat().map(([lng, lat]) => ({ lat, lng }))
-  );
+  // Frame on the corridor and the ring together, not on the mandals: the
+  // Manache Paach sit inside the peths, and fitting them leaves Karve
+  // Road and Jedhe Chowk off the edge of a map that exists to show
+  // exactly those.
+  //
+  // The ring is included because leaving it out put only a fifth of it on
+  // screen — green fragments running off two edges, which reads as a
+  // broken line rather than a loop. It costs about half a zoom level: the
+  // frame goes from 4.2 km wide to 5.3, and the peths stay legible.
+  const corridorFrame = [
+    ...VISARJAN_GEOMETRY.flatMap((g) => g.segments.flat()),
+    ...RING_PATH,
+  ].map(([lng, lat]) => ({ lat, lng }));
 
   // Grouped by hour, because the notice is a timetable and reading it as
   // seventeen separate rows hides the shape of the day.
@@ -176,6 +184,15 @@ export default async function VisarjanPage() {
               />
               The miravnuk&rsquo;s four roads, converging at{' '}
               {PROCESSION_ROUTE.convergesAt}
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-1 w-7 shrink-0 rounded-full"
+                style={{ background: '#5FB872' }}
+              />
+              The ring road — the way round, and the only line here that
+              means go
             </li>
             <li className="flex items-center gap-2.5">
               <span
@@ -403,6 +420,22 @@ export default async function VisarjanPage() {
           </h3>
           <p className="prose-measure mt-2 text-[13.5px] leading-relaxed text-[var(--muted)]">
             {RING_ROAD_ADVICE}
+          </p>
+          <p className="prose-measure mt-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
+            It is drawn on the map above in green, as a{' '}
+            {RING_LENGTH_KM} km loop through{' '}
+            {RING_STOPS.map((r) => r.name).slice(0, -1).join(', ')} and{' '}
+            {RING_STOPS.at(-1)?.name} — the one line up there that means go
+            rather than do not.
+          </p>
+          <p className="prose-measure mt-2 text-[11.5px] leading-relaxed text-[var(--faint)]">
+            Where the ring meets a closed road it is the closure that holds,
+            not the ring. They touch at the junctions on purpose: Nal Stop
+            is a point on this loop and the end of the Karve Road closure,
+            which is exactly why the police name it a diversion point. The
+            police regulate those junctions as the restrictions come in
+            through the day, so treat the loop as a direction of travel
+            rather than a guaranteed road.
           </p>
         </div>
 
