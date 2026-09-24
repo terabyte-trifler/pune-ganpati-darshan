@@ -58,6 +58,21 @@ export const POLICE_TRACKER = {
   shows:
     'the front and rear of the immersion procession, which roads are open ' +
     'or closed, and the designated parking places',
+  /**
+   * Their own notice: "Visarjan Tracking will start on 25th September
+   * 2026, at 9 AM."
+   *
+   * Worth repeating here because the link is the first thing on our page
+   * and it is empty until then — forty-two devices are sitting at their
+   * mandals with no names on them. Someone tapping through at six in the
+   * morning finds nothing moving and reasonably concludes our link is
+   * broken, when the tracker is simply not open yet.
+   *
+   * Written as a plain fact rather than shown only before 9am: the page
+   * is cached for an hour, so a time-conditional line would be wrong for
+   * up to an hour either side of the one moment it matters.
+   */
+  opensAt: 'The police open tracking at 9 a.m., once Kasba has set off.',
 } as const;
 
 export interface VisarjanClosure {

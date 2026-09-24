@@ -150,7 +150,10 @@ export default async function VisarjanPage() {
             <span className="mt-1 block text-[13.5px] leading-relaxed text-[var(--muted)]">
               The Pune Police track it themselves, at {POLICE_TRACKER.label} —{' '}
               {POLICE_TRACKER.shows}. We link it rather than copy it: a
-              position we cached an hour ago would be worse than none.
+              position we cached an hour ago would be worse than none.{' '}
+              <strong className="font-semibold text-[var(--chandan)]">
+                {POLICE_TRACKER.opensAt}
+              </strong>
             </span>
           </span>
         </a>
