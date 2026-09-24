@@ -140,9 +140,17 @@ export function buildMarkerSvg(
    * reader and a glance from arm's length. The labels say "Observed" and
    * "Estimated" wherever there IS room.
    */
-  fill: PinFill = 'filled'
+  fill: PinFill = 'filled',
+  /**
+   * Draw every pin this colour instead of the queue's.
+   *
+   * For a map where the queue is not the subject. On visarjan day the
+   * idols leave the mandaps and a queue colour would be a claim the app
+   * has already stopped making everywhere else on that page.
+   */
+  colorOverride?: string
 ): MarkerVisual {
-  const color = pinColor(crowd);
+  const color = colorOverride ?? pinColor(crowd);
   const size = selected ? 46 : 34;
   // Manache Paach get a heavier ring so they are distinguishable in
   // greyscale and to colour-blind users.

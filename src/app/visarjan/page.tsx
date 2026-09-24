@@ -154,10 +154,11 @@ export default async function VisarjanPage() {
 
         <div id="map" className="scroll-mt-4" />
         <MiniMap
-          mandals={manache}
+          mandals={ganpatis}
           showVisarjan
           showParking={false}
           showPedestrianFlow={false}
+          uniformPins
           interactive
           frameOn={corridorFrame}
           className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]"
@@ -191,6 +192,15 @@ export default async function VisarjanPage() {
                 style={{ borderColor: '#14100C', background: '#F2A93B' }}
               />
               Kasba&rsquo;s checkpoints, each carrying the hour it is due
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0 rounded-full"
+                style={{ background: '#c9a227', border: '1.5px solid #14100C' }}
+              />
+              All {ganpatis.length} mandals, one colour — no queue is claimed
+              once the idols have left
             </li>
             <li className="flex items-center gap-2.5">
               <span

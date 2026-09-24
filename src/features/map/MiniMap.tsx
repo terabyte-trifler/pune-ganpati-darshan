@@ -113,6 +113,16 @@ export interface MiniMapProps {
    */
   showPedestrianFlow?: boolean;
   /**
+   * Draw every mandal in one colour instead of its queue's.
+   *
+   * The visarjan map uses it. Once the idols leave the mandaps a queue
+   * colour is a claim the rest of that page has already withdrawn — the
+   * crowd model goes silent after 13:00 that day — so a map still
+   * painting pins green and red would be the only thing on the site
+   * still asserting it.
+   */
+  uniformPins?: boolean;
+  /**
    * Frame on these coordinates instead of on the mandals.
    *
    * Needed as soon as a map carries something other than mandals. On
@@ -137,6 +147,35 @@ function collapseAttribution(container: HTMLElement) {
     ?.classList.remove('maplibregl-compact-show');
 }
 
+/**
+ * One pin for every mandal, in brass, for maps where the queue is not
+ * the subject.
+ *
+ * Brass is the app's own colour for a mandal, and on this map it sits in
+ * a deliberate family: gold for the festival — the corridor, the
+ * checkpoints, the mandals — against orange and grey for the
+ * restrictions. A reader can tell an instruction from a place at a
+ * glance without reading the legend.
+ */
+export const UNIFORM_PIN_ID = 'mini-uniform';
+const UNIFORM_PIN_COLOR = '#c9a227';
+
+async function registerImage(map: MapLibreMap, id: string, url: string, size: number) {
+  if (map.hasImage(id)) return;
+  const image = new Image(size * 3, size * 3);
+  await new Promise<void>((resolve) => {
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+  });
+  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 3 });
+}
+
+async function registerUniformPin(map: MapLibreMap) {
+  const { url, size } = buildMarkerSvg('local', false, null, 'filled', UNIFORM_PIN_COLOR);
+  await registerImage(map, UNIFORM_PIN_ID, url, size);
+}
+
 async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
   const id = `mini-${crowd}`;
   if (map.hasImage(id)) return;
@@ -156,7 +195,8 @@ async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
 export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
   className, zoom, interactive = true, showClosures = false,
-  showVisarjan = false, showParking = true, showPedestrianFlow = true, frameOn,
+  showVisarjan = false, showParking = true, showPedestrianFlow = true,
+  uniformPins = false, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -283,6 +323,7 @@ export function MiniMap({
     map.on('load', async () => {
       collapseAttribution(map.getContainer());
       await Promise.all(CROWD_KEYS.map((c) => registerPin(map, c)));
+      if (uniformPins) await registerUniformPin(map);
 
       map.addSource('route', {
         type: 'geojson',
@@ -362,7 +403,9 @@ export function MiniMap({
           type: 'symbol',
           source: 'mandals',
           layout: {
-            'icon-image': ['concat', 'mini-', ['get', 'crowd']],
+            'icon-image': uniformPins
+              ? UNIFORM_PIN_ID
+              : ['concat', 'mini-', ['get', 'crowd']],
             // Higher draws last, and therefore on top. See the properties
             // above; the full map uses the same rule.
             'symbol-sort-key': ['coalesce', ['get', 'prominence'], 0],
