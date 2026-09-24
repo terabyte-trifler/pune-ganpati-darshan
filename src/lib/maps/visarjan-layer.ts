@@ -272,6 +272,49 @@ export function visarjanClosureFeatureCollection(): GeoJSON.FeatureCollection {
  * they stay on top. Guards on the source, because adding twice throws.
  */
 /**
+ * The marks on this map a tap should be able to name.
+ *
+ * Each draws as a bare disc until the zoom brings its label in, which is
+ * exactly when someone wants to know what it is. Parking was the one
+ * asked for; the checkpoints and diversions have the same problem, and
+ * having one of three answer a tap would be the odd result.
+ */
+export const VISARJAN_TAP_LAYERS = [
+  'visarjan-parking',
+  'visarjan-checkpoint',
+  'visarjan-diversion',
+] as const;
+
+/** Title and subtitle for a tapped mark, or null if it carries neither. */
+export function visarjanTapLabel(
+  layerId: string,
+  props: Record<string, unknown> | null | undefined
+): { title: string; subtitle: string | null } | null {
+  if (!props) return null;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
+  if (layerId === 'visarjan-parking') {
+    const name = str(props.label);
+    return name ? { title: name, subtitle: 'Parking · Pune City Police' } : null;
+  }
+  if (layerId === 'visarjan-checkpoint') {
+    const place = str(props.place);
+    const time = str(props.time);
+    if (!place) return null;
+    // The hour leads: it is why this mark exists.
+    return {
+      title: time ? `${time} · ${place}` : place,
+      subtitle: str(props.placeMr),
+    };
+  }
+  if (layerId === 'visarjan-diversion') {
+    const name = str(props.name);
+    return name ? { title: name, subtitle: str(props.road) } : null;
+  }
+  return null;
+}
+
+/**
  * Lifts the checkpoints and diversions above the mandal pins.
  *
  * Layer order is insertion order, and the mandal pins are added after

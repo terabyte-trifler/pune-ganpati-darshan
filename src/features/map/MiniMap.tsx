@@ -18,10 +18,12 @@ import { boundsOf, haversine } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
-import { addVisarjanLayers, liftVisarjanMarkers } from '@/lib/maps/visarjan-layer';
+import {
+  addVisarjanLayers, liftVisarjanMarkers, VISARJAN_TAP_LAYERS, visarjanTapLabel,
+} from '@/lib/maps/visarjan-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
-import { openNamePopup } from '@/lib/maps/name-popup';
+import { openNamePopup, openLabelPopup } from '@/lib/maps/name-popup';
 import { walkGeometry } from '@/services/pedestrian-graph';
 import { nearestStation } from '@/lib/metro';
 import { useCrowdDisplays } from '@/features/crowd/useCrowdDisplay';
@@ -438,12 +440,46 @@ export function MiniMap({
         if (showVisarjan) liftVisarjanMarkers(map);
       }
 
-      // A tap that hit no pin puts the name away again.
+      // Parking, checkpoints and diversions answer a tap the same way
+      // a mandal pin does. They are drawn as bare discs until the zoom
+      // brings their labels in, and that is exactly when someone wants
+      // to know which one they are looking at.
+      if (showVisarjan) {
+        for (const layerId of VISARJAN_TAP_LAYERS) {
+          if (!map.getLayer(layerId)) continue;
+          map.on('click', layerId, (e: MapMouseEvent & { features?: GeoJSON.Feature[] }) => {
+            const feature = e.features?.[0];
+            const label = visarjanTapLabel(layerId, feature?.properties);
+            if (!label) return;
+            const geometry = feature?.geometry;
+            const at =
+              geometry?.type === 'Point'
+                ? (geometry.coordinates as [number, number])
+                : ([e.lngLat.lng, e.lngLat.lat] as [number, number]);
+            popupRef.current = openLabelPopup(
+              map, at, label.title, label.subtitle, popupRef.current
+            );
+          });
+          map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+          map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
+        }
+      }
+
+      // A tap that hit no mark puts the name away again.
+      //
+      // Every tappable layer has to be listed here, not just the mandal
+      // pins. The tap that OPENS a popup is a map click too, so a layer
+      // missing from this check would have its own popup closed by the
+      // same gesture that asked for it — which is the race the comment in
+      // name-popup.ts describes, arriving by a different door.
       map.on('click', (e: MapMouseEvent) => {
-        const onPin = map.getLayer('mandal-pins')
-          ? map.queryRenderedFeatures(e.point, { layers: ['mandal-pins'] }).length > 0
-          : false;
-        if (onPin) return;
+        const tappable = ['mandal-pins', ...VISARJAN_TAP_LAYERS].filter((id) =>
+          map.getLayer(id)
+        );
+        const onMark =
+          tappable.length > 0 &&
+          map.queryRenderedFeatures(e.point, { layers: tappable }).length > 0;
+        if (onMark) return;
         popupRef.current?.remove();
         popupRef.current = null;
       });

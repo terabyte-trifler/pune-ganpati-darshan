@@ -83,3 +83,52 @@ export function openNamePopup(
     .setDOMContent(nameCard(mandal))
     .addTo(map);
 }
+
+/**
+ * The same card for a mark that is not a mandal.
+ *
+ * Parking, a checkpoint, a diversion point: all of them say where but not
+ * which, and the visarjan map draws twelve blue discs that were
+ * indistinguishable from each other until the zoom brought their labels
+ * in. Tapping is the gesture people already use on the mandal pins, so it
+ * should answer the same question everywhere on the map rather than only
+ * where the mark happens to be a mandal.
+ */
+export function openLabelPopup(
+  map: MapLibreMap,
+  lngLat: [number, number],
+  title: string,
+  subtitle: string | null,
+  previous: Popup | null
+): Popup {
+  previous?.remove();
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:grid;gap:2px;min-width:0';
+
+  const name = document.createElement('strong');
+  name.textContent = title;
+  name.style.cssText =
+    'font:700 13px/1.3 ui-sans-serif,system-ui,sans-serif;color:#f6efe3';
+  wrap.appendChild(name);
+
+  if (subtitle) {
+    const sub = document.createElement('span');
+    sub.textContent = subtitle;
+    sub.style.cssText =
+      'font:400 12px/1.35 ui-sans-serif,system-ui,sans-serif;color:#c9bda6';
+    wrap.appendChild(sub);
+  }
+
+  return new Popup({
+    closeButton: false,
+    // Closed by the caller, for the reason openNamePopup explains.
+    closeOnClick: false,
+    offset: 14,
+    className: 'mandal-name-popup',
+    maxWidth: '220px',
+  })
+    .setLngLat(lngLat)
+    .setDOMContent(wrap)
+    .addTo(map);
+}

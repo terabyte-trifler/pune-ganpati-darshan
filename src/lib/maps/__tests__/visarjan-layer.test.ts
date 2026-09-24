@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   corridorFeatureCollection, visarjanClosureFeatureCollection,
+  visarjanParkingFeatureCollection, checkpointFeatureCollection,
+  diversionFeatureCollection, visarjanTapLabel, VISARJAN_TAP_LAYERS,
   DRAWN_CLOSURES, TOTAL_CLOSURES,
 } from '../visarjan-layer';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
@@ -65,5 +67,43 @@ describe('visarjan map layers', () => {
       expect(g.from, `${g.road} from`).toBeTruthy();
       expect(g.to, `${g.road} to`).toBeTruthy();
     }
+  });
+
+  describe('tapping a mark names it', () => {
+    it('names every parking place', () => {
+      const features = visarjanParkingFeatureCollection().features;
+      expect(features.length).toBeGreaterThan(0);
+      for (const f of features) {
+        const label = visarjanTapLabel('visarjan-parking', f.properties);
+        expect(label?.title, JSON.stringify(f.properties)).toBeTruthy();
+      }
+    });
+
+    it('leads a checkpoint with its hour', () => {
+      for (const f of checkpointFeatureCollection().features) {
+        const label = visarjanTapLabel('visarjan-checkpoint', f.properties);
+        expect(label?.title).toMatch(/^\d{2}:\d{2} · /);
+      }
+    });
+
+    it('names every diversion point', () => {
+      for (const f of diversionFeatureCollection().features) {
+        expect(visarjanTapLabel('visarjan-diversion', f.properties)?.title).toBeTruthy();
+      }
+    });
+
+    it('says nothing rather than guessing', () => {
+      // A popup with an empty title is worse than no popup: it reads as
+      // a mark the app cannot identify.
+      expect(visarjanTapLabel('visarjan-parking', null)).toBeNull();
+      expect(visarjanTapLabel('visarjan-parking', { label: '  ' })).toBeNull();
+      expect(visarjanTapLabel('something-else', { label: 'x' })).toBeNull();
+    });
+
+    it('covers every layer it claims to', () => {
+      expect([...VISARJAN_TAP_LAYERS]).toEqual([
+        'visarjan-parking', 'visarjan-checkpoint', 'visarjan-diversion',
+      ]);
+    });
   });
 });
