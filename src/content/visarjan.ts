@@ -498,8 +498,23 @@ export interface MandalRoutePath {
   /** From where, in the mandal's own words. */
   startsFrom: string;
   startsFromMr: string;
-  /** In order. Transliteration first, Devanagari as the mandal wrote it. */
-  stops: { place: string; placeMr: string }[];
+  /**
+   * In order. Transliteration first, Devanagari as the mandal wrote it.
+   *
+   * `lat`/`lng` only where the place could be verified. Four of
+   * Dagdusheth's stops — Nagarkar Talim, Umbrya Ganpati, Lokmanya Tilak
+   * Chowk and Panchaleshwar — are in neither OSM nor Nominatim, and a
+   * chowk dropped on a guessed corner is worse than one left off. They
+   * keep their place in the order and stay off the map.
+   */
+  stops: {
+    place: string;
+    placeMr: string;
+    lat?: number;
+    lng?: number;
+    /** Where the coordinate came from, so a wrong one can be traced. */
+    source?: string;
+  }[];
   /** Where it ends. */
   endsAt: string;
   endsAtMr: string;
@@ -513,12 +528,21 @@ export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
     startsFrom: 'the Dagdusheth Halwai Ganpati temple',
     startsFromMr: 'श्रीमंत दगडूशेठ हलवाई गणपती मंदिर',
     stops: [
-      { place: 'Belbaug Chowk', placeMr: 'बेलबाग चौक' },
-      { place: 'Ganpati Chowk', placeMr: 'गणपती चौक' },
+      // Already on the map as Kasba checkpoints; both routes cross them.
+      { place: 'Belbaug Chowk', placeMr: 'बेलबाग चौक', lat: 18.515669, lng: 73.856287, source: 'OSM' },
+      { place: 'Ganpati Chowk', placeMr: 'गणपती चौक', lat: 18.515008, lng: 73.85498, source: 'OSM' },
       { place: 'Nagarkar Talim Chowk', placeMr: 'नगरकर तालीम चौक' },
       { place: 'Umbrya Ganpati Chowk', placeMr: 'उंबऱ्या गणपती चौक' },
       { place: 'Lokmanya Tilak Chowk', placeMr: 'लोकमान्य टिळक चौक' },
-      { place: 'Chhatrapati Sambhaji Maharaj bridge', placeMr: 'छत्रपती संभाजी महाराज पूल' },
+      {
+        place: 'Chhatrapati Sambhaji Maharaj bridge',
+        placeMr: 'छत्रपती संभाजी महाराज पूल',
+        // Nominatim, Deccan Gymkhana end. Two nodes ~90 m apart are the
+        // bridge's two ends; this is the one the procession reaches first.
+        lat: 18.51362,
+        lng: 73.8431,
+        source: 'Nominatim',
+      },
     ],
     endsAt: 'the immersion ghat at Shri Panchaleshwar Mandir',
     endsAtMr: 'विसर्जन घाट – श्री पांचाळेश्वर मंदिर',

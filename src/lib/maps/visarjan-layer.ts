@@ -35,6 +35,7 @@ export const VISARJAN_DIVERSION_SOURCE_ID = 'visarjan-diversions';
 export const VISARJAN_CHECKPOINT_SOURCE_ID = 'visarjan-checkpoints';
 export const VISARJAN_RING_SOURCE_ID = 'visarjan-ring';
 export const VISARJAN_PARKING_SOURCE_ID = 'visarjan-parking';
+export const VISARJAN_ROUTE_STOP_SOURCE_ID = 'visarjan-route-stops';
 
 /** Marigold, at low opacity. The procession, not a route. */
 const CORRIDOR_COLOR = '#F2A93B';
@@ -209,6 +210,64 @@ export const RING_STOPS = RING_POINTS;
 
 export const PARKING_COUNT = POLICE_PARKING.length;
 
+/**
+ * Stops on another mandal's route that are not already drawn.
+ *
+ * Dagdusheth's route crosses Belbaug and Ganpati Chowk, which are
+ * already on the map as Kasba's checkpoints and say so when tapped —
+ * drawing them twice would stack a mark on a mark. What was missing is
+ * the Sambhaji Maharaj bridge, which is where the procession leaves the
+ * peths for the river and the only other stop on that route anyone has
+ * been able to place.
+ *
+ * The four that stay off — Nagarkar Talim, Umbrya Ganpati, Lokmanya
+ * Tilak Chowk, Panchaleshwar — are in neither OSM nor Nominatim.
+ */
+const drawnElsewhere = new Set(CHECKPOINT_POINTS.map((c) => c.place.toLowerCase()));
+
+const routeStops = MANDAL_ROUTE_PATHS.flatMap((r) =>
+  r.stops
+    .filter(
+      (s) =>
+        s.lat !== undefined &&
+        s.lng !== undefined &&
+        !drawnElsewhere.has(s.place.toLowerCase())
+    )
+    .map((s) => ({
+      mandal: shortMandal(r.mandal),
+      place: s.place,
+      placeMr: s.placeMr,
+      lat: s.lat as number,
+      lng: s.lng as number,
+      order: r.stops.indexOf(s) + 1,
+      total: r.stops.length,
+      startsAt: r.startsAt,
+    }))
+);
+
+export const DRAWN_ROUTE_STOPS = routeStops.length;
+export const TOTAL_ROUTE_STOPS = MANDAL_ROUTE_PATHS.reduce(
+  (n, r) => n + r.stops.length,
+  0
+);
+
+export function routeStopFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: routeStops.map((s) => ({
+      type: 'Feature',
+      properties: {
+        place: s.place,
+        placeMr: s.placeMr,
+        mandal: s.mandal,
+        label: `${s.mandal} · stop ${s.order}`,
+        startsAt: s.startsAt,
+      },
+      geometry: { type: 'Point', coordinates: [s.lng, s.lat] },
+    })),
+  };
+}
+
 export function visarjanParkingFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -333,6 +392,7 @@ export const VISARJAN_TAP_LAYERS = [
   'visarjan-parking',
   'visarjan-checkpoint',
   'visarjan-diversion',
+  'visarjan-route-stop',
 ] as const;
 
 /** Title and subtitle for a tapped mark, or null if it carries neither. */
@@ -360,6 +420,18 @@ export function visarjanTapLabel(
       subtitle: also ? `${mr ? `${mr} · ` : ''}${also} passes here too` : mr,
     };
   }
+  if (layerId === 'visarjan-route-stop') {
+    const place = str(props.place);
+    if (!place) return null;
+    const mandal = str(props.mandal);
+    const startsAt = str(props.startsAt);
+    return {
+      title: place,
+      subtitle: [str(props.placeMr), mandal && startsAt ? `${mandal}, from ${startsAt}` : mandal]
+        .filter(Boolean)
+        .join(' · ') || null,
+    };
+  }
   if (layerId === 'visarjan-diversion') {
     const name = str(props.name);
     return name ? { title: name, subtitle: str(props.road) } : null;
@@ -379,6 +451,7 @@ export function visarjanTapLabel(
 export function liftVisarjanMarkers(map: MapLibreMap): void {
   for (const id of [
     'visarjan-diversion', 'visarjan-diversion-label',
+    'visarjan-route-stop', 'visarjan-route-stop-label',
     'visarjan-checkpoint', 'visarjan-checkpoint-label',
   ]) {
     if (map.getLayer(id)) map.moveLayer(id);
@@ -411,6 +484,10 @@ export function addVisarjanLayers(map: MapLibreMap): void {
   map.addSource(VISARJAN_PARKING_SOURCE_ID, {
     type: 'geojson',
     data: visarjanParkingFeatureCollection(),
+  });
+  map.addSource(VISARJAN_ROUTE_STOP_SOURCE_ID, {
+    type: 'geojson',
+    data: routeStopFeatureCollection(),
   });
 
   // The ring goes down first, under the corridor and the closures: it is
@@ -557,6 +634,45 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     },
     paint: {
       'text-color': PARKING_COLOR,
+      'text-halo-color': '#14100C',
+      'text-halo-width': 1.4,
+    },
+  });
+
+  // Another mandal's route stop. Brass, the app's colour for a mandal,
+  // so it reads as belonging to a procession rather than to the traffic
+  // order — and hollow, to say "on a route" rather than "at an hour",
+  // which is what the white-ringed checkpoints mean.
+  map.addLayer({
+    id: 'visarjan-route-stop',
+    type: 'circle',
+    source: VISARJAN_ROUTE_STOP_SOURCE_ID,
+    minzoom: 12.5,
+    paint: {
+      'circle-color': '#14100C',
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 4, 17, 7.5],
+      'circle-stroke-color': '#c9a227',
+      'circle-stroke-width': 2,
+    },
+  });
+
+  map.addLayer({
+    id: 'visarjan-route-stop-label',
+    type: 'symbol',
+    source: VISARJAN_ROUTE_STOP_SOURCE_ID,
+    minzoom: 13.5,
+    layout: {
+      'text-field': ['get', 'label'],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 9.5,
+      'text-offset': [0, 1.2],
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-padding': 3,
+      'text-max-width': 9,
+    },
+    paint: {
+      'text-color': '#c9a227',
       'text-halo-color': '#14100C',
       'text-halo-width': 1.4,
     },

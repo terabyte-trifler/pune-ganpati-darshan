@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   corridorFeatureCollection, visarjanClosureFeatureCollection,
   visarjanParkingFeatureCollection, checkpointFeatureCollection,
+  routeStopFeatureCollection,
   diversionFeatureCollection, visarjanTapLabel, VISARJAN_TAP_LAYERS,
   DRAWN_CLOSURES, TOTAL_CLOSURES,
 } from '../visarjan-layer';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
-import { VISARJAN_CLOSURES } from '@/content/visarjan';
+import { VISARJAN_CLOSURES, MANDAL_ROUTE_PATHS } from '@/content/visarjan';
 import { EXTRA_ROADS } from '@/content/visarjan-extra-roads';
 
 /**
@@ -104,6 +105,7 @@ describe('visarjan map layers', () => {
     it('covers every layer it claims to', () => {
       expect([...VISARJAN_TAP_LAYERS]).toEqual([
         'visarjan-parking', 'visarjan-checkpoint', 'visarjan-diversion',
+        'visarjan-route-stop',
       ]);
     });
   });
@@ -150,6 +152,37 @@ describe('visarjan map layers', () => {
         expect(r.anchor, r.road).toBeTruthy();
         expect(r.reachM, `${r.road} is ${r.reachM} m from ${r.anchor}`).toBeLessThanOrEqual(120);
         expect(r.segments.flat().length).toBeGreaterThan(8);
+      }
+    });
+  });
+
+  describe("another mandal's route stops", () => {
+    it('draws only stops that are placed and not already on the map', () => {
+      const drawn = routeStopFeatureCollection().features.map((f) => f.properties?.place);
+      // Belbaug and Ganpati Chowk are Kasba checkpoints already; drawing
+      // them again would stack a mark on a mark.
+      expect(drawn).not.toContain('Belbaug Chowk');
+      expect(drawn).not.toContain('Ganpati Chowk');
+      expect(drawn).toContain('Chhatrapati Sambhaji Maharaj bridge');
+    });
+
+    it('never draws a stop without a verified position', () => {
+      for (const r of MANDAL_ROUTE_PATHS) {
+        for (const stop of r.stops) {
+          if (stop.lat === undefined) {
+            expect(
+              routeStopFeatureCollection().features.map((f) => f.properties?.place)
+            ).not.toContain(stop.place);
+          }
+        }
+      }
+    });
+
+    it('names the mandal and its start when tapped', () => {
+      for (const f of routeStopFeatureCollection().features) {
+        const label = visarjanTapLabel('visarjan-route-stop', f.properties);
+        expect(label?.title).toBeTruthy();
+        expect(label?.subtitle).toMatch(/Dagdusheth, from \d{2}:\d{2}/);
       }
     });
   });

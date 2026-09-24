@@ -20,7 +20,7 @@ import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
   DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
-  PARKING_COUNT,
+  PARKING_COUNT, DRAWN_ROUTE_STOPS,
 } from '@/lib/maps/visarjan-layer';
 import { POLICE_PARKING } from '@/content/visarjan-police';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
@@ -238,6 +238,14 @@ export default async function VisarjanPage() {
               <span
                 aria-hidden="true"
                 className="h-3 w-3 shrink-0 rounded-full"
+                style={{ background: '#14100C', border: '2px solid #c9a227' }}
+              />
+              Stops on another mandal&rsquo;s route — hollow brass, no hour
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0 rounded-full"
                 style={{ background: '#c9a227', border: '1.5px solid #14100C' }}
               />
               All {ganpatis.length} mandals, one colour — no queue is claimed
@@ -405,10 +413,16 @@ export default async function VisarjanPage() {
               schedule too, which is the same corridor read from a
               different starting point. Belbaug and Ganpati Chowk are
               marked on the map above and say so when tapped. The rest of
-              this route is not marked: Nagarkar Talim, Lokmanya Tilak
-              Chowk, the Sambhaji Maharaj bridge and Panchaleshwar are not
-              in the map data we can check a position against, and a chowk
-              guessed onto the wrong corner is worse than one left off.
+              this route is marked as far as it can be. Belbaug and Ganpati
+              Chowk are there as Kasba&rsquo;s checkpoints and say
+              &ldquo;Dagdusheth passes here too&rdquo; when tapped; the
+              Chhatrapati Sambhaji Maharaj bridge, where the procession
+              leaves the peths for the river, is marked in hollow brass.
+              Nagarkar Talim, Umbrya Ganpati, Lokmanya Tilak Chowk and
+              Panchaleshwar are in neither OpenStreetMap nor Nominatim, so
+              they keep their place in the order above and stay off the
+              map — a chowk guessed onto the wrong corner is worse than one
+              left off.
             </p>
           </section>
         ))}
