@@ -125,6 +125,13 @@ export interface MiniMapProps {
    */
   uniformPins?: boolean;
   /**
+   * Where the reader is, drawn as the same green dot the full map uses.
+   *
+   * Never stored and never sent anywhere: it arrives as a prop, becomes
+   * a marker, and goes when the component does.
+   */
+  userLocation?: { lat: number; lng: number } | null;
+  /**
    * Frame on these coordinates instead of on the mandals.
    *
    * Needed as soon as a map carries something other than mandals. On
@@ -202,11 +209,12 @@ export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
   className, zoom, interactive = true, showClosures = false,
   showVisarjan = false, showParking = true, showPedestrianFlow = true,
-  uniformPins = false, frameOn,
+  uniformPins = false, userLocation = null, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const numberedRef = useRef<Marker[]>([]);
+  const userMarkerRef = useRef<Marker | null>(null);
   // Support is an environment fact, not state that evolves: resolving it once
   // during render avoids a synchronous setState inside the effect (which
   // triggers a cascading re-render).
@@ -505,6 +513,8 @@ export function MiniMap({
 
     return () => {
       observer.disconnect();
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
       numberedRef.current.forEach((m) => m.remove());
       numberedRef.current = [];
       popupRef.current?.remove();
@@ -623,6 +633,33 @@ export function MiniMap({
       })),
     });
   }, [crowdByMandalId, mandals, ordered, ready]);
+
+  /* ---------------- Where the reader is ---------------- */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+
+    if (!userLocation) {
+      userMarkerRef.current?.remove();
+      userMarkerRef.current = null;
+      return;
+    }
+
+    if (!userMarkerRef.current) {
+      // The same dot as the full map. Someone who has seen it there
+      // should not have to work out what a new mark means here.
+      const el = document.createElement('div');
+      el.style.cssText =
+        'width:18px;height:18px;border-radius:9999px;background:#6fc47f;' +
+        'border:2px solid #14100c;box-shadow:0 0 0 6px rgba(78,138,91,.28)';
+      el.setAttribute('aria-label', 'Your location');
+      userMarkerRef.current = new Marker({ element: el })
+        .setLngLat([userLocation.lng, userLocation.lat])
+        .addTo(map);
+    } else {
+      userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+    }
+  }, [userLocation, ready]);
 
   /* ---------------- Route line ---------------- */
   useEffect(() => {

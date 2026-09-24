@@ -16,8 +16,7 @@ import { getFestivalConfig } from '@/services/ganpati';
 import { isVisarjanImminent, getFestivalPhase } from '@/lib/festival';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { MiniMap } from '@/features/map/MiniMapLoader';
-import { MapFullscreen } from '@/features/visarjan/MapFullscreen';
+import { VisarjanMapControls } from '@/features/visarjan/VisarjanMapControls';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
   ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
@@ -175,21 +174,10 @@ export default async function VisarjanPage() {
         <UpNext rows={rows} isVisarjanDay={isVisarjanDay} isEve={isEve} />
 
         <div id="map" className="scroll-mt-4" />
-        {/* The map keeps its own instance when it goes full screen, so
-            the reader arrives there at the zoom they had, not back at
-            the default frame. */}
-        <MapFullscreen className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]">
-          <MiniMap
-            mandals={ganpatis}
-            showVisarjan
-            showParking={false}
-            showPedestrianFlow={false}
-            uniformPins
-            interactive
-            frameOn={corridorFrame}
-            className="h-full w-full"
-          />
-        </MapFullscreen>
+        {/* Client-side because it offers to put the reader on the map:
+            the location is asked for, used for a marker, and kept
+            nowhere. */}
+        <VisarjanMapControls mandals={ganpatis} frameOn={corridorFrame} />
         <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
           <h2 className="text-[12px] font-bold uppercase tracking-[0.09em] text-[var(--faint)]">
             What the map shows
@@ -247,6 +235,19 @@ export default async function VisarjanPage() {
                 style={{ background: '#14100C', border: '2px solid #c9a227' }}
               />
               Stops on another mandal&rsquo;s route — hollow brass, no hour
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0 rounded-full"
+                style={{
+                  background: '#6fc47f',
+                  border: '2px solid #14100C',
+                  boxShadow: '0 0 0 3px rgba(78,138,91,.35)',
+                }}
+              />
+              You, if you press &ldquo;Where am I?&rdquo; — asked for, never
+              stored
             </li>
             <li className="flex items-center gap-2.5">
               <span
