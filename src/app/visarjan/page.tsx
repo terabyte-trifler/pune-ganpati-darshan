@@ -394,7 +394,12 @@ export default async function VisarjanPage() {
               Published by the mandal. Three of these chowks — Belbaug,
               Ganpati Chowk and Umbrya Ganpati — are on Kasba&rsquo;s
               schedule too, which is the same corridor read from a
-              different starting point.
+              different starting point. Belbaug and Ganpati Chowk are
+              marked on the map above and say so when tapped. The rest of
+              this route is not marked: Nagarkar Talim, Lokmanya Tilak
+              Chowk, the Sambhaji Maharaj bridge and Panchaleshwar are not
+              in the map data we can check a position against, and a chowk
+              guessed onto the wrong corner is worse than one left off.
             </p>
           </section>
         ))}

@@ -106,4 +106,30 @@ describe('visarjan map layers', () => {
       ]);
     });
   });
+
+  describe('chowks shared between mandals', () => {
+    it('tells you when a second procession uses the same chowk', () => {
+      const shared = checkpointFeatureCollection().features.filter(
+        (f) => f.properties?.alsoOn
+      );
+      // Dagdusheth crosses Belbaug and Ganpati Chowk, both on Kasba's list.
+      expect(shared.length).toBeGreaterThanOrEqual(2);
+      for (const f of shared) {
+        const label = visarjanTapLabel('visarjan-checkpoint', f.properties);
+        expect(label?.subtitle).toMatch(/passes here too/);
+      }
+    });
+
+    it('says nothing extra where no other route passes', () => {
+      const alone = checkpointFeatureCollection().features.filter(
+        (f) => !f.properties?.alsoOn
+      );
+      expect(alone.length).toBeGreaterThan(0);
+      for (const f of alone) {
+        expect(
+          visarjanTapLabel('visarjan-checkpoint', f.properties)?.subtitle ?? ''
+        ).not.toMatch(/passes here too/);
+      }
+    });
+  });
 });

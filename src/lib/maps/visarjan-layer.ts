@@ -1,5 +1,5 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
+import { VISARJAN_CLOSURES, DIVERSION_POINTS, MANDAL_ROUTE_PATHS } from '@/content/visarjan';
 import { CHECKPOINT_POINTS, TOTAL_CHECKPOINTS } from '@/content/visarjan-checkpoints';
 import { RING_POINTS, RING_KM } from '@/content/visarjan-ringroad';
 import { POLICE_ROADS, POLICE_PARKING } from '@/content/visarjan-police';
@@ -221,12 +221,47 @@ export function ringFeatureCollection(): GeoJSON.FeatureCollection {
   };
 }
 
+/**
+ * Other mandals whose published route names this same chowk.
+ *
+ * Dagdusheth's route crosses Belbaug Chowk, Ganpati Chowk and Umbrya
+ * Ganpati, all of which are on Kasba's schedule. Two of the three are
+ * already drawn as Kasba checkpoints, so drawing them again for
+ * Dagdusheth would stack a second dot on the first and add nothing.
+ *
+ * What was missing is that the existing mark said nothing about it. A
+ * reader standing at Belbaug wants to know that a second procession
+ * comes through, and that is a fact we already hold — no new coordinate
+ * required, which matters because the rest of Dagdusheth's route
+ * (Nagarkar Talim, Lokmanya Tilak Chowk, the Sambhaji Maharaj bridge,
+ * Panchaleshwar) is not in OSM and stays unplaced.
+ */
+function alsoPassedBy(place: string): string[] {
+  return MANDAL_ROUTE_PATHS.filter((r) =>
+    r.stops.some((s) => s.place.toLowerCase() === place.toLowerCase())
+  ).map((r) => shortMandal(r.mandal));
+}
+
+/** "Shrimant Dagdusheth Halwai Ganpati" is a lot of pin label. */
+function shortMandal(name: string): string {
+  return name
+    .replace(/^Shri(mant)?\s+/i, '')
+    .replace(/\s+Halwai Ganpati$/i, '')
+    .replace(/\s+Ganpati$/i, '')
+    .trim();
+}
+
 export function checkpointFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: CHECKPOINT_POINTS.map((c) => ({
       type: 'Feature',
-      properties: { time: c.time, place: c.place, placeMr: c.placeMr },
+      properties: {
+        time: c.time,
+        place: c.place,
+        placeMr: c.placeMr,
+        alsoOn: alsoPassedBy(c.place).join(', '),
+      },
       geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
     })),
   };
@@ -301,10 +336,13 @@ export function visarjanTapLabel(
     const place = str(props.place);
     const time = str(props.time);
     if (!place) return null;
-    // The hour leads: it is why this mark exists.
+    const also = str(props.alsoOn);
+    const mr = str(props.placeMr);
+    // The hour leads: it is why this mark exists. A second procession
+    // through the same chowk is the next most useful thing to know.
     return {
       title: time ? `${time} · ${place}` : place,
-      subtitle: str(props.placeMr),
+      subtitle: also ? `${mr ? `${mr} · ` : ''}${also} passes here too` : mr,
     };
   }
   if (layerId === 'visarjan-diversion') {
