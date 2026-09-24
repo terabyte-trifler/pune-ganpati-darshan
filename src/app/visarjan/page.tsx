@@ -17,6 +17,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
+  DRAWN_CHECKPOINTS, ALL_CHECKPOINTS,
 } from '@/lib/maps/visarjan-layer';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 
@@ -186,13 +187,27 @@ export default async function VisarjanPage() {
               <span
                 aria-hidden="true"
                 className="h-3 w-3 shrink-0 rounded-full border-2"
+                style={{ borderColor: '#14100C', background: '#F2A93B' }}
+              />
+              Kasba&rsquo;s checkpoints, each carrying the hour it is due
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0 rounded-full border-2"
                 style={{ borderColor: '#E2621B', background: '#14100C' }}
               />
               Diversion points — where you are turned around
             </li>
           </ul>
           <p className="prose-measure mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
-            {DRAWN_CLOSURES} of the {TOTAL_CLOSURES} closures are drawn. The
+            {DRAWN_CHECKPOINTS} of Kasba&rsquo;s {ALL_CHECKPOINTS} checkpoints are
+          marked, each verified to sit on the corridor itself rather than
+          merely to share a name — the test that rejected a &ldquo;Vaibhav&rdquo;
+          2.3&nbsp;km away. The other{' '}
+          {ALL_CHECKPOINTS - DRAWN_CHECKPOINTS} are in the list below with
+          their times.{' '}
+          {DRAWN_CLOSURES} of the {TOTAL_CLOSURES} closures are drawn. The
             rest name a junction we have no verified position for, and a
             guessed end point draws a confident line down the wrong road —
             so they stay in the list below, where the notice&rsquo;s own

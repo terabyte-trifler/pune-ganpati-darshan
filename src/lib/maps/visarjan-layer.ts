@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
+import { CHECKPOINT_POINTS, TOTAL_CHECKPOINTS } from '@/content/visarjan-checkpoints';
 
 /**
  * Visarjan day: the procession corridor, and the closures that can be
@@ -29,6 +30,7 @@ import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
 export const VISARJAN_SOURCE_ID = 'visarjan-corridor';
 export const VISARJAN_CLOSURE_SOURCE_ID = 'visarjan-closures';
 export const VISARJAN_DIVERSION_SOURCE_ID = 'visarjan-diversions';
+export const VISARJAN_CHECKPOINT_SOURCE_ID = 'visarjan-checkpoints';
 
 /** Marigold, at low opacity. The procession, not a route. */
 const CORRIDOR_COLOR = '#F2A93B';
@@ -53,6 +55,9 @@ const placedDiversions = DIVERSION_POINTS.filter(
 export const DRAWN_DIVERSIONS = placedDiversions.length;
 export const TOTAL_DIVERSIONS = DIVERSION_POINTS.length;
 
+export const DRAWN_CHECKPOINTS = CHECKPOINT_POINTS.length;
+export const ALL_CHECKPOINTS = TOTAL_CHECKPOINTS;
+
 /** The closing time for a road, from the notice rather than the geometry. */
 function closingTime(road: string): string {
   return VISARJAN_CLOSURES.find((c) => c.road === road)?.from ?? '';
@@ -65,6 +70,25 @@ export function corridorFeatureCollection(): GeoJSON.FeatureCollection {
       type: 'Feature',
       properties: { name: g.road, label: `${g.road} · miravnuk` },
       geometry: { type: 'MultiLineString', coordinates: g.segments },
+    })),
+  };
+}
+
+/**
+ * Kasba's checkpoints, carrying the hour rather than the name.
+ *
+ * On the day the question at a corner is "when does it get here", so the
+ * time is the label and the chowk's name is the supporting line. The
+ * times come from MANDAL_ROUTE_SCHEDULES through the generator, so the
+ * marker and the list below the map cannot disagree.
+ */
+export function checkpointFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: CHECKPOINT_POINTS.map((c) => ({
+      type: 'Feature',
+      properties: { time: c.time, place: c.place, placeMr: c.placeMr },
+      geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
     })),
   };
 }
@@ -116,6 +140,10 @@ export function addVisarjanLayers(map: MapLibreMap): void {
   map.addSource(VISARJAN_DIVERSION_SOURCE_ID, {
     type: 'geojson',
     data: diversionFeatureCollection(),
+  });
+  map.addSource(VISARJAN_CHECKPOINT_SOURCE_ID, {
+    type: 'geojson',
+    data: checkpointFeatureCollection(),
   });
 
   // The band, under everything: a glow the peth lanes sit inside.
@@ -177,6 +205,44 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 2, 17, 5],
       'line-opacity': 0.6,
       'line-dasharray': [2, 1.6],
+    },
+  });
+
+  // Checkpoints sit on the corridor and carry the hour. Drawn above the
+  // band and below the pins: they belong to the route, not to the city.
+  map.addLayer({
+    id: 'visarjan-checkpoint',
+    type: 'circle',
+    source: VISARJAN_CHECKPOINT_SOURCE_ID,
+    minzoom: 12.5,
+    paint: {
+      'circle-color': CORRIDOR_COLOR,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 3.5, 17, 7],
+      'circle-stroke-color': '#14100C',
+      'circle-stroke-width': 1.6,
+    },
+  });
+
+  map.addLayer({
+    id: 'visarjan-checkpoint-label',
+    type: 'symbol',
+    source: VISARJAN_CHECKPOINT_SOURCE_ID,
+    minzoom: 13.5,
+    layout: {
+      // The hour first: at a corner on the day, that is the question.
+      'text-field': ['concat', ['get', 'time'], '  ', ['get', 'place']],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 10,
+      'text-offset': [0, 1.1],
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-padding': 3,
+      'text-max-width': 9,
+    },
+    paint: {
+      'text-color': CORRIDOR_COLOR,
+      'text-halo-color': '#14100C',
+      'text-halo-width': 1.5,
     },
   });
 

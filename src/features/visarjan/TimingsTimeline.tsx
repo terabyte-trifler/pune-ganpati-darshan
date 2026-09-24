@@ -161,6 +161,13 @@ function Row({ row }: { row: TimingRow }) {
               {row.whatMr}
             </span>
           )}
+          {/* Only where the position was verified against the corridor —
+              so the tag means "you can see this one", not "we think so". */}
+          {row.onMap && (
+            <span className="ml-1.5 whitespace-nowrap text-[10.5px] font-semibold uppercase tracking-wide text-[var(--zendu)]">
+              on map
+            </span>
+          )}
         </span>
         {/* The full range, where the source gave one — the row's own time
             column shows only its start so the column stays scannable. */}

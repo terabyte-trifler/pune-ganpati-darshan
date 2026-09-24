@@ -1,6 +1,7 @@
 import {
   VISARJAN_TIMELINE, MANDAL_ROUTE_SCHEDULES,
 } from '@/content/visarjan';
+import { CHECKPOINT_POINTS } from '@/content/visarjan-checkpoints';
 
 /**
  * Every published visarjan time, merged into one chronological list.
@@ -34,6 +35,8 @@ export interface TimingRow {
   /** The place name in Devanagari, where the source printed one. */
   whatMr?: string;
   source: 'police' | 'mandal';
+  /** This checkpoint has a verified position and is marked on the map. */
+  onMap?: boolean;
 }
 
 /**
@@ -80,6 +83,7 @@ export function mergedTimings(): TimingRow[] {
         what: c.place,
         whatMr: c.placeMr,
         source: 'mandal',
+        onMap: CHECKPOINT_POINTS.some((p) => p.time === c.time && p.place === c.place),
       });
     }
   }
