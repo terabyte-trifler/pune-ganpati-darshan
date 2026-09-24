@@ -223,7 +223,28 @@ export const PARKING_COUNT = POLICE_PARKING.length;
  * The four that stay off — Nagarkar Talim, Umbrya Ganpati, Lokmanya
  * Tilak Chowk, Panchaleshwar — are in neither OSM nor Nominatim.
  */
-const drawnElsewhere = new Set(CHECKPOINT_POINTS.map((c) => c.place.toLowerCase()));
+/**
+ * One junction, two names.
+ *
+ * Kasba's schedule ends at "Tilak Chowk"; Dagdusheth's route calls the
+ * same corner "Lokmanya Tilak Chowk". Left unlinked they would draw as
+ * two marks on one corner, and neither would mention the other
+ * procession — so the names are folded together here.
+ *
+ * Explicitly, not by stripping honorifics: "Lokmanya Tilak Putala
+ * (Mandai)" is a DIFFERENT place 1,265 m east, and a rule clever enough
+ * to fold the first pair would have folded that one too.
+ */
+const PLACE_ALIASES: Record<string, string> = {
+  'lokmanya tilak chowk': 'tilak chowk',
+};
+
+const canonicalPlace = (place: string) => {
+  const key = place.trim().toLowerCase();
+  return PLACE_ALIASES[key] ?? key;
+};
+
+const drawnElsewhere = new Set(CHECKPOINT_POINTS.map((c) => canonicalPlace(c.place)));
 
 const routeStops = MANDAL_ROUTE_PATHS.flatMap((r) => [
   // The ghat is where the day ends, so it is drawn even though it is not
@@ -249,7 +270,7 @@ const routeStops = MANDAL_ROUTE_PATHS.flatMap((r) => [
       (s) =>
         s.lat !== undefined &&
         s.lng !== undefined &&
-        !drawnElsewhere.has(s.place.toLowerCase())
+        !drawnElsewhere.has(canonicalPlace(s.place))
     )
     .map((s) => ({
       mandal: shortMandal(r.mandal),
@@ -330,8 +351,9 @@ export function ringFeatureCollection(): GeoJSON.FeatureCollection {
  * Panchaleshwar) is not in OSM and stays unplaced.
  */
 function alsoPassedBy(place: string): string[] {
+  const target = canonicalPlace(place);
   return MANDAL_ROUTE_PATHS.filter((r) =>
-    r.stops.some((s) => s.place.toLowerCase() === place.toLowerCase())
+    r.stops.some((s) => canonicalPlace(s.place) === target)
   ).map((r) => shortMandal(r.mandal));
 }
 

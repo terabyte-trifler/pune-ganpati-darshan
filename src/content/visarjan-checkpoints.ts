@@ -51,6 +51,15 @@ export const CHECKPOINT_POINTS: CheckpointPoint[] = [
     "lat": 18.515008
   },
   {
+    "time": "11:15",
+    "place": "Shri Limbraj Maharaj Chowk (Vaibhav Chowk)",
+    "placeMr": "श्री लिंबराज महाराज चौक (वैभव चौक)",
+    "osmName": "read off Google Maps",
+    "offCorridorM": 6,
+    "lng": 73.853787,
+    "lat": 18.514498
+  },
+  {
     "time": "11:45",
     "place": "Kunte Chowk",
     "placeMr": "कुंटे चौक",
@@ -69,6 +78,15 @@ export const CHECKPOINT_POINTS: CheckpointPoint[] = [
     "lat": 18.514183
   },
   {
+    "time": "13:00",
+    "place": "Bhanuvilas Chowk",
+    "placeMr": "भानुविलास चौक",
+    "osmName": "read off Google Maps",
+    "offCorridorM": 2,
+    "lng": 73.848466,
+    "lat": 18.514001
+  },
+  {
     "time": "13:45",
     "place": "Vijay Talkies Chowk",
     "placeMr": "विजय टॉकीज चौक",
@@ -85,6 +103,15 @@ export const CHECKPOINT_POINTS: CheckpointPoint[] = [
     "offCorridorM": 40,
     "lng": 73.845628,
     "lat": 18.513661
+  },
+  {
+    "time": "14:45",
+    "place": "Tilak Chowk",
+    "placeMr": "टिळक चौक",
+    "osmName": "read off Google Maps",
+    "offCorridorM": 7,
+    "lng": 73.843883,
+    "lat": 18.512862
   }
 ];
 

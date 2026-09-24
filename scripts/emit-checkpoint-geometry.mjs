@@ -62,6 +62,25 @@ const KNOWN = {
  */
 const HAND_PLACED = {
   'Umbrya Ganpati Chowk': { lat: 18.514183, lng: 73.850118, via: 'read off Google Maps' },
+  /**
+   * The same junction Dagdusheth's route calls Lokmanya Tilak Chowk.
+   *
+   * Kasba's schedule writes it short. It is the end of that mandal's
+   * six-hour walk down Laxmi Road, and it sits at the road's western
+   * limit — which is the check that confirms the two names are one
+   * place rather than two.
+   */
+  'Tilak Chowk': { lat: 18.512862, lng: 73.843883, via: 'read off Google Maps' },
+  'Bhanuvilas Chowk': { lat: 18.514001, lng: 73.848466, via: 'read off Google Maps' },
+  /**
+   * 12 m from Nagarkar Talim Chowk on Dagdusheth's route — close enough
+   * that the two names may well be one corner, which is a question for
+   * someone who knows the junction rather than for a distance check.
+   * Drawn on its own name until that is settled.
+   */
+  'Shri Limbraj Maharaj Chowk (Vaibhav Chowk)': {
+    lat: 18.514498, lng: 73.853787, via: 'read off Google Maps',
+  },
 };
 
 /** Search patterns per checkpoint, keyed by the schedule's own place name. */

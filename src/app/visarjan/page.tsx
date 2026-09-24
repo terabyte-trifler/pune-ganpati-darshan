@@ -19,7 +19,7 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
-  DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
+  ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
   PARKING_COUNT,
 } from '@/lib/maps/visarjan-layer';
 import { POLICE_PARKING } from '@/content/visarjan-police';
@@ -275,12 +275,12 @@ export default async function VisarjanPage() {
             we had already drawn.
           </p>
           <p className="prose-measure mt-2 text-[11.5px] leading-relaxed text-[var(--faint)]">
-            {DRAWN_CHECKPOINTS} of Kasba&rsquo;s {ALL_CHECKPOINTS} checkpoints are
-          marked, each verified to sit on the corridor itself rather than
-          merely to share a name — the test that rejected a &ldquo;Vaibhav&rdquo;
-          2.3&nbsp;km away. The other{' '}
-          {ALL_CHECKPOINTS - DRAWN_CHECKPOINTS} are in the list below with
-          their times.{' '}
+            All {ALL_CHECKPOINTS} of Kasba&rsquo;s checkpoints are marked,
+          each verified to sit on the corridor itself rather than merely to
+          share a name — the test that rejected a &ldquo;Vaibhav&rdquo;
+          2.3&nbsp;km away and put a &ldquo;Tilak Chowk&rdquo; in Nigdi.
+          Every one now lands within 40&nbsp;m of the road, most within
+          7.{' '}
           {DRAWN_CLOSURES} of the {TOTAL_CLOSURES} closures are drawn. The
             rest name a junction we have no verified position for, and a
             guessed end point draws a confident line down the wrong road —
