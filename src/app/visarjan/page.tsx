@@ -17,8 +17,9 @@ import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
-  DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS,
+  DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
 } from '@/lib/maps/visarjan-layer';
+import { POLICE_PARKING } from '@/content/visarjan-police';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 import { RING_PATH } from '@/content/visarjan-ringroad';
 
@@ -229,6 +230,20 @@ export default async function VisarjanPage() {
             </li>
           </ul>
           <p className="prose-measure mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
+            The roads are the{' '}
+            <a
+              href={POLICE_SOURCE.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--shendur)]"
+            >
+              {POLICE_SOURCE.authority}&rsquo;s own plan
+            </a>{' '}
+            — their geometry, not our reconstruction of it. Where the two
+            disagreed, theirs wins; they agreed to within 30 m on every road
+            we had already drawn.
+          </p>
+          <p className="prose-measure mt-2 text-[11.5px] leading-relaxed text-[var(--faint)]">
             {DRAWN_CHECKPOINTS} of Kasba&rsquo;s {ALL_CHECKPOINTS} checkpoints are
           marked, each verified to sit on the corridor itself rather than
           merely to share a name — the test that rejected a &ldquo;Vaibhav&rdquo;
@@ -471,6 +486,26 @@ export default async function VisarjanPage() {
           plan on this page. No-parking orders also cover{' '}
           {NO_PARKING_ROADS.length} roads alongside the procession corridor.
         </p>
+
+        <h3 className="mt-6 text-[12px] font-bold uppercase tracking-[0.09em] text-[var(--faint)]">
+          Where the police say to park today
+        </h3>
+        <p className="prose-measure mt-2 text-[13px] leading-relaxed text-[var(--muted)]">
+          {POLICE_PARKING.length} places, from the police&rsquo;s own visarjan
+          map — a different and shorter list than the one the rest of the
+          festival uses, because most of the usual places sit behind a road
+          that shuts this morning.
+        </p>
+        <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+          {POLICE_PARKING.map((p) => (
+            <li
+              key={p.name}
+              className="rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] px-3 py-2 text-[13.5px] text-[var(--chandan)]"
+            >
+              {p.name}
+            </li>
+          ))}
+        </ul>
 
         <p className="prose-measure mt-4 text-[14px] leading-[1.7] text-[var(--muted)]">
           Parking is the same list as every other day of the festival —{' '}

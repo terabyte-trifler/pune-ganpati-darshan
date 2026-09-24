@@ -1,8 +1,8 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
 import { CHECKPOINT_POINTS, TOTAL_CHECKPOINTS } from '@/content/visarjan-checkpoints';
-import { RING_PATH, RING_POINTS, RING_KM } from '@/content/visarjan-ringroad';
+import { RING_POINTS, RING_KM } from '@/content/visarjan-ringroad';
+import { POLICE_ROADS } from '@/content/visarjan-police';
 
 /**
  * Visarjan day: the procession corridor, and the closures that can be
@@ -83,8 +83,56 @@ const RING_COLOR = '#5FB872';
 
 const MIN_ZOOM = 12.5;
 
-const corridor = VISARJAN_GEOMETRY.filter((g) => g.kind === 'procession');
-const closures = VISARJAN_GEOMETRY.filter((g) => g.kind === 'closure');
+/**
+ * Geometry now comes from the police, not from our reconstruction.
+ *
+ * Everything here was previously derived: OSM centrelines matched by
+ * name, stretches trimmed by routing between junctions we could locate.
+ * diversion.punepolice.gov.in publishes the plan itself, so it is used
+ * instead — and the two agree closely enough to trust both readings.
+ * Laxmi Road came out at 3.01 km against our 2.98, Tilak at 2.06 against
+ * 2.08, their ring at 18.53 km against the 18.96 we routed through five
+ * guessed points.
+ *
+ * The gain is coverage. Six roads we could not place at all — Bajirao,
+ * Ganesh, Shastri, FC, Karve, Deccan — are in their data, so the map
+ * goes from three drawn closures to ten.
+ */
+const PROCESSION_ROADS = ['Laxmi Road', 'Tilak Road', 'Kumthekar Road', 'Kelkar Road'];
+
+const isProcession = (road: string) =>
+  PROCESSION_ROADS.some((p) => p.toLowerCase() === road.toLowerCase());
+
+/**
+ * The two sources name the same roads differently.
+ *
+ * Case is the easy half — the police write "Shivaji road", the notice
+ * "Shivaji Road". The rest is genuine: their map says "FC Road" where
+ * the notice says "Fergusson College Road". Matched by hand, because a
+ * fuzzy match here would silently pair the wrong road with the wrong
+ * closing time, which is worse than leaving one undrawn.
+ */
+const ROAD_ALIASES: Record<string, string> = {
+  'fc road': 'Fergusson College Road',
+  'jangli maharaj road': 'Jangli Maharaj Road',
+  'jm road': 'Jangli Maharaj Road',
+};
+
+const closureFor = (road: string) => {
+  const key = road.toLowerCase();
+  const canonical = ROAD_ALIASES[key] ?? road;
+  return VISARJAN_CLOSURES.find((c) => c.road.toLowerCase() === canonical.toLowerCase());
+};
+
+const corridor = POLICE_ROADS.filter((r) => r.kind !== 'diversion' && isProcession(r.road)).map(
+  (r) => ({ road: r.road, segments: [r.path] })
+);
+
+const closures = POLICE_ROADS.filter(
+  (r) => r.kind !== 'diversion' && !isProcession(r.road) && closureFor(r.road)
+).map((r) => ({ road: r.road, segments: [r.path] }));
+
+const officialRing = POLICE_ROADS.find((r) => r.kind === 'diversion');
 
 export const DRAWN_CLOSURES = closures.length;
 export const TOTAL_CLOSURES = VISARJAN_CLOSURES.length;
@@ -98,11 +146,12 @@ export const DRAWN_DIVERSIONS = placedDiversions.length;
 export const TOTAL_DIVERSIONS = DIVERSION_POINTS.length;
 
 export const DRAWN_CHECKPOINTS = CHECKPOINT_POINTS.length;
+export { POLICE_SOURCE } from '@/content/visarjan-police';
 export const ALL_CHECKPOINTS = TOTAL_CHECKPOINTS;
 
 /** The closing time for a road, from the notice rather than the geometry. */
 function closingTime(road: string): string {
-  return VISARJAN_CLOSURES.find((c) => c.road === road)?.from ?? '';
+  return closureFor(road)?.from ?? '';
 }
 
 export function corridorFeatureCollection(): GeoJSON.FeatureCollection {
@@ -133,8 +182,11 @@ export function ringFeatureCollection(): GeoJSON.FeatureCollection {
     features: [
       {
         type: 'Feature',
-        properties: { label: `Ring road · ${RING_KM} km · keeps out of the corridor` },
-        geometry: { type: 'LineString', coordinates: RING_PATH },
+        properties: { label: `Ring road · keeps out of the corridor` },
+        geometry: {
+          type: 'LineString',
+          coordinates: officialRing?.path ?? [],
+        },
       },
     ],
   };
@@ -168,10 +220,16 @@ export function visarjanClosureFeatureCollection(): GeoJSON.FeatureCollection {
     features: closures.map((g) => ({
       type: 'Feature',
       properties: {
-        name: g.road,
+        // The notice's spelling, not the police map's. The geometry is
+        // theirs but the name has to match the list on the page and the
+        // times in the notice — carrying "Shivaji road" here while the
+        // page says "Shivaji Road" is how a road ends up looking like
+        // two different roads.
+        name: closureFor(g.road)?.road ?? g.road,
         label: `Closed from ${closingTime(g.road)}`,
-        from: g.from ?? '',
-        to: g.to ?? '',
+        // The stretch comes from the notice, which states it in words;
+        // the police geometry carries the line but not the end points.
+        stretch: closureFor(g.road)?.stretch ?? '',
       },
       geometry: { type: 'MultiLineString', coordinates: g.segments },
     })),
