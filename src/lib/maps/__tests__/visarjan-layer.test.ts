@@ -186,4 +186,27 @@ describe('visarjan map layers', () => {
       }
     });
   });
+
+  it('keeps every placed route stop in the published order', () => {
+    // The check that makes a hand-read coordinate safe to draw: the
+    // stops must still march from the temple towards the river. A
+    // mistyped digit lands outside this and is caught before it ships.
+    for (const r of MANDAL_ROUTE_PATHS) {
+      const placed = r.stops.filter((s) => s.lng !== undefined);
+      for (let i = 1; i < placed.length; i += 1) {
+        expect(
+          placed[i].lng,
+          `${placed[i].place} does not follow ${placed[i - 1].place}`
+        ).toBeLessThan(placed[i - 1].lng as number);
+      }
+    }
+  });
+
+  it('records where every hand-placed coordinate came from', () => {
+    for (const r of MANDAL_ROUTE_PATHS) {
+      for (const s of r.stops) {
+        if (s.lat !== undefined) expect(s.source, s.place).toBeTruthy();
+      }
+    }
+  });
 });

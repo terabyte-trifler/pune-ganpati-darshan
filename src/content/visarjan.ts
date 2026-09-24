@@ -531,7 +531,20 @@ export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
       // Already on the map as Kasba checkpoints; both routes cross them.
       { place: 'Belbaug Chowk', placeMr: 'बेलबाग चौक', lat: 18.515669, lng: 73.856287, source: 'OSM' },
       { place: 'Ganpati Chowk', placeMr: 'गणपती चौक', lat: 18.515008, lng: 73.85498, source: 'OSM' },
-      { place: 'Nagarkar Talim Chowk', placeMr: 'नगरकर तालीम चौक' },
+      {
+        place: 'Nagarkar Talim Chowk',
+        placeMr: 'नगरकर तालीम चौक',
+        // Read off Google Maps and checked against the route before use:
+        // 136 m past Ganpati Chowk, between it and the Sambhaji bridge on
+        // both axes, leaving 1.13 km for the two stops that follow. The
+        // peth chowks are absent from OSM, Nominatim and Photon alike, so
+        // a coordinate from someone standing in the city is the best
+        // source there is — it still gets the same sequence check that
+        // caught a "Tilak Chowk" in Nigdi.
+        lat: 18.514602,
+        lng: 73.853768,
+        source: 'Google Maps, sequence-checked',
+      },
       { place: 'Umbrya Ganpati Chowk', placeMr: 'उंबऱ्या गणपती चौक' },
       { place: 'Lokmanya Tilak Chowk', placeMr: 'लोकमान्य टिळक चौक' },
       {
