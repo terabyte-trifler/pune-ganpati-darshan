@@ -189,7 +189,7 @@ export default async function VisarjanPage() {
               <span
                 aria-hidden="true"
                 className="h-3 w-3 shrink-0 rounded-full border-2"
-                style={{ background: '#FFFFFF', border: '2px solid #14100C' }}
+                style={{ background: '#FF9933', border: '2px solid #FFFFFF' }}
               />
               Kasba&rsquo;s checkpoints, each carrying the hour it is due
             </li>

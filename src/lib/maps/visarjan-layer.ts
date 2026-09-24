@@ -40,21 +40,26 @@ const CLOSURE_COLOR = '#C8BCA8';
 const DIVERSION_COLOR = '#E2621B';
 
 /**
- * White, because everything else on this map is already spoken for.
+ * Bhagwa, ringed in white.
  *
- * The corridor is marigold, the mandals brass, the diversions vermilion,
- * the closures bone-grey, and the metro owns purple and teal. Against a
- * near-black ground white is both the highest contrast available and the
- * only tone left that carries no other meaning — green would have been
- * brighter still, and wrong, because green is "short queue" in this
- * app's pin language on a map that has deliberately stopped claiming
- * queues at all.
+ * Saffron is the colour of the day, and these are the marks most worth
+ * seeing: a checkpoint answers "when does it reach this corner", which
+ * is the question asked while standing on the corner.
  *
- * These are also the marks most worth seeing: a checkpoint answers "when
- * does it reach this corner", which is the question asked while standing
- * on the corner.
+ * The white ring is what makes it work. Bhagwa sits between the two
+ * warm tones already on this map — lighter than the vermilion diversions
+ * and deeper than the marigold corridor — so on colour alone it would be
+ * the third orange mark among many. Nothing else here carries a white
+ * edge, so the ring separates it at any zoom, in sunlight, and for a
+ * reader who cannot tell the three oranges apart.
+ *
+ * Green was the other bright option and would be wrong: green means
+ * "short queue" in this app's pin language, on a map that has
+ * deliberately stopped claiming queues.
  */
-const CHECKPOINT_COLOR = '#FFFFFF';
+const CHECKPOINT_COLOR = '#FF9933';
+/** Nothing else on this map has a white edge. That is the point. */
+const CHECKPOINT_RING = '#FFFFFF';
 
 const MIN_ZOOM = 12.5;
 
@@ -255,7 +260,7 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       // A shade larger than a mandal pin: on this map the checkpoint is
       // the instruction and the mandal is the context.
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 4.5, 17, 8.5],
-      'circle-stroke-color': '#14100C',
+      'circle-stroke-color': CHECKPOINT_RING,
       'circle-stroke-width': 2,
     },
   });
@@ -277,7 +282,10 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       'text-max-width': 9,
     },
     paint: {
-      'text-color': CHECKPOINT_COLOR,
+      // White, not bhagwa: the time is read at a glance against a
+      // marigold band, and saffron text on that is the one place the
+      // three oranges genuinely collide.
+      'text-color': CHECKPOINT_RING,
       'text-halo-color': '#14100C',
       'text-halo-width': 2,
     },
