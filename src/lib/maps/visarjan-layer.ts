@@ -40,25 +40,27 @@ const CLOSURE_COLOR = '#C8BCA8';
 const DIVERSION_COLOR = '#E2621B';
 
 /**
- * Bhagwa, ringed in white.
+ * A dark body with a bright edge.
  *
- * Saffron is the colour of the day, and these are the marks most worth
- * seeing: a checkpoint answers "when does it reach this corner", which
- * is the question asked while standing on the corner.
+ * The instinct to make the most important mark the brightest runs into
+ * the ground this map is drawn on: it is almost black, so a filled disc
+ * — white, saffron, marigold — is a bright blob, and six of them along
+ * one road read as noise rather than as points. Colour alone also had
+ * the checkpoints competing with the corridor, the mandals and the
+ * diversions, all of which are warm.
  *
- * The white ring is what makes it work. Bhagwa sits between the two
- * warm tones already on this map — lighter than the vermilion diversions
- * and deeper than the marigold corridor — so on colour alone it would be
- * the third orange mark among many. Nothing else here carries a white
- * edge, so the ring separates it at any zoom, in sunlight, and for a
- * reader who cannot tell the three oranges apart.
+ * Inverting it solves both. The body takes the map's own ink and
+ * disappears into the ground; the ring and the hour carry the contrast.
+ * That is already this app's idiom for a reference point — the police
+ * closure junctions are drawn the same way, and so are the diversion
+ * pins here — so the map gains no new visual language.
  *
- * Green was the other bright option and would be wrong: green means
- * "short queue" in this app's pin language, on a map that has
- * deliberately stopped claiming queues.
+ * The ring is white and nothing else here has a white edge, which is
+ * what separates a checkpoint from a diversion at a glance: both are
+ * dark discs, one ringed white and one vermilion, and only one carries
+ * a time.
  */
-const CHECKPOINT_COLOR = '#FF9933';
-/** Nothing else on this map has a white edge. That is the point. */
+const CHECKPOINT_COLOR = '#14100C';
 const CHECKPOINT_RING = '#FFFFFF';
 
 const MIN_ZOOM = 12.5;
@@ -257,6 +259,11 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     minzoom: 12.5,
     paint: {
       'circle-color': CHECKPOINT_COLOR,
+      // Opaque, unlike the diversion discs: a checkpoint sits ON the
+      // corridor, and letting the marigold band show through the body
+      // would tint it back into the warm family the ring exists to
+      // separate it from.
+      'circle-opacity': 1,
       // A shade larger than a mandal pin: on this map the checkpoint is
       // the instruction and the mandal is the context.
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 4.5, 17, 8.5],
@@ -282,9 +289,9 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       'text-max-width': 9,
     },
     paint: {
-      // White, not bhagwa: the time is read at a glance against a
-      // marigold band, and saffron text on that is the one place the
-      // three oranges genuinely collide.
+      // The hour is the one thing here that must survive a glance from
+      // arm's length in daylight, so it takes the brightest tone on the
+      // map and a halo thick enough to clear the corridor beneath it.
       'text-color': CHECKPOINT_RING,
       'text-halo-color': '#14100C',
       'text-halo-width': 2,
