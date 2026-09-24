@@ -84,3 +84,23 @@ export function getFestivalPhase(
     isVisarjanNight,
   };
 }
+
+/**
+ * Visarjan day, or the evening before it.
+ *
+ * The day before is included deliberately: the roads start closing at
+ * 05:00 and the no-parking order begins at 23:00 the previous night, so
+ * someone reading this at 9 p.m. on the eve is exactly who the visarjan
+ * page is for. Returns false once the procession is over.
+ */
+export function isVisarjanImminent(
+  config: FestivalConfig,
+  now: Date = new Date()
+): boolean {
+  const phase = getFestivalPhase(config, now);
+  if (phase.phase !== 'during') return false;
+  if (phase.isVisarjan) return true;
+
+  const visarjan = istDateToUtcMs(config.visarjanDate);
+  return startOfIstDay(now) === visarjan - DAY_MS;
+}

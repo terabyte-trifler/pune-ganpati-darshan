@@ -65,6 +65,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/guides`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${base}/plan`, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${base}/parking`, changeFrequency: 'weekly', priority: 0.7 },
+    // High priority for the two days it matters and harmless after: the
+    // closure list and the procession route are the most-searched thing
+    // about Pune's Ganeshotsav on Anant Chaturdashi.
+    { url: `${base}/visarjan`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${base}/how-to-use`, changeFrequency: 'monthly', priority: 0.6 },
     // The Marathi guide is its own URL, so it needs its own row — an
     // hreflang pair is not a substitute for being listed.

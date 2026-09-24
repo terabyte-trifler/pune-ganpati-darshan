@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getFestivalPhase } from '../festival';
+import { getFestivalPhase, isVisarjanImminent } from '../festival';
 import type { FestivalConfig } from '@/types/ganpati';
 
 const config: FestivalConfig = {
@@ -68,6 +68,18 @@ describe('festival phase', () => {
     expect(getFestivalPhase(midFestival, ist('2026-09-21T00:30:00'))).toMatchObject({
       phase: 'during', day: 7, isVisarjan: true, isVisarjanNight: true,
     });
+  });
+
+  it('flags visarjan as imminent on the eve and the day', () => {
+    expect(isVisarjanImminent(config, ist('2026-09-24T21:00:00'))).toBe(true);
+    expect(isVisarjanImminent(config, ist('2026-09-25T11:00:00'))).toBe(true);
+    // Still running, in the small hours.
+    expect(isVisarjanImminent(config, ist('2026-09-26T02:00:00'))).toBe(true);
+  });
+
+  it('does not flag visarjan on ordinary days or once it is over', () => {
+    expect(isVisarjanImminent(config, ist('2026-09-20T21:00:00'))).toBe(false);
+    expect(isVisarjanImminent(config, ist('2026-09-26T09:00:00'))).toBe(false);
   });
 
   it('is year-agnostic', () => {

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Search, Route as RouteIcon, ChevronRight, CircleParking, Ban,
-  Camera, ExternalLink,
+  Camera, ExternalLink, Waves,
 } from 'lucide-react';
 import {
   getAllGanpatis, getAreas, getFestivalConfig, getManachePaach,
@@ -10,6 +10,7 @@ import {
 import { getRoutes, computeRouteTotals, routesForNow } from '@/services/routes';
 import { formatDuration } from '@/lib/geo';
 import { FestivalCountdown } from '@/features/discovery/FestivalCountdown';
+import { isVisarjanImminent } from '@/lib/festival';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
@@ -106,6 +107,27 @@ export default async function HomePage() {
 
         <div className="relative mx-auto max-w-2xl">
           <FestivalCountdown config={festival} />
+
+          {/* On visarjan day and the evening before it, this is the page's
+              most useful link by a distance: the mandaps empty out, and
+              the questions become where the procession is and which road
+              is shut. It is not shown on any other day. */}
+          {isVisarjanImminent(festival) && (
+            <Link
+              href="/visarjan"
+              className="mt-3 flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--zendu)]/45 bg-gradient-to-r from-[var(--zendu)]/[0.16] to-transparent px-4 py-3"
+            >
+              <Waves size={19} aria-hidden="true" className="shrink-0 text-[var(--zendu)]" />
+              <span className="min-w-0">
+                <span className="block text-[14.5px] font-semibold text-[var(--pital)]">
+                  Visarjan: the procession and the closed roads
+                </span>
+                <span className="block text-[13px] text-[var(--muted)]">
+                  17 stretches close from 05:00 · live tracking
+                </span>
+              </span>
+            </Link>
+          )}
 
           <h1 className="font-display mt-5 text-[36px] font-bold leading-[1.02] text-[var(--chandan)] sm:text-[52px]">
             Experience Pune&rsquo;s
