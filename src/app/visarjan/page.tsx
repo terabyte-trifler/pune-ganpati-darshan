@@ -5,6 +5,7 @@ import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
   VISARJAN_TIMELINE, TIMELINE_SOURCES, MANDALS_WITH_SCHEDULES,
+  MANDAL_ROUTE_SCHEDULES,
 } from '@/content/visarjan';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -220,6 +221,62 @@ export default async function VisarjanPage() {
           </a>
           , both reported 24 September 2026.
         </p>
+
+        {/* Where it will be, hour by hour. The timeline above answers
+            "when does it start"; this answers "which corner, and when" —
+            which is the question someone choosing a place to stand is
+            actually asking. */}
+        {MANDAL_ROUTE_SCHEDULES.map((sched) => (
+          <section key={sched.slug} className="mt-8">
+            <h2 className="font-display text-[20px] font-bold text-[var(--chandan)]">
+              {sched.mandal}: {sched.title.toLowerCase()}
+            </h2>
+            <p lang="mr" className="mt-1 text-[13px] text-[var(--faint)]">
+              {sched.titleMr}
+            </p>
+
+            <ol className="mt-4 border-l border-[var(--line-strong)] pl-4">
+              {sched.checkpoints.map((c) => (
+                <li key={c.time} className="relative py-2">
+                  {/* The lamp on the line: this is a procession moving
+                      past a point, not a row in a table. */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute -left-[21px] top-[15px] h-1.5 w-1.5 rounded-full bg-[var(--zendu)]"
+                    style={{ boxShadow: 'var(--glow-zendu)' }}
+                  />
+                  <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                    <span className="font-display text-[15px] font-bold text-[var(--zendu)] tabular-nums">
+                      {c.time}
+                    </span>
+                    <span className="text-[14.5px] text-[var(--chandan)]">{c.place}</span>
+                    <span lang="mr" className="text-[13px] text-[var(--faint)]">
+                      {c.placeMr}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+
+            <p className="prose-measure mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
+              Published by the {sched.source}. Its first two checkpoints match
+              the Police Commissioner&rsquo;s briefing exactly, which is the
+              firmest agreement anything on this page has. Still the
+              mandal&rsquo;s plan rather than an observation — the procession
+              is known for running late, so treat these as the order and
+              rhythm of the day, and the{' '}
+              <a
+                href={POLICE_TRACKER.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--shendur)]"
+              >
+                live tracker
+              </a>{' '}
+              as the hour.
+            </p>
+          </section>
+        ))}
 
         {/* ---------------- The order ---------------- */}
         <h2 className="font-display mt-8 text-[20px] font-bold text-[var(--chandan)]">

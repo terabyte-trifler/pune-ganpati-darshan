@@ -228,3 +228,64 @@ export const TIMELINE_SOURCES = {
 
 /** How many of the catalogue's mandals have published a schedule. */
 export const MANDALS_WITH_SCHEDULES = 2;
+
+/**
+ * A mandal's own checkpoint schedule along the route.
+ *
+ * Different in kind from VISARJAN_TIMELINE, and more useful: not "when
+ * does it set off" but "where will it be at four o'clock". Someone
+ * deciding which corner to stand on is asking the second question.
+ *
+ * Kasba's is published by the mandal trust as a graphic titled
+ * "विसर्जन मिरवणूक लक्ष्मी रस्त्याकरीता वेळेचे व्यवस्थापन" — time
+ * management for the visarjan procession on Laxmi Road. Its first two
+ * checkpoints, 09:30 at the Tilak statue and 10:15 at Belbaug Chowk,
+ * match the Police Commissioner's briefing exactly. Two independent
+ * sources agreeing is the firmest ground anything on this page stands on.
+ *
+ * Still a plan, not a promise. The procession is famous for running late,
+ * and an hour here is the mandal's intention rather than an observation —
+ * which is why the live tracker stays at the top of the page.
+ */
+
+export interface RouteCheckpoint {
+  /** Transliterated, for a reader who does not read Devanagari. */
+  place: string;
+  /** As printed on the mandal's own graphic. */
+  placeMr: string;
+  /** IST, 24-hour. */
+  time: string;
+}
+
+export interface MandalRouteSchedule {
+  slug: string;
+  /** The mandal, as the catalogue names it. */
+  mandal: string;
+  /** What the schedule covers, in the mandal's own framing. */
+  title: string;
+  titleMr: string;
+  source: string;
+  checkpoints: RouteCheckpoint[];
+}
+
+export const MANDAL_ROUTE_SCHEDULES: MandalRouteSchedule[] = [
+  {
+    slug: 'kasba-ganpati',
+    mandal: 'Shri Kasba Ganpati',
+    title: 'Timings along Laxmi Road',
+    titleMr: 'विसर्जन मिरवणूक लक्ष्मी रस्त्याकरीता वेळेचे व्यवस्थापन',
+    source: 'Shri Kasba Ganpati Sarvajanik Ganeshotsav Mandal Trust, Pune',
+    checkpoints: [
+      { time: '09:30', place: 'Lokmanya Tilak Putala (Mandai)', placeMr: 'लोकमान्य टिळक पुतळा (मंडई)' },
+      { time: '10:15', place: 'Belbaug Chowk', placeMr: 'बेलबाग चौक' },
+      { time: '10:40', place: 'Ganpati Chowk', placeMr: 'गणपती चौक' },
+      { time: '11:15', place: 'Shri Limbraj Maharaj Chowk (Vaibhav Chowk)', placeMr: 'श्री लिंबराज महाराज चौक (वैभव चौक)' },
+      { time: '11:45', place: 'Kunte Chowk', placeMr: 'कुंटे चौक' },
+      { time: '12:35', place: 'Umbrya Ganpati Chowk', placeMr: 'उंबऱ्या गणपती चौक' },
+      { time: '13:00', place: 'Bhanuvilas Chowk', placeMr: 'भानुविलास चौक' },
+      { time: '13:45', place: 'Vijay Talkies Chowk', placeMr: 'विजय टॉकीज चौक' },
+      { time: '14:30', place: 'Garud Ganpati Chowk', placeMr: 'गरूड गणपती चौक' },
+      { time: '14:45', place: 'Tilak Chowk', placeMr: 'टिळक चौक' },
+    ],
+  },
+];
