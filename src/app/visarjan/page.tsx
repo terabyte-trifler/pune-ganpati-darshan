@@ -5,7 +5,7 @@ import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
   VISARJAN_TIMELINE, TIMELINE_SOURCES, MANDALS_WITH_SCHEDULES,
-  MANDAL_ROUTE_SCHEDULES,
+  MANDAL_ROUTE_SCHEDULES, MANACHE_ASSEMBLY,
 } from '@/content/visarjan';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
@@ -193,6 +193,12 @@ export default async function VisarjanPage() {
             );
           })}
         </ol>
+
+        {/* Three mandals give the same hour. Left unexplained that reads
+            like a data error, so the page explains it instead. */}
+        <p className="prose-measure mt-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-3.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          {MANACHE_ASSEMBLY}
+        </p>
 
         <p className="prose-measure mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
           {MANDALS_WITH_SCHEDULES} of the mandals on this site have published

@@ -202,6 +202,18 @@ export const VISARJAN_TIMELINE: ScheduleEntry[] = [
     source: 'police',
   },
   {
+    time: '09:30',
+    what: 'Tambdi Jogeshwari, the second of the Manache Paach, begins its procession',
+    slug: 'tambdi-jogeshwari',
+    source: 'mandal',
+  },
+  {
+    time: '09:30',
+    what: 'Guruji Talim, the third, begins from the Tilak statue at Mandai',
+    slug: 'guruji-talim',
+    source: 'mandal',
+  },
+  {
     time: '10:15',
     what: 'The formal immersion procession commences from Belbaug Chowk, and the central route opens',
     source: 'police',
@@ -227,7 +239,22 @@ export const TIMELINE_SOURCES = {
 } as const;
 
 /** How many of the catalogue's mandals have published a schedule. */
-export const MANDALS_WITH_SCHEDULES = 2;
+export const MANDALS_WITH_SCHEDULES = 4;
+
+/**
+ * Why three mandals all say 09:30.
+ *
+ * Kasba, Tambdi Jogeshwari and Guruji Talim — the first three of the
+ * Manache Paach — each published the same hour from the same place. That
+ * is not three sources contradicting each other about one procession; it
+ * is the Manache Paach assembling at the Lokmanya Tilak statue at Mandai
+ * and moving off in precedence order, which is exactly what their
+ * precedence means. Kasba leads, and the rest follow it down Laxmi Road.
+ */
+export const MANACHE_ASSEMBLY =
+  'The first three of the Manache Paach each give 09:30 at the Lokmanya ' +
+  'Tilak statue, Mandai. They are not setting off in three directions: ' +
+  'they gather there and move off in precedence order, Kasba first.';
 
 /**
  * A mandal's own checkpoint schedule along the route.
