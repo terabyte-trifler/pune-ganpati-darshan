@@ -215,7 +215,8 @@ export default async function VisarjanPage() {
                 className="h-3 w-3 shrink-0 rounded-full border-2"
                 style={{ background: '#14100C', border: '2px solid #FFFFFF' }}
               />
-              Kasba&rsquo;s checkpoints, each carrying the hour it is due
+              Procession checkpoints — the hour the miravnuk is due there.
+              Tap one to see which mandals pass it
             </li>
             <li className="flex items-center gap-2.5">
               <span
@@ -282,12 +283,14 @@ export default async function VisarjanPage() {
             we had already drawn.
           </p>
           <p className="prose-measure mt-2 text-[11.5px] leading-relaxed text-[var(--faint)]">
-            All {ALL_CHECKPOINTS} of Kasba&rsquo;s checkpoints are marked,
-          each verified to sit on the corridor itself rather than merely to
-          share a name — the test that rejected a &ldquo;Vaibhav&rdquo;
-          2.3&nbsp;km away and put a &ldquo;Tilak Chowk&rdquo; in Nigdi.
-          Every one now lands within 40&nbsp;m of the road, most within
-          7.{' '}
+            All {ALL_CHECKPOINTS} checkpoints are marked, each verified to
+          sit on the corridor itself rather than merely to share a name —
+          the test that rejected a &ldquo;Vaibhav&rdquo; 2.3&nbsp;km away
+          and put a &ldquo;Tilak Chowk&rdquo; in Nigdi. Every one lands
+          within 40&nbsp;m of the road, most within 7. The hours on them
+          are Kasba&rsquo;s, because it is the only mandal to publish an
+          hour against each chowk; four of the ten are on Dagdusheth&rsquo;s
+          route as well and say so when tapped.{' '}
           {DRAWN_CLOSURES} of the {TOTAL_CLOSURES} closures are drawn. The
             rest name a junction we have no verified position for, and a
             guessed end point draws a confident line down the wrong road —
