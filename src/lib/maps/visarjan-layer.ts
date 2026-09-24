@@ -1,6 +1,6 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
-import { VISARJAN_CLOSURES } from '@/content/visarjan';
+import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
 
 /**
  * Visarjan day: the procession corridor, and the closures that can be
@@ -28,11 +28,14 @@ import { VISARJAN_CLOSURES } from '@/content/visarjan';
 
 export const VISARJAN_SOURCE_ID = 'visarjan-corridor';
 export const VISARJAN_CLOSURE_SOURCE_ID = 'visarjan-closures';
+export const VISARJAN_DIVERSION_SOURCE_ID = 'visarjan-diversions';
 
 /** Marigold, at low opacity. The procession, not a route. */
 const CORRIDOR_COLOR = '#F2A93B';
 /** The same bone-grey the after-17:00 closures use. */
 const CLOSURE_COLOR = '#C8BCA8';
+/** Vermilion-leaning, because a diversion is an instruction to act on. */
+const DIVERSION_COLOR = '#E2621B';
 
 const MIN_ZOOM = 12.5;
 
@@ -41,6 +44,14 @@ const closures = VISARJAN_GEOMETRY.filter((g) => g.kind === 'closure');
 
 export const DRAWN_CLOSURES = closures.length;
 export const TOTAL_CLOSURES = VISARJAN_CLOSURES.length;
+
+/** Diversion points we can place. The rest are named on the page instead. */
+const placedDiversions = DIVERSION_POINTS.filter(
+  (d): d is typeof d & { lat: number; lng: number } =>
+    d.lat !== undefined && d.lng !== undefined
+);
+export const DRAWN_DIVERSIONS = placedDiversions.length;
+export const TOTAL_DIVERSIONS = DIVERSION_POINTS.length;
 
 /** The closing time for a road, from the notice rather than the geometry. */
 function closingTime(road: string): string {
@@ -54,6 +65,17 @@ export function corridorFeatureCollection(): GeoJSON.FeatureCollection {
       type: 'Feature',
       properties: { name: g.road, label: `${g.road} · miravnuk` },
       geometry: { type: 'MultiLineString', coordinates: g.segments },
+    })),
+  };
+}
+
+export function diversionFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: placedDiversions.map((d) => ({
+      type: 'Feature',
+      properties: { name: d.name, road: d.road },
+      geometry: { type: 'Point', coordinates: [d.lng, d.lat] },
     })),
   };
 }
@@ -90,6 +112,10 @@ export function addVisarjanLayers(map: MapLibreMap): void {
   map.addSource(VISARJAN_CLOSURE_SOURCE_ID, {
     type: 'geojson',
     data: visarjanClosureFeatureCollection(),
+  });
+  map.addSource(VISARJAN_DIVERSION_SOURCE_ID, {
+    type: 'geojson',
+    data: diversionFeatureCollection(),
   });
 
   // The band, under everything: a glow the peth lanes sit inside.
@@ -151,6 +177,46 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 2, 17, 5],
       'line-opacity': 0.6,
       'line-dasharray': [2, 1.6],
+    },
+  });
+
+  // Diversion points: where you get turned around, which is a different
+  // fact from a road being shut and the more useful one to a rider. Drawn
+  // as a ring with a bar through it rather than a dot, so it cannot be
+  // mistaken for a mandal pin.
+  map.addLayer({
+    id: 'visarjan-diversion',
+    type: 'circle',
+    source: VISARJAN_DIVERSION_SOURCE_ID,
+    minzoom: 12.5,
+    paint: {
+      'circle-color': '#14100C',
+      'circle-opacity': 0.85,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 4, 17, 8],
+      'circle-stroke-color': DIVERSION_COLOR,
+      'circle-stroke-width': 2,
+    },
+  });
+
+  map.addLayer({
+    id: 'visarjan-diversion-label',
+    type: 'symbol',
+    source: VISARJAN_DIVERSION_SOURCE_ID,
+    minzoom: 14,
+    layout: {
+      'text-field': ['get', 'name'],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 9.5,
+      'text-offset': [0, 1.2],
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-padding': 3,
+    },
+    paint: {
+      'text-color': DIVERSION_COLOR,
+      'text-halo-color': '#14100C',
+      'text-halo-width': 1.3,
+      'text-opacity': 0.9,
     },
   });
 

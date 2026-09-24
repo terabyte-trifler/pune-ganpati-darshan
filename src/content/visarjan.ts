@@ -8,9 +8,14 @@
  * The closures, the parking ban and the heavy-vehicle ban are quoted from
  * the Pune City Traffic Police notice for Anant Chaturdashi, signed by DCP
  * (Traffic) Dr Sandeep Bhajibhakare and reported on 23–24 September 2026.
- * Two outlets disagreed on Shivaji Road — 05:00 in one, 09:00 in another —
- * and the majority reading (05:00) is used, flagged here rather than
- * silently averaged.
+ *
+ * Shivaji Road is a lesson worth keeping. Two aggregators said it closed
+ * at 05:00 and one said 09:00, and this file took the majority — which was
+ * wrong. The Indian Express, reporting the police list in full, has only
+ * Laxmi Road closing at 05:00 and Shivaji Road at 09:00 alongside Tilak
+ * Road. Counting sources is not the same as weighing them, and the map
+ * carried a four-hour error on a drawn stretch until the fuller report was
+ * read. The times below now follow that report.
  *
  * What this file does NOT carry is a departure time for each mandal. Only
  * Kasba's is published: its procession leaves after the 9 a.m. pooja, as
@@ -39,6 +44,7 @@ export const VISARJAN_SOURCE = {
   /** When this file was written from the published reports. */
   captured: '2026-09-24',
   reports: [
+    { name: 'The Indian Express', url: 'https://indianexpress.com/article/cities/pune/pune-ganesh-visarjan-traffic-road-closures-heavy-vehicle-ban-2026-10890893/' },
     { name: 'Punekar News', url: 'https://www.punekarnews.in/pune-ganpati-visarjan-2026-roads-closing-from-5-am-check-your-route-before-leaving/' },
     { name: 'Pune Pulse', url: 'https://www.mypunepulse.com/pune-ganesh-visarjan-traffic-2026-17-roads-to-close-major-diversions-and-48-hour-heavy-vehicle-ban/' },
   ],
@@ -71,28 +77,31 @@ export interface VisarjanClosure {
  * them on the day as the crowd moves.
  */
 export const VISARJAN_CLOSURES: VisarjanClosure[] = [
-  { from: '05:00', road: 'Laxmi Road', stretch: 'Sant Kabir Chowki to Alka Talkies Chowk' },
-  {
-    from: '05:00',
-    road: 'Shivaji Road',
-    stretch: 'Kakasaheb Gadgil statue to Jedhe Chowk',
-    disputed: 'One report gave 09:00 for this stretch; two gave 05:00.',
-  },
+  { from: '05:00', road: 'Laxmi Road', stretch: 'Sant Kabir Chowk to Alka Talkies Chowk' },
+  { from: '09:00', road: 'Shivaji Road', stretch: 'Kakasaheb Gadgil statue to Jedhe Chowk' },
   { from: '09:00', road: 'Tilak Road', stretch: 'Jedhe Chowk to Tilak Chowk' },
   { from: '09:00', road: 'Bagade Road', stretch: 'Sonya Maruti Chowk to Phadke Haud Chowk' },
   { from: '09:00', road: 'Guru Nanak Road', stretch: 'Devjibaba Chowk to Hamzekhan Chowk' },
   { from: '10:00', road: 'Bajirao Road', stretch: 'Savarkar Chowk to Futka Buruj Chowk' },
-  { from: '10:00', road: 'Kumthekar Road', stretch: 'Tilak Chowk to Chitale Corner' },
+  { from: '10:00', road: 'Kumthekar Road', stretch: 'Tilak Chowk to Chitale Corner Chowk' },
   { from: '10:00', road: 'Ganesh Road', stretch: 'Daruwala Bridge to Jijamata Chowk' },
   { from: '10:00', road: 'Kelkar Road', stretch: 'Budhwar Chowk to Alka Talkies Chowk' },
   { from: '10:00', road: 'Shastri Road', stretch: 'Senadatta Chowk to Alka Talkies Chowk' },
   { from: '11:00', road: 'Jangli Maharaj Road', stretch: 'Jhansi Rani Chowk to Khandoji Baba Chowk' },
-  { from: '11:00', road: 'Fergusson College Road', stretch: 'Khandoji Baba Chowk to the FC main gate' },
-  { from: '12:00', road: 'Karve Road', stretch: 'Nal Stop to Khanduji Baba Chowk' },
-  { from: '12:00', road: 'Bhandarkar Road', stretch: 'PYC Gymkhana to Nataraj Chowk, via Goodluck Chowk' },
+  { from: '11:00', road: 'Fergusson College Road', stretch: 'Khandoji Baba Chowk to the Fergusson College main gate' },
+  { from: '12:00', road: 'Bhandarkar Road', stretch: 'PYC Gymkhana to Goodluck Chowk' },
   { from: '12:00', road: 'Pune–Satara Road', stretch: 'Volga Chowk to Jedhe Chowk' },
   { from: '12:00', road: 'Solapur Road', stretch: 'Seven Loves Chowk to Jedhe Chowk' },
-  { from: '12:00', road: 'Prabhat Road', stretch: 'Deccan Post Office to Shelar Mama Chowk' },
+  { from: '12:00', road: 'Prabhat Road', stretch: 'Deccan Post to Bhelare Mama Chowk' },
+  {
+    from: '12:00',
+    road: 'Karve Road',
+    stretch: 'Nal Stop to Khanduji Baba Chowk',
+    disputed:
+      'Two reports list this stretch; the fullest one does not, though it ' +
+      'names Nal Stop as a diversion point on Karve Road. Kept, because ' +
+      'the police count of seventeen roads needs it.',
+  },
 ];
 
 /** The four roads the procession itself takes. */
@@ -325,3 +334,64 @@ export const MANDAL_ROUTE_SCHEDULES: MandalRouteSchedule[] = [
     ],
   },
 ];
+
+/**
+ * Where motorists are turned around.
+ *
+ * The police named ten junctions as diversion points — the places you
+ * will be stopped and sent another way once the procession reaches the
+ * road behind them. That is a different fact from "this road is closed",
+ * and more actionable: a closure tells you where not to go, a diversion
+ * point tells you where the decision gets made for you.
+ *
+ * `lat`/`lng` are present only where the junction is on the police's own
+ * closure map, which the app already carries with coordinates. The rest
+ * are listed by name and deliberately not placed: geocoding Pune chowk
+ * names put "Tilak Chowk" in Nigdi, seventeen kilometres away, and a
+ * diversion point dropped on the wrong junction is worse than one the
+ * reader locates themselves.
+ */
+export interface DiversionPoint {
+  name: string;
+  /** The road the police name it on. */
+  road: string;
+  lat?: number;
+  lng?: number;
+}
+
+export const DIVERSION_POINTS: DiversionPoint[] = [
+  { name: 'Jhansi Rani Chowk', road: 'Jangli Maharaj Road' },
+  { name: 'Kakasaheb Gadgil statue', road: 'Shivaji Road', lat: 18.521518, lng: 73.855174 },
+  { name: 'Apollo Talkies', road: 'Mudaliar Road' },
+  { name: 'Daruwala Bridge', road: 'Mudaliar Road' },
+  { name: 'Sant Kabir police chowky', road: 'Laxmi Road', lat: 18.515364, lng: 73.868662 },
+  { name: 'Seven Loves Chowk', road: 'Solapur Road' },
+  { name: 'Volga Chowk', road: 'Satara Road' },
+  { name: 'Savarkar Chowk', road: 'Bajirao Road' },
+  { name: 'Senadatta police chowky', road: 'Lal Bahadur Shastri Road', lat: 18.502992, lng: 73.845384 },
+  { name: 'Nal Stop', road: 'Karve Road', lat: 18.508591, lng: 73.831437 },
+];
+
+/**
+ * The way round, for anyone who has to cross the city by vehicle.
+ *
+ * Advisory rather than a route: the police describe a ring of roads
+ * around the procession corridor and regulate junctions along it as the
+ * restrictions come in, so the usable path changes through the day.
+ */
+export const RING_ROAD_ADVICE =
+  'Motorists are asked to keep out of the procession corridor altogether ' +
+  'and go round it: Karve Road and Nal Stop, Law College Road, Senapati ' +
+  'Bapat Road, Ganeshkhind Road, Shivajinagar and the university area, ' +
+  'and Satara Road at Volga Chowk. Junctions along it are regulated as ' +
+  'the closures come in, so treat it as a direction rather than a route.';
+
+/** Roads carrying a no-parking order alongside the diversions. */
+export const NO_PARKING_ROADS = [
+  'Jangli Maharaj Road', 'Shivaji Road', 'Mudaliar Road', 'Laxmi Road',
+  'Solapur Road', 'Satara Road', 'Bajirao Road', 'Lal Bahadur Shastri Road',
+  'Karve Road', 'Fergusson College Road',
+];
+
+/** Areas outside the centre with their own arrangements for the day. */
+export const OUTLYING_AREAS = ['Dhayari Phata', 'Keshav Nagar–Mundhwa', 'Sasane Nagar–Hadapsar'];

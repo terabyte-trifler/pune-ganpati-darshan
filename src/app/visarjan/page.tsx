@@ -5,6 +5,7 @@ import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
   MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES,
+  DIVERSION_POINTS, RING_ROAD_ADVICE, NO_PARKING_ROADS, OUTLYING_AREAS,
 } from '@/content/visarjan';
 import { mergedTimings, mandalsWithTimings } from '@/lib/visarjan-timings';
 import { TimingsTimeline } from '@/features/visarjan/TimingsTimeline';
@@ -14,7 +15,9 @@ import { isVisarjanImminent, getFestivalPhase } from '@/lib/festival';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
-import { DRAWN_CLOSURES, TOTAL_CLOSURES } from '@/lib/maps/visarjan-layer';
+import {
+  DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
+} from '@/lib/maps/visarjan-layer';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 
 export const revalidate = 3600;
@@ -106,6 +109,7 @@ export default async function VisarjanPage() {
             ['#closures', `Closed roads (${VISARJAN_CLOSURES.length})`],
             ['#map', 'Map'],
             ['#order', 'Manache Paach'],
+            ['#diversions', 'Diversions'],
             ['#rules', 'Parking & bans'],
           ].map(([href, label]) => (
             <a
@@ -176,6 +180,14 @@ export default async function VisarjanPage() {
                 style={{ borderColor: '#C8BCA8' }}
               />
               Closed stretches, each labelled with its hour
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="h-3 w-3 shrink-0 rounded-full border-2"
+                style={{ borderColor: '#E2621B', background: '#14100C' }}
+              />
+              Diversion points — where you are turned around
             </li>
           </ul>
           <p className="prose-measure mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
@@ -313,6 +325,60 @@ export default async function VisarjanPage() {
           ))}
         </div>
 
+        {/* ---------------- Diversions ---------------- */}
+        <h2
+          id="diversions"
+          className="font-display mt-8 scroll-mt-4 text-[20px] font-bold text-[var(--chandan)]"
+        >
+          Where you will be turned around
+        </h2>
+        <p className="prose-measure mt-2 text-[14px] leading-[1.7] text-[var(--muted)]">
+          A different fact from a road being shut, and the more useful one
+          if you are riding: these are the junctions the police named as
+          diversion points, where the decision gets made for you as the
+          procession reaches the road behind them.
+        </p>
+
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {DIVERSION_POINTS.map((d) => (
+            <li
+              key={d.name}
+              className="flex items-baseline gap-2.5 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] px-3.5 py-2.5"
+            >
+              <span
+                aria-hidden="true"
+                className="mt-1 h-2 w-2 shrink-0 rounded-full border-2"
+                style={{
+                  borderColor: d.lat ? 'var(--shendur)' : 'var(--line-strong)',
+                  background: 'transparent',
+                }}
+              />
+              <span className="min-w-0">
+                <span className="block text-[14px] font-semibold text-[var(--chandan)]">
+                  {d.name}
+                </span>
+                <span className="block text-[12.5px] text-[var(--faint)]">{d.road}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="prose-measure mt-2.5 text-[11.5px] leading-relaxed text-[var(--faint)]">
+          {DRAWN_DIVERSIONS} of the {TOTAL_DIVERSIONS} are on the map above —
+          the ones the police&rsquo;s own closure map already gives a position
+          for. The rest are named here and not placed, for the same reason
+          the undrawn closures are not: a junction guessed onto the wrong
+          corner is worse than one you find yourself.
+        </p>
+
+        <div className="mt-4 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
+          <h3 className="text-[12px] font-bold uppercase tracking-[0.09em] text-[var(--faint)]">
+            Going round, not through
+          </h3>
+          <p className="prose-measure mt-2 text-[13.5px] leading-relaxed text-[var(--muted)]">
+            {RING_ROAD_ADVICE}
+          </p>
+        </div>
+
         {/* ---------------- Restrictions ---------------- */}
         <h2
           id="rules"
@@ -338,6 +404,13 @@ export default async function VisarjanPage() {
             </li>
           ))}
         </ul>
+
+        <p className="prose-measure mt-4 text-[14px] leading-[1.7] text-[var(--muted)]">
+          {OUTLYING_AREAS.slice(0, -1).join(', ')} and {OUTLYING_AREAS.at(-1)}{' '}
+          have their own arrangements for the day, separate from the central
+          plan on this page. No-parking orders also cover{' '}
+          {NO_PARKING_ROADS.length} roads alongside the procession corridor.
+        </p>
 
         <p className="prose-measure mt-4 text-[14px] leading-[1.7] text-[var(--muted)]">
           Parking is the same list as every other day of the festival —{' '}
