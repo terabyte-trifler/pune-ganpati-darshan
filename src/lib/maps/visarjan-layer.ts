@@ -225,8 +225,26 @@ export const PARKING_COUNT = POLICE_PARKING.length;
  */
 const drawnElsewhere = new Set(CHECKPOINT_POINTS.map((c) => c.place.toLowerCase()));
 
-const routeStops = MANDAL_ROUTE_PATHS.flatMap((r) =>
-  r.stops
+const routeStops = MANDAL_ROUTE_PATHS.flatMap((r) => [
+  // The ghat is where the day ends, so it is drawn even though it is not
+  // a numbered stop — and labelled as the ghat rather than a stop, since
+  // arriving there is a different thing from passing a corner.
+  ...(r.endLat !== undefined && r.endLng !== undefined
+    ? [
+        {
+          mandal: shortMandal(r.mandal),
+          place: r.endsAt.replace(/^the /, ''),
+          placeMr: r.endsAtMr,
+          lat: r.endLat,
+          lng: r.endLng,
+          order: r.stops.length + 1,
+          total: r.stops.length + 1,
+          startsAt: r.startsAt,
+          isEnd: true,
+        },
+      ]
+    : []),
+  ...r.stops
     .filter(
       (s) =>
         s.lat !== undefined &&
@@ -242,8 +260,9 @@ const routeStops = MANDAL_ROUTE_PATHS.flatMap((r) =>
       order: r.stops.indexOf(s) + 1,
       total: r.stops.length,
       startsAt: r.startsAt,
-    }))
-);
+      isEnd: false,
+    })),
+]);
 
 export const DRAWN_ROUTE_STOPS = routeStops.length;
 export const TOTAL_ROUTE_STOPS = MANDAL_ROUTE_PATHS.reduce(
@@ -260,7 +279,7 @@ export function routeStopFeatureCollection(): GeoJSON.FeatureCollection {
         place: s.place,
         placeMr: s.placeMr,
         mandal: s.mandal,
-        label: `${s.mandal} · stop ${s.order}`,
+        label: s.isEnd ? `${s.mandal} · immersion ghat` : `${s.mandal} · stop ${s.order}`,
         startsAt: s.startsAt,
       },
       geometry: { type: 'Point', coordinates: [s.lng, s.lat] },

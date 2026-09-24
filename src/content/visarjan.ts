@@ -518,6 +518,10 @@ export interface MandalRoutePath {
   /** Where it ends. */
   endsAt: string;
   endsAtMr: string;
+  /** The ghat itself, where it could be placed. */
+  endLat?: number;
+  endLng?: number;
+  endSource?: string;
 }
 
 export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
@@ -555,7 +559,19 @@ export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
         lng: 73.850118,
         source: 'Google Maps, sequence-checked',
       },
-      { place: 'Lokmanya Tilak Chowk', placeMr: 'लोकमान्य टिळक चौक' },
+      {
+        place: 'Lokmanya Tilak Chowk',
+        placeMr: 'लोकमान्य टिळक चौक',
+        // Not the Lokmanya Tilak Putala at Mandai, which is Kasba's
+        // 09:30 start and sits 1,265 m east of here. Two places, one
+        // name, a kilometre apart, on the same page — checked precisely
+        // because that is the kind of pair a map gets wrong silently.
+        // 674 m past Umbrya Ganpati and 118 m short of the bridge, which
+        // is the approach to it.
+        lat: 18.512862,
+        lng: 73.843883,
+        source: 'Google Maps, sequence-checked',
+      },
       {
         place: 'Chhatrapati Sambhaji Maharaj bridge',
         placeMr: 'छत्रपती संभाजी महाराज पूल',
@@ -568,5 +584,11 @@ export const MANDAL_ROUTE_PATHS: MandalRoutePath[] = [
     ],
     endsAt: 'the immersion ghat at Shri Panchaleshwar Mandir',
     endsAtMr: 'विसर्जन घाट – श्री पांचाळेश्वर मंदिर',
+    // 51 m past the bridge and still heading west, which is what an
+    // immersion ghat should be: on the bank the bridge reaches. The
+    // whole route measures 1.46 km temple to ghat in a straight line.
+    endLat: 18.513538,
+    endLng: 73.842625,
+    endSource: 'Google Maps, sequence-checked',
   },
 ];
