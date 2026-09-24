@@ -216,6 +216,16 @@ export interface ScheduleEntry {
   what: string;
   /** Short display name, for the row's tag. Absent for citywide entries. */
   mandal?: string;
+  /**
+   * This hour is last year's, carried because the mandal has published
+   * nothing for today.
+   *
+   * Kept apart from `source` rather than folded into it, because the
+   * question a reader has is not only who said it but when. A 2025 time
+   * is a reasonable expectation and not a fact about this morning, and
+   * the row says so rather than sitting silently among times that are.
+   */
+  lastYear?: boolean;
   /** Mandal slug, where the entry belongs to one in the catalogue. */
   slug?: string;
   source: 'police' | 'mandal';
@@ -272,6 +282,22 @@ export const VISARJAN_TIMELINE: ScheduleEntry[] = [
     source: 'police',
   },
   {
+    time: '10:15',
+    what: 'Set off at this hour last year, as the fourth of the Manache Paach',
+    mandal: 'Tulshibaug',
+    slug: 'tulshibaug-ganpati',
+    source: 'mandal',
+    lastYear: true,
+  },
+  {
+    time: '10:30',
+    what: 'Set off at this hour last year, as the fifth of the Manache Paach',
+    mandal: 'Kesariwada',
+    slug: 'kesariwada-ganpati',
+    source: 'mandal',
+    lastYear: true,
+  },
+  {
     time: '16:00',
     what: 'Sets off from its temple for Belbaug Chowk and the Sambhaji Maharaj bridge',
     mandal: 'Dagdusheth',
@@ -312,6 +338,19 @@ export const MANDALS_WITH_SCHEDULES = 5;
  * and moving off in precedence order, which is exactly what their
  * precedence means. Kasba leads, and the rest follow it down Laxmi Road.
  */
+/**
+ * How long the whole procession takes, from the 2025 schedule.
+ *
+ * Kept because Kasba's own 2026 checkpoints agree with it almost
+ * exactly — 09:30 at Mandai to 14:45 at Tilak Chowk, which stands at
+ * Alka Talkies — so the shape of the day is unchanged year to year even
+ * where the individual hours have moved.
+ */
+export const PROCESSION_DURATION =
+  'The miravnuk takes roughly six hours to reach Alka Talkies Chowk, ' +
+  'where the murtis are immersed. Kasba\u2019s own checkpoints for today ' +
+  'put it at five and a quarter, which is the same day within the hour.';
+
 export const MANACHE_ASSEMBLY =
   'The first three of the Manache Paach each give 09:30 at the Lokmanya ' +
   'Tilak statue, Mandai. They are not setting off in three directions: ' +

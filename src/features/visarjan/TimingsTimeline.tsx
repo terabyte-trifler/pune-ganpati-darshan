@@ -161,6 +161,13 @@ function Row({ row }: { row: TimingRow }) {
               {row.whatMr}
             </span>
           )}
+          {/* Last year's hour, said out loud. A 2025 time sitting
+              unmarked among today's would be read as today's. */}
+          {row.lastYear && (
+            <span className="ml-1.5 whitespace-nowrap text-[10.5px] font-semibold uppercase tracking-wide text-[var(--shendur)]">
+              last year
+            </span>
+          )}
           {/* Only where the position was verified against the corridor —
               so the tag means "you can see this one", not "we think so". */}
           {row.onMap && (

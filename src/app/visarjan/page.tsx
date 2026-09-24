@@ -4,7 +4,7 @@ import { ExternalLink, Radio, TriangleAlert, Clock, Ban } from 'lucide-react';
 import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
-  MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES,
+  MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES, PROCESSION_DURATION,
   DIVERSION_POINTS, RING_ROAD_ADVICE, NO_PARKING_ROADS, OUTLYING_AREAS,
   MANDAL_ROUTE_PATHS,
 } from '@/content/visarjan';
@@ -318,9 +318,18 @@ export default async function VisarjanPage() {
           {MANACHE_ASSEMBLY}
         </p>
 
+        <p className="prose-measure mt-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
+          {PROCESSION_DURATION}
+        </p>
+
         <p className="prose-measure mt-3 text-[12px] leading-relaxed text-[var(--faint)]">
           {MANDALS_WITH_SCHEDULES} of the mandals on this site have published
-          times. The others have not, and each moves when the one ahead of it
+          times for today. Two more — Tulshibaug and Kesariwada — carry last
+          year&rsquo;s hour, marked as such: it is a reasonable expectation
+          and not a fact about this morning. Where a mandal has published
+          for today, today wins; Tambdi Jogeshwari and Guruji Talim both
+          announced 09:30 for 2026 against 09:45 and 10:00 last year, and
+          the 2026 notice is what is shown. The others have not, and each moves when the one ahead of it
           moves, so there is no hour to print for them. Beware of the timings
           circulating for the Manache Paach that read like this list — 11:45
           for Kasba, 10:00 for Tambdi Jogeshwari — as those are the{' '}

@@ -37,6 +37,8 @@ export interface TimingRow {
   source: 'police' | 'mandal';
   /** This checkpoint has a verified position and is marked on the map. */
   onMap?: boolean;
+  /** The hour is last year's, kept because nothing newer was published. */
+  lastYear?: boolean;
 }
 
 /**
@@ -68,6 +70,7 @@ export function mergedTimings(): TimingRow[] {
       slug: e.slug,
       what: e.what,
       source: e.source,
+      lastYear: e.lastYear,
     });
   }
 
