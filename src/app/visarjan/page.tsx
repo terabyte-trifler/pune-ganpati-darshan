@@ -18,6 +18,7 @@ import { MiniMap } from '@/features/map/MiniMapLoader';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
   DRAWN_CHECKPOINTS, ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
+  PARKING_COUNT,
 } from '@/lib/maps/visarjan-layer';
 import { POLICE_PARKING } from '@/content/visarjan-police';
 import { OSM_CREDIT, VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
@@ -210,6 +211,17 @@ export default async function VisarjanPage() {
                 style={{ background: '#14100C', border: '2px solid #FFFFFF' }}
               />
               Kasba&rsquo;s checkpoints, each carrying the hour it is due
+            </li>
+            <li className="flex items-center gap-2.5">
+              <span
+                aria-hidden="true"
+                className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-[#0E1724]"
+                style={{ background: '#6C8AB0', border: '1.5px solid #14100C' }}
+              >
+                P
+              </span>
+              The {PARKING_COUNT} places the police name for today — chosen
+              to stay reachable from the ring
             </li>
             <li className="flex items-center gap-2.5">
               <span
@@ -504,7 +516,8 @@ export default async function VisarjanPage() {
           {POLICE_PARKING.length} places, from the police&rsquo;s own visarjan
           map — a different and shorter list than the one the rest of the
           festival uses, because most of the usual places sit behind a road
-          that shuts this morning.
+          that shuts this morning. They are marked on the map above as blue
+          P discs.
         </p>
         <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
           {POLICE_PARKING.map((p) => (

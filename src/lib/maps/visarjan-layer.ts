@@ -2,7 +2,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { VISARJAN_CLOSURES, DIVERSION_POINTS } from '@/content/visarjan';
 import { CHECKPOINT_POINTS, TOTAL_CHECKPOINTS } from '@/content/visarjan-checkpoints';
 import { RING_POINTS, RING_KM } from '@/content/visarjan-ringroad';
-import { POLICE_ROADS } from '@/content/visarjan-police';
+import { POLICE_ROADS, POLICE_PARKING } from '@/content/visarjan-police';
 
 /**
  * Visarjan day: the procession corridor, and the closures that can be
@@ -33,6 +33,7 @@ export const VISARJAN_CLOSURE_SOURCE_ID = 'visarjan-closures';
 export const VISARJAN_DIVERSION_SOURCE_ID = 'visarjan-diversions';
 export const VISARJAN_CHECKPOINT_SOURCE_ID = 'visarjan-checkpoints';
 export const VISARJAN_RING_SOURCE_ID = 'visarjan-ring';
+export const VISARJAN_PARKING_SOURCE_ID = 'visarjan-parking';
 
 /** Marigold, at low opacity. The procession, not a route. */
 const CORRIDOR_COLOR = '#F2A93B';
@@ -64,6 +65,21 @@ const DIVERSION_COLOR = '#E2621B';
  */
 const CHECKPOINT_COLOR = '#14100C';
 const CHECKPOINT_RING = '#FFFFFF';
+
+/**
+ * The app's own parking blue, deliberately unchanged.
+ *
+ * The general festival parking was taken off this map because the roads
+ * reaching most of those places shut through the morning — a suggestion
+ * the day could not honour. These twelve are a different list: the
+ * police's own choices for visarjan, sited outside the corridor so they
+ * stay reachable from the ring. Putting them back is not undoing that
+ * decision, it is the same decision applied to better data.
+ *
+ * Same blue and same P as /parking and every other map in the app, so
+ * nobody has to learn a second parking mark for one day.
+ */
+const PARKING_COLOR = '#6C8AB0';
 
 /**
  * Green, and the only thing on this map that means "go".
@@ -176,6 +192,19 @@ export function corridorFeatureCollection(): GeoJSON.FeatureCollection {
 export const RING_LENGTH_KM = RING_KM;
 export const RING_STOPS = RING_POINTS;
 
+export const PARKING_COUNT = POLICE_PARKING.length;
+
+export function visarjanParkingFeatureCollection(): GeoJSON.FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: POLICE_PARKING.map((p) => ({
+      type: 'Feature',
+      properties: { label: p.name },
+      geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+    })),
+  };
+}
+
 export function ringFeatureCollection(): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -283,6 +312,10 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     type: 'geojson',
     data: ringFeatureCollection(),
   });
+  map.addSource(VISARJAN_PARKING_SOURCE_ID, {
+    type: 'geojson',
+    data: visarjanParkingFeatureCollection(),
+  });
 
   // The ring goes down first, under the corridor and the closures: it is
   // the widest thing here and the least urgent to read, and where it
@@ -378,6 +411,58 @@ export function addVisarjanLayers(map: MapLibreMap): void {
       'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 2, 17, 5],
       'line-opacity': 0.6,
       'line-dasharray': [2, 1.6],
+    },
+  });
+
+  // Parking, in the same blue disc with a P that every other map in the
+  // app uses. Below the checkpoints and diversions: it answers a
+  // question asked before setting out, not one asked at a junction.
+  map.addLayer({
+    id: 'visarjan-parking',
+    type: 'circle',
+    source: VISARJAN_PARKING_SOURCE_ID,
+    minzoom: 12,
+    paint: {
+      'circle-color': PARKING_COLOR,
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 5, 16, 11],
+      'circle-stroke-color': '#14100C',
+      'circle-stroke-width': 1.5,
+    },
+  });
+
+  map.addLayer({
+    id: 'visarjan-parking-p',
+    type: 'symbol',
+    source: VISARJAN_PARKING_SOURCE_ID,
+    minzoom: 12,
+    layout: {
+      'text-field': 'P',
+      'text-font': ['Noto Sans Bold'],
+      'text-size': ['interpolate', ['linear'], ['zoom'], 12.5, 8, 16, 14],
+      'text-allow-overlap': true,
+    },
+    paint: { 'text-color': '#0E1724' },
+  });
+
+  map.addLayer({
+    id: 'visarjan-parking-label',
+    type: 'symbol',
+    source: VISARJAN_PARKING_SOURCE_ID,
+    minzoom: 14,
+    layout: {
+      'text-field': ['get', 'label'],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 9.5,
+      'text-offset': [0, 1.3],
+      'text-anchor': 'top',
+      'text-allow-overlap': false,
+      'text-padding': 3,
+      'text-max-width': 9,
+    },
+    paint: {
+      'text-color': PARKING_COLOR,
+      'text-halo-color': '#14100C',
+      'text-halo-width': 1.4,
     },
   });
 
