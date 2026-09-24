@@ -17,6 +17,7 @@ import { isVisarjanImminent, getFestivalPhase } from '@/lib/festival';
 import { getAllGanpatis } from '@/services/ganpati';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { MiniMap } from '@/features/map/MiniMapLoader';
+import { MapFullscreen } from '@/features/visarjan/MapFullscreen';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS,
   ALL_CHECKPOINTS, RING_LENGTH_KM, RING_STOPS, POLICE_SOURCE,
@@ -174,16 +175,21 @@ export default async function VisarjanPage() {
         <UpNext rows={rows} isVisarjanDay={isVisarjanDay} isEve={isEve} />
 
         <div id="map" className="scroll-mt-4" />
-        <MiniMap
-          mandals={ganpatis}
-          showVisarjan
-          showParking={false}
-          showPedestrianFlow={false}
-          uniformPins
-          interactive
-          frameOn={corridorFrame}
-          className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]"
-        />
+        {/* The map keeps its own instance when it goes full screen, so
+            the reader arrives there at the zoom they had, not back at
+            the default frame. */}
+        <MapFullscreen className="mt-6 h-[380px] w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--line)] sm:h-[460px]">
+          <MiniMap
+            mandals={ganpatis}
+            showVisarjan
+            showParking={false}
+            showPedestrianFlow={false}
+            uniformPins
+            interactive
+            frameOn={corridorFrame}
+            className="h-full w-full"
+          />
+        </MapFullscreen>
         <div className="mt-3 rounded-[var(--radius-card)] border border-[var(--line)] bg-[var(--dhoop)] p-4">
           <h2 className="text-[12px] font-bold uppercase tracking-[0.09em] text-[var(--faint)]">
             What the map shows
