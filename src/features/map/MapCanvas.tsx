@@ -605,6 +605,10 @@ export function MapCanvas({
       map.remove();
       mapRef.current = null;
     };
+    // Map setup runs once. `showVisarjan` is decided on the server from the
+    // festival config and cannot change while the page is open; listing it
+    // would tear the whole map down and rebuild it for nothing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---------------- Data ---------------- */

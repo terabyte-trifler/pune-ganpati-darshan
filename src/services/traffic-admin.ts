@@ -51,6 +51,16 @@ export interface TrafficOverview {
   /** Percentage of reports made on site, or null when there are none. */
   onsiteShare: number | null;
   daily: { day: string; sessions: number }[];
+  /**
+   * The query failed, rather than the week being quiet.
+   *
+   * Without this the two are the same object: a timeout returned the
+   * empty overview and the page drew a full report reading zero
+   * sessions, which is a measurement nobody made. `traffic_origin_overview`
+   * aggregates the largest table in the product and sits close to the
+   * statement timeout, so this is a state that really happens.
+   */
+  failed?: boolean;
 }
 
 const EMPTY: TrafficOverview = {
@@ -78,6 +88,11 @@ export async function getTrafficOverview(
     p_window: `${windowDays} days`,
   });
 
-  if (error || !data) return EMPTY;
+  if (error || !data) {
+    // Logged, because the previous silence is what made a timeout look
+    // like a quiet week for a day.
+    console.error('[traffic] overview query failed:', error?.message ?? 'no data');
+    return { ...EMPTY, failed: true };
+  }
   return data as TrafficOverview;
 }

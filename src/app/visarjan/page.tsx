@@ -4,7 +4,7 @@ import { ExternalLink, Radio, TriangleAlert, Clock, Ban } from 'lucide-react';
 import {
   VISARJAN_SOURCE, VISARJAN_CLOSURES, VISARJAN_RESTRICTIONS,
   PROCESSION_ROUTE, POLICE_TRACKER, KASBA_START,
-  MANDAL_ROUTE_SCHEDULES, MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES,
+  MANACHE_ASSEMBLY, MANDALS_WITH_SCHEDULES, TIMELINE_SOURCES,
 } from '@/content/visarjan';
 import { mergedTimings, mandalsWithTimings } from '@/lib/visarjan-timings';
 import { TimingsTimeline } from '@/features/visarjan/TimingsTimeline';

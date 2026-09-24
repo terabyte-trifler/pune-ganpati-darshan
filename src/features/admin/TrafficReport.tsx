@@ -83,6 +83,17 @@ export function TrafficReport({
         Analytics needs Supabase configured. Nothing is being recorded, so
         there is nothing to show — this is not an empty week.
       </p>
+    ) : overview.failed ? (
+      <p
+        className="mt-4 rounded-[10px] border border-[var(--shendur)]/45 bg-[var(--shendur)]/10 px-3 py-2 text-[14px] leading-relaxed text-[var(--chandan)]"
+        role="status"
+      >
+        <strong className="font-bold">Could not read the traffic.</strong> The
+        query timed out rather than coming back empty — the events table is
+        large enough now that aggregating the window runs close to the
+        database&rsquo;s limit. Traffic is still being recorded; this panel
+        just could not count it. Reload, or narrow the window.
+      </p>
     ) : (
       <>
         <p className="mt-1 text-[13px] text-[var(--muted)]">
