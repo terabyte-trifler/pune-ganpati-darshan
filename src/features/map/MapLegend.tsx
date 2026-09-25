@@ -1,6 +1,9 @@
 import { ExternalLink } from 'lucide-react';
 import { PARKING, PARKING_SOURCE } from '@/content/parking';
 import { ROAD_CLOSURES, CLOSURE_JUNCTIONS } from '@/content/diversions';
+import {
+  DRAWN_CLOSURES, DRAWN_DIVERSIONS, TOTAL_DIVERSIONS, PARKING_COUNT,
+} from '@/lib/maps/visarjan-layer';
 
 /**
  * What every symbol on a map in this app means.
@@ -53,7 +56,14 @@ const METRO_PURPLE = '#8C6BB1';
 export function MapLegend({
   /** The full map already links to itself; /parking does not need to. */
   showMapLink = false,
-}: { showMapLink?: boolean }) {
+  /**
+   * Visarjan day: the map below is drawing that day's plan, so the key
+   * has to describe it. A key that still reads "closed after 17:00"
+   * over lines that close from five in the morning is worse than no key
+   * — it tells a reader the marks mean something they do not.
+   */
+  visarjan = false,
+}: { showMapLink?: boolean; visarjan?: boolean }) {
   const captured = new Date(PARKING_SOURCE.captured).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'long',
@@ -125,7 +135,9 @@ export function MapLegend({
           >
             P
           </span>
-          Parking — {PARKING.length} places
+          {visarjan
+            ? `Parking — ${PARKING_COUNT} places the police name for today`
+            : `Parking — ${PARKING.length} places`}
         </li>
         <li className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
           <span
@@ -133,7 +145,9 @@ export function MapLegend({
             className="h-0 w-5 shrink-0 border-t-[2px] border-dashed"
             style={{ borderColor: CLOSURE_INK }}
           />
-          Closed after 17:00 — {ROAD_CLOSURES.length} stretches
+          {visarjan
+            ? `Closed today — ${DRAWN_CLOSURES} stretches, each labelled with its hour`
+            : `Closed after 17:00 — ${ROAD_CLOSURES.length} stretches`}
         </li>
         <li className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
           <span
@@ -141,7 +155,9 @@ export function MapLegend({
             className="h-2.5 w-2.5 shrink-0 rounded-full border-[1.5px]"
             style={{ borderColor: CLOSURE_INK }}
           />
-          Junction on the closure plan — {CLOSURE_JUNCTIONS.length} of them
+          {visarjan
+            ? `Diversion point — ${DRAWN_DIVERSIONS} of ${TOTAL_DIVERSIONS} placed`
+            : `Junction on the closure plan — ${CLOSURE_JUNCTIONS.length} of them`}
         </li>
         <li className="flex items-center gap-2 text-[12px] text-[var(--muted)]">
           {/* A solid line with an arrowhead, because the direction is the

@@ -20,6 +20,7 @@ import { PUNE_CENTER, boundsOf, type LatLng } from '@/lib/geo';
 import { addMetroLayers } from '@/lib/maps/metro-layer';
 import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
+import { addVisarjanLayers, liftVisarjanMarkers } from '@/lib/maps/visarjan-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
 import { openNamePopup } from '@/lib/maps/name-popup';
@@ -55,6 +56,14 @@ export interface MapCanvasProps {
    * rendered as no dot at all — never as a calm queue (§32, §33).
    */
   crowd?: Record<string, CrowdPinKey>;
+  /**
+   * Visarjan day: draw that day's plan instead of the ordinary one.
+   *
+   * Decided on the server from the festival config, so this map shows
+   * the procession only on the day it happens and goes back to the
+   * normal festival plan afterwards without a deploy.
+   */
+  showVisarjan?: boolean;
 }
 
 /**
@@ -268,6 +277,7 @@ async function registerClusterPin(map: MapLibreMap) {
 
 export function MapCanvas({
   ganpatis, selectedSlug, onSelect, userLocation, routeGeometry, onReady, crowd,
+  showVisarjan = false,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -427,10 +437,29 @@ export function MapCanvas({
       whenIdle(() => {
         // The map can be torn down while the callback is pending.
         if (!mapRef.current) return;
-        addClosureLayers(map);
-        addPedestrianFlowLayers(map);
+        /**
+         * One plan at a time.
+         *
+         * On Anant Chaturdashi the ordinary festival plan is wrong in
+         * every particular: the after-17:00 closures are replaced by a
+         * staggered order from five in the morning, the peth one-way
+         * lanes stop holding because the police direct the crowd
+         * themselves, and most of the usual parking sits behind a road
+         * that shuts. The visarjan layer carries its own closures,
+         * corridor, checkpoints, diversions, ring road and the twelve
+         * places the police name for the day.
+         *
+         * Drawing both would put two contradictory sets of shut roads on
+         * one map with nothing to say which is today's.
+         */
+        if (showVisarjan) {
+          addVisarjanLayers(map);
+        } else {
+          addClosureLayers(map);
+          addPedestrianFlowLayers(map);
+          addParkingLayers(map);
+        }
         addMetroLayers(map);
-        addParkingLayers(map);
         // Closures used to be added BEFORE the mandal layers, so they drew
         // underneath the pins. Adding them later puts them on top, which
         // would bury the thing the page is about — so the mandal layers
@@ -438,6 +467,11 @@ export function MapCanvas({
         for (const id of ['clusters', 'cluster-count', 'mandals']) {
           if (map.getLayer(id)) map.moveLayer(id);
         }
+        // And the visarjan marks back above those: a checkpoint carrying
+        // the hour the procession reaches a corner is the most useful
+        // thing on the map that day, and it shares its corner with a
+        // mandal almost every time.
+        if (showVisarjan) liftVisarjanMarkers(map);
       });
 
       // A cluster is several mandals, so it is drawn as a Ganpati too —
@@ -596,6 +630,11 @@ export function MapCanvas({
       map.remove();
       mapRef.current = null;
     };
+    // Map setup runs once. `showVisarjan` is decided on the server from
+    // the festival config and cannot change while the page is open;
+    // listing it would tear the whole map down and rebuild it for
+    // nothing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ---------------- Data ---------------- */
