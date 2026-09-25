@@ -20,6 +20,7 @@ import { addParkingLayers } from '@/lib/maps/parking-layer';
 import { addClosureLayers } from '@/lib/maps/closures-layer';
 import {
   addVisarjanLayers, liftVisarjanMarkers, VISARJAN_TAP_LAYERS, visarjanTapLabel,
+  LIVE_PIN_COLOR,
 } from '@/lib/maps/visarjan-layer';
 import { addPedestrianFlowLayers } from '@/lib/maps/pedestrian-flow-layer';
 import { addRouteArrows } from '@/lib/maps/route-arrows';
@@ -207,22 +208,6 @@ async function registerUniformPin(map: MapLibreMap) {
  * have had to learn a second shape to follow the one mark on the map
  * that moves. Same Ganpati silhouette, status colour, slightly larger.
  */
-/**
- * The police tracker's own three colours, matched deliberately.
- *
- * Green completed, bhagwa on the move, red yet to start. Red for "not
- * started" is not what red usually means on a map, and that is the
- * point: someone reading their tracker and ours at the same time —
- * which is exactly what people do on the day — must not have to
- * translate between two colour schemes for the same fifteen mandals.
- * Matching the source beats being internally tidy.
- */
-export const LIVE_PIN_COLOR: Record<'moving' | 'finished' | 'waiting', string> = {
-  moving: '#FF9933',
-  finished: '#5FB872',
-  waiting: '#E5544B',
-};
-
 async function registerLivePins(map: MapLibreMap) {
   await Promise.all(
     (Object.keys(LIVE_PIN_COLOR) as (keyof typeof LIVE_PIN_COLOR)[]).map(async (status) => {

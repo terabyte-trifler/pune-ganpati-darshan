@@ -99,6 +99,28 @@ const PARKING_COLOR = '#6C8AB0';
  */
 const RING_COLOR = '#5FB872';
 
+/**
+ * The police tracker's own three colours, matched deliberately.
+ *
+ * Green completed, bhagwa on the move, red yet to start. Red for "not
+ * started" is not what red usually means on a map, and that is the
+ * point: someone reading their tracker and ours at the same time —
+ * which is exactly what people do on the day — must not have to
+ * translate between two colour schemes for the same fifteen mandals.
+ * Matching the source beats being internally tidy.
+ *
+ * It lives here rather than beside the map that draws it because the key
+ * has to name these colours too, and the key is a server component: a
+ * literal copied into it would be the fifth place this scheme is written
+ * down and the first to go stale. A line and a pin both being this green
+ * is tolerable — the ring road is a line nobody mistakes for a mandal.
+ */
+export const LIVE_PIN_COLOR: Record<'moving' | 'finished' | 'waiting', string> = {
+  moving: '#FF9933',
+  finished: RING_COLOR,
+  waiting: '#E5544B',
+};
+
 const MIN_ZOOM = 12.5;
 
 /**

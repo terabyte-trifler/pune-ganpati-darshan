@@ -2,7 +2,15 @@ import { PROCESSION_ROUTE } from '@/content/visarjan';
 import { OSM_CREDIT } from '@/content/visarjan-geometry';
 import {
   DRAWN_CLOSURES, TOTAL_CLOSURES, ALL_CHECKPOINTS, PARKING_COUNT, POLICE_SOURCE,
+  LIVE_PIN_COLOR,
 } from '@/lib/maps/visarjan-layer';
+
+/** In the order the sentence beside them reads. */
+const LIVE_KEY_COLORS = [
+  LIVE_PIN_COLOR.moving,
+  LIVE_PIN_COLOR.finished,
+  LIVE_PIN_COLOR.waiting,
+];
 
 /**
  * The key to the visarjan map, and the provenance under it.
@@ -90,12 +98,20 @@ export function VisarjanMapKey({ mandalCount }: { mandalCount: number }) {
             You, if you press &ldquo;Where am I?&rdquo; — asked for, never
             stored
           </li>
+          {/* Three swatches, not one: the mandal mark has no single
+              colour any more, and a key that showed one would be naming
+              a scheme the map does not use. Overlapped so the row is the
+              width of the line swatches above it. */}
           <li className="flex items-center gap-2.5">
-            <span
-              aria-hidden="true"
-              className="h-3 w-3 shrink-0 rounded-full"
-              style={{ background: '#CC6600', border: '1.5px solid #14100C' }}
-            />
+            <span aria-hidden="true" className="flex w-7 shrink-0 items-center">
+              {LIVE_KEY_COLORS.map((c, i) => (
+                <span
+                  key={c}
+                  className={`h-3 w-3 rounded-full ${i > 0 ? '-ml-1' : ''}`}
+                  style={{ background: c, border: '1.5px solid #14100C' }}
+                />
+              ))}
+            </span>
             The mandals the police track, drawn as the same mandal mark in
             the tracker&rsquo;s own status colours — bhagwa on the move,
             green completed, red yet to start. All {mandalCount} in bhagwa
