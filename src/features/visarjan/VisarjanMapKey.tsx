@@ -96,9 +96,10 @@ export function VisarjanMapKey({ mandalCount }: { mandalCount: number }) {
               className="h-3 w-3 shrink-0 rounded-full"
               style={{ background: '#CC6600', border: '1.5px solid #14100C' }}
             />
-            The mandals the police track, in their live status colour —
-            marigold on the move, green completed, stone yet to start. All{' '}
-            {mandalCount} in bhagwa instead whenever their feed goes quiet
+            The mandals the police track, drawn as the same mandal mark in
+            their live status colour — marigold on the move, green
+            completed, stone yet to start. All {mandalCount} in bhagwa
+            instead whenever their feed goes quiet
           </li>
           <li className="flex items-center gap-2.5">
             <span

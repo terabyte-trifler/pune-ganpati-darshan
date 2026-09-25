@@ -199,6 +199,35 @@ async function registerUniformPin(map: MapLibreMap) {
   await registerImage(map, UNIFORM_PIN_ID, url, size);
 }
 
+/**
+ * A tracked mandal is still a mandal, so it keeps the mandal mark.
+ *
+ * Drawn as plain discs at first, which made the live ones read as a
+ * different kind of thing from the pins they replace — a reader would
+ * have had to learn a second shape to follow the one mark on the map
+ * that moves. Same Ganpati silhouette, status colour, slightly larger.
+ */
+export const LIVE_PIN_COLOR: Record<'moving' | 'finished' | 'waiting', string> = {
+  moving: '#F2A93B',
+  finished: '#5FB872',
+  waiting: '#8a7f6d',
+};
+
+async function registerLivePins(map: MapLibreMap) {
+  await Promise.all(
+    (Object.keys(LIVE_PIN_COLOR) as (keyof typeof LIVE_PIN_COLOR)[]).map(async (status) => {
+      const { url, size } = buildMarkerSvg(
+        'maanache', // the heavier ring, so a live mandal reads first
+        false,
+        null,
+        'filled',
+        LIVE_PIN_COLOR[status]
+      );
+      await registerImage(map, `live-${status}`, url, size);
+    })
+  );
+}
+
 async function registerPin(map: MapLibreMap, crowd: CrowdKey) {
   const id = `mini-${crowd}`;
   if (map.hasImage(id)) return;
@@ -348,6 +377,7 @@ export function MiniMap({
       collapseAttribution(map.getContainer());
       await Promise.all(CROWD_KEYS.map((c) => registerPin(map, c)));
       if (uniformPins) await registerUniformPin(map);
+      await registerLivePins(map);
 
       map.addSource('route', {
         type: 'geojson',
@@ -473,19 +503,12 @@ export function MiniMap({
          */
         map.addLayer({
           id: 'live-mandal-pins',
-          type: 'circle',
+          type: 'symbol',
           source: 'live-mandals',
-          paint: {
-            'circle-color': [
-              'match',
-              ['get', 'status'],
-              'moving', '#F2A93B',
-              'finished', '#5FB872',
-              '#8a7f6d',
-            ],
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 5, 17, 11],
-            'circle-stroke-color': '#14100C',
-            'circle-stroke-width': 2,
+          layout: {
+            'icon-image': ['concat', 'live-', ['get', 'status']],
+            'icon-size': 1,
+            'icon-allow-overlap': true,
           },
         });
 
