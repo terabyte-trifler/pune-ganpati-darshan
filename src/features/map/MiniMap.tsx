@@ -207,10 +207,20 @@ async function registerUniformPin(map: MapLibreMap) {
  * have had to learn a second shape to follow the one mark on the map
  * that moves. Same Ganpati silhouette, status colour, slightly larger.
  */
+/**
+ * The police tracker's own three colours, matched deliberately.
+ *
+ * Green completed, bhagwa on the move, red yet to start. Red for "not
+ * started" is not what red usually means on a map, and that is the
+ * point: someone reading their tracker and ours at the same time —
+ * which is exactly what people do on the day — must not have to
+ * translate between two colour schemes for the same fifteen mandals.
+ * Matching the source beats being internally tidy.
+ */
 export const LIVE_PIN_COLOR: Record<'moving' | 'finished' | 'waiting', string> = {
-  moving: '#F2A93B',
+  moving: '#FF9933',
   finished: '#5FB872',
-  waiting: '#8a7f6d',
+  waiting: '#E5544B',
 };
 
 async function registerLivePins(map: MapLibreMap) {
@@ -541,9 +551,9 @@ export function MiniMap({
             'text-color': [
               'match',
               ['get', 'status'],
-              'moving', '#F2A93B',
+              'moving', '#FF9933',
               'finished', '#5FB872',
-              '#c9bda6',
+              '#E5544B',
             ],
             'text-halo-color': '#14100C',
             'text-halo-width': 1.6,

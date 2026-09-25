@@ -97,8 +97,8 @@ export function VisarjanMapKey({ mandalCount }: { mandalCount: number }) {
               style={{ background: '#CC6600', border: '1.5px solid #14100C' }}
             />
             The mandals the police track, drawn as the same mandal mark in
-            their live status colour — marigold on the move, green
-            completed, stone yet to start. All {mandalCount} in bhagwa
+            the tracker&rsquo;s own status colours — bhagwa on the move,
+            green completed, red yet to start. All {mandalCount} in bhagwa
             instead whenever their feed goes quiet
           </li>
           <li className="flex items-center gap-2.5">

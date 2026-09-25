@@ -42,24 +42,24 @@ const LABEL: Record<ProcessionStatus, string> = {
 };
 
 /**
- * The three states, in the map's own colours.
+ * The police tracker's own three colours: green completed, bhagwa on
+ * the move, red yet to start.
  *
- * Marigold for on the move, because that is the corridor's colour and
- * the thing in motion; green for finished, the one tone on this site
- * that already means "done, nothing to do here"; and the muted stone
- * for yet to start, which is the app's colour for a mark it has nothing
- * to say about.
+ * Matched rather than chosen. People read their tracker and this list
+ * side by side on the day, and two colour schemes for the same fifteen
+ * mandals is a translation nobody should have to do standing on Laxmi
+ * Road.
  */
 const DOT: Record<ProcessionStatus, string> = {
-  moving: '#F2A93B',
+  moving: '#FF9933',
   finished: '#5FB872',
-  waiting: '#8a7f6d',
+  waiting: '#E5544B',
 };
 
 const TEXT: Record<ProcessionStatus, string> = {
-  moving: 'text-[#F2A93B]',
+  moving: 'text-[#FF9933]',
   finished: 'text-[#5FB872]',
-  waiting: 'text-[var(--faint)]',
+  waiting: 'text-[#E5544B]',
 };
 
 export function LiveProcession({ active }: { active: boolean }) {
