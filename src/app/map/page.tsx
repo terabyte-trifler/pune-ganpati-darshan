@@ -4,6 +4,7 @@ import { getAllGanpatis, getAreas, getFestivalConfig } from '@/services/ganpati'
 import { isVisarjanImminent } from '@/lib/festival';
 import { MapView } from '@/features/map/MapView';
 import { VisarjanMapControls } from '@/features/visarjan/VisarjanMapControls';
+import { VisarjanMapKey } from '@/features/visarjan/VisarjanMapKey';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
 import { RING_PATH } from '@/content/visarjan-ringroad';
 
@@ -64,6 +65,8 @@ export default async function MapPage() {
           </p>
 
           <VisarjanMapControls mandals={ganpatis} frameOn={frame} />
+
+          <VisarjanMapKey mandalCount={ganpatis.length} />
 
           <Link
             href="/visarjan"
