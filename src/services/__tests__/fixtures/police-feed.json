@@ -1,0 +1,57 @@
+[
+  {
+    "id": "0",
+    "name": ".",
+    "icon_type": "ON_THE_MOVE",
+    "popup_text": "कसबा गणपती मंडळ",
+    "description": "POWER:- ON STATUS:- RUNNING DATETIME:- 25-09-2026 10:21:56",
+    "latitude": "18.51450000",
+    "longitude": "73.85340000",
+    "address": "689, Bajirao Rd, Near Nagarkar Talim Chowk, Narayan Peth, Pune, Maharashtra (SW)",
+    "updated_at": "2026-09-25 04:52:02"
+  },
+  {
+    "id": "0",
+    "name": ".",
+    "icon_type": "YET_TO_START",
+    "popup_text": "गुरुजी तालीम मंडळ",
+    "description": "POWER:- ON STATUS:- RUNNING DATETIME:- 25-09-2026 10:22:00",
+    "latitude": "18.51345000",
+    "longitude": "73.85578330",
+    "address": "Mandai Police Chauki,  -  , ,  , Mandai, Shukrawar Peth, Pune, Maharashtra (NW)",
+    "updated_at": "2026-09-25 04:52:02"
+  },
+  {
+    "id": "0",
+    "name": ".",
+    "icon_type": "YET_TO_START",
+    "popup_text": "तांबडी जोगेश्वरी मंडळ",
+    "description": "POWER:- ON STATUS:- IDLE DATETIME:- 25-09-2026 10:21:47",
+    "latitude": "18.51470000",
+    "longitude": "73.85628330",
+    "address": "237, Babu Genu Chowk, Budhwar Peth, near Datta Mandir, Tulshibaug, Budhwar Peth, Pune, Maharashtra (NE)",
+    "updated_at": "2026-09-25 04:52:02"
+  },
+  {
+    "id": "0",
+    "name": ".",
+    "icon_type": "YET_TO_START",
+    "popup_text": "तुळशीबाग गणपती मंडळ",
+    "description": "POWER:- ON STATUS:- INACTIVE DATETIME:- 24-09-2026 19:29:25",
+    "latitude": "18.60381670",
+    "longitude": "73.79118330",
+    "address": "5, Kalewadi - Rahatani Rd, Rahatani Gaon, Empire Estate Phase-II, Rahatani, Pimpri-Chinchwad, Maharashtra (NW)",
+    "updated_at": "2026-09-24 18:25:17"
+  },
+  {
+    "id": "0",
+    "name": "  ",
+    "icon_type": null,
+    "popup_text": null,
+    "description": "POWER:- ON STATUS:- IDLE DATETIME:- 25-09-2026 10:16:55",
+    "latitude": "18.51351670",
+    "longitude": "73.85625000",
+    "address": "Hutatma Babu Genu Chaok    , Mandai, Shukrawar Peth, Pune, Maharashtra (NE)",
+    "updated_at": "2026-09-25 04:48:02"
+  }
+]

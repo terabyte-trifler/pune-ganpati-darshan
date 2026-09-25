@@ -34,19 +34,32 @@ import type { TrackingSnapshot, ProcessionStatus } from '@/services/visarjan-tra
 
 const POLL_MS = 60_000;
 
-/** Matches the service's label for a vehicle the feed has not named. */
-const UNNAMED_LABEL = 'A tracked vehicle';
 
 const LABEL: Record<ProcessionStatus, string> = {
   moving: 'On the move',
   waiting: 'Yet to start',
-  finished: 'Finished',
+  finished: 'Completed',
 };
 
+/**
+ * The three states, in the map's own colours.
+ *
+ * Marigold for on the move, because that is the corridor's colour and
+ * the thing in motion; green for finished, the one tone on this site
+ * that already means "done, nothing to do here"; and the muted stone
+ * for yet to start, which is the app's colour for a mark it has nothing
+ * to say about.
+ */
 const DOT: Record<ProcessionStatus, string> = {
-  moving: 'var(--zendu)',
-  waiting: 'var(--faint)',
-  finished: 'var(--pital)',
+  moving: '#F2A93B',
+  finished: '#5FB872',
+  waiting: '#8a7f6d',
+};
+
+const TEXT: Record<ProcessionStatus, string> = {
+  moving: 'text-[#F2A93B]',
+  finished: 'text-[#5FB872]',
+  waiting: 'text-[var(--faint)]',
 };
 
 export function LiveProcession({ active }: { active: boolean }) {
@@ -77,8 +90,6 @@ export function LiveProcession({ active }: { active: boolean }) {
 
   if (!snap?.ready || snap.mandals.length === 0) return null;
 
-  const named = snap.mandals.filter((m) => m.name !== UNNAMED_LABEL);
-  const unnamed = snap.mandals.length - named.length;
 
   return (
     <section
@@ -91,18 +102,20 @@ export function LiveProcession({ active }: { active: boolean }) {
       </h2>
 
       <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--muted)]">
-        {(['moving', 'waiting', 'finished'] as const)
+        {(['moving', 'finished', 'waiting'] as const)
           .filter((s) => snap.counts[s] > 0)
-          .map((s) => `${snap.counts[s]} ${LABEL[s].toLowerCase()}`)
-          .join(' · ')}
+          .map((s, i) => (
+            <span key={s}>
+              {i > 0 && <span className="text-[var(--faint)]"> · </span>}
+              <span className={`font-semibold ${TEXT[s]}`}>
+                {snap.counts[s]} {LABEL[s].toLowerCase()}
+              </span>
+            </span>
+          ))}
       </p>
 
-      {/* Only the ones the police named. Forty-two rows all reading "a
-          tracked vehicle" is a list that says nothing forty-two times;
-          the counts above already carry them, and the line below says
-          how many they are. */}
       <ul className="mt-3 space-y-1.5">
-        {named.map((m) => (
+        {snap.mandals.map((m) => (
           <li key={`${m.name}-${m.lat}`} className="flex items-baseline gap-2.5">
             <span
               aria-hidden="true"
@@ -110,8 +123,12 @@ export function LiveProcession({ active }: { active: boolean }) {
               style={{ background: DOT[m.status] }}
             />
             <span className="min-w-0">
-              <span className="text-[14px] font-semibold text-[var(--chandan)]">{m.name}</span>
-              <span className="ml-1.5 text-[12px] text-[var(--faint)]">{LABEL[m.status]}</span>
+              <span lang="mr" className="text-[14px] font-semibold text-[var(--chandan)]">
+                {m.name}
+              </span>
+              <span className={`ml-1.5 text-[12px] font-semibold ${TEXT[m.status]}`}>
+                {LABEL[m.status]}
+              </span>
               {m.address && (
                 <span className="block text-[12.5px] leading-relaxed text-[var(--muted)]">
                   {m.address}
@@ -122,14 +139,6 @@ export function LiveProcession({ active }: { active: boolean }) {
         ))}
       </ul>
 
-      {unnamed > 0 && (
-        <p className="mt-2.5 text-[12.5px] leading-relaxed text-[var(--muted)]">
-          {named.length > 0 ? 'And ' : ''}
-          {unnamed} more {unnamed === 1 ? 'vehicle is' : 'vehicles are'} tracked
-          without a name — the police publish their position but not which
-          mandal they carry.
-        </p>
-      )}
 
       <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
         Pune City Police, read live and cached for under a minute, and

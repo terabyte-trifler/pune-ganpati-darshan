@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { getTrackingSnapshot } from '../visarjan-tracking';
+import realFeed from './fixtures/police-feed.json';
 
 /**
  * This feature was written before the data it reads existed.
@@ -13,7 +14,10 @@ import { getTrackingSnapshot } from '../visarjan-tracking';
 
 const row = (over: Record<string, unknown> = {}) => ({
   id: 1,
-  name: 'Tulshibaug Ganpati',
+  // The feed leaves `name` as "." and puts the mandal in popup_text.
+  name: '.',
+  popup_text: 'तुळशीबाग गणपती मंडळ',
+  description: `POWER:- ON STATUS:- RUNNING DATETIME:- ${deviceStamp(new Date())}`,
   icon_type: 'ON_THE_MOVE',
   latitude: '18.51356670',
   longitude: '73.85578330',
@@ -21,6 +25,16 @@ const row = (over: Record<string, unknown> = {}) => ({
   updated_at: istStamp(new Date()),
   ...over,
 });
+
+/** Their device clock: "25-09-2026 10:21:56", IST, no zone marker. */
+function deviceStamp(at: Date): string {
+  const ist = new Date(at.getTime() + 5.5 * 60 * 60 * 1000);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${p(ist.getUTCDate())}-${p(ist.getUTCMonth() + 1)}-${ist.getUTCFullYear()} ` +
+    `${p(ist.getUTCHours())}:${p(ist.getUTCMinutes())}:${p(ist.getUTCSeconds())}`
+  );
+}
 
 /** The feed publishes IST wall-clock with no zone marker. */
 function istStamp(at: Date): string {
@@ -39,19 +53,16 @@ beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
 afterEach(() => vi.unstubAllGlobals());
 
 describe('live procession tracking', () => {
-  it('shows an unnamed vehicle that is genuinely moving', async () => {
-    // The shape served all through visarjan morning: forty-two rows and
-    // not one name filled in. Refusing to say anything because the
-    // police left a text field blank let their data entry decide what
-    // our readers were told.
+  it('drops a row that names no mandal', async () => {
+    // Twenty-seven of the forty-two rows are tracking devices with no
+    // mandal against them. Listing those answers nothing.
     mockFeed([
-      row({ name: '.', icon_type: 'ON_THE_MOVE' }),
-      row({ name: '--', icon_type: 'YET_TO_START' }),
+      row({ popup_text: '', icon_type: 'ON_THE_MOVE' }),
+      row({ popup_text: '   ', icon_type: 'YET_TO_START' }),
     ]);
     const snap = await getTrackingSnapshot();
-    expect(snap.ready).toBe(true);
-    expect(snap.mandals).toHaveLength(2);
-    expect(snap.mandals[0].name).toBe('A tracked vehicle');
+    expect(snap.ready).toBe(false);
+    expect(snap.mandals).toHaveLength(0);
   });
 
   it('stays shut when the newest position is hours old', async () => {
@@ -60,7 +71,10 @@ describe('live procession tracking', () => {
     // miravnuk a couple of kilometres behind itself.
     const beforeDawn = new Date(Date.now() - 5.5 * 60 * 60 * 1000);
     mockFeed([
-      row({ name: 'Kasba Ganpati', icon_type: 'ON_THE_MOVE', updated_at: istStamp(beforeDawn) }),
+      row({
+        icon_type: 'ON_THE_MOVE',
+        description: `POWER:- ON STATUS:- STOP DATETIME:- ${deviceStamp(beforeDawn)}`,
+      }),
     ]);
     const snap = await getTrackingSnapshot();
     expect(snap.ready).toBe(false);
@@ -72,17 +86,16 @@ describe('live procession tracking', () => {
 
   it('comes alive once real names arrive', async () => {
     mockFeed([
-      row({ name: 'Kasba Ganpati', icon_type: 'ON_THE_MOVE' }),
-      row({ name: 'Guruji Talim', icon_type: 'YET_TO_START' }),
-      row({ name: 'Tambdi Jogeshwari', icon_type: 'COMPLETED' }),
-      row({ name: '.', icon_type: 'YET_TO_START' }),
+      row({ popup_text: 'कसबा गणपती मंडळ', icon_type: 'ON_THE_MOVE' }),
+      row({ popup_text: 'गुरुजी तालीम मंडळ', icon_type: 'YET_TO_START' }),
+      row({ popup_text: 'तांबडी जोगेश्वरी मंडळ', icon_type: 'COMPLETED' }),
+      row({ popup_text: '', icon_type: 'YET_TO_START' }),
     ]);
     const snap = await getTrackingSnapshot();
     expect(snap.ready).toBe(true);
-    // The unnamed row is carried too, under a generic label.
-    expect(snap.mandals).toHaveLength(4);
-    expect(snap.counts).toEqual({ moving: 1, waiting: 2, finished: 1 });
-    expect(snap.mandals.map((m) => m.name)).toContain('A tracked vehicle');
+    // The row naming no mandal is dropped, not counted.
+    expect(snap.mandals).toHaveLength(3);
+    expect(snap.counts).toEqual({ moving: 1, waiting: 1, finished: 1 });
   });
 
   it('puts the ones on the move first', async () => {
@@ -97,9 +110,9 @@ describe('live procession tracking', () => {
 
   it('drops a row it cannot place or classify', async () => {
     mockFeed([
-      row({ name: 'No Status Mandal', icon_type: 'SOMETHING_NEW' }),
-      row({ name: 'No Position Mandal', latitude: 'abc' }),
-      row({ name: 'Good Mandal' }),
+      row({ popup_text: 'No Status Mandal', icon_type: 'SOMETHING_NEW' }),
+      row({ popup_text: 'No Position Mandal', latitude: 'abc' }),
+      row({ popup_text: 'Good Mandal' }),
     ]);
     const snap = await getTrackingSnapshot();
     expect(snap.mandals.map((m) => m.name)).toEqual(['Good Mandal']);
@@ -107,17 +120,22 @@ describe('live procession tracking', () => {
 
   it('flags a feed that has stopped moving', async () => {
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-    mockFeed([row({ updated_at: istStamp(twoHoursAgo) })]);
+    mockFeed([
+      row({ description: `POWER:- ON STATUS:- IDLE DATETIME:- ${deviceStamp(twoHoursAgo)}` }),
+    ]);
     expect((await getTrackingSnapshot()).stale).toBe(true);
 
-    mockFeed([row({ updated_at: istStamp(new Date()) })]);
+    mockFeed([row()]);
     expect((await getTrackingSnapshot()).stale).toBe(false);
   });
 
   it('reads their timestamps as IST, not as UTC', async () => {
     // Misread as UTC this is five and a half hours in the future, which
     // would make a live feed look fresh forever.
-    mockFeed([row({ updated_at: istStamp(new Date(Date.now() - 90 * 60 * 1000)) })]);
+    const ninetyMinutesAgo = new Date(Date.now() - 90 * 60 * 1000);
+    mockFeed([
+      row({ description: `POWER:- ON STATUS:- IDLE DATETIME:- ${deviceStamp(ninetyMinutesAgo)}` }),
+    ]);
     const snap = await getTrackingSnapshot();
     expect(snap.lastUpdated).not.toBeNull();
     const age = Date.now() - Date.parse(snap.lastUpdated!);
@@ -158,4 +176,61 @@ describe('live procession tracking', () => {
     expect(snap.ready).toBe(false);
     expect(waited, `waited ${waited}ms`).toBeLessThan(9_000);
   }, 15_000);
+
+  describe('against the real police feed', () => {
+    // Captured from diversion.punepolice.gov.in at 10:22 on visarjan
+    // morning, with Kasba an hour down Laxmi Road. Kept because two
+    // fields in it were read wrongly for most of a day.
+    it('takes the mandal name from popup_text, not name', async () => {
+      mockFeed(realFeed);
+      const snap = await getTrackingSnapshot();
+      expect(snap.mandals.map((m) => m.name)).toContain('कसबा गणपती मंडळ');
+      // Every row's `name` is "." — reading it found nothing all morning.
+      expect(snap.mandals.some((m) => m.name === '.')).toBe(false);
+    });
+
+    it('keeps only the rows that name a mandal', async () => {
+      mockFeed(realFeed);
+      const snap = await getTrackingSnapshot();
+      const named = realFeed.filter((r) => String(r.popup_text ?? '').trim()).length;
+      expect(snap.mandals).toHaveLength(named);
+    });
+
+    it('reads freshness from the device clock, not updated_at', async () => {
+      // The trap: every updated_at says 04:52 while the devices report
+      // 10:21. Judged on updated_at the whole feed looks five hours
+      // dead and the panel stays shut through the procession.
+      const shifted = realFeed.map((r) => ({
+        ...r,
+        description: String(r.description ?? '').replace(
+          /DATETIME:-.*/,
+          `DATETIME:- ${istStamp(new Date()).replace(
+            /^(\d{4})-(\d{2})-(\d{2}) /,
+            '$3-$2-$1 '
+          )}`
+        ),
+      }));
+      mockFeed(shifted);
+      const snap = await getTrackingSnapshot();
+      expect(snap.stale).toBe(false);
+      expect(snap.ready).toBe(true);
+    });
+
+    it('carries Kasba as on the move', async () => {
+      const shifted = realFeed.map((r) => ({
+        ...r,
+        description: String(r.description ?? '').replace(
+          /DATETIME:-.*/,
+          `DATETIME:- ${istStamp(new Date()).replace(
+            /^(\d{4})-(\d{2})-(\d{2}) /,
+            '$3-$2-$1 '
+          )}`
+        ),
+      }));
+      mockFeed(shifted);
+      const snap = await getTrackingSnapshot();
+      const kasba = snap.mandals.find((m) => m.name.includes('कसबा'));
+      expect(kasba?.status).toBe('moving');
+    });
+  });
 });

@@ -60,8 +60,10 @@ export interface TrackedMandal {
   address: string | null;
   lat: number;
   lng: number;
-  /** IST, as they publish it. */
+  /** IST, as they publish it. Not the freshness signal — see deviceMs. */
   updatedAt: string;
+  /** When the tracker itself last reported, in epoch ms, or null. */
+  deviceMs: number | null;
 }
 
 export interface TrackingSnapshot {
@@ -84,6 +86,40 @@ const EMPTY: TrackingSnapshot = {
 };
 
 /**
+ * The mandal's name lives in `popup_text`, not in `name`.
+ *
+ * This cost most of a day. `name` is blank or "." on every one of the
+ * forty-two rows and always was; the fifteen mandals the police
+ * actually track carry their Marathi name in `popup_text`, and the
+ * other twenty-seven rows are unnamed vehicles that belong to no
+ * mandal. Reading the obvious field made a working feed look dead.
+ */
+function mandalName(row: Record<string, unknown>): string | null {
+  const popup = typeof row.popup_text === 'string' ? row.popup_text.trim() : '';
+  if (popup) return popup;
+  const name = typeof row.name === 'string' ? row.name.trim() : '';
+  return isRealName(name) ? name : null;
+}
+
+/**
+ * When the device last spoke, from `description`.
+ *
+ * `updated_at` is not it. At 10:22, with Kasba an hour down Laxmi Road,
+ * every `updated_at` read 04:52 while the same rows carried
+ * "DATETIME:- 25-09-2026 10:21:56" in their description — the tracker's
+ * own clock, current to the minute. Trusting the obvious column made a
+ * live feed look five hours stale and kept the panel shut all morning.
+ */
+function deviceTime(row: Record<string, unknown>): number | null {
+  const text = typeof row.description === 'string' ? row.description : '';
+  const m = /DATETIME:-\s*(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/.exec(text);
+  if (!m) return null;
+  const [, d, mo, y, h, mi, sec] = m.map(Number);
+  // Their clock is IST, written without a zone.
+  return Date.UTC(y, mo - 1, d, h, mi, sec) - 5.5 * 60 * 60 * 1000;
+}
+
+/**
  * Names that are not names.
  *
  * The feed pre-populates a row per tracking device and fills the name in
@@ -104,8 +140,6 @@ function isRealName(value: unknown): value is string {
   return !/^[.\-_\s]+$/.test(name);
 }
 
-/** What to call a vehicle the feed has not named. */
-const UNNAMED = 'A tracked vehicle';
 
 function toStatus(iconType: unknown): ProcessionStatus | null {
   switch (String(iconType).toUpperCase()) {
@@ -158,6 +192,12 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
   for (const row of raw) {
     if (!row || typeof row !== 'object') continue;
     const r = row as Record<string, unknown>;
+
+    // Only the mandals. The other rows are tracking devices with no
+    // mandal against them, and a list of those answers nothing.
+    const name = mandalName(r);
+    if (!name) continue;
+
     const status = toStatus(r.icon_type);
     if (!status) continue;
 
@@ -167,12 +207,13 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
 
     const address = typeof r.address === 'string' && r.address.trim() ? r.address.trim() : null;
     mandals.push({
-      name: isRealName(r.name) ? String(r.name).trim() : UNNAMED,
+      name,
       status,
       address,
       lat,
       lng,
       updatedAt: String(r.updated_at ?? ''),
+      deviceMs: deviceTime(r),
     });
   }
 
@@ -181,7 +222,9 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
   const counts = { moving: 0, finished: 0, waiting: 0 } as Record<ProcessionStatus, number>;
   for (const m of mandals) counts[m.status] += 1;
 
-  const times = mandals.map((m) => parseIst(m.updatedAt)).filter((t): t is number => t !== null);
+  const times = mandals
+    .map((m) => m.deviceMs ?? parseIst(m.updatedAt))
+    .filter((t): t is number => t !== null);
   const newest = times.length ? Math.max(...times) : null;
 
   /**
