@@ -23,7 +23,7 @@ import { MapLegend } from './MapLegend';
  * the embedded map on /parking. This file is only the sheet around them.
  */
 
-export function MapKey({ visarjan = false }: { visarjan?: boolean }) {
+export function MapKey() {
   const [open, setOpen] = useState(false);
 
   if (!open) {
@@ -62,7 +62,7 @@ export function MapKey({ visarjan = false }: { visarjan?: boolean }) {
       </div>
 
       <div className="mt-3">
-        <MapLegend visarjan={visarjan} />
+        <MapLegend />
       </div>
     </div>
   );

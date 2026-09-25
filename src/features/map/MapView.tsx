@@ -47,14 +47,7 @@ const FILTERS: Array<{ key: FilterKey; label: string; labelMr?: string }> = [
   { key: 'saved', label: 'Saved' },
 ];
 
-export function MapView({
-  ganpatis, areas, showVisarjan = false,
-}: {
-  ganpatis: Ganpati[];
-  areas: Area[];
-  /** Visarjan day, decided on the server from the festival config. */
-  showVisarjan?: boolean;
-}) {
+export function MapView({ ganpatis, areas }: { ganpatis: Ganpati[]; areas: Area[] }) {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [detent, setDetent] = useState<Detent>('half');
   const [filters, setFilters] = useState<Set<FilterKey>>(new Set());
@@ -159,7 +152,6 @@ export function MapView({
             onSelect={handleSelect}
             userLocation={userLocation}
             onReady={(ok, failure) => setMapFailure(ok ? null : (failure ?? 'tiles'))}
-            showVisarjan={showVisarjan}
           />
         </MapErrorBoundary>
       )}
@@ -204,7 +196,7 @@ export function MapView({
           The map carries mandals, metro and the police plan now; without
           this, three of those are symbols nobody can decode. It also
           carries the credit and the link to the police's own map. */}
-      {!mapsOff && <MapKey visarjan={showVisarjan} />}
+      {!mapsOff && <MapKey />}
 
       {/* ---------------- Locate button ---------------- */}
       {!mapsOff && (

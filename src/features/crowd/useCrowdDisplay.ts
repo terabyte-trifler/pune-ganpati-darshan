@@ -5,6 +5,7 @@ import { useCrowdState, useClockMs, useCrowdStatus } from './useCrowd';
 import { useFestivalPhase } from './FestivalPhaseProvider';
 import { crowdDisplayFor, priorInputOf, type CrowdDisplay } from './crowd-display';
 import type { PriorInput } from '@/services/crowd/crowd-prior';
+import { features } from '@/lib/env';
 
 /**
  * The colour every surface draws, measured or estimated.
@@ -58,6 +59,18 @@ export function useCrowdDisplays(
   const nowMs = useClockMs();
 
   const next = useMemo(() => {
+    /**
+     * With the feature off, every mandal reads as unreported.
+     *
+     * Gating the components stopped the panels and the report buttons,
+     * but this hook is what colours the map pins — so a queue reported
+     * before the switch was thrown would still have painted a pin green
+     * or red, days after anyone could confirm it. The read path has to
+     * close with the write path or the map goes on making a claim the
+     * rest of the site has withdrawn.
+     */
+    if (!features.crowd) return {} as Record<string, CrowdDisplay>;
+
     const at = nowMs === null ? null : new Date(nowMs);
     const out: Record<string, CrowdDisplay> = {};
     for (const m of mandals) {
