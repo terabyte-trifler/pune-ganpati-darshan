@@ -476,9 +476,10 @@ export function MiniMap({
               17.5,
               ['literal', [0, 0]],
             ],
-            // Near full size: these maps are framed on one mandal or a small
-            // cluster of them, so there is room for the mark to read.
-            'icon-size': 0.95,
+            // Near full size where the frame is tight, smaller when it
+            // is not: on the visarjan map thirty pins share the peths
+            // and at the default zoom they merged into one blob.
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 14, 0.75, 16, 0.95],
             'icon-allow-overlap': true,
           },
         });
@@ -507,7 +508,16 @@ export function MiniMap({
           source: 'live-mandals',
           layout: {
             'icon-image': ['concat', 'live-', ['get', 'status']],
-            'icon-size': 1,
+            /**
+             * Smaller when the whole ring is in frame.
+             *
+             * At full size, fifteen pins inside one square kilometre of
+             * peth drew as a single clump with the corridor buried
+             * under it. They keep overlap allowed — a live mandal must
+             * never be hidden — but shrink until the frame is close
+             * enough to tell them apart.
+             */
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.5, 14, 0.75, 16, 1],
             'icon-allow-overlap': true,
           },
         });

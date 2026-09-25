@@ -177,12 +177,29 @@ describe('live procession tracking', () => {
     expect(waited, `waited ${waited}ms`).toBeLessThan(9_000);
   }, 15_000);
 
+  /**
+   * The fixture ages, so its device clock is rewritten to now.
+   *
+   * Without this the tests passed when the capture was fresh and began
+   * failing an hour later as it crossed the staleness window — a test
+   * that depends on the wall clock is a test that will fail on a day
+   * nobody changed anything.
+   */
+  const freshen = (feed: typeof realFeed) =>
+    feed.map((r) => ({
+      ...r,
+      description: String(r.description ?? '').replace(
+        /DATETIME:-.*/,
+        `DATETIME:- ${deviceStamp(new Date())}`
+      ),
+    }));
+
   describe('against the real police feed', () => {
     // Captured from diversion.punepolice.gov.in at 10:22 on visarjan
     // morning, with Kasba an hour down Laxmi Road. Kept because two
     // fields in it were read wrongly for most of a day.
     it('takes the mandal name from popup_text, not name', async () => {
-      mockFeed(realFeed);
+      mockFeed(freshen(realFeed));
       const snap = await getTrackingSnapshot();
       expect(snap.mandals.map((m) => m.name)).toContain('कसबा गणपती मंडळ');
       // Every row's `name` is "." — reading it found nothing all morning.
@@ -190,7 +207,7 @@ describe('live procession tracking', () => {
     });
 
     it('keeps only the rows that name a mandal', async () => {
-      mockFeed(realFeed);
+      mockFeed(freshen(realFeed));
       const snap = await getTrackingSnapshot();
       const named = realFeed.filter((r) => String(r.popup_text ?? '').trim()).length;
       expect(snap.mandals).toHaveLength(named);
@@ -200,34 +217,14 @@ describe('live procession tracking', () => {
       // The trap: every updated_at says 04:52 while the devices report
       // 10:21. Judged on updated_at the whole feed looks five hours
       // dead and the panel stays shut through the procession.
-      const shifted = realFeed.map((r) => ({
-        ...r,
-        description: String(r.description ?? '').replace(
-          /DATETIME:-.*/,
-          `DATETIME:- ${istStamp(new Date()).replace(
-            /^(\d{4})-(\d{2})-(\d{2}) /,
-            '$3-$2-$1 '
-          )}`
-        ),
-      }));
-      mockFeed(shifted);
+      mockFeed(freshen(realFeed));
       const snap = await getTrackingSnapshot();
       expect(snap.stale).toBe(false);
       expect(snap.ready).toBe(true);
     });
 
     it('carries Kasba as on the move', async () => {
-      const shifted = realFeed.map((r) => ({
-        ...r,
-        description: String(r.description ?? '').replace(
-          /DATETIME:-.*/,
-          `DATETIME:- ${istStamp(new Date()).replace(
-            /^(\d{4})-(\d{2})-(\d{2}) /,
-            '$3-$2-$1 '
-          )}`
-        ),
-      }));
-      mockFeed(shifted);
+      mockFeed(freshen(realFeed));
       const snap = await getTrackingSnapshot();
       const kasba = snap.mandals.find((m) => m.name.includes('कसबा'));
       expect(kasba?.status).toBe('moving');

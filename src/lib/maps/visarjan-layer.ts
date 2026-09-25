@@ -566,7 +566,16 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     },
   });
 
-  // The band, under everything: a glow the peth lanes sit inside.
+  /**
+   * The band, under everything: a glow the peth lanes sit inside.
+   *
+   * Weighted up after seeing it drawn. At the default frame — which
+   * holds an 18 km ring road — the corridor was two pixels of marigold
+   * under a clump of mandal pins, and the most important line on the
+   * map was the hardest to find. The ring, a thin green line with
+   * nothing on top of it, read far louder than the thing the day is
+   * about.
+   */
   map.addLayer({
     id: 'visarjan-corridor-glow',
     type: 'line',
@@ -575,9 +584,9 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
       'line-color': CORRIDOR_COLOR,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 6, 17, 26],
-      'line-opacity': 0.18,
-      'line-blur': ['interpolate', ['linear'], ['zoom'], 12.5, 3, 17, 12],
+      'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 12, 17, 30],
+      'line-opacity': 0.3,
+      'line-blur': ['interpolate', ['linear'], ['zoom'], 12.5, 4, 17, 12],
     },
   });
 
@@ -589,8 +598,8 @@ export function addVisarjanLayers(map: MapLibreMap): void {
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
       'line-color': CORRIDOR_COLOR,
-      'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 2, 17, 7],
-      'line-opacity': 0.75,
+      'line-width': ['interpolate', ['linear'], ['zoom'], 12.5, 4.5, 17, 9],
+      'line-opacity': 0.95,
     },
   });
 
