@@ -116,4 +116,27 @@ describe('live procession tracking', () => {
     mockFeed({ not: 'an array' });
     expect((await getTrackingSnapshot()).ready).toBe(false);
   });
+
+  it('gives up on a slow police server rather than holding the request', async () => {
+    // Measured at 41s on visarjan morning while their own site timed
+    // out. Unbounded, every cache miss would hold an invocation open
+    // that long on the busiest morning of the year.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init?: { signal?: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError'))
+          );
+        })
+      )
+    );
+
+    const started = Date.now();
+    const snap = await getTrackingSnapshot();
+    const waited = Date.now() - started;
+
+    expect(snap.ready).toBe(false);
+    expect(waited, `waited ${waited}ms`).toBeLessThan(9_000);
+  }, 15_000);
 });

@@ -35,6 +35,22 @@ const CACHE_SECONDS = 45;
 /** Beyond this, a position is history rather than news. */
 const STALE_AFTER_MINUTES = 25;
 
+/**
+ * How long we will wait for the police server, in milliseconds.
+ *
+ * Measured on visarjan morning: their API answered in 41 seconds and
+ * their own site timed out altogether. Without a bound, every cache
+ * miss here holds a serverless invocation open for that long — on the
+ * busiest morning of the year, for a panel that is decoration next to
+ * the closures and the timings.
+ *
+ * Six seconds is generous for a JSON list and short enough that a reader
+ * never waits on someone else's outage. Past it we answer "not ready",
+ * which is the same thing this file does for every other kind of
+ * failure, and the page keeps the link to their tracker.
+ */
+const UPSTREAM_TIMEOUT_MS = 6_000;
+
 export type ProcessionStatus = 'moving' | 'finished' | 'waiting';
 
 export interface TrackedMandal {
@@ -109,10 +125,13 @@ function parseIst(value: unknown): number | null {
 
 export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
   let raw: unknown;
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), UPSTREAM_TIMEOUT_MS);
   try {
     const res = await fetch(ENDPOINT, {
       headers: { 'User-Agent': 'ganpatipune.in (public-service map)' },
       next: { revalidate: CACHE_SECONDS },
+      signal: abort.signal,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     raw = await res.json();
@@ -120,6 +139,8 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
     // Their outage is not ours to dramatise: the page keeps its link.
     console.error('[visarjan-tracking] police feed unreachable:', error);
     return EMPTY;
+  } finally {
+    clearTimeout(timer);
   }
 
   if (!Array.isArray(raw)) return EMPTY;
