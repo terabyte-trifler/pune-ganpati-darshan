@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { LocateFixed, LoaderCircle } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import type { TrackingSnapshot } from '@/services/visarjan-tracking';
 import { MiniMap } from '@/features/map/MiniMapLoader';
 import { MapFullscreen } from './MapFullscreen';
 import type { Ganpati } from '@/types/ganpati';
@@ -24,6 +26,19 @@ import type { Ganpati } from '@/types/ganpati';
  * our server, not to storage, not into a URL. The rest of the app
  * treats location the same way; this is not a new bargain being struck
  * on a day when a lot of people are opening the site for the first time.
+ *
+ * ---------------------------------------------------------------------
+ * The mandals on this map come from the police tracker.
+ *
+ * While their feed is current the map draws the fifteen they track, at
+ * the positions they report, in their status colours — and the thirty
+ * static pins stand down, because a tracked mandal's vehicle is a
+ * kilometre from its mandap by mid-morning and drawing both would put
+ * it in two places at once.
+ *
+ * When the feed goes stale the static pins come back. That is the
+ * honest fallback: a mandap's location is always true, a position from
+ * two hours ago is not.
  */
 export function VisarjanMapControls({
   mandals,
@@ -33,6 +48,29 @@ export function VisarjanMapControls({
   frameOn: { lat: number; lng: number }[];
 }) {
   const { state, request } = useGeolocation();
+  const [tracked, setTracked] = useState<TrackingSnapshot['mandals']>([]);
+
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/visarjan-tracking');
+        if (!res.ok) return;
+        const data = (await res.json()) as TrackingSnapshot;
+        // Only while the positions are current; the service returns
+        // nothing at all once they are not.
+        if (alive) setTracked(data.ready ? data.mandals : []);
+      } catch {
+        // Leave the last good set up rather than blanking the map.
+      }
+    };
+    load();
+    const id = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
 
   const position = state.status === 'ready' ? state.position : null;
   const pending = state.status === 'locating';
@@ -48,6 +86,7 @@ export function VisarjanMapControls({
         uniformPins
         interactive
         userLocation={position}
+        liveTracked={tracked}
         frameOn={frameOn}
         className="h-full w-full"
       />

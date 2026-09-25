@@ -125,6 +125,16 @@ export interface MiniMapProps {
    */
   uniformPins?: boolean;
   /**
+   * Mandals the police are tracking live, at the positions they report.
+   *
+   * When this has anything in it the static pins stand down and these
+   * take over: on visarjan day a mandal's position is where its vehicle
+   * actually is, not where its mandap stands, and showing both would
+   * draw every tracked mandal twice — once truthfully and once a
+   * kilometre behind.
+   */
+  liveTracked?: { name: string; status: 'moving' | 'waiting' | 'finished'; lat: number; lng: number }[];
+  /**
    * Where the reader is, drawn as the same green dot the full map uses.
    *
    * Never stored and never sent anywhere: it arrives as a prop, becomes
@@ -209,7 +219,7 @@ export function MiniMap({
   mandals, ordered = false, routeGeometry, selectedSlug, onSelect,
   className, zoom, interactive = true, showClosures = false,
   showVisarjan = false, showParking = true, showPedestrianFlow = true,
-  uniformPins = false, userLocation = null, frameOn,
+  uniformPins = false, userLocation = null, liveTracked, frameOn,
 }: MiniMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -347,6 +357,12 @@ export function MiniMap({
       // peths with no stations on it answers "which mandals" and leaves
       // "how do I get to them" to a different screen.
       addMetroLayers(map);
+      // Live tracked mandals, empty until the feed answers.
+      map.addSource('live-mandals', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+
       // Parking on every map that can use it; closures only where they
       // are the subject.
       if (showParking) addParkingLayers(map);
@@ -446,10 +462,71 @@ export function MiniMap({
         map.on('mouseenter', 'mandal-pins', () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', 'mandal-pins', () => { map.getCanvas().style.cursor = ''; });
 
+        /**
+         * A tracked mandal, in its status colour.
+         *
+         * The same three the list under the map uses: marigold for on
+         * the move, green for completed, muted stone for yet to start.
+         * Larger than a static pin and drawn above everything, because
+         * on the day this is the only mark on the map that is telling
+         * you something that changed in the last minute.
+         */
+        map.addLayer({
+          id: 'live-mandal-pins',
+          type: 'circle',
+          source: 'live-mandals',
+          paint: {
+            'circle-color': [
+              'match',
+              ['get', 'status'],
+              'moving', '#F2A93B',
+              'finished', '#5FB872',
+              '#8a7f6d',
+            ],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 5, 17, 11],
+            'circle-stroke-color': '#14100C',
+            'circle-stroke-width': 2,
+          },
+        });
+
+        map.addLayer({
+          id: 'live-mandal-labels',
+          type: 'symbol',
+          source: 'live-mandals',
+          minzoom: 12.5,
+          layout: {
+            'text-field': ['get', 'name'],
+            'text-font': ['Noto Sans Bold'],
+            'text-size': 10.5,
+            'text-offset': [0, 1.3],
+            'text-anchor': 'top',
+            'text-allow-overlap': false,
+            'text-padding': 3,
+            'text-max-width': 10,
+          },
+          paint: {
+            'text-color': [
+              'match',
+              ['get', 'status'],
+              'moving', '#F2A93B',
+              'finished', '#5FB872',
+              '#c9bda6',
+            ],
+            'text-halo-color': '#14100C',
+            'text-halo-width': 1.6,
+          },
+        });
+
         // The pins were added last and would otherwise bury the marks
         // this map exists for — the procession passes the mandals, so a
         // checkpoint almost always shares a corner with one.
         if (showVisarjan) liftVisarjanMarkers(map);
+
+        // And the live mandals above even those: they are the only
+        // marks on this map that change from one minute to the next.
+        for (const id of ['live-mandal-pins', 'live-mandal-labels']) {
+          if (map.getLayer(id)) map.moveLayer(id);
+        }
       }
 
       // Parking, checkpoints and diversions answer a tap the same way
@@ -633,6 +710,32 @@ export function MiniMap({
       })),
     });
   }, [crowdByMandalId, mandals, ordered, ready]);
+
+  /* ---------------- Live tracked mandals ---------------- */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+
+    const source = map.getSource('live-mandals') as GeoJSONSource | undefined;
+    const rows = liveTracked ?? [];
+    source?.setData({
+      type: 'FeatureCollection',
+      features: rows.map((m) => ({
+        type: 'Feature',
+        properties: { name: m.name, status: m.status },
+        geometry: { type: 'Point', coordinates: [m.lng, m.lat] },
+      })),
+    });
+
+    // The static pins stand down while the live ones are up, so a
+    // tracked mandal is never drawn twice in two different places.
+    const live = rows.length > 0;
+    for (const id of ['mandal-pins', 'clusters', 'cluster-count', 'mandals']) {
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'visibility', live ? 'none' : 'visible');
+      }
+    }
+  }, [liveTracked, ready]);
 
   /* ---------------- Where the reader is ---------------- */
   useEffect(() => {
