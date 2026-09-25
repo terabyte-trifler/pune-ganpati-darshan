@@ -23,7 +23,6 @@ import {
 } from '@/lib/maps/visarjan-layer';
 import { POLICE_PARKING } from '@/content/visarjan-police';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
-import { RING_PATH } from '@/content/visarjan-ringroad';
 
 export const revalidate = 3600;
 
@@ -72,14 +71,20 @@ export default async function VisarjanPage() {
   // Road and Jedhe Chowk off the edge of a map that exists to show
   // exactly those.
   //
-  // The ring is included because leaving it out put only a fifth of it on
-  // screen — green fragments running off two edges, which reads as a
-  // broken line rather than a loop. It costs about half a zoom level: the
-  // frame goes from 4.2 km wide to 5.3, and the peths stay legible.
-  const corridorFrame = [
-    ...VISARJAN_GEOMETRY.flatMap((g) => g.segments.flat()),
-    ...RING_PATH,
-  ].map(([lng, lat]) => ({ lat, lng }));
+  // The ring was included for a while, so that the loop read as a loop
+  // rather than as green fragments running off two edges. Seeing it
+  // drawn settled the argument the other way: fitting 18 km of ring
+  // pushed the peths down to a few pixels, and the corridor — the one
+  // thing this map is about — became a thread under a clump of pins
+  // while the ring, with nothing on top of it, read loudest.
+  //
+  // So the frame holds the procession and the ring runs off the edges.
+  // Someone who wants the way round can pinch out and find a loop;
+  // someone standing on Laxmi Road cannot pinch their way to a corridor
+  // that was never legible to begin with.
+  const corridorFrame = VISARJAN_GEOMETRY.flatMap((g) =>
+    g.segments.flat().map(([lng, lat]) => ({ lat, lng }))
+  );
 
   // Grouped by hour, because the notice is a timetable and reading it as
   // seventeen separate rows hides the shape of the day.

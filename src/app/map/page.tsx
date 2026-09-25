@@ -6,7 +6,6 @@ import { MapView } from '@/features/map/MapView';
 import { VisarjanMapControls } from '@/features/visarjan/VisarjanMapControls';
 import { VisarjanMapKey } from '@/features/visarjan/VisarjanMapKey';
 import { VISARJAN_GEOMETRY } from '@/content/visarjan-geometry';
-import { RING_PATH } from '@/content/visarjan-ringroad';
 
 export const metadata: Metadata = {
   title: 'Map',
@@ -46,10 +45,9 @@ export default async function MapPage() {
    * be filtering a map that has stopped being about mandals.
    */
   if (visarjan) {
-    const frame = [
-      ...VISARJAN_GEOMETRY.flatMap((g) => g.segments.flat()),
-      ...RING_PATH,
-    ].map(([lng, lat]) => ({ lat, lng }));
+    const frame = VISARJAN_GEOMETRY.flatMap((g) =>
+      g.segments.flat().map(([lng, lat]) => ({ lat, lng }))
+    );
 
     return (
       <main id="main" className="pb-nav md:pb-10">
