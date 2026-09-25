@@ -13,6 +13,7 @@ import { QueueTime } from './QueueTime';
 import { NearbyReportPrompt } from './NearbyReportPrompt';
 import type { Ganpati } from '@/types/ganpati';
 import type { CrowdLevel } from '@/types/crowd';
+import { features } from '@/lib/env';
 
 /**
  * "Live crowd tracker" — the first thing on the homepage.
@@ -149,7 +150,7 @@ function Heading({ suffix }: { suffix?: string | null }) {
   );
 }
 
-export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
+function LiveCrowdSectionInner({ ganpatis }: { ganpatis: Ganpati[] }) {
   const { unavailable, loading, stale, computedAt } = useCrowdState();
   const displays = useCrowdDisplays(ganpatis);
   const { state } = useGeolocation();
@@ -449,4 +450,17 @@ export function LiveCrowdSection({ ganpatis }: { ganpatis: Ganpati[] }) {
       <NearbyReportPrompt ganpatis={ganpatis} />
     </>
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside LiveCrowdSectionInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function LiveCrowdSection(props: Parameters<typeof LiveCrowdSectionInner>[0]) {
+  if (!features.crowd) return null;
+  return <LiveCrowdSectionInner {...props} />;
 }

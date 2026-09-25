@@ -2,6 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WaitReportButtons } from '@/features/crowd/WaitReportButtons';
 
+/**
+ * `features.crowd` is switched off in the app, which makes these
+ * components render null. The flag is mocked on here deliberately: the
+ * code is paused, not deleted, and these tests are what will say
+ * whether it still works on the day it is switched back on.
+ */
+vi.mock('@/lib/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/env')>();
+  return { ...actual, features: { ...actual.features, crowd: true } };
+});
+
+
 vi.mock('@/features/crowd/device', () => ({ getDeviceId: () => 'device' }));
 vi.mock('@/features/crowd/crowd-store', () => ({
   applyCrowdStatus: vi.fn(), refreshCrowd: vi.fn(),

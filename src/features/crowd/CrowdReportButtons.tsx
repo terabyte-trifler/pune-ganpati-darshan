@@ -19,6 +19,7 @@ import { CROWD_COLOR, CrowdDot } from './CrowdBadge';
 import { trackEvent } from '@/services/analytics';
 import { cn } from '@/lib/utils';
 import type { CrowdLevel, CrowdStatus, CrowdSubmitResult } from '@/types/crowd';
+import { features } from '@/lib/env';
 
 /**
  * "How's the crowd?" — the three report buttons.
@@ -97,7 +98,7 @@ function remainingText(seconds: number): string {
 const SUBMIT_TIMEOUT_MS = 12_000;
 
 
-export function CrowdReportButtons({
+function CrowdReportButtonsInner({
   mandalId,
   location,
   compact = false,
@@ -441,4 +442,17 @@ export function CrowdReportButtons({
       )}
     </div>
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside CrowdReportButtonsInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function CrowdReportButtons(props: Parameters<typeof CrowdReportButtonsInner>[0]) {
+  if (!features.crowd) return null;
+  return <CrowdReportButtonsInner {...props} />;
 }

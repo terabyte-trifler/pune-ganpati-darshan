@@ -7,6 +7,7 @@ import {
 } from './wait-prompt-store';
 import { WaitReportButtons } from './WaitReportButtons';
 import type { Ganpati } from '@/types/ganpati';
+import { features } from '@/lib/env';
 
 /**
  * "You were at Dagdusheth earlier — how long did you wait?"
@@ -26,7 +27,7 @@ import type { Ganpati } from '@/types/ganpati';
 
 const empty: ReturnType<typeof getWaitPrompts> = [];
 
-export function WaitPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
+function WaitPromptInner({ ganpatis }: { ganpatis: Ganpati[] }) {
   const prompts = useSyncExternalStore(
     subscribeWaitPrompts,
     getWaitPrompts,
@@ -90,4 +91,17 @@ export function WaitPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
       </div>
     </section>
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside WaitPromptInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function WaitPrompt(props: Parameters<typeof WaitPromptInner>[0]) {
+  if (!features.crowd) return null;
+  return <WaitPromptInner {...props} />;
 }

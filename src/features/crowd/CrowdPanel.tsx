@@ -8,6 +8,7 @@ import { WaitReportButtons } from './WaitReportButtons';
 import type { CrowdStatus } from '@/types/crowd';
 import { crowdExpectation, type PriorInput } from '@/services/crowd/crowd-prior';
 import type { FestivalPhase } from '@/lib/festival';
+import { features } from '@/lib/env';
 
 /**
  * "Crowd right now" — the mandal detail panel.
@@ -54,7 +55,7 @@ function agoText(ms: number | null): string | null {
   return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
 }
 
-export function CrowdPanel({
+function CrowdPanelInner({
   mandalId,
   mandalName,
   mandalLocation,
@@ -341,4 +342,17 @@ export function CrowdPanel({
       )}
     </section>
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside CrowdPanelInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function CrowdPanel(props: Parameters<typeof CrowdPanelInner>[0]) {
+  if (!features.crowd) return null;
+  return <CrowdPanelInner {...props} />;
 }

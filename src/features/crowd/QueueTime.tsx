@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import type { CrowdDisplay } from './crowd-display';
 import { CROWD_COLOR } from './CrowdBadge';
 import type { CrowdLevel } from '@/types/crowd';
+import { features } from '@/lib/env';
 
 /**
  * How long the queue is, in the colour of how busy it is.
@@ -36,7 +37,7 @@ import type { CrowdLevel } from '@/types/crowd';
  * wait — waitBounds in crowd-prior is where that difference lives, and
  * this reads from it rather than applying one number to all of them.
  */
-export function QueueTime({
+function QueueTimeInner({
   level,
   wait,
   className,
@@ -136,4 +137,17 @@ export function QueueTimeFor({
       suffix={suffix}
     />
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside QueueTimeInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function QueueTime(props: Parameters<typeof QueueTimeInner>[0]) {
+  if (!features.crowd) return null;
+  return <QueueTimeInner {...props} />;
 }

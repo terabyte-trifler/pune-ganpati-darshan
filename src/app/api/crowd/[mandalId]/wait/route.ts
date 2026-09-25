@@ -4,6 +4,7 @@ import { submitWaitReport, recomputeMandal, clientIpFrom } from '@/services/crow
 import { privateJson, timed } from '@/services/crowd/crowd-http';
 import { mandalIdSchema, deviceIdSchema } from '@/services/crowd/crowd-validation';
 import { rateLimit } from '@/lib/rate-limit';
+import { features } from '@/lib/env';
 
 /**
  * Submit how long you waited.
@@ -44,6 +45,23 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ mandalId: string }> }
 ) {
+  /**
+   * Reporting is switched off — see `features.crowd`.
+   *
+   * Refused here as well as hidden in the UI. The buttons are gone, but
+   * a cooldown token or a replayed request would otherwise still write,
+   * and collecting readings nobody is shown is worse than collecting
+   * none: they would age into the database looking like evidence.
+   *
+   * 503 rather than 404: the endpoint exists and is expected back.
+   */
+  if (!features.crowd) {
+    return NextResponse.json(
+      { error: 'Crowd reporting is currently switched off.' },
+      { status: 503 }
+    );
+  }
+
   return timed(async () => {
     const limit = rateLimit(request, { key: 'crowd-wait', limit: 20, windowMs: 60_000 });
     if (!limit.allowed) {

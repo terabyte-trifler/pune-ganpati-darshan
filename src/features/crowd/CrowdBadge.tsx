@@ -6,6 +6,7 @@ import { QueueTime } from './QueueTime';
 import { cn } from '@/lib/utils';
 import type { PriorInput } from '@/services/crowd/crowd-prior';
 import type { CrowdLevel } from '@/types/crowd';
+import { features } from '@/lib/env';
 
 /**
  * Compact crowd indicator for cards, list rows and map callouts.
@@ -74,7 +75,7 @@ export function CrowdDot({
 }
 
 /** Presentational form — takes a display directly, for server-rendered lists. */
-export function CrowdBadgeView({
+function CrowdBadgeViewInner({
   display,
   className,
 }: {
@@ -194,4 +195,17 @@ export function CrowdBadge({
 }) {
   const display = useCrowdDisplayFor(mandalId, prior);
   return <CrowdBadgeView display={display} className={className} />;
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside CrowdBadgeViewInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function CrowdBadgeView(props: Parameters<typeof CrowdBadgeViewInner>[0]) {
+  if (!features.crowd) return null;
+  return <CrowdBadgeViewInner {...props} />;
 }

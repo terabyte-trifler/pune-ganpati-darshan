@@ -59,4 +59,25 @@ export const features = {
   supabase: Boolean(
     env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ),
+
+  /**
+   * Live crowd readings and the report buttons that feed them.
+   *
+   * Switched off. The feature answers "how long is the queue at this
+   * mandap", and once the idols leave for the procession there is no
+   * queue and no mandap to have one — the crowd model already went
+   * silent on visarjan afternoon for exactly that reason.
+   *
+   * A flag rather than a deletion, deliberately. This is wired into some
+   * twenty-five files: the homepage, every mandal page, the map pins,
+   * the planner, the cards and the opengraph image. Cutting that apart
+   * during the busiest hours of the year is how a working site breaks,
+   * and the whole point of turning it off is that it is no longer
+   * telling anyone anything true. One line restores it; the code is
+   * untouched and every test still runs against it.
+   *
+   * It also closes the write path. No report is accepted while this is
+   * false, so nothing is collected that nobody will read.
+   */
+  crowd: false,
 } as const;

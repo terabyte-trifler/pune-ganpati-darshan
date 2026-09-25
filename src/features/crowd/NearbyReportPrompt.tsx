@@ -8,6 +8,7 @@ import { haversine, formatDistance } from '@/lib/geo';
 import { CrowdReportButtons } from './CrowdReportButtons';
 import { cn } from '@/lib/utils';
 import type { Ganpati } from '@/types/ganpati';
+import { features } from '@/lib/env';
 
 /**
  * Report the queue without naming the mandal first.
@@ -72,7 +73,7 @@ interface Ranked {
   distanceM: number;
 }
 
-export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
+function NearbyReportPromptInner({ ganpatis }: { ganpatis: Ganpati[] }) {
   // Acquires the position on open. Mounted here because this component is
   // always present on the home page, whether or not it renders anything.
   useAutoLocate();
@@ -204,4 +205,17 @@ export function NearbyReportPrompt({ ganpatis }: { ganpatis: Ganpati[] }) {
       </ul>
     </section>
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside NearbyReportPromptInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function NearbyReportPrompt(props: Parameters<typeof NearbyReportPromptInner>[0]) {
+  if (!features.crowd) return null;
+  return <NearbyReportPromptInner {...props} />;
 }

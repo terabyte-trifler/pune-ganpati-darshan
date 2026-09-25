@@ -4,6 +4,18 @@ import { readFileSync } from 'node:fs';
 import type { GeoState } from '@/hooks/useGeolocation';
 
 /**
+ * `features.crowd` is switched off in the app, which makes these
+ * components render null. The flag is mocked on here deliberately: the
+ * code is paused, not deleted, and these tests are what will say
+ * whether it still works on the day it is switched back on.
+ */
+vi.mock('@/lib/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/env')>();
+  return { ...actual, features: { ...actual.features, crowd: true } };
+});
+
+
+/**
  * Who may say how long they waited.
  *
  * A wait report is the heaviest signal the tracker has — 1.5x a colour,

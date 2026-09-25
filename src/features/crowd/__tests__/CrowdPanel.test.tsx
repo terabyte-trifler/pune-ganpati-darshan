@@ -4,6 +4,18 @@ import type { CrowdStatus } from '@/types/crowd';
 import type { FestivalPhase } from '@/lib/festival';
 
 /**
+ * `features.crowd` is switched off in the app, which makes these
+ * components render null. The flag is mocked on here deliberately: the
+ * code is paused, not deleted, and these tests are what will say
+ * whether it still works on the day it is switched back on.
+ */
+vi.mock('@/lib/env', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/env')>();
+  return { ...actual, features: { ...actual.features, crowd: true } };
+});
+
+
+/**
  * What the crowd panel actually renders.
  *
  * The logic behind both lanes is unit-tested elsewhere; what was never

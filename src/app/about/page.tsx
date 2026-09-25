@@ -43,8 +43,8 @@ const SECTIONS = [
 ];
 
 const DOES = [
-  'Routes built around the time you actually have, counting the queue as well as the walk',
-  'Live queue reports from devotees, on the map, expiring after ninety minutes',
+  'Routes built around the time you actually have',
+  'Every mandal on one map, with the peth lanes and the way in',
   'Metro-aware — which station to board, where to change, where to get off',
   'Free and non-commercial — no ads, no fees, and nothing tied to your name',
 ];

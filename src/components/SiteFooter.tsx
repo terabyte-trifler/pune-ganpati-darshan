@@ -26,7 +26,7 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
     heading: 'Explore',
     links: [
       { href: '/explore', label: 'All mandals' },
-      { href: '/map', label: 'Live crowd map' },
+      { href: '/map', label: 'Map' },
       { href: '/saved', label: 'Saved' },
     ],
   },
@@ -77,8 +77,8 @@ export function SiteFooter() {
               </span>
             </Link>
             <p className="mt-2.5 text-[13px] leading-relaxed text-[var(--muted)]">
-              Live queue reports from devotees, and walkable routes that count
-              the queue as well as the walk. Free for everyone, always.
+              Every mandal on one map, with walkable darshan routes through
+              the old peths. Free for everyone, always.
             </p>
           </div>
 

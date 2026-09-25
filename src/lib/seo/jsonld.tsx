@@ -74,8 +74,8 @@ export function siteGraph() {
           url: `${BASE}/icons/apple-touch-icon.png`,
         },
         description:
-          'Live queue reports from devotees and walkable darshan routes ' +
-          'through Pune’s Ganpati mandals. Free and non-commercial.',
+          'Every Ganpati mandal in Pune on one map, with walkable darshan ' +
+          'routes through the old peths. Free and non-commercial.',
         email: 'singhgurnoor080@gmail.com',
         telephone: '+91-6283031102',
         founder: { '@type': 'Person', name: 'Gurnoor Singh' },

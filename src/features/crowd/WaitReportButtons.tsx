@@ -10,6 +10,7 @@ import { type LatLng } from '@/lib/geo';
 import { useReportGate } from './useReportGate';
 import { ReportGateNotice } from './ReportGateNotice';
 import type { CrowdStatus } from '@/types/crowd';
+import { features } from '@/lib/env';
 
 /**
  * "How long did you wait?"
@@ -52,7 +53,7 @@ function label(minutes: number): string {
   return `${minutes} min`;
 }
 
-export function WaitReportButtons({
+function WaitReportButtonsInner({
   mandalId,
   location,
   onDone,
@@ -213,4 +214,17 @@ export function WaitReportButtons({
       )}
     </div>
   );
+}
+
+/**
+ * Off while `features.crowd` is false.
+ *
+ * A wrapper rather than an early return inside WaitReportButtonsInner: that
+ * component calls hooks, and returning before them changes hook order,
+ * which React forbids. Not mounting it at all is both legal and the
+ * thing actually wanted — no request is made and no state is kept.
+ */
+export function WaitReportButtons(props: Parameters<typeof WaitReportButtonsInner>[0]) {
+  if (!features.crowd) return null;
+  return <WaitReportButtonsInner {...props} />;
 }

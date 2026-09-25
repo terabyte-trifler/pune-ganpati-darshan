@@ -7,6 +7,7 @@ import {
 import { privateJson, timed } from '@/services/crowd/crowd-http';
 import { mandalIdSchema, reportBodySchema } from '@/services/crowd/crowd-validation';
 import { rateLimit } from '@/lib/rate-limit';
+import { features } from '@/lib/env';
 
 /**
  * Submit a crowd report.
@@ -45,6 +46,23 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ mandalId: string }> }
 ) {
+  /**
+   * Reporting is switched off — see `features.crowd`.
+   *
+   * Refused here as well as hidden in the UI. The buttons are gone, but
+   * a cooldown token or a replayed request would otherwise still write,
+   * and collecting readings nobody is shown is worse than collecting
+   * none: they would age into the database looking like evidence.
+   *
+   * 503 rather than 404: the endpoint exists and is expected back.
+   */
+  if (!features.crowd) {
+    return NextResponse.json(
+      { error: 'Crowd reporting is currently switched off.' },
+      { status: 503 }
+    );
+  }
+
   return timed(async () => {
     // Generous enough for a person tapping through several mandals in an
     // evening, tight enough that a script gets nowhere.

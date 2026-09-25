@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { rateLimit } from '@/lib/rate-limit';
 import { getSupabaseAdminClient } from '@/lib/supabase/admin';
 import { dwellDeviceKey } from '@/lib/dwell-key';
+import { features } from '@/lib/env';
 
 /**
  * Record a passive dwell sample. Shadow mode.
@@ -56,6 +57,23 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  /**
+   * Reporting is switched off — see `features.crowd`.
+   *
+   * Refused here as well as hidden in the UI. The buttons are gone, but
+   * a cooldown token or a replayed request would otherwise still write,
+   * and collecting readings nobody is shown is worse than collecting
+   * none: they would age into the database looking like evidence.
+   *
+   * 503 rather than 404: the endpoint exists and is expected back.
+   */
+  if (!features.crowd) {
+    return NextResponse.json(
+      { error: 'Crowd reporting is currently switched off.' },
+      { status: 503 }
+    );
+  }
+
   if (process.env.CROWD_DWELL_SHADOW !== '1') {
     // 404 rather than 403: an endpoint that is off should not advertise
     // that it exists and might be turned on.
