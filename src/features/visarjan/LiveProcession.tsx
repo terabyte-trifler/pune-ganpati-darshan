@@ -15,12 +15,15 @@ import type { TrackingSnapshot, ProcessionStatus } from '@/services/visarjan-tra
  * actually set off. The police track it, and this reads their feed
  * through our own proxy so a reader gets the answer without leaving.
  *
- * It renders NOTHING until the feed is usable. Before the day starts the
- * tracker carries forty-two devices with placeholder names, so the
- * service drops them and answers `ready: false`, and this returns null —
- * the page keeps the tracker link it has always had and looks exactly as
- * it did. A section that appears empty, or full of dots called ".",
- * would be worse than no section.
+ * It renders NOTHING unless the police positions are current. Freshness
+ * is the gate, not names: on visarjan morning the feed never filled a
+ * single name in, and at 10:15 — the procession an hour under way — its
+ * newest row was stamped 04:44. Names missing is their data entry;
+ * positions hours old would have put the miravnuk behind itself, and
+ * that is the one thing this panel must never do.
+ *
+ * So an unnamed vehicle that is genuinely moving still counts, and a
+ * named one that stopped reporting before dawn does not.
  *
  * Positions are deliberately not drawn on the map. The feed gives a
  * point per tracking device and the devices sit with the mandals, so at
@@ -30,6 +33,9 @@ import type { TrackingSnapshot, ProcessionStatus } from '@/services/visarjan-tra
  */
 
 const POLL_MS = 60_000;
+
+/** Matches the service's label for a vehicle the feed has not named. */
+const UNNAMED_LABEL = 'A tracked vehicle';
 
 const LABEL: Record<ProcessionStatus, string> = {
   moving: 'On the move',
@@ -71,6 +77,9 @@ export function LiveProcession({ active }: { active: boolean }) {
 
   if (!snap?.ready || snap.mandals.length === 0) return null;
 
+  const named = snap.mandals.filter((m) => m.name !== UNNAMED_LABEL);
+  const unnamed = snap.mandals.length - named.length;
+
   return (
     <section
       aria-label="Live procession status"
@@ -88,15 +97,12 @@ export function LiveProcession({ active }: { active: boolean }) {
           .join(' · ')}
       </p>
 
-      {snap.stale && (
-        <p className="mt-2 text-[12px] leading-relaxed text-[var(--shendur)]">
-          The feed has not moved in a while — treat these as last known
-          rather than current.
-        </p>
-      )}
-
+      {/* Only the ones the police named. Forty-two rows all reading "a
+          tracked vehicle" is a list that says nothing forty-two times;
+          the counts above already carry them, and the line below says
+          how many they are. */}
       <ul className="mt-3 space-y-1.5">
-        {snap.mandals.map((m) => (
+        {named.map((m) => (
           <li key={`${m.name}-${m.lat}`} className="flex items-baseline gap-2.5">
             <span
               aria-hidden="true"
@@ -116,9 +122,20 @@ export function LiveProcession({ active }: { active: boolean }) {
         ))}
       </ul>
 
+      {unnamed > 0 && (
+        <p className="mt-2.5 text-[12.5px] leading-relaxed text-[var(--muted)]">
+          {named.length > 0 ? 'And ' : ''}
+          {unnamed} more {unnamed === 1 ? 'vehicle is' : 'vehicles are'} tracked
+          without a name — the police publish their position but not which
+          mandal they carry.
+        </p>
+      )}
+
       <p className="mt-3 text-[11.5px] leading-relaxed text-[var(--faint)]">
-        Pune City Police, read live and cached for under a minute. Their
-        tracker is the original and carries the map.
+        Pune City Police, read live and cached for under a minute, and
+        shown only while their positions are current — a reading from
+        hours ago would put the procession behind itself. Their tracker
+        is the original and carries the map.
       </p>
     </section>
   );

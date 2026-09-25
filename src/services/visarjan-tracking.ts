@@ -87,9 +87,15 @@ const EMPTY: TrackingSnapshot = {
  * Names that are not names.
  *
  * The feed pre-populates a row per tracking device and fills the name in
- * later, so before the day starts every row is a placeholder. These are
- * the ones actually observed; anything under two characters is treated
- * the same way on the principle that no mandal is called "x".
+ * later. On visarjan morning it never did: at 10:15, with the
+ * procession an hour under way, all forty-two rows were still "." and
+ * "--".
+ *
+ * So a missing name no longer hides the row. An unnamed vehicle that is
+ * genuinely moving still answers the question people are asking — where
+ * has the miravnuk reached — and refusing to say anything because the
+ * police did not fill in a text field was letting their data entry
+ * decide what our readers get told.
  */
 function isRealName(value: unknown): value is string {
   if (typeof value !== 'string') return false;
@@ -97,6 +103,9 @@ function isRealName(value: unknown): value is string {
   if (name.length < 3) return false;
   return !/^[.\-_\s]+$/.test(name);
 }
+
+/** What to call a vehicle the feed has not named. */
+const UNNAMED = 'A tracked vehicle';
 
 function toStatus(iconType: unknown): ProcessionStatus | null {
   switch (String(iconType).toUpperCase()) {
@@ -149,8 +158,6 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
   for (const row of raw) {
     if (!row || typeof row !== 'object') continue;
     const r = row as Record<string, unknown>;
-    if (!isRealName(r.name)) continue;
-
     const status = toStatus(r.icon_type);
     if (!status) continue;
 
@@ -160,7 +167,7 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
 
     const address = typeof r.address === 'string' && r.address.trim() ? r.address.trim() : null;
     mandals.push({
-      name: String(r.name).trim(),
+      name: isRealName(r.name) ? String(r.name).trim() : UNNAMED,
       status,
       address,
       lat,
@@ -177,8 +184,19 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
   const times = mandals.map((m) => parseIst(m.updatedAt)).filter((t): t is number => t !== null);
   const newest = times.length ? Math.max(...times) : null;
 
+  /**
+   * Freshness decides whether any of this is shown, not names.
+   *
+   * A position the police recorded before dawn is the thing this file
+   * exists to refuse: at 10:15 on visarjan morning the newest row was
+   * from 04:44, so drawing it would have put the procession a couple of
+   * kilometres behind where it actually was. Stale is no longer a badge
+   * on a panel that shows anyway — it closes the panel.
+   */
+  const isStale = newest === null || Date.now() - newest > STALE_AFTER_MINUTES * 60_000;
+
   return {
-    ready: true,
+    ready: !isStale,
     // Moving first: on the day that is the half of the list worth reading.
     mandals: mandals.sort(
       (a, b) =>
@@ -186,7 +204,7 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
     ),
     counts,
     lastUpdated: newest === null ? null : new Date(newest).toISOString(),
-    stale: newest !== null && Date.now() - newest > STALE_AFTER_MINUTES * 60_000,
+    stale: isStale,
   };
 }
 

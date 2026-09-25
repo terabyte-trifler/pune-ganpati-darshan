@@ -39,17 +39,32 @@ beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
 afterEach(() => vi.unstubAllGlobals());
 
 describe('live procession tracking', () => {
-  it('is not ready while every name is a placeholder', async () => {
-    // Exactly the shape served at 03:00 on visarjan morning.
+  it('shows an unnamed vehicle that is genuinely moving', async () => {
+    // The shape served all through visarjan morning: forty-two rows and
+    // not one name filled in. Refusing to say anything because the
+    // police left a text field blank let their data entry decide what
+    // our readers were told.
     mockFeed([
-      row({ name: '.', icon_type: 'YET_TO_START' }),
-      row({ name: '  ', icon_type: null }),
-      row({ name: '--', icon_type: null }),
-      row({ name: '-', icon_type: 'YET_TO_START' }),
+      row({ name: '.', icon_type: 'ON_THE_MOVE' }),
+      row({ name: '--', icon_type: 'YET_TO_START' }),
+    ]);
+    const snap = await getTrackingSnapshot();
+    expect(snap.ready).toBe(true);
+    expect(snap.mandals).toHaveLength(2);
+    expect(snap.mandals[0].name).toBe('A tracked vehicle');
+  });
+
+  it('stays shut when the newest position is hours old', async () => {
+    // 10:15 on visarjan morning: the procession an hour under way and
+    // the freshest row stamped 04:44. Drawn, it would have put the
+    // miravnuk a couple of kilometres behind itself.
+    const beforeDawn = new Date(Date.now() - 5.5 * 60 * 60 * 1000);
+    mockFeed([
+      row({ name: 'Kasba Ganpati', icon_type: 'ON_THE_MOVE', updated_at: istStamp(beforeDawn) }),
     ]);
     const snap = await getTrackingSnapshot();
     expect(snap.ready).toBe(false);
-    expect(snap.mandals).toHaveLength(0);
+    expect(snap.stale).toBe(true);
   });
 
   it('comes alive once real names arrive', async () => {
@@ -61,9 +76,10 @@ describe('live procession tracking', () => {
     ]);
     const snap = await getTrackingSnapshot();
     expect(snap.ready).toBe(true);
-    // The placeholder is dropped, not counted.
-    expect(snap.mandals).toHaveLength(3);
-    expect(snap.counts).toEqual({ moving: 1, waiting: 1, finished: 1 });
+    // The unnamed row is carried too, under a generic label.
+    expect(snap.mandals).toHaveLength(4);
+    expect(snap.counts).toEqual({ moving: 1, waiting: 2, finished: 1 });
+    expect(snap.mandals.map((m) => m.name)).toContain('A tracked vehicle');
   });
 
   it('puts the ones on the move first', async () => {
