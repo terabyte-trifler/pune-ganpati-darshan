@@ -45,7 +45,7 @@ export default async function MapPage() {
    * be filtering a map that has stopped being about mandals.
    */
   if (visarjan) {
-    const frame = VISARJAN_GEOMETRY.flatMap((g) =>
+    const frame = VISARJAN_GEOMETRY.filter((g) => g.kind === 'procession').flatMap((g) =>
       g.segments.flat().map(([lng, lat]) => ({ lat, lng }))
     );
 

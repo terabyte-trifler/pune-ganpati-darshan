@@ -78,11 +78,16 @@ export default async function VisarjanPage() {
   // thing this map is about — became a thread under a clump of pins
   // while the ring, with nothing on top of it, read loudest.
   //
+  // The procession roads only, not the closures with them: Karve Road
+  // shuts a kilometre west of the peths and dragging the frame out to
+  // hold it undid most of the tightening — 4.2 km against the 2.9 km
+  // the corridor actually occupies.
+  //
   // So the frame holds the procession and the ring runs off the edges.
   // Someone who wants the way round can pinch out and find a loop;
   // someone standing on Laxmi Road cannot pinch their way to a corridor
   // that was never legible to begin with.
-  const corridorFrame = VISARJAN_GEOMETRY.flatMap((g) =>
+  const corridorFrame = VISARJAN_GEOMETRY.filter((g) => g.kind === 'procession').flatMap((g) =>
     g.segments.flat().map(([lng, lat]) => ({ lat, lng }))
   );
 
