@@ -65,6 +65,9 @@ describe('live procession tracking', () => {
     const snap = await getTrackingSnapshot();
     expect(snap.ready).toBe(false);
     expect(snap.stale).toBe(true);
+    // And the old positions are not handed out at all: a caller that
+    // forgot to check the flag would otherwise draw them.
+    expect(snap.mandals).toHaveLength(0);
   });
 
   it('comes alive once real names arrive', async () => {

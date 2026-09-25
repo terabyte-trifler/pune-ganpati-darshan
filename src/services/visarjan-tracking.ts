@@ -195,8 +195,19 @@ export async function getTrackingSnapshot(): Promise<TrackingSnapshot> {
    */
   const isStale = newest === null || Date.now() - newest > STALE_AFTER_MINUTES * 60_000;
 
+  /**
+   * Stale positions do not leave the server.
+   *
+   * Answering `ready: false` while still sending the rows left a
+   * five-hour-old position sitting in every browser's response, correct
+   * only because one component happened to check a flag before using
+   * it. The next caller would not have known to. If it is too old to
+   * draw, it is too old to hand out.
+   */
+  if (isStale) return { ...EMPTY, stale: true, lastUpdated: newest === null ? null : new Date(newest).toISOString() };
+
   return {
-    ready: !isStale,
+    ready: true,
     // Moving first: on the day that is the half of the list worth reading.
     mandals: mandals.sort(
       (a, b) =>
