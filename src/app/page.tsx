@@ -10,7 +10,8 @@ import {
 import { getRoutes, computeRouteTotals, routesForNow } from '@/services/routes';
 import { formatDuration } from '@/lib/geo';
 import { FestivalCountdown } from '@/features/discovery/FestivalCountdown';
-import { isVisarjanImminent } from '@/lib/festival';
+import { getFestivalPhase, isVisarjanImminent } from '@/lib/festival';
+import { FestivalFarewell } from '@/features/discovery/FestivalFarewell';
 import { SectionHeader } from '@/features/discovery/SectionHeader';
 import { GanpatiCard } from '@/features/discovery/GanpatiCard';
 import { NearbyRail } from '@/features/discovery/NearbyRail';
@@ -80,6 +81,7 @@ export default async function HomePage() {
   const nowRoutes = routesForNow(routes);
   const leadRoutes = nowRoutes.slice(0, 6);
   const coreAreas = areas.filter((a) => a.isCore);
+  const festivalOver = getFestivalPhase(festival).phase === 'after';
 
   return (
     <main id="main" className="pb-nav md:pb-8">
@@ -89,80 +91,86 @@ export default async function HomePage() {
           section as the transition into content. Every layer is CSS or
           inline SVG — no image requests, and it stays sharp on a dense
           phone screen. */}
-      <section className="grain relative overflow-hidden px-4 pt-[calc(var(--safe-top)+18px)]">
-        <div
-          aria-hidden="true"
-          className="rangoli pointer-events-none absolute inset-0 opacity-[0.55]"
-          style={{ maskImage: 'radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%)',
-                   WebkitMaskImage: 'radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%)' }}
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-28 h-72"
-          style={{
-            background:
-              'radial-gradient(58% 58% at 50% 42%, rgb(226 98 27 / 0.34) 0%, rgb(242 169 59 / 0.10) 48%, transparent 74%)',
-          }}
-        />
+      {/* Once the festival is over, the farewell takes the whole first
+          screen in place of the hero; the catalogue carries on below. */}
+      {festivalOver ? (
+        <FestivalFarewell config={festival} />
+      ) : (
+        <section className="grain relative overflow-hidden px-4 pt-[calc(var(--safe-top)+18px)]">
+          <div
+            aria-hidden="true"
+            className="rangoli pointer-events-none absolute inset-0 opacity-[0.55]"
+            style={{ maskImage: 'radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%)',
+                     WebkitMaskImage: 'radial-gradient(70% 60% at 50% 0%, #000 0%, transparent 75%)' }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 -top-28 h-72"
+            style={{
+              background:
+                'radial-gradient(58% 58% at 50% 42%, rgb(226 98 27 / 0.34) 0%, rgb(242 169 59 / 0.10) 48%, transparent 74%)',
+            }}
+          />
 
-        <div className="relative mx-auto max-w-2xl">
-          <FestivalCountdown config={festival} />
+          <div className="relative mx-auto max-w-2xl">
+            <FestivalCountdown config={festival} />
 
-          {/* On visarjan day and the evening before it, this is the page's
-              most useful link by a distance: the mandaps empty out, and
-              the questions become where the procession is and which road
-              is shut. It is not shown on any other day. */}
-          {isVisarjanImminent(festival) && (
-            <Link
-              href="/visarjan"
-              className="mt-3 flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--zendu)]/45 bg-gradient-to-r from-[var(--zendu)]/[0.16] to-transparent px-4 py-3"
-            >
-              <Waves size={19} aria-hidden="true" className="shrink-0 text-[var(--zendu)]" />
-              <span className="min-w-0">
-                <span className="block text-[14.5px] font-semibold text-[var(--pital)]">
-                  Visarjan: the procession and the closed roads
+            {/* On visarjan day and the evening before it, this is the page's
+                most useful link by a distance: the mandaps empty out, and
+                the questions become where the procession is and which road
+                is shut. It is not shown on any other day. */}
+            {isVisarjanImminent(festival) && (
+              <Link
+                href="/visarjan"
+                className="mt-3 flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--zendu)]/45 bg-gradient-to-r from-[var(--zendu)]/[0.16] to-transparent px-4 py-3"
+              >
+                <Waves size={19} aria-hidden="true" className="shrink-0 text-[var(--zendu)]" />
+                <span className="min-w-0">
+                  <span className="block text-[14.5px] font-semibold text-[var(--pital)]">
+                    Visarjan: the procession and the closed roads
+                  </span>
+                  <span className="block text-[13px] text-[var(--muted)]">
+                    17 stretches close from 05:00 · live tracking
+                  </span>
                 </span>
-                <span className="block text-[13px] text-[var(--muted)]">
-                  17 stretches close from 05:00 · live tracking
-                </span>
-              </span>
-            </Link>
-          )}
-
-          <h1 className="font-display mt-5 text-[36px] font-bold leading-[1.02] text-[var(--chandan)] sm:text-[52px]">
-            Experience Pune&rsquo;s
-            <span className="block bg-gradient-to-r from-[var(--zendu)] via-[var(--shendur)] to-[var(--pital)] bg-clip-text pb-1 text-transparent">
-              Ganpati
-            </span>
-          </h1>
-
-          <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[var(--muted)]">
-            Find what&rsquo;s near you and plan a walkable darshan.
-          </p>
-
-          <Link
-            href="/explore?focus=1"
-            className="surface mt-4 flex min-h-12 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
-          >
-            <Search size={19} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
-            Search Ganpati, mandal or area…
-          </Link>
-
-          <div className="mt-3 flex gap-2">
-            <Button asChild size="md" className="flex-1" style={{ boxShadow: 'var(--glow-shendur)' }}>
-              <Link href="/map">Open map</Link>
-            </Button>
-            <Button asChild variant="secondary" size="md" className="flex-1">
-              <Link href="/start">
-                <RouteIcon size={16} aria-hidden="true" />
-                Build my route
               </Link>
-            </Button>
-          </div>
-        </div>
+            )}
 
-        <div aria-hidden="true" className="torana relative mt-7 opacity-80" />
-      </section>
+            <h1 className="font-display mt-5 text-[36px] font-bold leading-[1.02] text-[var(--chandan)] sm:text-[52px]">
+              Experience Pune&rsquo;s
+              <span className="block bg-gradient-to-r from-[var(--zendu)] via-[var(--shendur)] to-[var(--pital)] bg-clip-text pb-1 text-transparent">
+                Ganpati
+              </span>
+            </h1>
+
+            <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[var(--muted)]">
+              Find what&rsquo;s near you and plan a walkable darshan.
+            </p>
+
+            <Link
+              href="/explore?focus=1"
+              className="surface mt-4 flex min-h-12 items-center gap-3 rounded-[var(--radius-field)] border border-[var(--line-strong)] px-4 text-[15px] text-[var(--faint)] transition-colors hover:border-[var(--shendur)]/50"
+            >
+              <Search size={19} aria-hidden="true" className="shrink-0 text-[var(--shendur)]" />
+              Search Ganpati, mandal or area…
+            </Link>
+
+            <div className="mt-3 flex gap-2">
+              <Button asChild size="md" className="flex-1" style={{ boxShadow: 'var(--glow-shendur)' }}>
+                <Link href="/map">Open map</Link>
+              </Button>
+              <Button asChild variant="secondary" size="md" className="flex-1">
+                <Link href="/start">
+                  <RouteIcon size={16} aria-hidden="true" />
+                  Build my route
+                </Link>
+              </Button>
+            </div>
+          </div>
+
+          <div aria-hidden="true" className="torana relative mt-7 opacity-80" />
+        </section>
+      )}
 
       {/* ----------------------------------------------------------------
           Live crowd leads the page.
@@ -179,11 +187,15 @@ export default async function HomePage() {
           ask: somebody returning from a darshan has the answer in their
           head right now, and in ten minutes they will be guessing. It
           renders nothing at all the rest of the time. */}
-      <section className="mt-5 px-4">
-        <WaitPrompt ganpatis={all} />
-      </section>
+      {!festivalOver && (
+        <>
+          <section className="mt-5 px-4">
+            <WaitPrompt ganpatis={all} />
+          </section>
 
-      <LiveCrowdSection ganpatis={all} />
+          <LiveCrowdSection ganpatis={all} />
+        </>
+      )}
 
       {/* ----------------------------------------------------------------
           Ready-made routes, second.
@@ -198,7 +210,7 @@ export default async function HomePage() {
           tap, and the ones offered first are chosen by the time of day in
           Pune — an evening dekhava trail is useless at 9am.
           ---------------------------------------------------------------- */}
-      <section className="mt-7">
+      <section id="after-festival" className="mt-7 scroll-mt-4">
         <SectionHeader
           title={nowRoutes.length > 0 ? 'Good for right now' : 'Ready-made routes'}
           titleMr="दर्शन मार्ग"
