@@ -36,6 +36,24 @@ export function FestivalFarewell({ config }: { config: FestivalConfig }) {
       <div aria-hidden="true" className="torana relative mt-4 opacity-80" />
 
       <div className="relative mx-auto flex max-w-xl flex-1 flex-col items-center justify-center py-10 text-center">
+        {/* An opening credit, the way a film starts. */}
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--faint)] sm:text-[12px]">
+          <a
+            href="https://fennrstudio.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-[var(--chandan)]"
+          >
+            Fennr Studio
+          </a>{' '}
+          presents
+        </p>
+        <p className="font-display mt-2 text-[26px] font-bold tracking-tight text-[var(--chandan)] sm:text-[32px]">
+          GanpatiPune
+        </p>
+
+        <div aria-hidden="true" className="mx-auto my-7 h-px w-16 bg-[var(--pital)]/50" />
+
         <p
           lang="mr"
           className="font-display text-[20px] font-bold text-[var(--zendu)] sm:text-[24px]"
